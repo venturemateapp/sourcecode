@@ -694,7 +694,7 @@ export function RegisterBusinessModal({ open, onClose, businesses, onRegistratio
         </Box>
 
         {/* Navigation */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           {submitError && (
             <Typography sx={{ color: '#ef4444', fontSize: 13, textAlign: 'center', mb: 2, width: '100%' }}>
               {submitError}
