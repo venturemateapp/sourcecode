@@ -139,10 +139,10 @@ export function Businesses({ onViewChange }: BusinessesProps) {
             }}
           >
             <MenuItem onClick={() => { setCreateMenuAnchor(null); setCreateModalOpen(true); }} sx={{ color: 'var(--vm-text-primary)', fontSize: 14, gap: 1 }}>
-              <Plus size={16} /> Quick Create
+              <Plus size={16} /> Create
             </MenuItem>
             <MenuItem onClick={() => { setCreateMenuAnchor(null); setRegisterModalOpen(true); }} sx={{ color: 'var(--vm-text-primary)', fontSize: 14, gap: 1 }}>
-              <FileCheck size={16} /> Register Business
+              <FileCheck size={16} /> Register
             </MenuItem>
           </Menu>
         </Box>
