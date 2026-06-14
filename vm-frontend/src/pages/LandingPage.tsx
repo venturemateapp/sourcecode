@@ -363,8 +363,12 @@ export function LandingPage() {
                   borderRadius: 9999,
                   px: 2,
                   py: 0.5,
-                  fontSize: '0.9rem',
+                  fontSize: { xs: '0.75rem', sm: '0.9rem' },
                   backdropFilter: 'blur(10px)',
+                  height: 'auto',
+                  whiteSpace: 'normal',
+                  overflow: 'visible',
+                  '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', display: 'block' },
                   '& .MuiChip-icon': { ml: 1 },
                 }}
               />
