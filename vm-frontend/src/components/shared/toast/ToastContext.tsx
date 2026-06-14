@@ -77,10 +77,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           severity={severity}
           variant="filled"
           onClose={() => setOpen(false)}
-          sx={{
+          sx={theme => ({
             width: { xs: '90vw', sm: 360 },
             alignItems: 'flex-start',
-          }}
+            ...(severity === 'info' && {
+              backgroundColor: theme.palette.success.main,
+              '& .MuiAlert-icon': { color: theme.palette.success.contrastText },
+            }),
+          })}
         >
           <span style={{ fontWeight: 600, display: 'block' }}>{message}</span>
           {description && (
