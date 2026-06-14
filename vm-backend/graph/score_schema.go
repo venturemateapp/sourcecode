@@ -137,4 +137,22 @@ func init() {
 			return AppContainer.ScoreRepo.GetByBusinessAndType(p.Context, businessID, "credit")
 		},
 	})
+
+	rootMutation.AddFieldConfig("recalculateHealthScore", &graphql.Field{
+		Type: businessScoreType,
+		Args: graphql.FieldConfigArgument{
+			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil {
+				return nil, nil
+			}
+			businessID := p.Args["businessId"].(string)
+			_, err := AppContainer.HealthEngine.CalculateAndStore(p.Context, businessID)
+			if err != nil {
+				return nil, err
+			}
+			return AppContainer.ScoreRepo.GetByBusinessAndType(p.Context, businessID, "health")
+		},
+	})
 }

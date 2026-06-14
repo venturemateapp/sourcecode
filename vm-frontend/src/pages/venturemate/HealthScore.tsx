@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, Card, LinearProgress, Chip } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Card, LinearProgress, Chip, CircularProgress } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import {
   TrendingUp,
@@ -63,6 +63,14 @@ const HEALTH_SCORE_QUERY = `
   }
 `;
 
+const RECALCULATE_HEALTH_MUTATION = `
+  mutation RecalculateHealthScore($businessId: ID!) {
+    recalculateHealthScore(businessId: $businessId) {
+      id, businessId, scoreType, scoreData, calculatedAt
+    }
+  }
+`;
+
 interface HealthScoreProps {
    
   onViewChange?: (_view: ViewType) => void;
@@ -80,31 +88,57 @@ const componentIcons: Record<string, React.ComponentType<{ size?: number; color?
 export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProps) {
   const { selectedBusiness } = useBusiness();
   const [healthScore, setHealthScore] = useState({
-    overall_score: 78, calculated_at: new Date().toISOString(),
+    overallScore: 0, calculatedAt: '',
     components: {} as Record<string, { score: number; weight: number }>,
     recommendations: [] as Array<{ id: string; component: string; title: string; description: string; impact: string; effort: string }>,
-    priority_actions: [] as Array<{ id: string; title: string; description: string; component: string; deadline: string; completed: boolean }>,
+    priorityActions: [] as Array<{ id: string; title: string; description: string; component: string; deadline: string; completed: boolean }>,
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (!selectedBusiness?.id) return;
-    let cancelled = false;
-    graphqlRequest<{ businessScore: { scoreData: string } | null }>(HEALTH_SCORE_QUERY, {
-      businessId: selectedBusiness.id, scoreType: 'health',
-    }).then(data => {
-      const score = data.businessScore;
-      if (!cancelled && score) {
-        setHealthScore(prev => ({ ...prev, ...JSON.parse(score.scoreData) }));
+    setLoading(true);
+    try {
+      const data = await graphqlRequest<{ businessScore: { scoreData: string } | null }>(HEALTH_SCORE_QUERY, {
+        businessId: selectedBusiness.id, scoreType: 'health',
+      });
+      if (data.businessScore) {
+        setHealthScore(prev => ({ ...prev, ...JSON.parse(data.businessScore.scoreData) }));
       }
-    }).catch(() => {});
-    return () => { cancelled = true; };
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
   }, [selectedBusiness?.id]);
 
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleRefresh = async () => {
+    if (!selectedBusiness?.id) return;
+    setRecalculating(true);
+    try {
+      await graphqlRequest(RECALCULATE_HEALTH_MUTATION, {
+        businessId: selectedBusiness.id,
+      });
+      await fetchData();
+    } catch {
+      // silently fail
+    } finally {
+      setRecalculating(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
@@ -115,13 +149,13 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
             Health Score
           </Typography>
           <Typography sx={{ fontSize: { xs: 13, sm: 15, md: 16 }, color: 'var(--vm-text-muted)' }}>
-            Assess your startup is overall health and readiness
+            Assess your startup's overall health and readiness
           </Typography>
         </Box>
-        <GradientButton variant="primary" size="md" onClick={handleRefresh} disabled={loading}>
+        <GradientButton variant="primary" size="md" onClick={handleRefresh} disabled={recalculating}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <RefreshCw size={18} className={loading ? 'spin' : ''} />
-            {loading ? 'Calculating...' : 'Refresh'}
+            {recalculating ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <RefreshCw size={18} />}
+            {recalculating ? 'Calculating...' : 'Refresh'}
           </Box>
         </GradientButton>
       </Box>
@@ -130,11 +164,11 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
       <Card
         sx={{
           bgcolor: 'var(--vm-bg-secondary)',
-          border: `2px solid ${getScoreColor(healthScore.overall_score)}`,
+          border: `2px solid ${getScoreColor(healthScore.overallScore)}`,
           borderRadius: 3,
           p: 4,
           mb: 4,
-          background: `linear-gradient(135deg, ${getScoreColor(healthScore.overall_score)}15 0%, var(--vm-bg-tertiary) 100%)`,
+          background: `linear-gradient(135deg, ${getScoreColor(healthScore.overallScore)}15 0%, var(--vm-bg-tertiary) 100%)`,
         }}
       >
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 6 }, alignItems: 'center' }}>
@@ -147,11 +181,11 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
               sx={{
                 fontSize: { xs: 48, md: 80 },
                 fontWeight: 700,
-                color: getScoreColor(healthScore.overall_score),
+                color: getScoreColor(healthScore.overallScore),
                 lineHeight: 1,
               }}
             >
-              {healthScore.overall_score}
+              {healthScore.overallScore}
             </Typography>
             <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
               of 100
@@ -167,20 +201,20 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
               sx={{
                 fontSize: { xs: 24, md: 32 },
                 fontWeight: 700,
-                color: getScoreStatus(healthScore.overall_score).color,
+                color: getScoreStatus(healthScore.overallScore).color,
                 mb: 1,
               }}
             >
-              {getScoreStatus(healthScore.overall_score).label}
+              {getScoreStatus(healthScore.overallScore).label}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                              {healthScore.overall_score >= 80 ? (
+                              {healthScore.overallScore >= 80 ? (
                   <CheckCircle size={20} color="#22c55e" />
                 ) : (
                   <TrendingUp size={20} color="#f59e0b" />
                 )}
               <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)' }}>
-                {healthScore.overall_score >= 80 
+                {healthScore.overallScore >= 80 
                   ? 'Your startup is in great shape!' 
                   : 'Some areas need attention'}
               </Typography>
@@ -190,9 +224,9 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
           {/* Priority Actions */}
           <Box>
             <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
-              Priority Actions ({healthScore.priority_actions.filter(a => !a.completed).length})
+              Priority Actions ({healthScore.priorityActions.filter(a => !a.completed).length})
             </Typography>
-            {healthScore.priority_actions.filter(a => !a.completed).slice(0, 2).map((action) => (
+            {healthScore.priorityActions.filter(a => !a.completed).slice(0, 2).map((action) => (
               <Box key={action.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
                 <ArrowRight size={14} color="var(--vm-primary-400)" style={{ marginTop: 3 }} />
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
@@ -326,7 +360,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
           overflow: 'hidden',
         }}
       >
-        {healthScore.priority_actions.map((action, idx) => (
+        {healthScore.priorityActions.map((action, idx) => (
           <Box
             key={action.id}
             sx={{
@@ -334,7 +368,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
               alignItems: 'center',
               justifyContent: 'space-between',
               p: 3,
-              borderBottom: idx < healthScore.priority_actions.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
+              borderBottom: idx < healthScore.priorityActions.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
               bgcolor: action.completed ? 'rgba(34, 197, 94, 0.05)' : 'transparent',
             }}
           >
