@@ -700,7 +700,7 @@ export function RegisterBusinessModal({ open, onClose, businesses, onRegistratio
               {submitError}
             </Typography>
           )}
-          <GradientButton variant="ghost" size="md" onClick={activeStep === 0 ? onClose : handleBack} disabled={submitting}>
+          <GradientButton variant="outline" size="md" onClick={activeStep === 0 ? onClose : handleBack} disabled={submitting}>
             {activeStep === 0 ? 'Cancel' : 'Back'}
           </GradientButton>
           <GradientButton variant="primary" size="md" onClick={handleNext} disabled={!isStepValid() || submitting}>
