@@ -1,4 +1,5 @@
-import { Box, TextField } from '@mui/material';
+import { Box } from '@mui/material';
+import { TextField } from '../shared/form-fields';
 
 interface WelcomeStepProps {
   data: {
@@ -16,89 +17,49 @@ export function WelcomeStep({ data, updateData }: WelcomeStepProps) {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField
+          id="first-name"
           fullWidth
           label="First name"
           value={data.firstName}
           onChange={(e) => updateData({ firstName: e.target.value })}
-          sx={{
-            '& .MuiInputBase-root': {
-              bgcolor: 'rgba(255,255,255,0.03)',
-              borderRadius: 2,
-              color: '#fff',
-            },
-            '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-          }}
         />
         <TextField
+          id="last-name"
           fullWidth
           label="Last name"
           value={data.lastName}
           onChange={(e) => updateData({ lastName: e.target.value })}
-          sx={{
-            '& .MuiInputBase-root': {
-              bgcolor: 'rgba(255,255,255,0.03)',
-              borderRadius: 2,
-              color: '#fff',
-            },
-            '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-          }}
         />
       </Box>
 
       <TextField
+        id="email"
         fullWidth
         type="email"
         label="Email address"
         value={data.email}
         onChange={(e) => updateData({ email: e.target.value })}
         placeholder="you@startup.com"
-        sx={{
-          '& .MuiInputBase-root': {
-            bgcolor: 'rgba(255,255,255,0.03)',
-            borderRadius: 2,
-            color: '#fff',
-          },
-          '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-        }}
       />
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
         <TextField
+          id="password"
           fullWidth
           type="password"
           label="Password"
           value={data.password}
           onChange={(e) => updateData({ password: e.target.value })}
           placeholder="••••••••"
-          sx={{
-            '& .MuiInputBase-root': {
-              bgcolor: 'rgba(255,255,255,0.03)',
-              borderRadius: 2,
-              color: '#fff',
-            },
-            '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-          }}
         />
         <TextField
+          id="confirm-password"
           fullWidth
           type="password"
           label="Confirm password"
           value={data.confirmPassword}
           onChange={(e) => updateData({ confirmPassword: e.target.value })}
           placeholder="••••••••"
-          sx={{
-            '& .MuiInputBase-root': {
-              bgcolor: 'rgba(255,255,255,0.03)',
-              borderRadius: 2,
-              color: '#fff',
-            },
-            '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-          }}
         />
       </Box>
     </Box>
