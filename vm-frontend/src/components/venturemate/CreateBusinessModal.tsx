@@ -481,7 +481,7 @@ export function CreateBusinessModal({ open, onClose, onCreate }: CreateBusinessM
             onClick={handleNext}
             disabled={!isStepValid()}
           >
-            {activeStep === STEPS.length - 1 ? 'Create Business' : 'Next'}
+            {activeStep === STEPS.length - 1 ? 'Create' : 'Next'}
           </GradientButton>
         </Box>
       </DialogContent>

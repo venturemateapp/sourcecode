@@ -705,7 +705,7 @@ export function RegisterBusinessModal({ open, onClose, businesses, onRegistratio
           </GradientButton>
           <GradientButton variant="primary" size="md" onClick={handleNext} disabled={!isStepValid() || submitting}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {submitting ? <CircularProgress size={18} sx={{ color: 'white' }} /> : activeStep === STEPS.length - 1 ? 'Submit Registration' : 'Continue'}
+              {submitting ? <CircularProgress size={18} sx={{ color: 'white' }} /> : activeStep === STEPS.length - 1 ? 'Register' : 'Continue'}
               {!submitting && <ArrowRight size={18} />}
             </Box>
           </GradientButton>
