@@ -21,6 +21,7 @@ type BusinessRegistration struct {
 	AddressZip       string    `json:"addressZip"`
 	AddressCountry   string    `json:"addressCountry"`
 	Documents        string    `json:"documents"`
+	Members          string    `json:"members"`
 	AdminNotes       string    `json:"adminNotes"`
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`

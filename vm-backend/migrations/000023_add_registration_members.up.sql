@@ -1,0 +1,1 @@
+ALTER TABLE business_registrations ADD COLUMN IF NOT EXISTS members JSONB NOT NULL DEFAULT '[]';

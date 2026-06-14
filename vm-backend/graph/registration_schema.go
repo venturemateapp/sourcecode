@@ -26,6 +26,7 @@ var businessRegistrationType = graphql.NewObject(graphql.ObjectConfig{
 		"addressZip":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"addressCountry":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"documents":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"members":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"adminNotes":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"createdAt":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"updatedAt":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -80,6 +81,7 @@ func init() {
 			"addressZip":       &graphql.ArgumentConfig{Type: graphql.String},
 			"addressCountry":   &graphql.ArgumentConfig{Type: graphql.String},
 			"documents":        &graphql.ArgumentConfig{Type: graphql.String},
+			"members":          &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil {
@@ -95,47 +97,75 @@ func init() {
 				LegalName:        p.Args["legalName"].(string),
 				Status:           "pending",
 			}
-			if v, ok := p.Args["taxId"].(string); ok {
-				reg.TaxID = v
-			}
-			if v, ok := p.Args["ownerName"].(string); ok {
-				reg.OwnerName = v
-			}
-			if v, ok := p.Args["ownerDob"].(string); ok {
-				reg.OwnerDOB = v
-			}
-			if v, ok := p.Args["ownerSsn"].(string); ok {
-				reg.OwnerSSN = v
-			}
-			if v, ok := p.Args["ownerEmail"].(string); ok {
-				reg.OwnerEmail = v
-			}
-			if v, ok := p.Args["ownerPhone"].(string); ok {
-				reg.OwnerPhone = v
-			}
-			if v, ok := p.Args["addressStreet"].(string); ok {
-				reg.AddressStreet = v
-			}
-			if v, ok := p.Args["addressCity"].(string); ok {
-				reg.AddressCity = v
-			}
-			if v, ok := p.Args["addressState"].(string); ok {
-				reg.AddressState = v
-			}
-			if v, ok := p.Args["addressZip"].(string); ok {
-				reg.AddressZip = v
-			}
-			if v, ok := p.Args["addressCountry"].(string); ok {
-				reg.AddressCountry = v
-			}
-			if v, ok := p.Args["documents"].(string); ok {
-				reg.Documents = v
-			}
+			if v, ok := p.Args["taxId"].(string); ok { reg.TaxID = v }
+			if v, ok := p.Args["ownerName"].(string); ok { reg.OwnerName = v }
+			if v, ok := p.Args["ownerDob"].(string); ok { reg.OwnerDOB = v }
+			if v, ok := p.Args["ownerSsn"].(string); ok { reg.OwnerSSN = v }
+			if v, ok := p.Args["ownerEmail"].(string); ok { reg.OwnerEmail = v }
+			if v, ok := p.Args["ownerPhone"].(string); ok { reg.OwnerPhone = v }
+			if v, ok := p.Args["addressStreet"].(string); ok { reg.AddressStreet = v }
+			if v, ok := p.Args["addressCity"].(string); ok { reg.AddressCity = v }
+			if v, ok := p.Args["addressState"].(string); ok { reg.AddressState = v }
+			if v, ok := p.Args["addressZip"].(string); ok { reg.AddressZip = v }
+			if v, ok := p.Args["addressCountry"].(string); ok { reg.AddressCountry = v }
+			if v, ok := p.Args["documents"].(string); ok { reg.Documents = v }
+			if v, ok := p.Args["members"].(string); ok { reg.Members = v }
 
 			if err := AppContainer.RegistrationRepo.Create(p.Context, reg); err != nil {
 				return nil, err
 			}
 			return reg, nil
+		},
+	})
+
+	rootMutation.AddFieldConfig("updateRegistration", &graphql.Field{
+		Type: businessRegistrationType,
+		Args: graphql.FieldConfigArgument{
+			"id":               &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"registrationType": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"legalName":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"taxId":            &graphql.ArgumentConfig{Type: graphql.String},
+			"ownerName":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"ownerDob":         &graphql.ArgumentConfig{Type: graphql.String},
+			"ownerSsn":         &graphql.ArgumentConfig{Type: graphql.String},
+			"ownerEmail":       &graphql.ArgumentConfig{Type: graphql.String},
+			"ownerPhone":       &graphql.ArgumentConfig{Type: graphql.String},
+			"addressStreet":    &graphql.ArgumentConfig{Type: graphql.String},
+			"addressCity":      &graphql.ArgumentConfig{Type: graphql.String},
+			"addressState":     &graphql.ArgumentConfig{Type: graphql.String},
+			"addressZip":       &graphql.ArgumentConfig{Type: graphql.String},
+			"addressCountry":   &graphql.ArgumentConfig{Type: graphql.String},
+			"documents":        &graphql.ArgumentConfig{Type: graphql.String},
+			"members":          &graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil {
+				return nil, nil
+			}
+			id := p.Args["id"].(string)
+			existing, err := AppContainer.RegistrationRepo.GetByID(p.Context, id)
+			if err != nil || existing == nil {
+				return nil, err
+			}
+			existing.RegistrationType = p.Args["registrationType"].(string)
+			existing.LegalName = p.Args["legalName"].(string)
+			if v, ok := p.Args["taxId"].(string); ok { existing.TaxID = v }
+			if v, ok := p.Args["ownerName"].(string); ok { existing.OwnerName = v }
+			if v, ok := p.Args["ownerDob"].(string); ok { existing.OwnerDOB = v }
+			if v, ok := p.Args["ownerSsn"].(string); ok { existing.OwnerSSN = v }
+			if v, ok := p.Args["ownerEmail"].(string); ok { existing.OwnerEmail = v }
+			if v, ok := p.Args["ownerPhone"].(string); ok { existing.OwnerPhone = v }
+			if v, ok := p.Args["addressStreet"].(string); ok { existing.AddressStreet = v }
+			if v, ok := p.Args["addressCity"].(string); ok { existing.AddressCity = v }
+			if v, ok := p.Args["addressState"].(string); ok { existing.AddressState = v }
+			if v, ok := p.Args["addressZip"].(string); ok { existing.AddressZip = v }
+			if v, ok := p.Args["addressCountry"].(string); ok { existing.AddressCountry = v }
+			if v, ok := p.Args["documents"].(string); ok { existing.Documents = v }
+			if v, ok := p.Args["members"].(string); ok { existing.Members = v }
+			if err := AppContainer.RegistrationRepo.Update(p.Context, existing); err != nil {
+				return nil, err
+			}
+			return existing, nil
 		},
 	})
 
