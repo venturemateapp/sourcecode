@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState('')
   const [description, setDescription] = useState('')
   const [severity, setSeverity] = useState<AlertColor>('info')
-  const [duration, setDuration] = useState(4000)
+  const [duration, setDuration] = useState(5000)
 
   const show = useCallback(
     (
@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setMessage(title)
       setDescription(opts.description ?? '')
       setSeverity(sev)
-      setDuration(opts.duration ?? 4000)
+      setDuration(opts.duration ?? 5000)
       setOpen(true)
     },
     []
