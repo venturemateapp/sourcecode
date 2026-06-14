@@ -14,8 +14,10 @@ import {
   Chip,
   Paper,
   Grid,
+  CircularProgress,
 } from '@mui/material';
 import { GradientButton } from '../shared/buttons';
+import { graphqlRequest } from '../../lib/api';
 import { Upload, FileText, Building2, User, Users, Briefcase, CheckCircle, ArrowRight } from 'lucide-react';
 import type { Business } from '../../types/venturemate';
 
@@ -23,8 +25,16 @@ interface RegisterBusinessModalProps {
   open: boolean;
   onClose: () => void;
   businesses: Business[];
-  onSubmit: (data: RegistrationData) => void;
+  onRegistrationComplete?: () => void;
 }
+
+const REGISTER_BUSINESS_MUTATION = `
+  mutation RegisterBusiness($businessId: ID!, $userId: ID!, $registrationType: String!, $legalName: String!, $taxId: String, $ownerName: String!, $ownerDob: String, $ownerSsn: String, $ownerEmail: String, $ownerPhone: String, $addressStreet: String, $addressCity: String, $addressState: String, $addressZip: String, $addressCountry: String, $documents: String) {
+    registerBusiness(businessId: $businessId, userId: $userId, registrationType: $registrationType, legalName: $legalName, taxId: $taxId, ownerName: $ownerName, ownerDob: $ownerDob, ownerSsn: $ownerSsn, ownerEmail: $ownerEmail, ownerPhone: $ownerPhone, addressStreet: $addressStreet, addressCity: $addressCity, addressState: $addressState, addressZip: $addressZip, addressCountry: $addressCountry, documents: $documents) {
+      id, status, createdAt
+    }
+  }
+`;
 
 export interface RegistrationData {
   businessId: string;
@@ -97,11 +107,13 @@ const BUSINESS_TYPES = [
 
 const STEPS = ['Select Business', 'Business Type', 'Legal Info', 'Documents', 'Review'];
 
-export function RegisterBusinessModal({ open, onClose, businesses, onSubmit }: RegisterBusinessModalProps) {
+export function RegisterBusinessModal({ open, onClose, businesses, onRegistrationComplete }: RegisterBusinessModalProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [selectedBusinessId, setSelectedBusinessId] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   
   const selectedBusiness = businesses.find(b => b.id === selectedBusinessId);
   const businessType = BUSINESS_TYPES.find(t => t.value === selectedType);
@@ -168,19 +180,49 @@ export function RegisterBusinessModal({ open, onClose, businesses, onSubmit }: R
     setActiveStep(prev => prev - 1);
   };
 
-  const handleSubmit = () => {
-    onSubmit({
-      ...formData,
-      businessId: selectedBusinessId,
-      businessType: selectedType as RegistrationData['businessType'],
-      documents: uploadedDocs,
-    } as RegistrationData);
-    onClose();
-    // Reset state
-    setActiveStep(0);
-    setSelectedBusinessId('');
-    setSelectedType('');
-    setUploadedDocs([]);
+  const handleSubmit = async () => {
+    const selectedBiz = businesses.find(b => b.id === selectedBusinessId);
+    if (!selectedBiz) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await graphqlRequest<{ registerBusiness: { id: string } }>(REGISTER_BUSINESS_MUTATION, {
+        businessId: selectedBusinessId,
+        userId: selectedBiz.userId,
+        registrationType: selectedType,
+        legalName: formData.legalName || selectedBiz.name,
+        taxId: formData.taxId || null,
+        ownerName: formData.ownerInfo?.fullName || '',
+        ownerDob: formData.ownerInfo?.dateOfBirth || null,
+        ownerSsn: formData.ownerInfo?.ssn || null,
+        ownerEmail: formData.ownerInfo?.email || null,
+        ownerPhone: formData.ownerInfo?.phone || null,
+        addressStreet: formData.businessAddress?.street || null,
+        addressCity: formData.businessAddress?.city || null,
+        addressState: formData.businessAddress?.state || null,
+        addressZip: formData.businessAddress?.zipCode || null,
+        addressCountry: formData.businessAddress?.country || 'United States',
+        documents: JSON.stringify(uploadedDocs),
+      });
+      onRegistrationComplete?.();
+      onClose();
+      // Reset state
+      setActiveStep(0);
+      setSelectedBusinessId('');
+      setSelectedType('');
+      setUploadedDocs([]);
+      setFormData({
+        legalName: '',
+        taxId: '',
+        registrationNumber: '',
+        ownerInfo: { fullName: '', dateOfBirth: '', ssn: '', address: '', phone: '', email: '' },
+        businessAddress: { street: '', city: '', state: '', zipCode: '', country: 'United States' },
+      });
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isStepValid = () => {
@@ -801,10 +843,16 @@ export function RegisterBusinessModal({ open, onClose, businesses, onSubmit }: R
 
         {/* Navigation */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          {submitError && (
+            <Typography sx={{ color: '#ef4444', fontSize: 13, textAlign: 'center', mb: 2, width: '100%' }}>
+              {submitError}
+            </Typography>
+          )}
           <GradientButton
             variant="ghost"
             size="md"
             onClick={activeStep === 0 ? onClose : handleBack}
+            disabled={submitting}
           >
             {activeStep === 0 ? 'Cancel' : 'Back'}
           </GradientButton>
@@ -813,11 +861,13 @@ export function RegisterBusinessModal({ open, onClose, businesses, onSubmit }: R
             variant="primary"
             size="md"
             onClick={handleNext}
-            disabled={!isStepValid()}
+            disabled={!isStepValid() || submitting}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {activeStep === STEPS.length - 1 ? 'Submit Registration' : 'Continue'}
-              <ArrowRight size={18} />
+              {submitting ? (
+                <CircularProgress size={18} sx={{ color: 'white' }} />
+              ) : activeStep === STEPS.length - 1 ? 'Submit Registration' : 'Continue'}
+              {!submitting && <ArrowRight size={18} />}
             </Box>
           </GradientButton>
         </Box>

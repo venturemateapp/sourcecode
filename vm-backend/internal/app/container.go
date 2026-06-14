@@ -16,6 +16,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/investors"
 	"github.com/venturemate/vmbackend/internal/notifications"
 	"github.com/venturemate/vmbackend/internal/rates"
+	"github.com/venturemate/vmbackend/internal/registrations"
 	"github.com/venturemate/vmbackend/internal/s3"
 	"github.com/venturemate/vmbackend/internal/scores"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
@@ -50,8 +51,9 @@ type Container struct {
 	FileHandler       *ai.FileHandler
 	OAuthRepo         *oauth.Repository
 	OAuthManager      *oauth.OAuthManager
-	BankAccountRepo   *banking.Repository
-	InvoiceRepo       *invoices.Repository
+	BankAccountRepo     *banking.Repository
+	InvoiceRepo         *invoices.Repository
+	RegistrationRepo    *registrations.Repository
 }
 
 func NewContainer(ctx context.Context) (*Container, error) {
@@ -85,6 +87,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	scoreRepo := scores.NewRepository(dbPool)
 	bankAccountRepo := banking.NewRepository(dbPool)
 	invoiceRepo := invoices.NewRepository(dbPool)
+	registrationRepo := registrations.NewRepository(dbPool)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
 	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
 	rateService := rates.NewService()
@@ -153,5 +156,6 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		OAuthManager:      oauthManager,
 		BankAccountRepo:   bankAccountRepo,
 		InvoiceRepo:       invoiceRepo,
+		RegistrationRepo:  registrationRepo,
 	}, nil
 }

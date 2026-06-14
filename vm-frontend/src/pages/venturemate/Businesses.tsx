@@ -1,11 +1,28 @@
-import { useState } from 'react';
-import { Box, Typography, Card, Chip, IconButton, Menu, MenuItem } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Card, Chip, IconButton, Menu, MenuItem, CircularProgress } from '@mui/material';
 import { Plus, MoreVertical, FileCheck } from 'lucide-react';
 import { CreateBusinessModal } from '../../components/venturemate/CreateBusinessModal';
-import { RegisterBusinessModal, type RegistrationData } from '../../components/venturemate/RegisterBusinessModal';
+import { RegisterBusinessModal } from '../../components/venturemate/RegisterBusinessModal';
 import type { ViewType, Business } from '../../types/venturemate';
+import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { DomainChat } from '../../components/venturemate/DomainChat';
+
+interface BusinessRegistrationStatus {
+  id: string;
+  businessId: string;
+  status: string;
+  registrationType: string;
+  createdAt: string;
+}
+
+const REGISTRATIONS_QUERY = `
+  query BusinessRegistrations($businessId: ID!, $status: String) {
+    businessRegistrations(businessId: $businessId, status: $status) {
+      id, businessId, status, registrationType, createdAt
+    }
+  }
+`;
 
 interface BusinessesProps {
   onViewChange: (view: ViewType) => void;
@@ -17,6 +34,37 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   const [, setSelectedBusiness] = useState<Business | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
+  const [registrations, setRegistrations] = useState<Record<string, BusinessRegistrationStatus>>({});
+  const [loadingRegs, setLoadingRegs] = useState(false);
+
+  const fetchRegistrations = useCallback(async () => {
+    if (businessList.length === 0) return;
+    setLoadingRegs(true);
+    try {
+      const results = await Promise.all(
+        businessList.map(b =>
+          graphqlRequest<{ businessRegistrations: BusinessRegistrationStatus[] }>(REGISTRATIONS_QUERY, {
+            businessId: b.id,
+          }).catch(() => ({ businessRegistrations: [] }))
+        )
+      );
+      const map: Record<string, BusinessRegistrationStatus> = {};
+      results.forEach((res, idx) => {
+        if (res.businessRegistrations.length > 0) {
+          map[businessList[idx].id] = res.businessRegistrations[0];
+        }
+      });
+      setRegistrations(map);
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingRegs(false);
+    }
+  }, [businessList]);
+
+  useEffect(() => {
+    fetchRegistrations();
+  }, [fetchRegistrations]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, business: Business) => {
     setAnchorEl(event.currentTarget);
@@ -195,7 +243,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 {business.tagline}
               </Typography>
 
-              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
                 <Chip
                   size="small"
                   label={business.stage.toUpperCase()}
@@ -216,6 +264,18 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                     fontSize: 10,
                   }}
                 />
+                {registrations[business.id] && (
+                  <Chip
+                    size="small"
+                    label={registrations[business.id].status === 'approved' ? 'REGISTERED' : registrations[business.id].status.toUpperCase()}
+                    sx={{
+                      bgcolor: registrations[business.id].status === 'approved' ? 'rgba(59, 130, 246, 0.2)' : registrations[business.id].status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      color: registrations[business.id].status === 'approved' ? '#60a5fa' : registrations[business.id].status === 'pending' ? '#f59e0b' : '#ef4444',
+                      fontWeight: 600,
+                      fontSize: 10,
+                    }}
+                  />
+                )}
               </Box>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
@@ -350,10 +410,9 @@ export function Businesses({ onViewChange }: BusinessesProps) {
         open={registerModalOpen}
         onClose={() => setRegisterModalOpen(false)}
         businesses={businessList}
-        onSubmit={(data: RegistrationData) => {
-          // Handle registration submission - would typically call an API
-          console.log('Business registration submitted:', data);
-          // Show success message or redirect
+        onRegistrationComplete={() => {
+          setRegisterModalOpen(false);
+          fetchRegistrations();
         }}
       />
       <DomainChat domain="businesses" placeholder="Ask me to manage your businesses..." />
