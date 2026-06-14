@@ -97,7 +97,10 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
   const [recalculating, setRecalculating] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!selectedBusiness?.id) return;
+    if (!selectedBusiness?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await graphqlRequest<{ businessScore: { scoreData: string } | null }>(HEALTH_SCORE_QUERY, {
@@ -114,6 +117,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
   }, [selectedBusiness?.id]);
 
   useEffect(() => {
+    setLoading(true);
     fetchData();
   }, [fetchData]);
 
@@ -131,6 +135,16 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
       setRecalculating(false);
     }
   };
+
+  if (!selectedBusiness) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 14 }}>
+          Select a business to view health score
+        </Typography>
+      </Box>
+    );
+  }
 
   if (loading) {
     return (

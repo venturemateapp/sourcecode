@@ -139,7 +139,10 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   const [financingApplications] = useState<FinancingApplication[]>([]);
 
   const fetchData = useCallback(async () => {
-    if (!selectedBusiness?.id) return;
+    if (!selectedBusiness?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [scoreResult, offersResult, historyResult] = await Promise.all([
@@ -166,6 +169,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   }, [selectedBusiness?.id]);
 
   useEffect(() => {
+    setLoading(true);
     fetchData();
   }, [fetchData]);
 
@@ -274,6 +278,16 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   };
 
   const applySteps = ['Loan Details', 'Documents', 'Review', 'Confirmation'];
+
+  if (!selectedBusiness) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 14 }}>
+          Select a business to view credit score
+        </Typography>
+      </Box>
+    );
+  }
 
   if (loading) {
     return (
