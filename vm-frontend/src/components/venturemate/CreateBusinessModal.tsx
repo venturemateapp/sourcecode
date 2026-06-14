@@ -466,9 +466,9 @@ export function CreateBusinessModal({ open, onClose, onCreate }: CreateBusinessM
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
-          <GradientButton
-            variant="ghost"
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
+            <GradientButton
+            variant="outline"
             size="md"
             onClick={activeStep === 0 ? onClose : handleBack}
           >
