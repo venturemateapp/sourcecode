@@ -1,0 +1,51 @@
+services:
+  backend:
+    build: ./vm-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./vm-backend/.env
+    environment:
+      PORT: "8080"
+      DB_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vm-network
+
+  frontend:
+    build: ./vm-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_GRAPHQL_PROXY_URL: http://backend:8080
+      VITE_AUTH_PROXY_URL: http://backend:8081
+    depends_on:
+      - backend
+    networks:
+      - vm-network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: venturematedb
+      POSTGRES_PASSWORD: venturematedb
+      POSTGRES_DB: venturematedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U venturematedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vm-network
+
+volumes:
+  pgdata:
+
+networks:
+  vm-network:

@@ -1,0 +1,325 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* VentureMate - Dark Green Theme */
+   
+  /* Primary Colors - Emerald Green Scale */
+  --vm-primary-50: #ecfdf5;
+  --vm-primary-100: #d1fae5;
+  --vm-primary-200: #a7f3d0;
+  --vm-primary-300: #6ee7b7;
+  --vm-primary-400: #34d399;
+  --vm-primary-500: #10b981;
+  --vm-primary-600: #059669;
+  --vm-primary-700: #047857;
+  --vm-primary-800: #065f46;
+  --vm-primary-900: #064e3b;
+  --vm-primary-950: #022c22;
+   
+  /* Dark Theme Backgrounds */
+  --vm-bg-primary: #050f0a;
+  --vm-bg-secondary: #0a1f16;
+  --vm-bg-tertiary: #0f2e22;
+  --vm-bg-card: #143d2d;
+  --vm-bg-hover: #1a4d3a;
+   
+  /* Accent Colors */
+  --vm-accent-glow: rgba(16, 185, 129, 0.3);
+  --vm-accent-light: #34d399;
+  --vm-accent-gradient-start: #059669;
+  --vm-accent-gradient-end: #10b981;
+   
+  /* Text Colors - Dark Theme */
+  --vm-text-primary: #ffffff;
+  --vm-text-secondary: #a7f3d0;
+  --vm-text-muted: #6ee7b7;
+  --vm-text-subtle: #34d399;
+   
+  /* Border Colors */
+  --vm-border-primary: #065f46;
+  --vm-border-secondary: #047857;
+  --vm-border-subtle: rgba(6, 95, 70, 0.3);
+   
+  /* Status Colors */
+  --vm-success: #22c55e;
+  --vm-warning: #f59e0b;
+  --vm-error: #ef4444;
+  --vm-info: #3b82f6;
+   
+  /* Shadows */
+  --vm-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --vm-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --vm-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --vm-shadow-glow: 0 0 20px rgba(16, 185, 129, 0.2);
+   
+  /* Spacing */
+  --vm-sidebar-width: 260px;
+  --vm-header-height: 64px;
+  --vm-content-max-width: 1400px;
+  --vm-space-xs: 4px;
+  --vm-space-sm: 8px;
+  --vm-space-md: 16px;
+  --vm-space-lg: 24px;
+  --vm-space-xl: 32px;
+  --vm-space-2xl: 48px;
+   
+  /* Responsive Typography Scale */
+  --vm-font-xs: clamp(0.625rem, 1.5vw, 0.75rem);
+  --vm-font-sm: clamp(0.75rem, 1.8vw, 0.875rem);
+  --vm-font-md: clamp(0.875rem, 2vw, 1rem);
+  --vm-font-lg: clamp(1rem, 2.2vw, 1.125rem);
+  --vm-font-xl: clamp(1.125rem, 2.5vw, 1.25rem);
+  --vm-font-2xl: clamp(1.25rem, 2.8vw, 1.5rem);
+  --vm-font-3xl: clamp(1.5rem, 3.5vw, 2rem);
+  --vm-font-4xl: clamp(1.75rem, 4vw, 2.25rem);
+  --vm-font-5xl: clamp(2rem, 5vw, 3rem);
+  --vm-font-6xl: clamp(2.5rem, 6vw, 3.5rem);
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  background-color: var(--vm-bg-primary);
+  color: var(--vm-text-primary);
+  overflow-x: hidden;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vm-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vm-primary-700);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vm-primary-600);
+}
+
+/* Selection */
+::selection {
+  background: var(--vm-primary-600);
+  color: white;
+}
+
+/* Gradient Text */
+.vm-gradient-text {
+  background: linear-gradient(135deg, var(--vm-primary-400) 0%, var(--vm-primary-200) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient Background */
+.vm-gradient-bg {
+  background: linear-gradient(135deg, var(--vm-accent-gradient-start) 0%, var(--vm-accent-gradient-end) 100%);
+}
+
+/* Glow Effect */
+.vm-glow {
+  box-shadow: var(--vm-shadow-glow);
+}
+
+/* Card Styles */
+.vm-card {
+  background: var(--vm-bg-secondary);
+  border: 1px solid var(--vm-border-subtle);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.vm-card:hover {
+  border-color: var(--vm-border-secondary);
+  box-shadow: var(--vm-shadow-glow);
+}
+
+/* Button Styles */
+.vm-btn-primary {
+  background: linear-gradient(135deg, var(--vm-primary-600) 0%, var(--vm-primary-500) 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vm-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--vm-shadow-glow);
+}
+
+.vm-btn-secondary {
+  background: transparent;
+  color: var(--vm-primary-400);
+  border: 1px solid var(--vm-primary-600);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vm-btn-secondary:hover {
+  background: var(--vm-bg-hover);
+  border-color: var(--vm-primary-500);
+}
+
+/* Input Styles */
+.vm-input {
+  background: var(--vm-bg-tertiary);
+  border: 1px solid var(--vm-border-primary);
+  color: var(--vm-text-primary);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.vm-input:focus {
+  outline: none;
+  border-color: var(--vm-primary-500);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.vm-input::placeholder {
+  color: var(--vm-text-muted);
+}
+
+/* Badge Styles */
+.vm-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vm-badge-primary {
+  background: var(--vm-primary-900);
+  color: var(--vm-primary-300);
+}
+
+.vm-badge-success {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.vm-badge-warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+/* Status Indicators */
+.vm-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.vm-status-active {
+  background: var(--vm-success);
+  box-shadow: 0 0 8px var(--vm-success);
+}
+
+.vm-status-pending {
+  background: var(--vm-warning);
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.4); }
+}
+
+.vm-animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.vm-animate-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Grid Pattern Background */
+.vm-grid-bg {
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Glass Effect */
+.vm-glass {
+  background: rgba(10, 31, 22, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Mobile Typography Adjustments */
+@media (max-width: 768px) {
+  .vm-mobile-text-xs { font-size: 0.6875rem !important; }
+  .vm-mobile-text-sm { font-size: 0.75rem !important; }
+  .vm-mobile-text-md { font-size: 0.8125rem !important; }
+  .vm-mobile-text-lg { font-size: 0.875rem !important; }
+  .vm-mobile-text-xl { font-size: 0.9375rem !important; }
+  .vm-mobile-text-2xl { font-size: 1rem !important; }
+  .vm-mobile-text-3xl { font-size: 1.125rem !important; }
+  .vm-mobile-text-4xl { font-size: 1.25rem !important; }
+  .vm-mobile-text-5xl { font-size: 1.5rem !important; }
+  .vm-mobile-text-6xl { font-size: 1.75rem !important; }
+}
+
+.vm-responsive-title {
+  font-size: var(--vm-font-4xl);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.vm-responsive-heading {
+  font-size: var(--vm-font-3xl);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.vm-responsive-subheading {
+  font-size: var(--vm-font-xl);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.vm-responsive-body {
+  font-size: var(--vm-font-md);
+  line-height: 1.6;
+}
+
+.vm-responsive-small {
+  font-size: var(--vm-font-sm);
+  line-height: 1.5;
+}

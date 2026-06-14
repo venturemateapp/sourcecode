@@ -1,0 +1,3 @@
+-- +goose Up
+-- Placeholder for future schema migrations
+-- Add your CREATE TABLE statements here

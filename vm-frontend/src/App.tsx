@@ -1,0 +1,339 @@
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Box, Typography, Card, Chip, Avatar } from '@mui/material';
+import { VentureMateLayout } from './layouts/VentureMateLayout';
+import { AuthLayout } from './layouts/AuthLayout';
+import { SignIn } from './pages/auth/SignIn';
+import { ForgotPassword } from './pages/auth/ForgotPassword';
+import { AuthCallback } from './pages/auth/AuthCallback';
+import { OAuthCallback } from './pages/auth/OAuthCallback';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { ToastProvider } from './components/shared/toast';
+import { Dashboard } from './pages/venturemate/Dashboard';
+import { Businesses } from './pages/venturemate/Businesses';
+import { PitchDeck } from './pages/venturemate/PitchDeck';
+import { InvestorsPage } from './pages/venturemate/Investors';
+import { CoFoundersPage } from './pages/venturemate/CoFounders';
+import { AIAssistant } from './pages/venturemate/AIAssistant';
+import { CRMPage } from './pages/venturemate/CRM';
+import { BankingPage } from './pages/venturemate/Banking';
+import { SocialPage } from './pages/venturemate/Social';
+import { MarketplacePage } from './pages/venturemate/Marketplace';
+import { CreditScorePage } from './pages/venturemate/CreditScore';
+import { HealthScorePage } from './pages/venturemate/HealthScore';
+import { WebsiteBuilderPage } from './pages/venturemate/WebsiteBuilder';
+import { TeamPage } from './pages/venturemate/TeamPage';
+import { BillingPage } from './pages/venturemate/Billing';
+import { DocumentsPage } from './pages/venturemate/Documents';
+import { BusinessPlan } from './pages/venturemate/BusinessPlan';
+import { FinancialForecast } from './pages/venturemate/FinancialForecast';
+import { BrandingKitPage } from './pages/venturemate/BrandingKit';
+import { SettingsPage } from './pages/venturemate/Settings';
+import { MessagesPage } from './pages/venturemate/Messages';
+import { LandingPage } from './pages/LandingPage';
+import { OnboardingPage } from './pages/onboarding/OnboardingPage';
+import { BusinessProvider, useBusiness } from './contexts/BusinessContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
+import type { ViewType } from './types/venturemate';
+import {
+  Globe,
+  TrendingUp,
+  Lightbulb,
+} from 'lucide-react';
+
+// Placeholder component for pages under development
+function PlaceholderPage({ title, description, icon: Icon }: { title: string; description: string; icon: React.ComponentType<{size?: number; color?: string}> }) {
+  return (
+    <Box sx={{ p: { xs: 2, md: 4 }, textAlign: 'center' }}>
+      <Box
+        sx={{
+          width: { xs: 60, md: 80 },
+          height: { xs: 60, md: 80 },
+          borderRadius: 3,
+          bgcolor: 'var(--vm-primary-900)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          mx: 'auto',
+          mb: 3,
+        }}
+      >
+        <Icon size={40} color="var(--vm-primary-400)" />
+      </Box>
+      <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2 }}>
+        {title}
+      </Typography>
+      <Typography sx={{ fontSize: 15, color: 'var(--vm-text-muted)', maxWidth: 500, mx: 'auto' }}>
+        {description}
+      </Typography>
+    </Box>
+  );
+}
+
+// Business Overview Page
+function BusinessOverview() {
+  const { selectedBusiness } = useBusiness();
+  const business = selectedBusiness;
+  if (!business) return null;
+
+  return (
+    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, md: 3 }, mb: 4, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            width: { xs: 60, md: 80 },
+            height: { xs: 60, md: 80 },
+            borderRadius: 3,
+            background: `linear-gradient(135deg, ${business.brandKit.primaryColor} 0%, ${business.brandKit.secondaryColor} 100%)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Typography sx={{ fontSize: { xs: 28, md: 36 }, fontWeight: 700, color: 'white' }}>
+            {business.name[0]}
+          </Typography>
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: { xs: 22, md: 28 }, fontWeight: 700, color: 'var(--vm-text-primary)', wordBreak: 'break-word' }}>
+            {business.name}
+          </Typography>
+          <Typography sx={{ fontSize: { xs: 14, md: 16 }, color: 'var(--vm-text-muted)' }}>
+            {business.tagline}
+          </Typography>
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(12, 1fr)' }, gap: { xs: 2, md: 3 } }}>
+        <Box sx={{ gridColumn: { md: 'span 8' } }}>
+          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 3 }, mb: 3 }}>
+            <Typography sx={{ fontSize: 18, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2 }}>
+              About
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: 'var(--vm-text-secondary)', lineHeight: 1.8 }}>
+              {business.description}
+            </Typography>
+          </Card>
+        </Box>
+        <Box sx={{ gridColumn: { md: 'span 4' } }}>
+          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 3 } }}>
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2 }}>
+              Quick Stats
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: { xs: 1, md: 2 } }}>
+              {[
+                { label: 'Stage', value: business.stage },
+                { label: 'Industry', value: business.industry },
+                { label: 'Location', value: business.location },
+                { label: 'Founded', value: new Date(business.foundedDate).toLocaleDateString() },
+              ].map((stat) => (
+                <Box key={stat.label} sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2, p: { xs: 1.5, md: 2 }, textAlign: 'center' }}>
+                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5, textTransform: 'uppercase', fontWeight: 600 }}>{stat.label}</Typography>
+                  <Typography sx={{ fontSize: { xs: 13, md: 14 }, color: 'var(--vm-text-primary)', fontWeight: 600 }}>{stat.value}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </Card>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+// Milestones Page
+function MilestonesPage() {
+  const { selectedBusiness } = useBusiness();
+  const business = selectedBusiness;
+  if (!business) return null;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return '#22c55e';
+      case 'in-progress': return '#3b82f6';
+      case 'overdue': return '#ef4444';
+      default: return '#6b7280';
+    }
+  };
+
+  return (
+    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+      <Typography sx={{ fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 3 }}>
+        Milestones
+      </Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(12, 1fr)' }, gap: { xs: 2, md: 3 } }}>
+        {business.milestones.map((milestone) => (
+          <Box key={milestone.id} sx={{ gridColumn: { md: 'span 6' } }}>
+            <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 3 } }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+                <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 600, color: 'var(--vm-text-primary)', wordBreak: 'break-word' }}>
+                  {milestone.title}
+                </Typography>
+                <Chip
+                  size="small"
+                  label={milestone.status}
+                  sx={{
+                    bgcolor: `${getStatusColor(milestone.status)}20`,
+                    color: getStatusColor(milestone.status),
+                    fontWeight: 600,
+                    textTransform: 'capitalize',
+                    flexShrink: 0,
+                  }}
+                />
+              </Box>
+              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2 }}>
+                {milestone.description}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar src={`https://i.pravatar.cc/150?u=${milestone.assignee}`} sx={{ width: 28, height: 28 }} />
+                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                  Due {new Date(milestone.dueDate).toLocaleDateString()}
+                </Typography>
+              </Box>
+            </Card>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+// Profile Page
+function ProfilePage() {
+  return (
+    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+      <Typography sx={{ fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 3 }}>
+        Profile
+      </Typography>
+      <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 4 } }}>
+        <Typography sx={{ fontSize: 16, color: 'var(--vm-text-muted)' }}>
+          Manage your profile settings here.
+        </Typography>
+      </Card>
+    </Box>
+  );
+}
+
+
+
+function VentureMateApp() {
+  const navigate = useNavigate();
+  const location = window.location;
+  const [activeView, setActiveView] = useState<ViewType>('dashboard');
+  const onboardingCompleted = localStorage.getItem('venturemate_onboarding_completed') === 'true';
+
+  // Redirect to onboarding if not completed (but allow visiting /vm/onboarding)
+  if (!onboardingCompleted && !location.pathname.includes('/onboarding')) {
+    navigate('/vm/onboarding', { replace: true });
+    return null;
+  }
+
+  const handleViewChange = (view: ViewType) => {
+    setActiveView(view);
+  };
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard onViewChange={handleViewChange} />;
+      case 'businesses':
+        return <Businesses onViewChange={handleViewChange} />;
+      case 'business-overview':
+        return <BusinessOverview />;
+      case 'pitch-deck':
+        return <PitchDeck onViewChange={handleViewChange} />;
+      case 'milestones':
+        return <MilestonesPage />;
+      case 'team':
+        return <TeamPage />;
+      case 'ai-assistant':
+        return <AIAssistant onViewChange={handleViewChange} />;
+      case 'investors':
+        return <InvestorsPage onViewChange={handleViewChange} />;
+      case 'cofounders':
+        return <CoFoundersPage onViewChange={handleViewChange} />;
+      case 'messages':
+        return <MessagesPage />;
+      case 'profile':
+        return <ProfilePage />;
+      case 'business-plan':
+        return <BusinessPlan />;
+      case 'branding-kit':
+        return <BrandingKitPage onViewChange={handleViewChange} />;
+      case 'website-builder':
+        return <PlaceholderPage title="Website Builder" description="Build your startup website with AI assistance." icon={Globe} />;
+      case 'documents':
+        return <DocumentsPage onViewChange={handleViewChange} />;
+      case 'market-research':
+        return <PlaceholderPage title="Market Research" description="AI-powered market analysis and insights." icon={TrendingUp} />;
+      case 'financial-forecast':
+        return <FinancialForecast />;
+      case 'generate-idea':
+        return <PlaceholderPage title="Generate Idea" description="Let AI help you brainstorm startup ideas." icon={Lightbulb} />;
+      case 'billing':
+        return <BillingPage onViewChange={handleViewChange} />;
+      case 'settings':
+        return <SettingsPage />;
+      case 'crm':
+        return <CRMPage onViewChange={handleViewChange} />;
+      case 'banking':
+        return <BankingPage onViewChange={handleViewChange} />;
+      case 'social':
+        return <SocialPage onViewChange={handleViewChange} />;
+      case 'marketplace':
+        return <MarketplacePage onViewChange={handleViewChange} />;
+      case 'credit-score':
+        return <CreditScorePage onViewChange={handleViewChange} />;
+      case 'health-score':
+        return <HealthScorePage onViewChange={handleViewChange} />;
+      case 'websites':
+        return <WebsiteBuilderPage onViewChange={setActiveView} />;
+      default:
+        return <Dashboard onViewChange={handleViewChange} />;
+    }
+  };
+
+  return (
+    <SubscriptionProvider>
+      <BusinessProvider>
+        <NotificationProvider>
+        <ToastProvider>
+        <CurrencyProvider>
+        <VentureMateLayout
+          activeView={activeView}
+          onViewChange={handleViewChange}
+        >
+          {renderContent()}
+        </VentureMateLayout>
+        </CurrencyProvider>
+        </ToastProvider>
+        </NotificationProvider>
+      </BusinessProvider>
+    </SubscriptionProvider>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/vm/auth" element={<ToastProvider><AuthLayout /></ToastProvider>}>
+          <Route path="signin" element={<SignIn />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="callback" element={<AuthCallback />} />
+          <Route path="oauth/callback" element={<OAuthCallback />} />
+          <Route index element={<Navigate to="/vm/auth/signin" replace />} />
+        </Route>
+        <Route path="/vm/onboarding" element={<ToastProvider><OnboardingPage /></ToastProvider>} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/vm/*" element={<VentureMateApp />} />
+        </Route>
+        <Route path="/" element={<LandingPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

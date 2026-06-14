@@ -1,0 +1,143 @@
+package app
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/venturemate/vmbackend/internal/auth"
+	"github.com/venturemate/vmbackend/internal/businesses"
+	"github.com/venturemate/vmbackend/internal/db"
+	"github.com/venturemate/vmbackend/internal/domains"
+	"github.com/venturemate/vmbackend/internal/email"
+	"github.com/venturemate/vmbackend/internal/investors"
+	"github.com/venturemate/vmbackend/internal/notifications"
+	"github.com/venturemate/vmbackend/internal/rates"
+	"github.com/venturemate/vmbackend/internal/s3"
+	"github.com/venturemate/vmbackend/internal/scores"
+	"github.com/venturemate/vmbackend/internal/subscriptions"
+	"github.com/venturemate/vmbackend/internal/users"
+	"github.com/venturemate/vmbackend/internal/ai"
+	"github.com/venturemate/vmbackend/internal/oauth"
+	"github.com/venturemate/vmbackend/internal/websites"
+)
+
+type Container struct {
+	DB                *pgxpool.Pool
+	S3                *s3.Service
+	Email             *email.Service
+	UserRepo          *users.Repository
+	OTPRepo           *auth.OTPRepository
+	GoogleAuth        *auth.GoogleOAuth
+	JWTSecret         string
+	SubscriptionRepo  *subscriptions.Repository
+	BusinessRepo      *businesses.Repository
+	WebsiteRepo       *websites.Repository
+	DomainRepo        *domains.Repository
+	InvestorRepo        *investors.Repository
+	NotificationRepo    *notifications.Repository
+	NotificationService *notifications.Service
+	ScoreRepo           *scores.Repository
+	RateService         *rates.Service
+	GeminiAPIKey        string
+	OpenAIAPIKey      string
+	ClaudeAPIKey      string
+	FileHandler       *ai.FileHandler
+	OAuthRepo         *oauth.Repository
+	OAuthManager      *oauth.OAuthManager
+}
+
+func NewContainer(ctx context.Context) (*Container, error) {
+	// 1. Database
+	dbPool, err := db.NewPostgresPool(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	// 2. S3
+	s3Svc, err := s3.New(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize S3: %w", err)
+	}
+
+	// 3. Email
+	emailSvc, err := email.New()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize Email service: %w", err)
+	}
+
+	// 4. Repositories
+	userRepo := users.NewRepository(dbPool)
+	otpRepo := auth.NewOTPRepository(dbPool)
+	subRepo := subscriptions.NewRepository(dbPool)
+	bizRepo := businesses.NewRepository(dbPool)
+	webRepo := websites.NewRepository(dbPool)
+	domainRepo := domains.NewRepository(dbPool)
+	investorRepo := investors.NewRepository(dbPool)
+	notificationRepo := notifications.NewRepository(dbPool)
+	scoreRepo := scores.NewRepository(dbPool)
+	rateService := rates.NewService()
+
+	notificationSvc := notifications.NewService(notificationRepo, emailSvc)
+
+	// 5. Google OAuth
+	credsPath := os.Getenv("GOOGLE_CREDENTIALS_PATH")
+	if credsPath == "" {
+		credsPath = "config/google-credentials.json"
+	}
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "super-secret-change-in-prod"
+	}
+
+	err = auth.InitGoogleOAuth(credsPath, userRepo, s3Svc, jwtSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	// 6. AI API keys
+	geminiKey := os.Getenv("GEMINI_API_KEY")
+	openAIKey := os.Getenv("OPENAI_API_KEY")
+	claudeKey := os.Getenv("CLAUDE_API_KEY")
+
+	// 7. OAuth
+	oauthRepo := oauth.NewRepository(dbPool)
+	redirectBase := os.Getenv("OAUTH_REDIRECT_BASE")
+	if redirectBase == "" {
+		redirectBase = "http://localhost:8080"
+	}
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	oauth.InitProviders(redirectBase, frontendURL)
+	oauthManager := oauth.NewOAuthManager(oauthRepo, userRepo, jwtSecret, frontendURL, redirectBase)
+
+	// 8. File handler
+	fileHandler := ai.NewFileHandler(s3Svc, bizRepo, geminiKey)
+
+	return &Container{
+		DB:                dbPool,
+		S3:                s3Svc,
+		Email:             emailSvc,
+		UserRepo:          userRepo,
+		OTPRepo:           otpRepo,
+		SubscriptionRepo:  subRepo,
+		BusinessRepo:      bizRepo,
+		WebsiteRepo:       webRepo,
+		DomainRepo:        domainRepo,
+		InvestorRepo:        investorRepo,
+		NotificationRepo:    notificationRepo,
+		NotificationService: notificationSvc,
+		ScoreRepo:           scoreRepo,
+		RateService:         rateService,
+		JWTSecret:           jwtSecret,
+		GeminiAPIKey:      geminiKey,
+		OpenAIAPIKey:      openAIKey,
+		ClaudeAPIKey:      claudeKey,
+		FileHandler:       fileHandler,
+		OAuthRepo:         oauthRepo,
+		OAuthManager:      oauthManager,
+	}, nil
+}

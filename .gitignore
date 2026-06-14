@@ -1,0 +1,6 @@
+vm.sh
+run.sh
+node_modules/
+.env
+.env.local
+dist/
