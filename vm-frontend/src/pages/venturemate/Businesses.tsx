@@ -40,7 +40,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 4, gap: { xs: 2, sm: 0 } }}>
         <Box>
           <Typography sx={{ fontSize: { xs: 22, sm: 28 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
             My Businesses
@@ -49,13 +49,14 @@ export function Businesses({ onViewChange }: BusinessesProps) {
             Manage all your startups in one place
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2 }, width: { xs: '100%', sm: 'auto' } }}>
           <Box
             component="button"
             onClick={() => setRegisterModalOpen(true)}
             sx={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 1,
               py: 1.5,
               px: 3,
@@ -63,7 +64,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               border: '1px solid var(--vm-border-primary)',
               bgcolor: 'transparent',
               color: 'var(--vm-text-primary)',
-              fontSize: 14,
+              fontSize: { xs: 13, sm: 14 },
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s',
@@ -73,7 +74,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               },
             }}
           >
-            <FileCheck size={18} />
+            <FileCheck size={16} />
             Register Business
           </Box>
           <Box
@@ -82,6 +83,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
             sx={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 1,
               py: 1.5,
               px: 3,
@@ -89,14 +91,14 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               border: 'none',
               bgcolor: 'var(--vm-primary-600)',
               color: 'white',
-              fontSize: 14,
+              fontSize: { xs: 13, sm: 14 },
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { bgcolor: 'var(--vm-primary-500)' },
             }}
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Create New Business
           </Box>
         </Box>
@@ -119,10 +121,10 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 p: 3,
               }}
             >
-              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+              <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
                 {stat.value}
               </Typography>
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
+              <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: 'var(--vm-text-muted)' }}>
                 {stat.label}
               </Typography>
             </Card>
@@ -237,7 +239,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 </div>
               </div>
 
-              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Box
                   component="button"
                   onClick={(e) => {
@@ -248,11 +250,12 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                   sx={{
                     flex: 1,
                     py: 1,
+                    px: 1,
                     borderRadius: 1.5,
                     border: '1px solid var(--vm-border-primary)',
                     bgcolor: 'transparent',
                     color: 'var(--vm-text-secondary)',
-                    fontSize: 12,
+                    fontSize: { xs: 11, sm: 12 },
                     fontWeight: 500,
                     cursor: 'pointer',
                     '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
@@ -270,11 +273,12 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                   sx={{
                     flex: 1,
                     py: 1,
+                    px: 1,
                     borderRadius: 1.5,
                     border: '1px solid var(--vm-border-primary)',
                     bgcolor: 'transparent',
                     color: 'var(--vm-text-secondary)',
-                    fontSize: 12,
+                    fontSize: { xs: 11, sm: 12 },
                     fontWeight: 500,
                     cursor: 'pointer',
                     '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
@@ -292,11 +296,12 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                   sx={{
                     flex: 1,
                     py: 1,
+                    px: 1,
                     borderRadius: 1.5,
                     border: '1px solid var(--vm-border-primary)',
                     bgcolor: 'transparent',
                     color: 'var(--vm-text-secondary)',
-                    fontSize: 12,
+                    fontSize: { xs: 11, sm: 12 },
                     fontWeight: 500,
                     cursor: 'pointer',
                     '&:hover': { bgcolor: 'var(--vm-bg-hover)' },

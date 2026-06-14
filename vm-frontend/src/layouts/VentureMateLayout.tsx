@@ -93,6 +93,8 @@ export function VentureMateLayout({
             maxWidth: 'var(--vm-content-max-width)',
             mx: 'auto',
             width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             scrollbarWidth: 'thin',
             '&::-webkit-scrollbar': {
               width: 6,
@@ -106,7 +108,7 @@ export function VentureMateLayout({
             },
           }}
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+          <Box sx={{ flex: 1, p: { xs: 1.5, sm: 2, md: 3 } }}>
             {children}
           </Box>
           <Footer />

@@ -428,6 +428,10 @@ export function WebsiteBuilderPage(_props: WebsiteBuilderProps) {
     }
   };
 
+  if (!selectedBusiness) {
+    return <NoBusinessSelected message="Select a business to build your website." />;
+  }
+
   if (loading && !website) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -437,10 +441,6 @@ export function WebsiteBuilderPage(_props: WebsiteBuilderProps) {
         </Box>
       </Box>
     );
-  }
-
-  if (!selectedBusiness) {
-    return <NoBusinessSelected message="Select a business to build your website." />;
   }
 
   if (!website) {

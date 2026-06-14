@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Box, Typography, Card, Chip, Avatar } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { VentureMateLayout } from './layouts/VentureMateLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 import { SignIn } from './pages/auth/SignIn';
@@ -224,9 +226,13 @@ function VentureMateApp() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const onboardingCompleted = localStorage.getItem('venturemate_onboarding_completed') === 'true';
 
-  // Redirect to onboarding if not completed (but allow visiting /vm/onboarding)
+  useEffect(() => {
+    if (!onboardingCompleted && !location.pathname.includes('/onboarding')) {
+      navigate('/vm/onboarding', { replace: true });
+    }
+  }, []);
+
   if (!onboardingCompleted && !location.pathname.includes('/onboarding')) {
-    navigate('/vm/onboarding', { replace: true });
     return null;
   }
 
@@ -317,8 +323,9 @@ function VentureMateApp() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <BrowserRouter>
+        <Routes>
         <Route path="/vm/auth" element={<ToastProvider><AuthLayout /></ToastProvider>}>
           <Route path="signin" element={<SignIn />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
@@ -333,6 +340,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </BrowserRouter>
+    </LocalizationProvider>
   );
 }
 

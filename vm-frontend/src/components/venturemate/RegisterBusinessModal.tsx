@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DatePicker } from '@mui/x-date-pickers';
 import {
   Dialog,
   DialogTitle,
@@ -461,17 +462,13 @@ export function RegisterBusinessModal({ open, onClose, businesses, onSubmit }: R
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      label="Date of Birth"
-                      type="date"
-                      value={formData.ownerInfo?.dateOfBirth}
-                      onChange={(e) => setFormData(prev => ({
+                    <DatePicker label="Date of Birth"
+                      value={formData.ownerInfo?.dateOfBirth ? new Date(formData.ownerInfo.dateOfBirth) : null}
+                      onChange={(date) => setFormData(prev => ({
                         ...prev,
-                        ownerInfo: { ...prev.ownerInfo!, dateOfBirth: e.target.value }
+                        ownerInfo: { ...prev.ownerInfo!, dateOfBirth: date ? date.toISOString().split('T')[0] : '' }
                       }))}
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                      sx={{
+                      slotProps={{ textField: { fullWidth: true, sx: {
                         '& .MuiInputBase-root': {
                           bgcolor: 'rgba(15, 23, 42, 0.6)',
                           color: '#fff',
@@ -479,7 +476,7 @@ export function RegisterBusinessModal({ open, onClose, businesses, onSubmit }: R
                         },
                         '& .MuiInputLabel-root': { color: '#64748b' },
                         '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' },
-                      }}
+                      } } }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>

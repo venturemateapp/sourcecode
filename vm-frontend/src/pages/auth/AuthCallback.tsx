@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Box, Typography, CircularProgress } from '@mui/material'
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const [status, setStatus] = useState<'processing' | 'error'>('processing')
 
   useEffect(() => {
@@ -33,11 +32,11 @@ export function AuthCallback() {
         }
       }
 
-      navigate('/vm', { replace: true })
+      window.location.href = '/vm'
     } catch {
       setStatus('error')
     }
-  }, [searchParams, navigate])
+  }, [searchParams])
 
   if (status === 'error') {
     return (
