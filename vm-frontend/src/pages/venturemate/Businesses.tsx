@@ -31,6 +31,7 @@ interface BusinessesProps {
 export function Businesses({ onViewChange }: BusinessesProps) {
   const { businesses: businessList, setSelectedBusinessId, addBusiness } = useBusiness();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null);
   const [, setSelectedBusiness] = useState<Business | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
@@ -97,37 +98,12 @@ export function Businesses({ onViewChange }: BusinessesProps) {
             Manage all your startups in one place
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2 }, width: { xs: '100%', sm: 'auto' } }}>
+        <Box>
           <Box
             component="button"
-            onClick={() => setRegisterModalOpen(true)}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1,
-              py: 1.5,
-              px: 3,
-              borderRadius: 2,
-              border: '1px solid var(--vm-border-primary)',
-              bgcolor: 'transparent',
-              color: 'var(--vm-text-primary)',
-              fontSize: { xs: 13, sm: 14 },
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': { 
-                bgcolor: 'var(--vm-bg-hover)',
-                borderColor: 'var(--vm-primary-600)',
-              },
+            onClick={(e: React.MouseEvent<HTMLElement>) => {
+              setCreateMenuAnchor(e.currentTarget);
             }}
-          >
-            <FileCheck size={16} />
-            Register Business
-          </Box>
-          <Box
-            component="button"
-            onClick={() => setCreateModalOpen(true)}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -147,8 +123,28 @@ export function Businesses({ onViewChange }: BusinessesProps) {
             }}
           >
             <Plus size={16} />
-            Create New Business
+            Create
           </Box>
+          <Menu
+            anchorEl={createMenuAnchor}
+            open={Boolean(createMenuAnchor)}
+            onClose={() => setCreateMenuAnchor(null)}
+            PaperProps={{
+              sx: {
+                bgcolor: 'var(--vm-bg-secondary)',
+                border: '1px solid var(--vm-border-subtle)',
+                borderRadius: 2,
+                minWidth: 180,
+              },
+            }}
+          >
+            <MenuItem onClick={() => { setCreateMenuAnchor(null); setCreateModalOpen(true); }} sx={{ color: 'var(--vm-text-primary)', fontSize: 14, gap: 1 }}>
+              <Plus size={16} /> Quick Create
+            </MenuItem>
+            <MenuItem onClick={() => { setCreateMenuAnchor(null); setRegisterModalOpen(true); }} sx={{ color: 'var(--vm-text-primary)', fontSize: 14, gap: 1 }}>
+              <FileCheck size={16} /> Register Business
+            </MenuItem>
+          </Menu>
         </Box>
       </Box>
 
