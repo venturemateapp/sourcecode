@@ -41,6 +41,7 @@ type Container struct {
 	NotificationRepo    *notifications.Repository
 	NotificationService *notifications.Service
 	ScoreRepo           *scores.Repository
+	ScoreEngine         *scores.Engine
 	RateService         *rates.Service
 	GeminiAPIKey        string
 	OpenAIAPIKey      string
@@ -83,6 +84,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	scoreRepo := scores.NewRepository(dbPool)
 	bankAccountRepo := banking.NewRepository(dbPool)
 	invoiceRepo := invoices.NewRepository(dbPool)
+	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
 	rateService := rates.NewService()
 
 	notificationSvc := notifications.NewService(notificationRepo, emailSvc)
@@ -137,6 +139,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		NotificationRepo:    notificationRepo,
 		NotificationService: notificationSvc,
 		ScoreRepo:           scoreRepo,
+		ScoreEngine:         scoreEngine,
 		RateService:         rateService,
 		JWTSecret:           jwtSecret,
 		GeminiAPIKey:      geminiKey,

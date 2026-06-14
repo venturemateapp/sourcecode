@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -35,7 +35,6 @@ import {
   X,
   Info,
   Building2,
-  // DollarSign, Calendar, Percent removed
 } from 'lucide-react';
 import type { ViewType } from '../../types/venturemate';
 
@@ -66,9 +65,17 @@ const getRiskLabel = (level: string): { label: string; color: string } => {
 };
 
 interface FinancingOffer {
-  id: string; lender_name: string; product_type: 'loan' | 'line_of_credit' | 'equipment_financing' | 'invoice_factoring';
-  min_amount: number; max_amount: number; min_rate: number; max_rate: number; term_months: number;
-  requirements: string[]; pre_qualified: boolean; expires_at: string;
+  id: string; lenderName: string; productType: string;
+  minAmount: number; maxAmount: number; minRate: number; maxRate: number;
+  termMonths: number; requirements: string[]; preQualified: boolean; expiresAt: string;
+}
+
+interface CreditHistoryItem {
+  id: string; score: number; calculatedAt: string;
+}
+
+interface FinancingApplication {
+  id: string; offer_id: string; lender_name: string; product_type: string; amount: number; term: number; status: string; submitted_at: string; decision_date?: string;
 }
 
 const CREDIT_SCORE_QUERY = `
@@ -79,31 +86,31 @@ const CREDIT_SCORE_QUERY = `
   }
 `;
 
-const creditHistory = [
-  { id: 'ch_001', score: 68, calculated_at: new Date(Date.now() - 30 * 86400000).toISOString() },
-  { id: 'ch_002', score: 65, calculated_at: new Date(Date.now() - 60 * 86400000).toISOString() },
-  { id: 'ch_003', score: 70, calculated_at: new Date(Date.now() - 90 * 86400000).toISOString() },
-  { id: 'ch_004', score: 72, calculated_at: new Date(Date.now() - 120 * 86400000).toISOString() },
-  { id: 'ch_005', score: 68, calculated_at: new Date(Date.now() - 150 * 86400000).toISOString() },
-];
+const FINANCING_OFFERS_QUERY = `
+  query FinancingOffers($businessId: ID!) {
+    financingOffers(businessId: $businessId) {
+      id, lenderName, productType, minAmount, maxAmount, minRate, maxRate, termMonths, requirements, preQualified, expiresAt
+    }
+  }
+`;
 
-const financingOffers: FinancingOffer[] = [
-  { id: 'fo_001', lender_name: 'Stripe Capital', product_type: 'loan', min_amount: 5000, max_amount: 250000, min_rate: 6.5, max_rate: 15.0, term_months: 12, requirements: ['6 months revenue history', '$10k+ monthly revenue'], pre_qualified: true, expires_at: new Date(Date.now() + 30 * 86400000).toISOString() },
-  { id: 'fo_002', lender_name: 'Brex', product_type: 'line_of_credit', min_amount: 10000, max_amount: 1000000, min_rate: 7.0, max_rate: 18.0, term_months: 6, requirements: ['Incorporated business', '$50k+ monthly revenue'], pre_qualified: true, expires_at: new Date(Date.now() + 45 * 86400000).toISOString() },
-  { id: 'fo_003', lender_name: 'Silicon Valley Bank', product_type: 'loan', min_amount: 50000, max_amount: 5000000, min_rate: 8.0, max_rate: 20.0, term_months: 60, requirements: ['2+ years in business', '$1M+ annual revenue', 'Strong credit history'], pre_qualified: false, expires_at: new Date(Date.now() + 60 * 86400000).toISOString() },
-];
+const CREDIT_HISTORY_QUERY = `
+  query CreditHistory($businessId: ID!, $limit: Int) {
+    creditHistory(businessId: $businessId, limit: $limit) {
+      id, score, calculatedAt
+    }
+  }
+`;
 
-interface FinancingApplication {
-  id: string; offer_id: string; lender_name: string; product_type: string; amount: number; term: number; status: string; submitted_at: string; decision_date?: string;
-}
-
-const financingApplications: FinancingApplication[] = [
-  { id: 'fa_001', offer_id: 'fo_001', lender_name: 'Stripe Capital', product_type: 'loan', amount: 50000, term: 12, status: 'pending', submitted_at: new Date(Date.now() - 5 * 86400000).toISOString() },
-  { id: 'fa_002', offer_id: 'fo_002', lender_name: 'Brex', product_type: 'line_of_credit', amount: 25000, term: 6, status: 'approved', submitted_at: new Date(Date.now() - 30 * 86400000).toISOString(), decision_date: new Date(Date.now() - 25 * 86400000).toISOString() },
-];
+const RECALCULATE_MUTATION = `
+  mutation RecalculateCreditScore($businessId: ID!) {
+    recalculateCreditScore(businessId: $businessId) {
+      id, businessId, scoreType, scoreData, calculatedAt
+    }
+  }
+`;
 
 interface CreditScoreProps {
-   
   onViewChange?: (_view: ViewType) => void;
 }
 
@@ -118,27 +125,65 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
   const [creditScore, setCreditScore] = useState({
-    score: 72, max_score: 100, grade: 'Good', risk_level: 'moderate',
-    calculated_at: new Date().toISOString(),
+    score: 0, max_score: 100, grade: '', risk_level: 'moderate',
+    calculated_at: '',
     factors: { positive: [] as string[], negative: [] as string[] },
     components: { payment_history: 0, credit_utilization: 0, business_age: 0, revenue_stability: 0, debt_ratio: 0 },
   });
+  const [financingOffers, setFinancingOffers] = useState<FinancingOffer[]>([]);
+  const [creditHistory, setCreditHistory] = useState<CreditHistoryItem[]>([]);
   const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
+
+  const [financingApplications] = useState<FinancingApplication[]>([]);
+
+  const fetchData = useCallback(async () => {
+    if (!selectedBusiness?.id) return;
+    setLoading(true);
+    try {
+      const [scoreResult, offersResult, historyResult] = await Promise.all([
+        graphqlRequest<{ businessScore: { scoreData: string } | null }>(CREDIT_SCORE_QUERY, {
+          businessId: selectedBusiness.id, scoreType: 'credit',
+        }),
+        graphqlRequest<{ financingOffers: FinancingOffer[] }>(FINANCING_OFFERS_QUERY, {
+          businessId: selectedBusiness.id,
+        }),
+        graphqlRequest<{ creditHistory: CreditHistoryItem[] }>(CREDIT_HISTORY_QUERY, {
+          businessId: selectedBusiness.id, limit: 10,
+        }),
+      ]);
+      if (scoreResult.businessScore) {
+        setCreditScore(prev => ({ ...prev, ...JSON.parse(scoreResult.businessScore.scoreData) }));
+      }
+      setFinancingOffers(offersResult.financingOffers);
+      setCreditHistory(historyResult.creditHistory);
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBusiness?.id]);
 
   useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleRecalculate = async () => {
     if (!selectedBusiness?.id) return;
-    let cancelled = false;
-    graphqlRequest<{ businessScore: { scoreData: string } | null }>(CREDIT_SCORE_QUERY, {
-      businessId: selectedBusiness.id, scoreType: 'credit',
-    }).then(data => {
-      const score = data.businessScore;
-      if (!cancelled && score) {
-        setCreditScore(prev => ({ ...prev, ...JSON.parse(score.scoreData) }));
-      }
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [selectedBusiness?.id]);
-  
+    setRecalculating(true);
+    try {
+      await graphqlRequest(RECALCULATE_MUTATION, {
+        businessId: selectedBusiness.id,
+      });
+      await fetchData();
+    } catch {
+      // silently fail
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   // Apply Modal State
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<FinancingOffer | null>(null);
@@ -151,7 +196,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  
+
   // Eligibility Modal State
   const [eligibilityModalOpen, setEligibilityModalOpen] = useState(false);
   const [checkingEligibility, setCheckingEligibility] = useState(false);
@@ -185,8 +230,8 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   const handleApplyClick = (offer: FinancingOffer) => {
     setSelectedOffer(offer);
     setApplicationData({
-      amount: offer.min_amount,
-      term: offer.term_months,
+      amount: offer.minAmount,
+      term: offer.termMonths,
       purpose: '',
       documents: [],
     });
@@ -203,10 +248,8 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
 
   const checkEligibility = () => {
     setCheckingEligibility(true);
-    // Simulate API call
     setTimeout(() => {
       setCheckingEligibility(false);
-      // Random eligibility result for demo
       const isEligible = Math.random() > 0.3;
       setEligibilityResult({
         eligible: isEligible,
@@ -223,7 +266,6 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
 
   const handleSubmitApplication = () => {
     setSubmitting(true);
-    // Simulate API call
     setTimeout(() => {
       setSubmitting(false);
       setSubmitSuccess(true);
@@ -233,145 +275,155 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
 
   const applySteps = ['Loan Details', 'Documents', 'Review', 'Confirmation'];
 
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Box>
-<Typography sx={{ fontSize: { xs: 12, sm: 14 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
-          Credit Score
-        </Typography>
-        <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)' }}>
-          Monitor your business credit and financing options
-        </Typography>
+          <Typography sx={{ fontSize: { xs: 12, sm: 14 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
+            Credit Score
+          </Typography>
+          <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)' }}>
+            Monitor your business credit and financing options
+          </Typography>
         </Box>
-        <GradientButton variant="primary" size="md">
+        <GradientButton variant="primary" size="md" onClick={handleRecalculate} disabled={recalculating}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TrendingUp size={18} />
+            {recalculating ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <TrendingUp size={18} />}
             Refresh Score
           </Box>
         </GradientButton>
       </Box>
 
       {/* Score Card */}
-      <Card
-        sx={{
-          bgcolor: 'var(--vm-bg-secondary)',
-          border: '1px solid var(--vm-border-subtle)',
-          borderRadius: 3,
-          p: 4,
-          mb: 4,
-          background: `linear-gradient(135deg, ${getScoreColor(creditScore.score)}20 0%, var(--vm-bg-tertiary) 100%)`,
-          borderColor: getScoreColor(creditScore.score),
-        }}
-      >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 6 }, alignItems: 'center' }}>
-          {/* Score */}
-<Box sx={{ textAlign: 'center' }}>
-           <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1 }}>
-             Business Credit Score
-           </Typography>
-           <Typography
-             sx={{
-               fontSize: { xs: 36, sm: 48, md: 72 },
-               fontWeight: 700,
-               color: getScoreColor(creditScore.score),
-               lineHeight: 1,
-             }}
-           >
-             {creditScore.score}
-           </Typography>
-           <Typography sx={{ fontSize: { xs: 12, sm: 14 } }}>
-             of {creditScore.max_score}
-           </Typography>
-         </Box>
+      {creditScore.score > 0 && (
+        <Card
+          sx={{
+            bgcolor: 'var(--vm-bg-secondary)',
+            border: '1px solid var(--vm-border-subtle)',
+            borderRadius: 3,
+            p: 4,
+            mb: 4,
+            background: `linear-gradient(135deg, ${getScoreColor(creditScore.score)}20 0%, var(--vm-bg-tertiary) 100%)`,
+            borderColor: getScoreColor(creditScore.score),
+          }}
+        >
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 6 }, alignItems: 'center' }}>
+            {/* Score */}
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1 }}>
+                Business Credit Score
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: { xs: 36, sm: 48, md: 72 },
+                  fontWeight: 700,
+                  color: getScoreColor(creditScore.score),
+                  lineHeight: 1,
+                }}
+              >
+                {creditScore.score}
+              </Typography>
+              <Typography sx={{ fontSize: { xs: 12, sm: 14 } }}>
+                of {creditScore.max_score}
+              </Typography>
+            </Box>
 
-          {/* Grade */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', mb: 1 }}>
-              Grade
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: { xs: 40, md: 64 },
-                fontWeight: 700,
-                color: getScoreColor(creditScore.score),
-                lineHeight: 1,
-              }}
-            >
-              {getScoreGrade(creditScore.score)}
-            </Typography>
-            <Chip
-              size="small"
-              label={getRiskLabel(creditScore.risk_level).label}
-              sx={{
-                bgcolor: `${getRiskLabel(creditScore.risk_level).color}20`,
-                color: getRiskLabel(creditScore.risk_level).color,
-                fontSize: 12,
-                fontWeight: 600,
-                mt: 1,
-              }}
-            />
-          </Box>
+            {/* Grade */}
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', mb: 1 }}>
+                Grade
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: { xs: 40, md: 64 },
+                  fontWeight: 700,
+                  color: getScoreColor(creditScore.score),
+                  lineHeight: 1,
+                }}
+              >
+                {getScoreGrade(creditScore.score)}
+              </Typography>
+              <Chip
+                size="small"
+                label={getRiskLabel(creditScore.risk_level).label}
+                sx={{
+                  bgcolor: `${getRiskLabel(creditScore.risk_level).color}20`,
+                  color: getRiskLabel(creditScore.risk_level).color,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  mt: 1,
+                }}
+              />
+            </Box>
 
-          {/* Factors */}
-          <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
-              Key Factors
-            </Typography>
-            {creditScore.factors.positive.slice(0, 2).map((factor, idx) => (
-              <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
-                <CheckCircle size={14} color="#22c55e" style={{ marginTop: 3 }} />
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
-                  {factor}
-                </Typography>
-              </Box>
-            ))}
-            {creditScore.factors.negative.slice(0, 1).map((factor, idx) => (
-              <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <TrendingDown size={14} color="#ef4444" style={{ marginTop: 3 }} />
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
-                  {factor}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Score Components */}
-        <Box sx={{ mt: 4 }}>
-          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
-            Score Components
-          </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' }, gap: { xs: 2, md: 3 } }}>
-            {Object.entries(creditScore.components).map(([key, value]) => (
-              <Box key={key}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', textTransform: 'capitalize' }}>
-                    {key.replace('_', ' ')}
-                  </Typography>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-primary)' }}>
-                    {value}%
+            {/* Factors */}
+            <Box>
+              <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
+                Key Factors
+              </Typography>
+              {creditScore.factors.positive.slice(0, 2).map((factor, idx) => (
+                <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+                  <CheckCircle size={14} color="#22c55e" style={{ marginTop: 3 }} />
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
+                    {factor}
                   </Typography>
                 </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={value}
-                  sx={{
-                    height: 6,
-                    borderRadius: 3,
-                    bgcolor: 'var(--vm-bg-tertiary)',
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: getScoreColor(value * 8.5),
-                      borderRadius: 3,
-                    },
-                  }}
-                />
-              </Box>
-            ))}
+              ))}
+              {creditScore.factors.negative.slice(0, 1).map((factor, idx) => (
+                <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <TrendingDown size={14} color="#ef4444" style={{ marginTop: 3 }} />
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
+                    {factor}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
           </Box>
-        </Box>
-      </Card>
+
+          {/* Score Components */}
+          <Box sx={{ mt: 4 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
+              Score Components
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' }, gap: { xs: 2, md: 3 } }}>
+              {Object.entries(creditScore.components).map(([key, value]) => (
+                <Box key={key}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', textTransform: 'capitalize' }}>
+                      {key.replace('_', ' ')}
+                    </Typography>
+                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-primary)' }}>
+                      {value}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={value}
+                    sx={{
+                      height: 6,
+                      borderRadius: 3,
+                      bgcolor: 'var(--vm-bg-tertiary)',
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: getScoreColor(value * 8.5),
+                        borderRadius: 3,
+                      },
+                    }}
+                  />
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs
@@ -403,7 +455,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
               key={offer.id}
               sx={{
                 bgcolor: 'var(--vm-bg-secondary)',
-                border: offer.pre_qualified ? '2px solid var(--vm-primary-600)' : '1px solid var(--vm-border-subtle)',
+                border: offer.preQualified ? '2px solid var(--vm-primary-600)' : '1px solid var(--vm-border-subtle)',
                 borderRadius: 3,
                 p: 3,
               }}
@@ -425,14 +477,14 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                   </Box>
                   <Box>
                     <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-                      {offer.lender_name}
+                      {offer.lenderName}
                     </Typography>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                      {getProductTypeLabel(offer.product_type)}
+                      {getProductTypeLabel(offer.productType)}
                     </Typography>
                   </Box>
                 </Box>
-                {offer.pre_qualified && (
+                {offer.preQualified && (
                   <Chip
                     size="small"
                     label="Pre-qualified"
@@ -450,13 +502,13 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                 <Box>
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Amount</Typography>
                   <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-                    {format(offer.min_amount)} - {format(offer.max_amount)}
+                    {format(offer.minAmount)} - {format(offer.maxAmount)}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Rate</Typography>
                   <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-                    {offer.min_rate}% - {offer.max_rate}%
+                    {offer.minRate}% - {offer.maxRate}%
                   </Typography>
                 </Box>
               </div>
@@ -481,16 +533,21 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
 
               <GradientButton
                 fullWidth
-                variant={offer.pre_qualified ? 'primary' : 'outline'}
+                variant={offer.preQualified ? 'primary' : 'outline'}
                 size="md"
                 onClick={() =>
-                  offer.pre_qualified ? handleApplyClick(offer) : handleCheckEligibilityClick(offer)
+                  offer.preQualified ? handleApplyClick(offer) : handleCheckEligibilityClick(offer)
                 }
               >
-                {offer.pre_qualified ? 'Apply Now' : 'Check Eligibility'}
+                {offer.preQualified ? 'Apply Now' : 'Check Eligibility'}
               </GradientButton>
             </Card>
           ))}
+          {financingOffers.length === 0 && (
+            <Typography sx={{ color: 'var(--vm-text-muted)', gridColumn: '1 / -1', textAlign: 'center', py: 6 }}>
+              No financing offers available yet. Add business data to get started.
+            </Typography>
+          )}
         </Box>
       )}
 
@@ -504,106 +561,120 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
             overflow: 'hidden',
           }}
         >
-          {financingApplications.map((app, idx) => (
-            <Box
-              key={app.id}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                p: 3,
-                borderBottom: idx < financingApplications.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
-              }}
-            >
-              <Box>
-                <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5 }}>
-                  {app.lender_name}
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-                  {getProductTypeLabel(app.product_type)} • ${app.amount.toLocaleString()}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Chip
-                  size="small"
-                  label={app.status.replace('_', ' ')}
-                  sx={{
-                    bgcolor: `${getAppStatusColor(app.status)}20`,
-                    color: getAppStatusColor(app.status),
-                    fontSize: 10,
-                    fontWeight: 600,
-                    textTransform: 'capitalize',
-                  }}
-                />
-                {app.submitted_at && (
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                    {new Date(app.submitted_at).toLocaleDateString()}
-                  </Typography>
-                )}
-              </Box>
+          {financingApplications.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
+                No applications yet. Apply for financing to get started.
+              </Typography>
             </Box>
-          ))}
+          ) : (
+            financingApplications.map((app, idx) => (
+              <Box
+                key={app.id}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  p: 3,
+                  borderBottom: idx < financingApplications.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5 }}>
+                    {app.lender_name}
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
+                    {getProductTypeLabel(app.product_type)} • ${app.amount.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Chip
+                    size="small"
+                    label={app.status.replace('_', ' ')}
+                    sx={{
+                      bgcolor: `${getAppStatusColor(app.status)}20`,
+                      color: getAppStatusColor(app.status),
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                    }}
+                  />
+                  {app.submitted_at && (
+                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                      {new Date(app.submitted_at).toLocaleDateString()}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            ))
+          )}
         </Card>
       )}
 
       {/* History */}
       {activeTab === 2 && (
         <Box sx={{ overflowX: 'auto' }}>
-        <Card
-          sx={{
-            bgcolor: 'var(--vm-bg-secondary)',
-            border: '1px solid var(--vm-border-subtle)',
-            borderRadius: 3,
-            p: 3,
-          }}
-        >
-          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 3 }}>
-            Score History (Last 6 Months)
-          </Typography>
-          {creditHistory.map((item, idx) => (
-            <Box
-              key={item.id}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                pb: 2,
-                mb: 2,
-                borderBottom: idx < creditHistory.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
-              }}
-            >
-              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-primary)' }}>
-                {new Date(item.calculated_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          <Card
+            sx={{
+              bgcolor: 'var(--vm-bg-secondary)',
+              border: '1px solid var(--vm-border-subtle)',
+              borderRadius: 3,
+              p: 3,
+            }}
+          >
+            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 3 }}>
+              Score History
+            </Typography>
+            {creditHistory.length === 0 ? (
+              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', textAlign: 'center', py: 4 }}>
+                No score history yet. Recalculate your score to see history here.
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={(item.score / 850) * 100}
+            ) : (
+              creditHistory.map((item, idx) => (
+                <Box
+                  key={item.id}
                   sx={{
-                    width: 200,
-                    height: 8,
-                    borderRadius: 4,
-                    bgcolor: 'var(--vm-bg-tertiary)',
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: getScoreColor(item.score),
-                      borderRadius: 4,
-                    },
-                  }}
-                />
-                <Typography
-                  sx={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: getScoreColor(item.score),
-                    minWidth: 50,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    pb: 2,
+                    mb: 2,
+                    borderBottom: idx < creditHistory.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
                   }}
                 >
-                  {item.score}
-                </Typography>
-              </Box>
-            </Box>
-          ))}
-        </Card>
+                  <Typography sx={{ fontSize: 14, color: 'var(--vm-text-primary)' }}>
+                    {new Date(item.calculatedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={item.score}
+                      sx={{
+                        width: 200,
+                        height: 8,
+                        borderRadius: 4,
+                        bgcolor: 'var(--vm-bg-tertiary)',
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: getScoreColor(item.score),
+                          borderRadius: 4,
+                        },
+                      }}
+                    />
+                    <Typography
+                      sx={{
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: getScoreColor(item.score),
+                        minWidth: 50,
+                      }}
+                    >
+                      {item.score}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))
+            )}
+          </Card>
         </Box>
       )}
 
@@ -627,10 +698,10 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
               <Landmark size={24} color="var(--vm-primary-400)" />
               <Box>
                 <Typography sx={{ fontSize: 18, fontWeight: 600 }}>
-                  Apply for {getProductTypeLabel(selectedOffer?.product_type || '')}
+                  Apply for {getProductTypeLabel(selectedOffer?.productType || '')}
                 </Typography>
                 <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-                  {selectedOffer?.lender_name}
+                  {selectedOffer?.lenderName}
                 </Typography>
               </Box>
             </Box>
@@ -670,14 +741,14 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
               </Typography>
               <Grid container spacing={3}>
                 <Grid size={12}>
-<Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1 }}>
-              Loan Amount: ${applicationData.amount.toLocaleString()}
-            </Typography>
+                  <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1 }}>
+                    Loan Amount: ${applicationData.amount.toLocaleString()}
+                  </Typography>
                   <Slider
                     value={applicationData.amount}
                     onChange={(_, v) => setApplicationData({ ...applicationData, amount: v as number })}
-                    min={selectedOffer?.min_amount || 10000}
-                    max={selectedOffer?.max_amount || 500000}
+                    min={selectedOffer?.minAmount || 10000}
+                    max={selectedOffer?.maxAmount || 500000}
                     step={5000}
                     sx={{
                       color: 'var(--vm-primary-600)',
@@ -685,8 +756,8 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                     }}
                   />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                    <span>${selectedOffer?.min_amount.toLocaleString()}</span>
-                    <span>${selectedOffer?.max_amount.toLocaleString()}</span>
+                    <span>${selectedOffer?.minAmount.toLocaleString()}</span>
+                    <span>${selectedOffer?.maxAmount.toLocaleString()}</span>
                   </Box>
                 </Grid>
                 <Grid size={6}>
@@ -794,11 +865,11 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                 <Grid container spacing={3}>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Lender</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{selectedOffer?.lender_name}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{selectedOffer?.lenderName}</Typography>
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Product</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{getProductTypeLabel(selectedOffer?.product_type || '')}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{getProductTypeLabel(selectedOffer?.productType || '')}</Typography>
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Amount</Typography>
@@ -810,7 +881,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Interest Rate</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{selectedOffer?.min_rate}% - {selectedOffer?.max_rate}%</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{selectedOffer?.minRate}% - {selectedOffer?.maxRate}%</Typography>
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Purpose</Typography>
@@ -828,7 +899,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                   '& .MuiAlert-icon': { color: 'var(--vm-primary-400)' },
                 }}
               >
-                By submitting this application, you authorize {selectedOffer?.lender_name} to perform a credit check and verify your business information.
+                By submitting this application, you authorize {selectedOffer?.lenderName} to perform a credit check and verify your business information.
               </Alert>
             </Box>
           )}
@@ -854,7 +925,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                 Application Submitted!
               </Typography>
               <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', mb: 4 }}>
-                Your application to {selectedOffer?.lender_name} has been submitted successfully. You will receive a decision within 2-3 business days.
+                Your application to {selectedOffer?.lenderName} has been submitted successfully. You will receive a decision within 2-3 business days.
               </Typography>
               <GradientButton variant="primary" onClick={() => setApplyModalOpen(false)}>
                 Done
@@ -951,7 +1022,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                 Check Your Eligibility
               </Typography>
               <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', mb: 4 }}>
-                We'll quickly assess your eligibility for {selectedOffer?.lender_name}'s {getProductTypeLabel(selectedOffer?.product_type || '')}. This won't affect your credit score.
+                We'll quickly assess your eligibility for {selectedOffer?.lenderName}'s {getProductTypeLabel(selectedOffer?.productType || '')}. This won't affect your credit score.
               </Typography>
               <GradientButton
                 variant="primary"
@@ -1100,7 +1171,6 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   );
 }
 
-// IconButton component for the modals
 function IconButton({ children, onClick, disabled, sx }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; sx?: object }) {
   return (
     <Box

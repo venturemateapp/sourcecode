@@ -121,7 +121,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
         <GradientButton variant="primary" size="md" onClick={handleRefresh} disabled={loading}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <RefreshCw size={18} className={loading ? 'spin' : ''} />
-            {loading ? 'Calculating...' : 'Refresh Score'}
+            {loading ? 'Calculating...' : 'Refresh'}
           </Box>
         </GradientButton>
       </Box>
