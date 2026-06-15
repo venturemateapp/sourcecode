@@ -266,18 +266,9 @@ func calcCreditUtilization(biz *businesses.Business, invoiceList []invoices.Invo
 }
 
 func calcBusinessAge(biz *businesses.Business) int {
-	var startTime time.Time
-	if biz.FoundedDate != "" {
-		formats := []string{"2006-01-02", "2006-01-02T15:04:05Z", time.RFC3339}
-		for _, f := range formats {
-			if t, err := time.Parse(f, biz.FoundedDate); err == nil {
-				startTime = t
-				break
-			}
-		}
-	}
-	if startTime.IsZero() {
-		startTime = biz.CreatedAt
+	startTime := biz.CreatedAt
+	if biz.FoundedDate != nil {
+		startTime = *biz.FoundedDate
 	}
 
 	months := int(time.Since(startTime).Hours() / (24 * 30))

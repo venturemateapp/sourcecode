@@ -57,22 +57,14 @@ export function PitchDeck({}: PitchDeckProps) {
   }
 
   const { pitchDeck } = business;
-  const slide = pitchDeck.slides[currentSlide];
+  const slides = pitchDeck.slides || [];
+  const slide = slides[currentSlide] || null;
 
   const savePitchDeck = useCallback(async (updated: typeof pitchDeck) => {
     setSaving(true);
     await updateBusiness(business.id, { pitchDeck: updated });
     setSaving(false);
   }, [business?.id, updateBusiness]);
-
-  const updateSlide = (field: string, value: any) => {
-    const updated = { ...pitchDeck };
-    const slides = [...updated.slides];
-    slides[currentSlide] = { ...slides[currentSlide], [field]: value };
-    updated.slides = slides;
-    updated.lastModified = new Date().toISOString();
-    savePitchDeck(updated);
-  };
 
   const addSlide = (type: Slide['type']) => {
     const tpl = NEW_SLIDE_TEMPLATES.find(t => t.type === type);
@@ -82,24 +74,31 @@ export function PitchDeck({}: PitchDeckProps) {
       type,
       title: tpl.title,
       content: tpl.content,
-      order: pitchDeck.slides.length + 1,
+      order: slides.length + 1,
       layout: 'center',
     };
-    const updated = { ...pitchDeck, slides: [...pitchDeck.slides, newSlide], lastModified: new Date().toISOString() };
+    const updated = { ...pitchDeck, slides: [...slides, newSlide], lastModified: new Date().toISOString() };
     savePitchDeck(updated);
-    setCurrentSlide(pitchDeck.slides.length);
+    setCurrentSlide(slides.length);
     setShowAddSlide(false);
   };
 
+  const updateSlide = (field: string, value: any) => {
+    if (!slide) return;
+    const slideList = [...(pitchDeck.slides || [])];
+    slideList[currentSlide] = { ...slideList[currentSlide], [field]: value };
+    savePitchDeck({ ...pitchDeck, slides: slideList, lastModified: new Date().toISOString() });
+  };
+
   const deleteSlide = (idx: number) => {
-    if (pitchDeck.slides.length <= 1) return;
-    const updated = { ...pitchDeck, slides: pitchDeck.slides.filter((_, i) => i !== idx), lastModified: new Date().toISOString() };
+    if (slides.length <= 1) return;
+    const updated = { ...pitchDeck, slides: slides.filter((_, i) => i !== idx), lastModified: new Date().toISOString() };
     savePitchDeck(updated);
     setCurrentSlide(Math.min(idx, updated.slides.length - 1));
   };
 
   const handleAiEnhance = async () => {
-    if (!aiPrompt.trim()) return;
+    if (!aiPrompt.trim() || !slide) return;
     setAiLoading(true);
     setAiProposal(null);
     try {
@@ -136,7 +135,7 @@ export function PitchDeck({}: PitchDeckProps) {
   };
 
   const nextSlide = () => {
-    if (currentSlide < pitchDeck.slides.length - 1) setCurrentSlide(c => c + 1);
+    if (currentSlide < slides.length - 1) setCurrentSlide(c => c + 1);
   };
   const prevSlide = () => {
     if (currentSlide > 0) setCurrentSlide(c => c - 1);
@@ -162,9 +161,9 @@ export function PitchDeck({}: PitchDeckProps) {
             />
             {saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--vm-primary-400)' }} />}
           </Box>
-          <Typography sx={{ fontSize: { xs: 13, sm: 14 }, color: 'var(--vm-text-muted)' }}>
-            {pitchDeck.slides.length} slides • Last modified {new Date(pitchDeck.lastModified).toLocaleDateString()}
-          </Typography>
+<Typography sx={{ fontSize: { xs: 13, sm: 14 }, color: 'var(--vm-text-muted)' }}>
+             {slides.length} slides • Last modified {new Date(pitchDeck.lastModified).toLocaleDateString()}
+           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: { xs: 1, sm: 1.5 }, justifyContent: 'center', width: { xs: '100%', sm: 'auto' }, '& > *': { flex: { xs: 1, sm: 'none' } } }}>
           <Button variant="outlined" size="small" onClick={() => setShowPreview(true)}
@@ -191,50 +190,51 @@ export function PitchDeck({}: PitchDeckProps) {
                 <Plus size={18} />
               </IconButton>
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {pitchDeck.slides.map((s, idx) => (
-                <Box key={s.id}
-                  onClick={() => setCurrentSlide(idx)}
-                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 1.5, borderRadius: 2, cursor: 'pointer',
-                    bgcolor: currentSlide === idx ? 'var(--vm-primary-900)' : 'transparent',
-                    border: currentSlide === idx ? '1px solid var(--vm-primary-600)' : '1px solid transparent',
-                    '&:hover': { bgcolor: currentSlide === idx ? 'var(--vm-primary-900)' : 'var(--vm-bg-hover)' } }}>
-                  <Box sx={{ width: 40, height: 30, borderRadius: 1, bgcolor: 'var(--vm-bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--vm-text-muted)', flexShrink: 0 }}>
-                    {idx + 1}
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: 12, fontWeight: currentSlide === idx ? 600 : 500, color: currentSlide === idx ? 'var(--vm-text-primary)' : 'var(--vm-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {s.title}
-                    </Typography>
-                    <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', textTransform: 'capitalize' }}>{s.type}</Typography>
-                  </Box>
-                  {pitchDeck.slides.length > 1 && (
-                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); deleteSlide(idx); }} sx={{ color: '#ef4444', opacity: 0.6, '&:hover': { opacity: 1 } }}>
-                      <Trash2 size={14} />
-                    </IconButton>
-                  )}
-                </Box>
-              ))}
+<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+               {slides.map((s, idx) => (
+                 <Box key={s.id}
+                   onClick={() => setCurrentSlide(idx)}
+                   sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 1.5, borderRadius: 2, cursor: 'pointer',
+                     bgcolor: currentSlide === idx ? 'var(--vm-primary-900)' : 'transparent',
+                     border: currentSlide === idx ? '1px solid var(--vm-primary-600)' : '1px solid transparent',
+                     '&:hover': { bgcolor: currentSlide === idx ? 'var(--vm-primary-900)' : 'var(--vm-bg-hover)' } }}>
+                   <Box sx={{ width: 40, height: 30, borderRadius: 1, bgcolor: 'var(--vm-bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--vm-text-muted)', flexShrink: 0 }}>
+                     {idx + 1}
+                   </Box>
+                   <Box sx={{ flex: 1, minWidth: 0 }}>
+                     <Typography sx={{ fontSize: 12, fontWeight: currentSlide === idx ? 600 : 500, color: currentSlide === idx ? 'var(--vm-text-primary)' : 'var(--vm-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                       {s.title}
+                     </Typography>
+                     <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', textTransform: 'capitalize' }}>{s.type}</Typography>
+                   </Box>
+                   {slides.length > 1 && (
+                     <IconButton size="small" onClick={(e) => { e.stopPropagation(); deleteSlide(idx); }} sx={{ color: '#ef4444', opacity: 0.6, '&:hover': { opacity: 1 } }}>
+                       <Trash2 size={14} />
+                     </IconButton>
+                   )}
+                 </Box>
+               ))}
             </Box>
           </Card>
         </Box>
 
-        <Box sx={{ gridColumn: { md: 'span 6' } }}>
-          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 3 }, minHeight: 500, display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ flex: 1, mb: 3 }}>
-              <Box sx={{ aspectRatio: { xs: '4/3', sm: '16/9' }, bgcolor: 'var(--vm-bg-primary)', borderRadius: 2, p: { xs: 2, sm: 4 }, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative',
-                background: `linear-gradient(135deg, ${business.brandKit.darkColor} 0%, ${business.brandKit.primaryColor} 100%)` }}>
-<Typography
-               sx={{
-                 fontSize: { xs: 14, sm: 20, md: 28 },
-                 fontWeight: 700, color: 'white', mb: 2, textAlign: slide.layout === 'center' ? 'center' : 'left'
-               }}
-             >
-               {slide.title}
-             </Typography>
-             <Typography sx={{ fontSize: { xs: 11, sm: 14, md: 16 }, color: 'rgba(255,255,255,0.9)', mb: 3, textAlign: slide.layout === 'center' ? 'center' : 'left' }}>
-               {slide.content}
-             </Typography>
+<Box sx={{ gridColumn: { md: 'span 6' } }}>
+           <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 3 }, minHeight: 500, display: 'flex', flexDirection: 'column' }}>
+             <Box sx={{ flex: 1, mb: 3 }}>
+              {slide && (
+               <Box sx={{ aspectRatio: { xs: '4/3', sm: '16/9' }, bgcolor: 'var(--vm-bg-primary)', borderRadius: 2, p: { xs: 2, sm: 4 }, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative',
+                 background: `linear-gradient(135deg, ${business.brandKit.darkColor} 0%, ${business.brandKit.primaryColor} 100%)` }}>
+                <Typography
+                  sx={{
+                    fontSize: { xs: 14, sm: 20, md: 28 },
+                    fontWeight: 700, color: 'white', mb: 2, textAlign: slide.layout === 'center' ? 'center' : 'left'
+                  }}
+                >
+                  {slide.title}
+                </Typography>
+                <Typography sx={{ fontSize: { xs: 11, sm: 14, md: 16 }, color: 'rgba(255,255,255,0.9)', mb: 3, textAlign: slide.layout === 'center' ? 'center' : 'left' }}>
+                  {slide.content}
+                </Typography>
                 {slide.bullets && (
                   <Box component="ul" sx={{ pl: 3, color: 'rgba(255,255,255,0.85)' }}>
                     {slide.bullets.map((bullet, idx) => (
@@ -243,20 +243,21 @@ export function PitchDeck({}: PitchDeckProps) {
                   </Box>
                 )}
               </Box>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <IconButton onClick={prevSlide} disabled={currentSlide === 0}
-                sx={{ color: currentSlide === 0 ? 'var(--vm-text-muted)' : 'var(--vm-text-secondary)' }}>
-                <ChevronLeft size={24} />
-              </IconButton>
-              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
-                {currentSlide + 1} / {pitchDeck.slides.length}
-              </Typography>
-              <IconButton onClick={nextSlide} disabled={currentSlide === pitchDeck.slides.length - 1}
-                sx={{ color: currentSlide === pitchDeck.slides.length - 1 ? 'var(--vm-text-muted)' : 'var(--vm-text-secondary)' }}>
-                <ChevronRight size={24} />
-              </IconButton>
-            </Box>
+              )}
+             </Box>
+             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+               <IconButton onClick={prevSlide} disabled={currentSlide === 0}
+                 sx={{ color: currentSlide === 0 ? 'var(--vm-text-muted)' : 'var(--vm-text-secondary)' }}>
+                 <ChevronLeft size={24} />
+               </IconButton>
+               <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
+                 {currentSlide + 1} / {slides.length}
+               </Typography>
+               <IconButton onClick={nextSlide} disabled={currentSlide === slides.length - 1}
+                 sx={{ color: currentSlide === slides.length - 1 ? 'var(--vm-text-muted)' : 'var(--vm-text-secondary)' }}>
+                 <ChevronRight size={24} />
+               </IconButton>
+             </Box>
           </Card>
         </Box>
 
@@ -268,47 +269,47 @@ export function PitchDeck({}: PitchDeckProps) {
               <Tab label="Content" /><Tab label="AI" />
             </Tabs>
 
-            {activeTab === 0 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Title</Typography>
-                  <TextField fullWidth size="small" value={slide.title}
-                    onChange={(e) => updateSlide('title', e.target.value)}
-                    sx={{ '& .MuiInputBase-input': { fontSize: 13, color: 'var(--vm-text-primary)' } }} />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Content</Typography>
-                  <TextField fullWidth multiline rows={4} value={slide.content}
-                    onChange={(e) => updateSlide('content', e.target.value)}
-                    sx={{ '& .MuiInputBase-input': { fontSize: 13, color: 'var(--vm-text-primary)' } }} />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Layout</Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {['center', 'split', 'grid'].map((layout) => (
-                      <Box key={layout} onClick={() => updateSlide('layout', layout)}
-                        sx={{ flex: 1, py: 1, textAlign: 'center', borderRadius: 1.5, border: '1px solid',
-                          borderColor: slide.layout === layout ? 'var(--vm-primary-500)' : 'var(--vm-border-primary)',
-                          bgcolor: slide.layout === layout ? 'var(--vm-primary-900)' : 'transparent',
-                          color: slide.layout === layout ? 'var(--vm-primary-400)' : 'var(--vm-text-muted)',
-                          fontSize: 11, textTransform: 'capitalize', cursor: 'pointer' }}>
-                        {layout}
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Type</Typography>
-                  <Select fullWidth size="small" value={slide.type}
-                    onChange={(e) => updateSlide('type', e.target.value)}
-                    sx={{ fontSize: 13, color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' } }}>
-                    {NEW_SLIDE_TEMPLATES.map(t => (
-                      <MenuItem key={t.type} value={t.type} sx={{ fontSize: 13, textTransform: 'capitalize' }}>{t.type}</MenuItem>
-                    ))}
-                  </Select>
-                </Box>
-              </Box>
-            )}
+{activeTab === 0 && slide && (
+               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                 <Box>
+                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Title</Typography>
+                   <TextField fullWidth size="small" value={slide.title}
+                     onChange={(e) => updateSlide('title', e.target.value)}
+                     sx={{ '& .MuiInputBase-input': { fontSize: 13, color: 'var(--vm-text-primary)' } }} />
+                 </Box>
+                 <Box>
+                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Content</Typography>
+                   <TextField fullWidth multiline rows={4} value={slide.content}
+                     onChange={(e) => updateSlide('content', e.target.value)}
+                     sx={{ '& .MuiInputBase-input': { fontSize: 13, color: 'var(--vm-text-primary)' } }} />
+                 </Box>
+                 <Box>
+                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Layout</Typography>
+                   <Box sx={{ display: 'flex', gap: 1 }}>
+                     {['center', 'split', 'grid'].map((layout) => (
+                       <Box key={layout} onClick={() => updateSlide('layout', layout)}
+                         sx={{ flex: 1, py: 1, textAlign: 'center', borderRadius: 1.5, border: '1px solid',
+                           borderColor: slide.layout === layout ? 'var(--vm-primary-500)' : 'var(--vm-border-primary)',
+                           bgcolor: slide.layout === layout ? 'var(--vm-primary-900)' : 'transparent',
+                           color: slide.layout === layout ? 'var(--vm-primary-400)' : 'var(--vm-text-muted)',
+                           fontSize: 11, textTransform: 'capitalize', cursor: 'pointer' }}>
+                         {layout}
+                       </Box>
+                     ))}
+                   </Box>
+                 </Box>
+                 <Box>
+                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Type</Typography>
+                   <Select fullWidth size="small" value={slide.type}
+                     onChange={(e) => updateSlide('type', e.target.value)}
+                     sx={{ fontSize: 13, color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' } }}>
+                     {NEW_SLIDE_TEMPLATES.map(t => (
+                       <MenuItem key={t.type} value={t.type} sx={{ fontSize: 13, textTransform: 'capitalize' }}>{t.type}</MenuItem>
+                     ))}
+                   </Select>
+                 </Box>
+               </Box>
+             )}
 
             {activeTab === 1 && (
               <Box>
@@ -380,15 +381,15 @@ export function PitchDeck({}: PitchDeckProps) {
             </Button>
           </Box>
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 2 }}>
-            {pitchDeck.slides.map((s, idx) => (
-              <Box key={s.id} sx={{ aspectRatio: '16/9', borderRadius: 2, p: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                background: `linear-gradient(135deg, ${business.brandKit.darkColor} 0%, ${business.brandKit.primaryColor} 100%)`,
-                breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-                <Box sx={{ position: 'absolute', top: 12, left: 12, bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1, px: 1.5, py: 0.5 }}>
-                  <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{idx + 1} / {pitchDeck.slides.length}</Typography>
-                </Box>
+<DialogContent>
+           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 2 }}>
+             {slides.map((s, idx) => (
+               <Box key={s.id} sx={{ aspectRatio: '16/9', borderRadius: 2, p: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                 background: `linear-gradient(135deg, ${business.brandKit.darkColor} 0%, ${business.brandKit.primaryColor} 100%)`,
+                 breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+                 <Box sx={{ position: 'absolute', top: 12, left: 12, bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1, px: 1.5, py: 0.5 }}>
+                   <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{idx + 1} / {slides.length}</Typography>
+                 </Box>
 <Typography sx={{ fontSize: { xs: 18, sm: 24 }, fontWeight: 700, color: 'white', mb: 2, textAlign: s.layout === 'center' ? 'center' : 'left' }}>
                  {s.title}
                </Typography>

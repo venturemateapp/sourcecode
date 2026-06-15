@@ -428,7 +428,11 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-var Schema, _ = graphql.NewSchema(graphql.SchemaConfig{
-	Query:    rootQuery,
-	Mutation: rootMutation,
-})
+var Schema graphql.Schema
+
+func init() {
+	Schema, _ = graphql.NewSchema(graphql.SchemaConfig{
+		Query:    rootQuery,
+		Mutation: rootMutation,
+	})
+}

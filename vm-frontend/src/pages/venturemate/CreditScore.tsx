@@ -157,7 +157,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
         }),
       ]);
       if (scoreResult.businessScore) {
-        setCreditScore(prev => ({ ...prev, ...JSON.parse(scoreResult.businessScore.scoreData) }));
+        setCreditScore(prev => ({ ...prev, ...JSON.parse(scoreResult.businessScore!.scoreData) }));
       }
       setFinancingOffers(offersResult.financingOffers);
       setCreditHistory(historyResult.creditHistory);

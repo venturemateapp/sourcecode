@@ -11,7 +11,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  Chip,
   Paper,
   Grid,
   CircularProgress,
@@ -23,7 +22,7 @@ import {
 } from '@mui/material';
 import { GradientButton } from '../shared/buttons';
 import { graphqlRequest, uploadFile } from '../../lib/api';
-import { Upload, FileText, Building2, User, Users, Briefcase, CheckCircle, ArrowRight, X, Plus, Trash2 } from 'lucide-react';
+import { Upload, FileText, Building2, User, Users, CheckCircle, ArrowRight, Plus, Trash2 } from 'lucide-react';
 import type { Business } from '../../types/venturemate';
 
 interface RegisterBusinessModalProps {

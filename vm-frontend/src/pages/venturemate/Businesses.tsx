@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, Chip, IconButton, Menu, MenuItem, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, Chip, IconButton, Menu, MenuItem } from '@mui/material';
 import { Plus, MoreVertical, FileCheck } from 'lucide-react';
 import { CreateBusinessModal } from '../../components/venturemate/CreateBusinessModal';
 import { RegisterBusinessModal } from '../../components/venturemate/RegisterBusinessModal';
@@ -35,11 +35,9 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registrations, setRegistrations] = useState<Record<string, BusinessRegistrationStatus>>({});
-  const [loadingRegs, setLoadingRegs] = useState(false);
 
   const fetchRegistrations = useCallback(async () => {
     if (businessList.length === 0) return;
-    setLoadingRegs(true);
     try {
       const results = await Promise.all(
         businessList.map(b =>
@@ -57,8 +55,6 @@ export function Businesses({ onViewChange }: BusinessesProps) {
       setRegistrations(map);
     } catch {
       // silently fail
-    } finally {
-      setLoadingRegs(false);
     }
   }, [businessList]);
 

@@ -30,6 +30,7 @@ import { DocumentsPage } from './pages/venturemate/Documents';
 import { BusinessPlan } from './pages/venturemate/BusinessPlan';
 import { FinancialForecast } from './pages/venturemate/FinancialForecast';
 import { BrandingKitPage } from './pages/venturemate/BrandingKit';
+import { MilestonesPage } from './pages/venturemate/MilestonesPage';
 import { SettingsPage } from './pages/venturemate/Settings';
 import { MessagesPage } from './pages/venturemate/Messages';
 import { LandingPage } from './pages/LandingPage';
@@ -145,62 +146,7 @@ function BusinessOverview() {
   );
 }
 
-// Milestones Page
-function MilestonesPage() {
-  const { selectedBusiness } = useBusiness();
-  const business = selectedBusiness;
-  if (!business) return null;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return '#22c55e';
-      case 'in-progress': return '#3b82f6';
-      case 'overdue': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  return (
-    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-      <Typography sx={{ fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 3 }}>
-        Milestones
-      </Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(12, 1fr)' }, gap: { xs: 2, md: 3 } }}>
-        {business.milestones.map((milestone) => (
-          <Box key={milestone.id} sx={{ gridColumn: { md: 'span 6' } }}>
-            <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 3 } }}>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2, gap: 1 }}>
-                <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 600, color: 'var(--vm-text-primary)', wordBreak: 'break-word' }}>
-                  {milestone.title}
-                </Typography>
-                <Chip
-                  size="small"
-                  label={milestone.status}
-                  sx={{
-                    bgcolor: `${getStatusColor(milestone.status)}20`,
-                    color: getStatusColor(milestone.status),
-                    fontWeight: 600,
-                    textTransform: 'capitalize',
-                    flexShrink: 0,
-                  }}
-                />
-              </Box>
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2 }}>
-                {milestone.description}
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar src={`https://i.pravatar.cc/150?u=${milestone.assignee}`} sx={{ width: 28, height: 28 }} />
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                  Due {new Date(milestone.dueDate).toLocaleDateString()}
-                </Typography>
-              </Box>
-            </Card>
-          </Box>
-        ))}
-      </Box>
-    </Box>
-  );
-}
 
 // Profile Page
 function ProfilePage() {

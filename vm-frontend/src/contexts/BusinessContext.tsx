@@ -89,6 +89,7 @@ function mapApiToBusiness(api: ApiBusiness): Business {
   const now = new Date().toISOString();
   return {
     id: api.id,
+    userId: api.userId,
     name: api.name,
     tagline: api.tagline,
     description: api.description,
@@ -105,7 +106,7 @@ function mapApiToBusiness(api: ApiBusiness): Business {
     team: parseJsonField(api.team, []),
     documents: parseJsonField(api.documents, []),
     websiteConfig: parseJsonField(api.websiteConfig, { id: '', subdomain: '', status: 'draft', template: '', pages: [], seo: { title: '', description: '', keywords: [] }, analytics: {} }),
-    financials: parseJsonField(api.financials, { fundingRaised: 0, fundingRounds: [], revenue: { currentMRR: 0, currentARR: 0, growthRate: 0, history: [] }, expenses: { monthlyBurn: 0, breakdown: [] }, runway: 0, burnRate: 0, projections: [] }),
+    financials: parseJsonField(api.financials, { fundingRaised: 0, fundingRounds: [], revenue: { currentMRR: 0, currentARR: 0, growthRate: 0, history: [] }, expenses: { monthlyBurn: 0, breakdown: [] }, runway: 0, burnRate: 0, projections: [] }) ?? { fundingRaised: 0, fundingRounds: [], revenue: { currentMRR: 0, currentARR: 0, growthRate: 0, history: [] }, expenses: { monthlyBurn: 0, breakdown: [] }, runway: 0, burnRate: 0, projections: [] },
     metrics: parseJsonField(api.metrics, { totalUsers: 0, activeUsers: 0, retentionRate: 0, churnRate: 0, nps: 0, cac: 0, ltv: 0, customMetrics: [] }),
     aiGenerated: parseJsonField(api.aiGenerated, { ideas: [] }),
     createdAt: api.createdAt || now,

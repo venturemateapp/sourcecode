@@ -107,7 +107,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
         businessId: selectedBusiness.id, scoreType: 'health',
       });
       if (data.businessScore) {
-        setHealthScore(prev => ({ ...prev, ...JSON.parse(data.businessScore.scoreData) }));
+        setHealthScore(prev => ({ ...prev, ...JSON.parse(data.businessScore!.scoreData) }));
       }
     } catch {
       // silently fail

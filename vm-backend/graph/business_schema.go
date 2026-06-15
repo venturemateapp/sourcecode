@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"time"
+
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/businesses"
 )
@@ -15,7 +17,16 @@ var businessType = graphql.NewObject(graphql.ObjectConfig{
 		"description": &graphql.Field{Type: graphql.String},
 		"industry":    &graphql.Field{Type: graphql.String},
 		"stage":       &graphql.Field{Type: graphql.String},
-		"foundedDate": &graphql.Field{Type: graphql.String},
+		"foundedDate": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				b, ok := p.Source.(*businesses.Business)
+				if !ok || b.FoundedDate == nil {
+					return nil, nil
+				}
+				return b.FoundedDate.Format("2006-01-02"), nil
+			},
+		},
 		"location":    &graphql.Field{Type: graphql.String},
 		"website":     &graphql.Field{Type: graphql.String},
 		"status":      &graphql.Field{Type: graphql.String},
@@ -97,7 +108,7 @@ func init() {
 				Description:  getStringArg(p.Args, "description"),
 				Industry:     getStringArg(p.Args, "industry"),
 				Stage:        getStringArg(p.Args, "stage"),
-				FoundedDate:  getStringArg(p.Args, "foundedDate"),
+				FoundedDate:  parseDatePtr(getStringArg(p.Args, "foundedDate")),
 				Location:     getStringArg(p.Args, "location"),
 				Website:      getStringArg(p.Args, "website"),
 				BrandKit:     getStringArg(p.Args, "brandKit"),
@@ -156,7 +167,7 @@ func init() {
 			if v, ok := p.Args["description"]; ok && v != nil { existing.Description = v.(string) }
 			if v, ok := p.Args["industry"]; ok && v != nil { existing.Industry = v.(string) }
 			if v, ok := p.Args["stage"]; ok && v != nil { existing.Stage = v.(string) }
-			if v, ok := p.Args["foundedDate"]; ok && v != nil { existing.FoundedDate = v.(string) }
+			if v, ok := p.Args["foundedDate"]; ok && v != nil { existing.FoundedDate = parseDatePtr(v.(string)) }
 			if v, ok := p.Args["location"]; ok && v != nil { existing.Location = v.(string) }
 			if v, ok := p.Args["website"]; ok && v != nil { existing.Website = v.(string) }
 			if v, ok := p.Args["status"]; ok && v != nil { existing.Status = v.(string) }
@@ -191,6 +202,17 @@ func init() {
 			return err == nil, err
 		},
 	})
+}
+
+func parseDatePtr(s string) *time.Time {
+	if s == "" {
+		return nil
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return nil
+	}
+	return &t
 }
 
 func getStringArg(args map[string]interface{}, key string) string {
