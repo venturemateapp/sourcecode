@@ -15,6 +15,7 @@ import (
 	"github.com/venturemate/vmbackend/graph"
 	"github.com/venturemate/vmbackend/internal/app"
 	"github.com/venturemate/vmbackend/internal/auth"
+	"github.com/venturemate/vmbackend/internal/migrations"
 	"github.com/venturemate/vmbackend/internal/oauth"
 )
 
@@ -168,6 +169,10 @@ func main() {
 		log.Fatal("Failed to initialize app container:", err)
 	}
 	defer container.DB.Close()
+
+	if err := migrations.Run(container.DB, "migrations"); err != nil {
+		log.Printf("Warning: migrations failed: %v", err)
+	}
 
 	graph.SetContainer(container)
 

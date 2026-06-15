@@ -4,6 +4,7 @@ import type { Business, TeamMember } from '../types/venturemate';
 export const businesses: Business[] = [
   {
     id: 'biz_001',
+    userId: 'user_001',
     name: 'NeuroTask AI',
     tagline: 'AI-powered task automation for knowledge workers',
     description: 'NeuroTask AI helps knowledge workers automate repetitive tasks using advanced AI agents. Our platform integrates with 100+ tools and learns user workflows to suggest automations.',
@@ -712,6 +713,7 @@ export const businesses: Business[] = [
   },
   {
     id: 'biz_002',
+    userId: 'user_001',
     name: 'GreenCart',
     tagline: 'Sustainable grocery delivery with zero waste',
     description: 'GreenCart delivers organic groceries in reusable packaging, eliminating single-use plastics.',

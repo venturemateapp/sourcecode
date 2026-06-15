@@ -136,6 +136,9 @@ func init() {
 			if err != nil {
 				return map[string]interface{}{"message": "Business not found or access denied", "proposals": nil}, nil
 			}
+			if biz == nil {
+				return map[string]interface{}{"message": "Business not found", "proposals": nil}, nil
+			}
 
 			provider, _, _, err := getProviderForUser(p.Context, userID)
 			if err != nil {

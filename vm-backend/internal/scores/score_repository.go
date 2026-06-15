@@ -54,3 +54,27 @@ func (r *Repository) Upsert(ctx context.Context, s *BusinessScore) error {
 		s.ID, s.BusinessID, s.ScoreType, s.ScoreData, s.CalculatedAt, now, s.UpdatedAt)
 	return err
 }
+
+func (r *Repository) ListHistory(ctx context.Context, businessID string, limit int) ([]BusinessScore, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, business_id, score_type, score_data::text, calculated_at, created_at, updated_at
+		FROM business_scores
+		WHERE business_id = $1 AND score_type = 'credit'
+		ORDER BY calculated_at DESC LIMIT $2`, businessID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []BusinessScore
+	for rows.Next() {
+		var s BusinessScore
+		if err := rows.Scan(&s.ID, &s.BusinessID, &s.ScoreType, &s.ScoreData, &s.CalculatedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
+			return nil, err
+		}
+		list = append(list, s)
+	}
+	return list, nil
+}

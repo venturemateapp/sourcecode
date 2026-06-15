@@ -6,7 +6,8 @@ import { useToast } from '../../components/shared/toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { AnimatedBackground } from '../../components/AnimatedBackground';
 
-const ONBOARDING_KEY = 'venturemate_onboarding_data';
+const ONBOARDING_DATA_KEY = 'venturemate_onboarding_data';
+const ONBOARDING_COMPLETED_KEY = 'venturemate_onboarding_completed';
 
 export function OnboardingPage() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export function OnboardingPage() {
 
   useEffect(() => {
     // If already onboarded, go to dashboard
-    const completed = localStorage.getItem('venturemate_onboarding_completed') === 'true';
+    const completed = localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true';
     if (completed) {
       navigate('/vm', { replace: true });
       return;
@@ -41,8 +42,8 @@ export function OnboardingPage() {
       return;
     }
 
-    // Mark onboarding complete
-    localStorage.setItem(ONBOARDING_KEY, JSON.stringify(data));
+// Mark onboarding complete (already set by register, but save data for reference)
+     localStorage.setItem(ONBOARDING_DATA_KEY, JSON.stringify(data));
 
     success('Welcome to VentureMate!', {
       description: `Your account is ready, ${data.firstName}.`,

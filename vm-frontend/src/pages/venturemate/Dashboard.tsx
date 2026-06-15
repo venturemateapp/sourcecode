@@ -27,14 +27,14 @@ export function Dashboard({ onViewChange }: DashboardProps) {
    const { format } = useCurrency();
    const b = activeBusiness;
  
-   const statsCards = b ? [
-     { label: 'Total MRR', value: format(b.financials.revenue.currentMRR), change: `${b.financials.revenue.growthRate >= 0 ? '+' : ''}${b.financials.revenue.growthRate}%`, icon: DollarSign, color: '#10b981' },
-     { label: 'Active Users', value: b.metrics.totalUsers.toLocaleString(), change: `${b.metrics.activeUsers.toLocaleString()} active`, icon: Users, color: '#3b82f6' },
-     { label: 'Milestones', value: b.milestones.length.toString(), change: `${b.milestones.filter(m => m.status === 'in-progress').length} in progress`, icon: Target, color: '#f59e0b' },
-     { label: 'Documents', value: b.documents.length.toString(), change: 'All organized', icon: FileText, color: '#8b5cf6' },
-     { label: 'Pitch Decks', value: b.pitchDeck.slides.length.toString(), change: `${b.pitchDeck.slides.length} slides`, icon: Presentation, color: '#06b6d4' },
-     { label: 'Websites', value: b.websiteConfig.pages.length.toString(), change: b.websiteConfig.status, icon: Globe, color: '#f97316' },
-   ] : [];
+const statsCards = b ? [
+      { label: 'Total MRR', value: format(b.financials?.revenue?.currentMRR ?? 0), change: `${(b.financials?.revenue?.growthRate ?? 0) >= 0 ? '+' : ''}${b.financials?.revenue?.growthRate ?? 0}%`, icon: DollarSign, color: '#10b981' },
+      { label: 'Active Users', value: b.metrics?.totalUsers?.toLocaleString() ?? '0', change: `${b.metrics?.activeUsers?.toLocaleString() ?? '0'} active`, icon: Users, color: '#3b82f6' },
+      { label: 'Milestones', value: b.milestones?.length?.toString() ?? '0', change: `${b.milestones?.filter(m => m.status === 'in-progress')?.length ?? 0} in progress`, icon: Target, color: '#f59e0b' },
+      { label: 'Documents', value: b.documents?.length?.toString() ?? '0', change: 'All organized', icon: FileText, color: '#8b5cf6' },
+      { label: 'Pitch Decks', value: b.pitchDeck?.slides?.length?.toString() ?? '0', change: `${b.pitchDeck?.slides?.length ?? 0} slides`, icon: Presentation, color: '#06b6d4' },
+      { label: 'Websites', value: b.websiteConfig?.pages?.length?.toString() ?? '0', change: b.websiteConfig?.status ?? 'draft', icon: Globe, color: '#f97316' },
+    ] : [];
  
    return (
      <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
@@ -154,9 +154,9 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                  <Building2 size={20} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
                  Active Business
                </Typography>
-               <Chip
-                 label={activeBusiness.stage.toUpperCase()}
-                 size="small"
+<Chip
+                  label={activeBusiness?.stage?.toUpperCase() ?? 'IDEA'}
+                  size="small"
                  sx={{
                    bgcolor: 'var(--vm-primary-900)',
                    color: 'var(--vm-primary-400)',
@@ -172,22 +172,22 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                   width: 64,
                   height: 64,
                   borderRadius: 3,
-                  background: `linear-gradient(135deg, ${activeBusiness.brandKit.primaryColor} 0%, ${activeBusiness.brandKit.secondaryColor} 100%)`,
+                  background: `linear-gradient(135deg, ${activeBusiness.brandKit?.primaryColor ?? '#059669'} 0%, ${activeBusiness.brandKit?.secondaryColor ?? '#10b981'} 100%)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Typography sx={{ fontSize: 28, fontWeight: 700, color: 'white' }}>
-                  {activeBusiness.name[0]}
-                </Typography>
-              </Box>
-              <Box>
+<Typography sx={{ fontSize: 28, fontWeight: 700, color: 'white' }}>
+                   {activeBusiness?.name?.[0] ?? '?'}
+                 </Typography>
+               </Box>
+               <Box>
 <Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                   {activeBusiness.name}
+                   {activeBusiness?.name ?? 'Untitled'}
                  </Typography>
                  <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)' }}>
-                   {activeBusiness.tagline}
+                   {activeBusiness?.tagline ?? ''}
                  </Typography>
               </Box>
             </Box>
@@ -195,27 +195,27 @@ export function Dashboard({ onViewChange }: DashboardProps) {
 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: '16px', mb: 3 }}>
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>MRR</Typography>
-                 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                   ${activeBusiness.financials.revenue.currentMRR.toLocaleString()}
-                 </Typography>
+<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                    ${activeBusiness.financials?.revenue?.currentMRR?.toLocaleString() ?? 0}
+                  </Typography>
                </div>
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Users</Typography>
-                 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                   {activeBusiness.metrics.totalUsers}
-                 </Typography>
-               </div>
-               <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
-                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Retention</Typography>
-                 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                   {activeBusiness.metrics.retentionRate}%
-                 </Typography>
-               </div>
-               <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
-                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Runway</Typography>
-                 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                   {activeBusiness.financials.runway} mo
-                 </Typography>
+<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                    {activeBusiness.metrics?.totalUsers ?? 0}
+                  </Typography>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
+                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Retention</Typography>
+                  <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                    {activeBusiness.metrics?.retentionRate ?? 0}%
+                  </Typography>
+                </div>
+                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
+                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Runway</Typography>
+                  <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                    {activeBusiness.financials?.runway ?? 0} mo
+                  </Typography>
                 </div>
               </Box>
 
@@ -342,34 +342,19 @@ export function Dashboard({ onViewChange }: DashboardProps) {
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1, md: 2 } }}>
-              {activeBusiness?.milestones
-                .filter(m => m.status === 'in-progress')
-                .slice(0, 3)
-                .map((milestone) => (
+              {activeBusiness?.milestones?.length ? (
+                activeBusiness.milestones.slice(0, 3).map((milestone) => (
                   <Box
                     key={milestone.id}
                     sx={{
-                      p: 2.5,
+                      p: 2,
                       borderRadius: 2,
                       bgcolor: 'var(--vm-bg-tertiary)',
-                      borderLeft: '3px solid var(--vm-primary-500)',
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-                        {milestone.title}
-                      </Typography>
-                      <Chip
-                        size="small"
-                        label={milestone.priority}
-                        sx={{
-                          bgcolor: milestone.priority === 'critical' ? 'rgba(239, 68, 68, 0.2)' : 'var(--vm-bg-hover)',
-                          color: milestone.priority === 'critical' ? '#f87171' : 'var(--vm-text-secondary)',
-                          fontSize: 10,
-                          textTransform: 'uppercase',
-                        }}
-                      />
-                    </Box>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                      {milestone.title}
+                    </Typography>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1.5 }}>
                       {milestone.description}
                     </Typography>
@@ -380,7 +365,12 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                       </Typography>
                     </Box>
                   </Box>
-                ))}
+                ))
+              ) : (
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', textAlign: 'center', py: 3 }}>
+                  No milestones yet.
+                </Typography>
+              )}
             </Box>
           </Card>
         </Box>
@@ -410,13 +400,13 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                   '&:hover': { textDecoration: 'underline' },
                 }}
               >
-                {b ? 'Manage' : ''}
+                Manage
               </Typography>
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1, md: 2 } }}>
-              {b && b.team.length > 0 ? (
-                b.team.slice(0, 4).map((member) => (
+              {activeBusiness?.team && activeBusiness.team.length > 0 ? (
+                activeBusiness.team.slice(0, 4).map((member) => (
                   <Box
                     key={member.id}
                     sx={{
@@ -443,7 +433,7 @@ export function Dashboard({ onViewChange }: DashboardProps) {
                 ))
               ) : (
                 <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', textAlign: 'center', py: 3 }}>
-                  {b ? 'No team members yet.' : 'Select a business to view team.'}
+                  No team members yet.
                 </Typography>
               )}
             </Box>

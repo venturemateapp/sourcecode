@@ -99,7 +99,7 @@ type geminiCandidate struct {
 }
 
 func (p *geminiProvider) Chat(ctx context.Context, systemPrompt string, messages []Message, tools []ToolDef) (*ProviderResponse, error) {
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=%s", p.apiKey)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s", p.apiKey)
 
 	var geminiTools []geminiTool
 	if len(tools) > 0 {

@@ -1,11 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, Chip, IconButton, Menu, MenuItem } from '@mui/material';
 import { Plus, MoreVertical, FileCheck } from 'lucide-react';
 import { CreateBusinessModal } from '../../components/venturemate/CreateBusinessModal';
-import { RegisterBusinessModal, type RegistrationData } from '../../components/venturemate/RegisterBusinessModal';
+import { RegisterBusinessModal } from '../../components/venturemate/RegisterBusinessModal';
 import type { ViewType, Business } from '../../types/venturemate';
+import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { DomainChat } from '../../components/venturemate/DomainChat';
+
+interface BusinessRegistrationStatus {
+  id: string;
+  businessId: string;
+  status: string;
+  registrationType: string;
+  createdAt: string;
+}
+
+const REGISTRATIONS_QUERY = `
+  query BusinessRegistrations($businessId: ID!, $status: String) {
+    businessRegistrations(businessId: $businessId, status: $status) {
+      id, businessId, status, registrationType, createdAt
+    }
+  }
+`;
 
 interface BusinessesProps {
   onViewChange: (view: ViewType) => void;
@@ -17,6 +34,33 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   const [, setSelectedBusiness] = useState<Business | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
+  const [registrations, setRegistrations] = useState<Record<string, BusinessRegistrationStatus>>({});
+
+  const fetchRegistrations = useCallback(async () => {
+    if (businessList.length === 0) return;
+    try {
+      const results = await Promise.all(
+        businessList.map(b =>
+          graphqlRequest<{ businessRegistrations: BusinessRegistrationStatus[] }>(REGISTRATIONS_QUERY, {
+            businessId: b.id,
+          }).catch(() => ({ businessRegistrations: [] }))
+        )
+      );
+      const map: Record<string, BusinessRegistrationStatus> = {};
+      results.forEach((res, idx) => {
+        if (res.businessRegistrations.length > 0) {
+          map[businessList[idx].id] = res.businessRegistrations[0];
+        }
+      });
+      setRegistrations(map);
+    } catch {
+      // silently fail
+    }
+  }, [businessList]);
+
+  useEffect(() => {
+    fetchRegistrations();
+  }, [fetchRegistrations]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, business: Business) => {
     setAnchorEl(event.currentTarget);
@@ -40,7 +84,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 4, gap: { xs: 2, sm: 0 } }}>
         <Box>
           <Typography sx={{ fontSize: { xs: 22, sm: 28 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
             My Businesses
@@ -49,13 +93,14 @@ export function Businesses({ onViewChange }: BusinessesProps) {
             Manage all your startups in one place
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2 }, width: { xs: '100%', sm: 'auto' } }}>
           <Box
             component="button"
             onClick={() => setRegisterModalOpen(true)}
             sx={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 1,
               py: 1.5,
               px: 3,
@@ -63,7 +108,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               border: '1px solid var(--vm-border-primary)',
               bgcolor: 'transparent',
               color: 'var(--vm-text-primary)',
-              fontSize: 14,
+              fontSize: { xs: 13, sm: 14 },
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s',
@@ -73,8 +118,8 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               },
             }}
           >
-            <FileCheck size={18} />
-            Register Business
+            <FileCheck size={16} />
+            Register
           </Box>
           <Box
             component="button"
@@ -82,6 +127,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
             sx={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 1,
               py: 1.5,
               px: 3,
@@ -89,15 +135,15 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               border: 'none',
               bgcolor: 'var(--vm-primary-600)',
               color: 'white',
-              fontSize: 14,
+              fontSize: { xs: 13, sm: 14 },
               fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { bgcolor: 'var(--vm-primary-500)' },
             }}
           >
-            <Plus size={18} />
-            Create New Business
+            <Plus size={16} />
+            Create
           </Box>
         </Box>
       </Box>
@@ -119,10 +165,10 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 p: 3,
               }}
             >
-              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+              <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
                 {stat.value}
               </Typography>
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
+              <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: 'var(--vm-text-muted)' }}>
                 {stat.label}
               </Typography>
             </Card>
@@ -193,7 +239,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 {business.tagline}
               </Typography>
 
-              <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
                 <Chip
                   size="small"
                   label={business.stage.toUpperCase()}
@@ -214,6 +260,18 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                     fontSize: 10,
                   }}
                 />
+                {registrations[business.id] && (
+                  <Chip
+                    size="small"
+                    label={registrations[business.id].status === 'approved' ? 'REGISTERED' : registrations[business.id].status.toUpperCase()}
+                    sx={{
+                      bgcolor: registrations[business.id].status === 'approved' ? 'rgba(59, 130, 246, 0.2)' : registrations[business.id].status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      color: registrations[business.id].status === 'approved' ? '#60a5fa' : registrations[business.id].status === 'pending' ? '#f59e0b' : '#ef4444',
+                      fontWeight: 600,
+                      fontSize: 10,
+                    }}
+                  />
+                )}
               </Box>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
@@ -237,7 +295,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 </div>
               </div>
 
-              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Box
                   component="button"
                   onClick={(e) => {
@@ -248,11 +306,12 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                   sx={{
                     flex: 1,
                     py: 1,
+                    px: 1,
                     borderRadius: 1.5,
                     border: '1px solid var(--vm-border-primary)',
                     bgcolor: 'transparent',
                     color: 'var(--vm-text-secondary)',
-                    fontSize: 12,
+                    fontSize: { xs: 11, sm: 12 },
                     fontWeight: 500,
                     cursor: 'pointer',
                     '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
@@ -270,11 +329,12 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                   sx={{
                     flex: 1,
                     py: 1,
+                    px: 1,
                     borderRadius: 1.5,
                     border: '1px solid var(--vm-border-primary)',
                     bgcolor: 'transparent',
                     color: 'var(--vm-text-secondary)',
-                    fontSize: 12,
+                    fontSize: { xs: 11, sm: 12 },
                     fontWeight: 500,
                     cursor: 'pointer',
                     '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
@@ -292,11 +352,12 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                   sx={{
                     flex: 1,
                     py: 1,
+                    px: 1,
                     borderRadius: 1.5,
                     border: '1px solid var(--vm-border-primary)',
                     bgcolor: 'transparent',
                     color: 'var(--vm-text-secondary)',
-                    fontSize: 12,
+                    fontSize: { xs: 11, sm: 12 },
                     fontWeight: 500,
                     cursor: 'pointer',
                     '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
@@ -345,10 +406,9 @@ export function Businesses({ onViewChange }: BusinessesProps) {
         open={registerModalOpen}
         onClose={() => setRegisterModalOpen(false)}
         businesses={businessList}
-        onSubmit={(data: RegistrationData) => {
-          // Handle registration submission - would typically call an API
-          console.log('Business registration submitted:', data);
-          // Show success message or redirect
+        onRegistrationComplete={() => {
+          setRegisterModalOpen(false);
+          fetchRegistrations();
         }}
       />
       <DomainChat domain="businesses" placeholder="Ask me to manage your businesses..." />

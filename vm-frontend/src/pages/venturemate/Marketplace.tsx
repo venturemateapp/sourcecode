@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box, Typography, Card, Tabs, Tab, Chip, Avatar, Rating, Dialog, DialogTitle, DialogContent, Grid, TextField, Stepper, Step, StepLabel, useTheme, useMediaQuery } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import {
   Star,
@@ -910,14 +911,10 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                     }}
                   />
 
-                  <TextField
-                    label="Desired Deadline"
-                    type="date"
-                    value={bookingForm.deadline}
-                    onChange={(e) => setBookingForm({ ...bookingForm, deadline: e.target.value })}
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                    sx={{
+                  <DatePicker label="Desired Deadline"
+                    value={bookingForm.deadline ? new Date(bookingForm.deadline) : null}
+                    onChange={(date) => setBookingForm({ ...bookingForm, deadline: date ? date.toISOString().split('T')[0] : '' })}
+                    slotProps={{ textField: { fullWidth: true, sx: {
                       '& .MuiOutlinedInput-root': {
                         bgcolor: 'var(--vm-bg-primary)',
                         color: 'var(--vm-text-primary)',
@@ -925,7 +922,7 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                       },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
                       '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                    }}
+                    } } }}
                   />
                 </Box>
               )}

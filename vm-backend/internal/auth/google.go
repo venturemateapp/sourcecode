@@ -44,7 +44,7 @@ func InitGoogleOAuth(credsPath string, userRepo *users.Repository, s3Svc *s3.Ser
 		return fmt.Errorf("invalid credentials json: %w", err)
 	}
 
-	redirectURL := "https://test-secure.venturemate.net/auth/google/callback"
+	redirectURL := "https://test.venturemate.net/auth/google/callback"
 	for _, u := range creds.Web.RedirectURIs {
 		if u == redirectURL {
 			redirectURL = u
@@ -136,7 +136,7 @@ func GoogleCallbackHandler(w http.ResponseWriter, r *http.Request) {
 			Surname:   gUser.FamilyName,
 			Email:     gUser.Email,
 			Status:    "active",
-			Onboarded: false,
+			Onboarded: true,
 		}
 
 		// Upload Google profile picture to S3
@@ -149,33 +149,35 @@ func GoogleCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := googleAuth.userRepo.Create(context.Background(), user); err != nil {
- 		go sendWelcomeEmail(user)
 			http.Error(w, "Failed to create user: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Send welcome email for new Google users
 		go sendWelcomeEmail(user)
 	}
 
 	// Generate JWT
-	jwtToken, err := generateJWT(user.Email, user.ID, googleAuth.jwtSecret)
+	jwtToken, err := generateJWT(user, googleAuth.jwtSecret)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
 	// Redirect to frontend with token
-	redirectURL := fmt.Sprintf("https://test.venturemate.net/auth/callback?token=%s", jwtToken)
+	redirectURL := fmt.Sprintf("https://test.venturemate.net/vm/auth/callback?token=%s", jwtToken)
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
-func generateJWT(email, userID, secret string) (string, error) {
+func generateJWT(user *users.User, secret string) (string, error) {
 	claims := jwt.MapClaims{
-		"email":     email,
-		"user_id":   userID,
-		"exp":       time.Now().Add(24 * time.Hour).Unix(),
-		"iat":       time.Now().Unix(),
+		"email":      user.Email,
+		"user_id":    user.ID,
+		"first_name": user.FirstName,
+		"surname":    user.Surname,
+		"onboarded":  user.Onboarded,
+		"status":     user.Status,
+		"exp":        time.Now().Add(24 * time.Hour).Unix(),
+		"iat":        time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))

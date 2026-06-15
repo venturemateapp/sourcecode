@@ -10,7 +10,7 @@ type Business struct {
 	Description  string    `json:"description"`
 	Industry     string    `json:"industry"`
 	Stage        string    `json:"stage"`
-	FoundedDate  string    `json:"foundedDate"`
+	FoundedDate  *time.Time `json:"foundedDate"`
 	Location     string    `json:"location"`
 	Website      string    `json:"website"`
 	Status       string    `json:"status"`
