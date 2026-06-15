@@ -34,6 +34,7 @@ export interface Experience {
 // Business / Startup
 export interface Business {
   id: string;
+  userId: string;
   name: string;
   tagline: string;
   description: string;

@@ -39,7 +39,6 @@ func (r *Repository) Create(ctx context.Context, u *User) error {
 	u.ID = uuid.New().String()
 	u.CreatedAt = time.Now()
 	u.UpdatedAt = time.Now()
-	u.Onboarded = false
 	if u.Status == "" {
 		u.Status = "active"
 	}

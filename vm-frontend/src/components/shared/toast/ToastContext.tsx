@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState('')
   const [description, setDescription] = useState('')
   const [severity, setSeverity] = useState<AlertColor>('info')
-  const [duration, setDuration] = useState(4000)
+  const [duration, setDuration] = useState(5000)
 
   const show = useCallback(
     (
@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setMessage(title)
       setDescription(opts.description ?? '')
       setSeverity(sev)
-      setDuration(opts.duration ?? 4000)
+      setDuration(opts.duration ?? 5000)
       setOpen(true)
     },
     []
@@ -77,10 +77,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           severity={severity}
           variant="filled"
           onClose={() => setOpen(false)}
-          sx={{
+          sx={theme => ({
             width: { xs: '90vw', sm: 360 },
             alignItems: 'flex-start',
-          }}
+            ...(severity === 'info' && {
+              backgroundColor: theme.palette.success.main,
+              '& .MuiAlert-icon': { color: theme.palette.success.contrastText },
+            }),
+          })}
         >
           <span style={{ fontWeight: 600, display: 'block' }}>{message}</span>
           {description && (

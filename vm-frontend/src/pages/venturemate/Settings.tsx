@@ -506,7 +506,7 @@ export function SettingsPage() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Language</InputLabel>
-                    <Select value={settings.language} label="Language" onChange={(e) => setSettings({ ...settings, language: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }}>
+                    <Select value={settings.language} label="Language" onChange={(e) => setSettings({ ...settings, language: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
                       <MenuItem value="en">English</MenuItem>
                       <MenuItem value="es">Spanish</MenuItem>
                       <MenuItem value="fr">French</MenuItem>
@@ -518,7 +518,7 @@ export function SettingsPage() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Timezone</InputLabel>
-                    <Select value={settings.timezone} label="Timezone" onChange={(e) => setSettings({ ...settings, timezone: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }}>
+                    <Select value={settings.timezone} label="Timezone" onChange={(e) => setSettings({ ...settings, timezone: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
                       <MenuItem value="UTC">UTC</MenuItem>
                       <MenuItem value="EST">Eastern Time (EST)</MenuItem>
                       <MenuItem value="PST">Pacific Time (PST)</MenuItem>
@@ -531,7 +531,7 @@ export function SettingsPage() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Date Format</InputLabel>
-                    <Select value={settings.dateFormat} label="Date Format" onChange={(e) => setSettings({ ...settings, dateFormat: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }}>
+                    <Select value={settings.dateFormat} label="Date Format" onChange={(e) => setSettings({ ...settings, dateFormat: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
                       <MenuItem value="MM/DD/YYYY">MM/DD/YYYY</MenuItem>
                       <MenuItem value="DD/MM/YYYY">DD/MM/YYYY</MenuItem>
                       <MenuItem value="YYYY-MM-DD">YYYY-MM-DD</MenuItem>
@@ -541,7 +541,7 @@ export function SettingsPage() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
-                    <Select value={ctxCurrency || 'USD'} label="Currency" onChange={(e) => setCtxCurrency(e.target.value)} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }}>
+                    <Select value={ctxCurrency || 'USD'} label="Currency" onChange={(e) => setCtxCurrency(e.target.value)} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
                       <MenuItem value="USD">USD ($)</MenuItem>
                       <MenuItem value="EUR">EUR (€)</MenuItem>
                       <MenuItem value="GBP">GBP (£)</MenuItem>

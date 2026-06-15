@@ -59,10 +59,24 @@ export function ReviewStep({ data, onSubmit }: ReviewStepProps) {
             {data.firstName?.[0]}{data.lastName?.[0]}
           </Avatar>
           <Box sx={{ flex: 1 }}>
-            <Typography fontWeight={600} sx={{ color: 'var(--vm-text-primary)' }}>
+            <Typography
+              fontWeight={600}
+              sx={{
+                color: 'var(--vm-text-primary)',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+              }}
+            >
               {data.firstName} {data.lastName}
             </Typography>
-            <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 14 }}>
+            <Typography
+              sx={{
+                color: 'var(--vm-text-muted)',
+                fontSize: { xs: 12.5, sm: 14 },
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+              }}
+            >
               {data.email}
             </Typography>
           </Box>

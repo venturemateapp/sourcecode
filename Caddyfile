@@ -1,0 +1,26 @@
+# Global options
+{
+	email edspikeonline@gmail.com
+}
+
+
+
+# VentureMate test site
+	venturemate.net {
+	@callback path /auth/callback*
+	redir @callback /vm{uri} 301
+
+	route /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	route /auth/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	route {
+		reverse_proxy 127.0.0.1:5173
+	}
+
+	tls edspikeonline@gmail.com
+}

@@ -166,18 +166,19 @@ export function OnboardingWizard({ onComplete, submitting }: OnboardingWizardPro
       </Box>
 
       {/* Navigation */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 5, pt: 3, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <GradientButton
-          variant="outline"
-          size="md"
-          onClick={prevStep}
-          disabled={step === 1}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ArrowBack sx={{ fontSize: 18 }} />
-            Back
-          </Box>
-        </GradientButton>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5, pt: 3, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {step > 1 && (
+          <GradientButton
+            variant="outline"
+            size="md"
+            onClick={prevStep}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ArrowBack sx={{ fontSize: 18 }} />
+              Back
+            </Box>
+          </GradientButton>
+        )}
 
         {step < totalSteps ? (
           <GradientButton variant="primary" size="md" onClick={nextStep} disabled={!canProceed()}>

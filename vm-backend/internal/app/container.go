@@ -7,13 +7,16 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/venturemate/vmbackend/internal/auth"
+	"github.com/venturemate/vmbackend/internal/banking"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/db"
 	"github.com/venturemate/vmbackend/internal/domains"
+	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/email"
 	"github.com/venturemate/vmbackend/internal/investors"
 	"github.com/venturemate/vmbackend/internal/notifications"
 	"github.com/venturemate/vmbackend/internal/rates"
+	"github.com/venturemate/vmbackend/internal/registrations"
 	"github.com/venturemate/vmbackend/internal/s3"
 	"github.com/venturemate/vmbackend/internal/scores"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
@@ -39,6 +42,8 @@ type Container struct {
 	NotificationRepo    *notifications.Repository
 	NotificationService *notifications.Service
 	ScoreRepo           *scores.Repository
+	ScoreEngine         *scores.Engine
+	HealthEngine        *scores.HealthEngine
 	RateService         *rates.Service
 	GeminiAPIKey        string
 	OpenAIAPIKey      string
@@ -46,6 +51,9 @@ type Container struct {
 	FileHandler       *ai.FileHandler
 	OAuthRepo         *oauth.Repository
 	OAuthManager      *oauth.OAuthManager
+	BankAccountRepo     *banking.Repository
+	InvoiceRepo         *invoices.Repository
+	RegistrationRepo    *registrations.Repository
 }
 
 func NewContainer(ctx context.Context) (*Container, error) {
@@ -77,6 +85,11 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	investorRepo := investors.NewRepository(dbPool)
 	notificationRepo := notifications.NewRepository(dbPool)
 	scoreRepo := scores.NewRepository(dbPool)
+	bankAccountRepo := banking.NewRepository(dbPool)
+	invoiceRepo := invoices.NewRepository(dbPool)
+	registrationRepo := registrations.NewRepository(dbPool)
+	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
+	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
 	rateService := rates.NewService()
 
 	notificationSvc := notifications.NewService(notificationRepo, emailSvc)
@@ -131,6 +144,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		NotificationRepo:    notificationRepo,
 		NotificationService: notificationSvc,
 		ScoreRepo:           scoreRepo,
+		ScoreEngine:           scoreEngine,
+		HealthEngine:          healthEngine,
 		RateService:         rateService,
 		JWTSecret:           jwtSecret,
 		GeminiAPIKey:      geminiKey,
@@ -139,5 +154,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		FileHandler:       fileHandler,
 		OAuthRepo:         oauthRepo,
 		OAuthManager:      oauthManager,
+		BankAccountRepo:   bankAccountRepo,
+		InvoiceRepo:       invoiceRepo,
+		RegistrationRepo:  registrationRepo,
 	}, nil
 }

@@ -140,7 +140,9 @@ func sendLoginNotification(user *users.User) {
 	now := time.Now().Format("Monday, 2 January 2006 at 3:04PM")
 	subject := "Security Alert - New Login"
 	body := fmt.Sprintf(`<h2>New Login</h2><p>Hello %s, login detected at %s. If not you, reset password.</p>`, user.FirstName, now)
-	svc.SendTemplatedEmail([]string{user.Email}, subject, body)
+	if err := svc.SendTemplatedEmail([]string{user.Email}, subject, body); err != nil {
+		log.Printf("SendTemplatedEmail (login alert) error: %v", err)
+	}
 }
 
 // Password Reset
@@ -154,10 +156,16 @@ func RequestPasswordReset(userRepo *users.Repository, otpRepo *OTPRepository, em
 	if err := otpRepo.SaveOTP(context.Background(), emailAddr, otp, expires); err != nil {
 		return err
 	}
-	svc, _ := email.New()
+	svc, err := email.New()
+	if err != nil {
+		log.Printf("email.New() error: %v", err)
+		return nil
+	}
 	subject := "Password Reset OTP"
 	body := fmt.Sprintf(`<p>Your OTP is <b>%s</b>. Expires in 10 min.</p>`, otp)
-	svc.SendTemplatedEmail([]string{emailAddr}, subject, body)
+	if err := svc.SendTemplatedEmail([]string{emailAddr}, subject, body); err != nil {
+		log.Printf("SendTemplatedEmail error: %v", err)
+	}
 	return nil
 }
 

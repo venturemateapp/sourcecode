@@ -23,6 +23,13 @@ func jsonOrArr(s string) string {
 	return s
 }
 
+func dateOrEmpty(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("2006-01-02")
+}
+
 type Repository struct {
 	db *pgxpool.Pool
 }
@@ -31,20 +38,26 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-const listQuery = `SELECT id, user_id, name, tagline, description, industry, stage, founded_date, location, website,
+const listQuery = `SELECT id, user_id, name, tagline, description, industry, stage, founded_date::text, location, website,
 	status, brand_kit::text, pitch_deck::text, business_plan::text, milestones::text, team::text,
 	documents::text, website_config::text, financials::text, metrics::text, ai_generated::text,
 	created_at, updated_at FROM businesses`
 
 func scanBusiness(row pgx.Row) (*Business, error) {
 	var b Business
+	var foundedDate string
 	err := row.Scan(&b.ID, &b.UserID, &b.Name, &b.Tagline, &b.Description, &b.Industry, &b.Stage,
-		&b.FoundedDate, &b.Location, &b.Website, &b.Status,
+		&foundedDate, &b.Location, &b.Website, &b.Status,
 		&b.BrandKit, &b.PitchDeck, &b.BusinessPlan, &b.Milestones, &b.Team,
 		&b.Documents, &b.WebsiteConfig, &b.Financials, &b.Metrics, &b.AIGenerated,
 		&b.CreatedAt, &b.UpdatedAt)
 	if err != nil {
 		return nil, err
+	}
+	if foundedDate != "" {
+		if t, err := time.Parse("2006-01-02", foundedDate); err == nil {
+			b.FoundedDate = &t
+		}
 	}
 	return &b, nil
 }
@@ -86,7 +99,7 @@ func (r *Repository) Create(ctx context.Context, b *Business) error {
 		created_at, updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18::jsonb,$19::jsonb,$20::jsonb,$21::jsonb,$22,$23)`
 	_, err := r.db.Exec(ctx, query, b.ID, b.UserID, b.Name, b.Tagline, b.Description, b.Industry, b.Stage,
-		b.FoundedDate, b.Location, b.Website, b.Status,
+		dateOrEmpty(b.FoundedDate), b.Location, b.Website, b.Status,
 		jsonOrObj(b.BrandKit), jsonOrObj(b.PitchDeck), jsonOrObj(b.BusinessPlan), jsonOrArr(b.Milestones), jsonOrArr(b.Team),
 		jsonOrArr(b.Documents), jsonOrObj(b.WebsiteConfig), jsonOrObj(b.Financials), jsonOrObj(b.Metrics), jsonOrObj(b.AIGenerated),
 		b.CreatedAt, b.UpdatedAt)
@@ -102,7 +115,7 @@ func (r *Repository) Update(ctx context.Context, b *Business) error {
 		website_config=$18::jsonb, financials=$19::jsonb, metrics=$20::jsonb, ai_generated=$21::jsonb,
 		updated_at=$22 WHERE id=$1 AND user_id=$2`
 	_, err := r.db.Exec(ctx, query, b.ID, b.UserID, b.Name, b.Tagline, b.Description, b.Industry, b.Stage,
-		b.FoundedDate, b.Location, b.Website, b.Status,
+		dateOrEmpty(b.FoundedDate), b.Location, b.Website, b.Status,
 		jsonOrObj(b.BrandKit), jsonOrObj(b.PitchDeck), jsonOrObj(b.BusinessPlan), jsonOrArr(b.Milestones), jsonOrArr(b.Team),
 		jsonOrArr(b.Documents), jsonOrObj(b.WebsiteConfig), jsonOrObj(b.Financials), jsonOrObj(b.Metrics), jsonOrObj(b.AIGenerated),
 		b.UpdatedAt)
