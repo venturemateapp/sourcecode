@@ -3,6 +3,7 @@ import { Box, Typography, Card, Chip, Stack, Grid } from '@mui/material';
 import { Sparkles, TrendingUp, DollarSign, Users, Calendar, Download } from 'lucide-react';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { DomainChat } from '../../components/venturemate/DomainChat';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 
 export function FinancialForecast() {
@@ -10,13 +11,7 @@ export function FinancialForecast() {
   const [timeRange, setTimeRange] = useState<'1year' | '3year' | '5year'>('3year');
 
   if (!business) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography sx={{ color: 'var(--vm-text-muted)' }}>
-          Please select a business to view financial forecast
-        </Typography>
-      </Box>
-    );
+    return <NoBusinessSelected message="Select a business to view financial forecast" />;
   }
 
   const { financials, metrics } = business;

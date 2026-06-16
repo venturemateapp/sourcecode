@@ -33,7 +33,7 @@ export function NoBusinessSelected({ message }: NoBusinessSelectedProps) {
         No Business Selected
       </Typography>
       <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', maxWidth: 400, lineHeight: 1.6 }}>
-        {message || 'Select or create a business from the sidebar to access this page.'}
+        {message || 'Select a business to use the AI assistant.'}
       </Typography>
     </Box>
   );
