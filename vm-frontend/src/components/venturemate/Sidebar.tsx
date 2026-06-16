@@ -8,7 +8,6 @@ import {
   Typography,
   Avatar,
   Collapse,
-  Badge,
   IconButton,
 } from '@mui/material';
 import type { ViewType, NavSection } from '../../types/venturemate';
@@ -78,7 +77,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Dashboard', icon: 'LayoutDashboard', view: 'dashboard' },
       { label: 'My Businesses', icon: 'Building2', view: 'businesses' },
-      { label: 'AI Assistant', icon: 'Bot', view: 'ai-assistant', badge: 3 },
+      { label: 'AI Assistant', icon: 'Bot', view: 'ai-assistant' },
       { label: 'Documents', icon: 'FolderOpen', view: 'documents' },
       { label: 'Websites', icon: 'Globe', view: 'websites' },
     ],
@@ -86,7 +85,7 @@ const navSections: NavSection[] = [
   {
     title: 'GROWTH',
     items: [
-      { label: 'CRM', icon: 'Users', view: 'crm', badge: 5 },
+      { label: 'CRM', icon: 'Users', view: 'crm' },
       { label: 'Banking', icon: 'Landmark', view: 'banking' },
       { label: 'Social Media', icon: 'Share2', view: 'social' },
       { label: 'Marketplace', icon: 'Store', view: 'marketplace' },
@@ -95,7 +94,7 @@ const navSections: NavSection[] = [
   {
     title: 'SCALE',
     items: [
-      { label: 'Investors', icon: 'TrendingUp', view: 'investors', badge: 5 },
+      { label: 'Investors', icon: 'TrendingUp', view: 'investors' },
       { label: 'Credit Score', icon: 'CreditCard', view: 'credit-score' },
       { label: 'Health Score', icon: 'Heart', view: 'health-score' },
     ],
@@ -106,7 +105,7 @@ const navSections: NavSection[] = [
       { label: 'Pitch Deck', icon: 'Presentation', view: 'pitch-deck' },
       { label: 'Business Plan', icon: 'FileText', view: 'business-plan' },
       { label: 'Branding Kit', icon: 'Palette', view: 'branding-kit' },
-      { label: 'Milestones', icon: 'Target', view: 'milestones', badge: 2 },
+      { label: 'Milestones', icon: 'Target', view: 'milestones' },
       { label: 'Team', icon: 'UserCircle', view: 'team' },
     ],
   },
@@ -360,21 +359,6 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
                             color: isActive ? 'var(--vm-text-primary)' : 'var(--vm-text-secondary)',
                           }}
                         />
-                        {item.badge && (
-                          <Badge
-                            badgeContent={item.badge}
-                            sx={{
-                              '& .MuiBadge-badge': {
-                                bgcolor: 'var(--vm-primary-600)',
-                                color: 'white',
-                                fontSize: 10,
-                                fontWeight: 600,
-                                minWidth: 18,
-                                height: 18,
-                              },
-                            }}
-                          />
-                        )}
                       </ListItemButton>
                     );
                   })}
