@@ -8,11 +8,13 @@ import {
   Typography,
   Avatar,
   Collapse,
+  Badge,
   IconButton,
 } from '@mui/material';
 import type { ViewType, NavSection } from '../../types/venturemate';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useBusiness } from '../../contexts/BusinessContext';
 import { PlanSelector } from '../subscription/PlanSelector';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../shared/toast';
@@ -134,6 +136,7 @@ interface SidebarProps {
 export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
   const { user, logout } = useAuth();
   const { planName, isFree } = useSubscription();
+  const { selectedBusiness } = useBusiness();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState<string[]>((['CORE', 'GROWTH', 'SCALE', 'BUSINESS TOOLS']));
   const [planSelectorOpen, setPlanSelectorOpen] = useState(false);
@@ -146,6 +149,12 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
 
   const toast = useToast();
   const comingSoon: ViewType[] = ['social', 'marketplace', 'crm'];
+
+  const badgeCounts: Record<string, number> = {
+    documents: selectedBusiness?.documents?.length || 0,
+    milestones: selectedBusiness?.milestones?.filter(m => m.status === 'pending' || m.status === 'overdue').length || 0,
+    investors: selectedBusiness?.investors?.length || 0,
+  };
 
   const handleViewChange = (view: ViewType) => {
     if (comingSoon.includes(view)) {
@@ -359,6 +368,21 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
                             color: isActive ? 'var(--vm-text-primary)' : 'var(--vm-text-secondary)',
                           }}
                         />
+                        {badgeCounts[item.view] !== undefined && (
+                          <Badge
+                            badgeContent={badgeCounts[item.view]}
+                            sx={{
+                              '& .MuiBadge-badge': {
+                                bgcolor: badgeCounts[item.view] > 0 ? 'var(--vm-primary-600)' : 'var(--vm-bg-tertiary)',
+                                color: badgeCounts[item.view] > 0 ? 'white' : 'var(--vm-text-muted)',
+                                fontSize: 10,
+                                fontWeight: 600,
+                                minWidth: 18,
+                                height: 18,
+                              },
+                            }}
+                          />
+                        )}
                       </ListItemButton>
                     );
                   })}
