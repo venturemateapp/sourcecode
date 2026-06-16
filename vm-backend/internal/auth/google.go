@@ -44,7 +44,7 @@ func InitGoogleOAuth(credsPath string, userRepo *users.Repository, s3Svc *s3.Ser
 		return fmt.Errorf("invalid credentials json: %w", err)
 	}
 
-	redirectURL := "https://test.venturemate.net/auth/google/callback"
+	redirectURL := "https://venturemate.net/auth/google/callback"
 	for _, u := range creds.Web.RedirectURIs {
 		if u == redirectURL {
 			redirectURL = u
@@ -164,7 +164,7 @@ func GoogleCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to frontend with token
-	redirectURL := fmt.Sprintf("https://test.venturemate.net/vm/auth/callback?token=%s", jwtToken)
+	redirectURL := fmt.Sprintf("https://venturemate.net/vm/auth/callback?token=%s", jwtToken)
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
