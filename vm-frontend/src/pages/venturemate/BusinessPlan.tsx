@@ -4,6 +4,7 @@ import { Plus, MoreVertical, Edit2, Trash2, Sparkles, Share2, Save, X } from 'lu
 import type { PlanSection } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { DomainChat } from '../../components/venturemate/DomainChat';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 export function BusinessPlan() {
   const { selectedBusiness: business, updateBusiness, refreshBusiness } = useBusiness();
@@ -98,13 +99,7 @@ export function BusinessPlan() {
   };
 
   if (!business) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography sx={{ color: 'var(--vm-text-muted)' }}>
-          Please select a business to view business plan
-        </Typography>
-      </Box>
-    );
+    return <NoBusinessSelected message="Select a business to view business plan" />;
   }
 
   return (

@@ -4,6 +4,7 @@ import { Plus, MoreVertical, Edit2, Trash2, Mail, Briefcase, PieChart } from 'lu
 import type { TeamMember } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { DomainChat } from '../../components/venturemate/DomainChat';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 const ROLE_OPTIONS = [
   'Founder & CEO',
@@ -156,13 +157,7 @@ export function TeamPage() {
   const totalEquity = teamMembers.reduce((acc, m) => acc + m.equity, 0);
 
   if (!business) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography sx={{ color: 'var(--vm-text-muted)' }}>
-          Please select a business to view team members
-        </Typography>
-      </Box>
-    );
+    return <NoBusinessSelected message="Select a business to view team members" />;
   }
 
   return (

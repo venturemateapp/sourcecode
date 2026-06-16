@@ -20,6 +20,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -280,13 +281,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
   const applySteps = ['Loan Details', 'Documents', 'Review', 'Confirmation'];
 
   if (!selectedBusiness) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 14 }}>
-          Select a business to view credit score
-        </Typography>
-      </Box>
-    );
+    return <NoBusinessSelected message="Select a business to view credit score" />;
   }
 
   if (loading) {
