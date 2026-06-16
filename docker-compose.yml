@@ -19,7 +19,7 @@ services:
       SMTP_USER: "placeholder"
       SMTP_PASSWORD: "placeholder"
       SMTP_FROM_NAME: "VentureMate"
-      SMTP_FROM_EMAIL: "noreply@venturemate.net"
+      SMTP_FROM_EMAIL: "ops@venturemate.net"
       EMAIL_LOGO_URL: "https://venturemate.net/logo.png"
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -27,12 +27,13 @@ services:
       - vm-network
 
   frontend:
-    build: ./vm-frontend
+    build:
+      context: ./vm-frontend
+      args:
+        VITE_GRAPHQL_PROXY_URL: http://backend:8080
+        VITE_AUTH_PROXY_URL: http://backend:8081
     ports:
-      - "5173:5173"
-    environment:
-      VITE_GRAPHQL_PROXY_URL: http://backend:8080
-      VITE_AUTH_PROXY_URL: http://backend:8081
+      - "5173:80"
     depends_on:
       - backend
     networks:

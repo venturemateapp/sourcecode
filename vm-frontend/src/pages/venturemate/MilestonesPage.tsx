@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Box, Typography, Card, Chip, Grid, IconButton, Dialog, DialogTitle,
+  Box, Typography, Card, Chip, IconButton, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Button, Select, MenuItem,
   FormControl, InputLabel,
 } from '@mui/material';
@@ -85,7 +85,6 @@ export function MilestonesPage() {
 
   const handleSave = () => {
     if (!formData.title || !formData.dueDate) return;
-    const now = new Date().toISOString();
     let updated: Milestone[];
     if (editingId) {
       updated = milestones.map(m =>
