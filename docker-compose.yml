@@ -7,6 +7,22 @@ services:
       - ./vm-backend/.env
     environment:
       PORT: "8080"
+      DB_HOST: host.docker.internal
+      DB_PORT: "5432"
+      DB_USER: venturematedb
+      DB_PASSWORD: venturematedb
+      DB_NAME: venturematedb
+      DB_SSLMODE: disable
+      DATABASE_URL: postgres://venturematedb:venturematedb@host.docker.internal:5432/venturematedb?sslmode=disable
+      SMTP_HOST: "smtp.example.com"
+      SMTP_PORT: "587"
+      SMTP_USER: "placeholder"
+      SMTP_PASSWORD: "placeholder"
+      SMTP_FROM_NAME: "VentureMate"
+      SMTP_FROM_EMAIL: "noreply@venturemate.net"
+      EMAIL_LOGO_URL: "https://venturemate.net/logo.png"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - vm-network
 
