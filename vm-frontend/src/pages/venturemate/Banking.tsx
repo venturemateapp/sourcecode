@@ -7,6 +7,7 @@ import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { graphqlRequest } from '../../lib/api';
 import { DomainChat } from '../../components/venturemate/DomainChat';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import {
   Landmark,
   Plus,
@@ -285,6 +286,10 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
   };
 
   const isOverdue = (inv: Invoice) => inv.status === 'sent' && new Date(inv.dueDate) < new Date();
+
+  if (!selectedBusiness) {
+    return <NoBusinessSelected message="Select a business to manage banking" />;
+  }
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>

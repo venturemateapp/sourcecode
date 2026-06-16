@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, LinearProgress, Chip, CircularProgress } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import {
   TrendingUp,
   CheckCircle,
@@ -137,13 +138,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
   };
 
   if (!selectedBusiness) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 14 }}>
-          Select a business to view health score
-        </Typography>
-      </Box>
-    );
+    return <NoBusinessSelected message="Select a business to view health score" />;
   }
 
   if (loading) {

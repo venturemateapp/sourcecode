@@ -9,6 +9,7 @@ import type { Milestone } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { DomainChat } from '../../components/venturemate/DomainChat';
 import { GradientButton } from '../../components/shared/buttons';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 const STATUS_OPTIONS: Milestone['status'][] = ['pending', 'in-progress', 'completed', 'overdue'];
 const PRIORITY_OPTIONS: Milestone['priority'][] = ['low', 'medium', 'high', 'critical'];
@@ -42,7 +43,7 @@ export function MilestonesPage() {
     category: 'product',
   });
 
-  if (!business) return null;
+  if (!business) return <NoBusinessSelected message="Select a business to view milestones" />;
 
   const milestones = business.milestones;
 
