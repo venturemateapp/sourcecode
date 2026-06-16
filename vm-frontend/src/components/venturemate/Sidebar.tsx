@@ -14,6 +14,7 @@ import {
 import type { ViewType, NavSection } from '../../types/venturemate';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useBusiness } from '../../contexts/BusinessContext';
 import { PlanSelector } from '../subscription/PlanSelector';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../shared/toast';
@@ -78,7 +79,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Dashboard', icon: 'LayoutDashboard', view: 'dashboard' },
       { label: 'My Businesses', icon: 'Building2', view: 'businesses' },
-      { label: 'AI Assistant', icon: 'Bot', view: 'ai-assistant', badge: 3 },
+      { label: 'AI Assistant', icon: 'Bot', view: 'ai-assistant' },
       { label: 'Documents', icon: 'FolderOpen', view: 'documents' },
       { label: 'Websites', icon: 'Globe', view: 'websites' },
     ],
@@ -86,7 +87,7 @@ const navSections: NavSection[] = [
   {
     title: 'GROWTH',
     items: [
-      { label: 'CRM', icon: 'Users', view: 'crm', badge: 5 },
+      { label: 'CRM', icon: 'Users', view: 'crm' },
       { label: 'Banking', icon: 'Landmark', view: 'banking' },
       { label: 'Social Media', icon: 'Share2', view: 'social' },
       { label: 'Marketplace', icon: 'Store', view: 'marketplace' },
@@ -95,7 +96,7 @@ const navSections: NavSection[] = [
   {
     title: 'SCALE',
     items: [
-      { label: 'Investors', icon: 'TrendingUp', view: 'investors', badge: 5 },
+      { label: 'Investors', icon: 'TrendingUp', view: 'investors' },
       { label: 'Credit Score', icon: 'CreditCard', view: 'credit-score' },
       { label: 'Health Score', icon: 'Heart', view: 'health-score' },
     ],
@@ -106,7 +107,7 @@ const navSections: NavSection[] = [
       { label: 'Pitch Deck', icon: 'Presentation', view: 'pitch-deck' },
       { label: 'Business Plan', icon: 'FileText', view: 'business-plan' },
       { label: 'Branding Kit', icon: 'Palette', view: 'branding-kit' },
-      { label: 'Milestones', icon: 'Target', view: 'milestones', badge: 2 },
+      { label: 'Milestones', icon: 'Target', view: 'milestones' },
       { label: 'Team', icon: 'UserCircle', view: 'team' },
     ],
   },
@@ -135,6 +136,7 @@ interface SidebarProps {
 export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
   const { user, logout } = useAuth();
   const { planName, isFree } = useSubscription();
+  const { selectedBusiness } = useBusiness();
   const navigate = useNavigate();
   const [expandedSections, setExpandedSections] = useState<string[]>((['CORE', 'GROWTH', 'SCALE', 'BUSINESS TOOLS']));
   const [planSelectorOpen, setPlanSelectorOpen] = useState(false);
@@ -147,6 +149,12 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
 
   const toast = useToast();
   const comingSoon: ViewType[] = ['social', 'marketplace', 'crm'];
+
+  const badgeCounts: Record<string, number> = {
+    documents: selectedBusiness?.documents?.length || 0,
+    milestones: selectedBusiness?.milestones?.filter(m => m.status === 'pending' || m.status === 'overdue').length || 0,
+    investors: selectedBusiness?.investors?.length || 0,
+  };
 
   const handleViewChange = (view: ViewType) => {
     if (comingSoon.includes(view)) {
@@ -360,13 +368,13 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
                             color: isActive ? 'var(--vm-text-primary)' : 'var(--vm-text-secondary)',
                           }}
                         />
-                        {item.badge && (
+                        {badgeCounts[item.view] !== undefined && (
                           <Badge
-                            badgeContent={item.badge}
+                            badgeContent={badgeCounts[item.view]}
                             sx={{
                               '& .MuiBadge-badge': {
-                                bgcolor: 'var(--vm-primary-600)',
-                                color: 'white',
+                                bgcolor: badgeCounts[item.view] > 0 ? 'var(--vm-primary-600)' : 'var(--vm-bg-tertiary)',
+                                color: badgeCounts[item.view] > 0 ? 'white' : 'var(--vm-text-muted)',
                                 fontSize: 10,
                                 fontWeight: 600,
                                 minWidth: 18,
