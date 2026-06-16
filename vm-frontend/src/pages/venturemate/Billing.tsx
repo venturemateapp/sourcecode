@@ -250,7 +250,7 @@ export function BillingPage(_props: BillingProps) {
                 <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
                   Current Plan
                 </Typography>
-                <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: currentPlanData?.color }}>
+                <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: currentPlanData?.color || 'var(--vm-text-primary)' }}>
                   {currentPlanData?.displayName || 'Free'}
                 </Typography>
               </Box>
