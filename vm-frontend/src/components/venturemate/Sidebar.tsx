@@ -153,7 +153,6 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
   const badgeCounts: Record<string, number> = {
     documents: selectedBusiness?.documents?.length || 0,
     milestones: selectedBusiness?.milestones?.filter(m => m.status === 'pending' || m.status === 'overdue').length || 0,
-    investors: selectedBusiness?.investors?.length || 0,
   };
 
   const handleViewChange = (view: ViewType) => {
