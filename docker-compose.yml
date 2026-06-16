@@ -2,37 +2,38 @@ services:
   backend:
     build: ./vm-backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     env_file:
       - ./vm-backend/.env
     environment:
       PORT: "8080"
       DB_HOST: host.docker.internal
-      DB_PORT: "5432"
-      DB_USER: venturematedb
-      DB_PASSWORD: venturematedb
-      DB_NAME: venturematedb
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_USER: "${DB_USER:-venturematedb}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_NAME: "${DB_NAME:-venturematedb}"
       DB_SSLMODE: disable
-      DATABASE_URL: postgres://venturematedb:venturematedb@host.docker.internal:5432/venturematedb?sslmode=disable
-      SMTP_HOST: "smtp.example.com"
-      SMTP_PORT: "587"
-      SMTP_USER: "placeholder"
-      SMTP_PASSWORD: "placeholder"
-      SMTP_FROM_NAME: "VentureMate"
-      SMTP_FROM_EMAIL: "noreply@venturemate.net"
-      EMAIL_LOGO_URL: "https://venturemate.net/logo.png"
+      DATABASE_URL: "postgres://${DB_USER}:${DB_PASSWORD}@host.docker.internal:${DB_PORT}/${DB_NAME}?sslmode=disable"
+      SMTP_HOST: "${SMTP_HOST}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME:-VentureMate}"
+      SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-noreply@venturemate.net}"
+      EMAIL_LOGO_URL: "${EMAIL_LOGO_URL:-https://venturemate.net/logo.png}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - vm-network
 
   frontend:
-    build: ./vm-frontend
+    build:
+      context: ./vm-frontend
+      args:
+        VITE_GRAPHQL_PROXY_URL: http://backend:8080
+        VITE_AUTH_PROXY_URL: http://backend:8081
     ports:
-      - "5173:5173"
-    environment:
-      VITE_GRAPHQL_PROXY_URL: http://backend:8080
-      VITE_AUTH_PROXY_URL: http://backend:8081
+      - "${FRONTEND_PORT:-5173}:80"
     depends_on:
       - backend
     networks:
