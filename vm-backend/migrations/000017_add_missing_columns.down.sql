@@ -16,3 +16,7 @@ ALTER TABLE user_subscriptions DROP COLUMN IF EXISTS trial_end;
 ALTER TABLE user_subscriptions DROP COLUMN IF EXISTS cancel_at_period_end;
 ALTER TABLE user_subscriptions DROP COLUMN IF EXISTS stripe_subscription_id;
 ALTER TABLE user_subscriptions DROP COLUMN IF EXISTS stripe_customer_id;
+ALTER TABLE users DROP COLUMN IF EXISTS bio;
+ALTER TABLE users DROP COLUMN IF EXISTS linked_in;
+ALTER TABLE users DROP COLUMN IF EXISTS twitter;
+ALTER TABLE users DROP COLUMN IF EXISTS website;

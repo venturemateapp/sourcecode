@@ -19,17 +19,17 @@ var businessScoreType = graphql.NewObject(graphql.ObjectConfig{
 var financingOfferType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "FinancingOffer",
 	Fields: graphql.Fields{
-		"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"lenderName":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"productType":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"minAmount":     &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"maxAmount":     &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"minRate":       &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"maxRate":       &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"termMonths":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"requirements":  &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String)))},
-		"preQualified":  &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
-		"expiresAt":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"id":           &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"lenderName":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"productType":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"minAmount":    &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"maxAmount":    &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"minRate":      &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"maxRate":      &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"termMonths":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"requirements": &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String)))},
+		"preQualified": &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"expiresAt":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
 

@@ -6,7 +6,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { graphqlRequest } from '../../lib/api';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import {
   Landmark,
@@ -211,6 +210,18 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
   }, [businessId]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+
+  useEffect(() => {
+    const handleAIRefresh = (event: Event) => {
+      const detail = (event as CustomEvent<{ businessId?: string; domain?: string }>).detail;
+      if (detail?.businessId && detail.businessId !== businessId) return;
+      if (detail?.domain && !['banking', 'invoices', 'dashboard', 'general'].includes(detail.domain)) return;
+      void fetchAccounts();
+      void fetchInvoices();
+    };
+    window.addEventListener('venturemate:ai-data-changed', handleAIRefresh);
+    return () => window.removeEventListener('venturemate:ai-data-changed', handleAIRefresh);
+  }, [businessId, fetchAccounts, fetchInvoices]);
 
   const handleCreateInvoice = async () => {
     if (!userId || !businessId) return;
@@ -507,7 +518,6 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
         </DialogActions>
       </Dialog>
 
-      <DomainChat domain="banking" placeholder="Ask me about banking and finances..." />
     </Box>
   );
 }

@@ -17,12 +17,13 @@ import (
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/migrations"
 	"github.com/venturemate/vmbackend/internal/oauth"
+	"github.com/venturemate/vmbackend/internal/websites"
 )
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == "OPTIONS" {
@@ -30,6 +31,28 @@ func corsMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+func optionalAuthMiddleware(jwtSecret string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+		if authHeader == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenStr == authHeader || strings.TrimSpace(tokenStr) == "" {
+			http.Error(w, `{"error":"invalid authorization format"}`, http.StatusUnauthorized)
+			return
+		}
+		userID, err := auth.ValidateToken(tokenStr, jwtSecret)
+		if err != nil {
+			http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
+			return
+		}
+		r = r.WithContext(auth.WithUserID(r.Context(), userID))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -151,7 +174,7 @@ func uploadHandler(container *app.Container) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
+			"success":  true,
 			"document": doc,
 		})
 	}
@@ -184,12 +207,26 @@ func main() {
 		GraphiQL: true,
 	})
 
-	http.Handle("/graphql", corsMiddleware(h))
+	publicSiteDomain := os.Getenv("PUBLIC_SITE_BASE_DOMAIN")
+	if publicSiteDomain == "" {
+		publicSiteDomain = "venturemate.net"
+	}
+	customDomainTarget := os.Getenv("PUBLIC_SITE_CNAME_TARGET")
+	if customDomainTarget == "" {
+		customDomainTarget = "sites." + publicSiteDomain
+	}
+	publicSites := websites.NewPublicHandler(container.WebsiteRepo, publicSiteDomain, customDomainTarget)
+
+	http.Handle("/graphql", corsMiddleware(optionalAuthMiddleware(container.JWTSecret, h)))
 	http.HandleFunc("/auth/google", auth.GoogleLoginHandler)
 	http.HandleFunc("/auth/google/callback", auth.GoogleCallbackHandler)
 	http.HandleFunc("/auth/oauth/", oauthHandler(container.OAuthManager))
 	http.Handle("/api/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, uploadHandler(container)))))
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))
+	http.HandleFunc("/api/public-sites/allow-domain", publicSites.AllowDomain)
+	http.HandleFunc("/api/public-sites/subdomain-availability", publicSites.SubdomainAvailability)
+	http.HandleFunc("/api/public-sites/contact", publicSites.SubmitContact)
+	http.Handle("/", publicSites)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -198,5 +235,6 @@ func main() {
 
 	fmt.Printf("GraphQL server running at http://localhost:%s/graphql (fully wired)\n", port)
 	fmt.Printf("File upload endpoint at http://localhost:%s/api/upload\n", port)
+	fmt.Printf("Public websites served for *.%s and verified custom domains\n", publicSiteDomain)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

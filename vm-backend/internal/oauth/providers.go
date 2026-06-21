@@ -20,8 +20,8 @@ func InitProviders(redirectBase, frontendURL string) {
 			ClientSecret: envOrDefault("OAUTH_GOOGLE_CALENDAR_CLIENT_SECRET", ""),
 			Scopes:       []string{"https://www.googleapis.com/auth/calendar"},
 			Endpoint: oauth2.Endpoint{
-				AuthURL:   "https://accounts.google.com/o/oauth2/v2/auth",
-				TokenURL:  "https://oauth2.googleapis.com/token",
+				AuthURL:  "https://accounts.google.com/o/oauth2/v2/auth",
+				TokenURL: "https://oauth2.googleapis.com/token",
 			},
 		},
 		"slack": {

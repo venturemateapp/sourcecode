@@ -34,11 +34,11 @@ type HealthPriorityAction struct {
 }
 
 type HealthScoreData struct {
-	OverallScore     int                       `json:"overallScore"`
-	CalculatedAt     string                    `json:"calculatedAt"`
-	Components       map[string]HealthComponent `json:"components"`
-	Recommendations  []HealthRecommendation     `json:"recommendations"`
-	PriorityActions  []HealthPriorityAction     `json:"priorityActions"`
+	OverallScore    int                        `json:"overallScore"`
+	CalculatedAt    string                     `json:"calculatedAt"`
+	Components      map[string]HealthComponent `json:"components"`
+	Recommendations []HealthRecommendation     `json:"recommendations"`
+	PriorityActions []HealthPriorityAction     `json:"priorityActions"`
 }
 
 type HealthEngine struct {
@@ -98,8 +98,8 @@ func (e *HealthEngine) calculate(biz *businesses.Business) *HealthScoreData {
 	}
 
 	components := map[string]HealthComponent{
-		"compliance":                {Score: compliance, Weight: 15},
-		"revenue_viability":         {Score: revenueViability, Weight: 25},
+		"compliance":               {Score: compliance, Weight: 15},
+		"revenue_viability":        {Score: revenueViability, Weight: 25},
 		"market_fit":               {Score: marketFit, Weight: 20},
 		"team_structure":           {Score: teamStructure, Weight: 15},
 		"financial_sustainability": {Score: financialSustainability, Weight: 15},
@@ -282,7 +282,7 @@ func buildRecommendations(components map[string]HealthComponent) []HealthRecomme
 	id := 1
 
 	lowComponents := []struct {
-		key  string
+		key   string
 		label string
 	}{
 		{"compliance", "Compliance & Legal"},
@@ -369,10 +369,10 @@ func buildPriorityActions(components map[string]HealthComponent) []HealthPriorit
 			continue
 		}
 		action := HealthPriorityAction{
-			ID:          "act_" + padInt(id),
-			Component:   key,
-			Completed:   false,
-			Deadline:    time.Now().AddDate(0, 1, 0).Format(time.RFC3339),
+			ID:        "act_" + padInt(id),
+			Component: key,
+			Completed: false,
+			Deadline:  time.Now().AddDate(0, 1, 0).Format(time.RFC3339),
 		}
 		switch key {
 		case "compliance":
@@ -439,5 +439,3 @@ func parseJSONMap(s string) map[string]interface{} {
 	}
 	return m
 }
-
-

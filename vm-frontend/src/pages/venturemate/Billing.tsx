@@ -341,8 +341,8 @@ export function BillingPage(_props: BillingProps) {
                   Yearly
                   <Chip size="small" label="Save 15%" sx={{
                     ml: 1,
-                    bgcolor: billingPeriod === 'yearly' ? 'white' : 'var(--vm-primary-900)',
-                    color: billingPeriod === 'yearly' ? 'var(--vm-primary-600)' : 'var(--vm-primary-400)',
+                    bgcolor: billingPeriod === 'yearly' ? 'var(--vm-primary-200)' : 'var(--vm-primary-900)',
+                    color: billingPeriod === 'yearly' ? 'var(--vm-primary-950)' : 'var(--vm-primary-300)',
                     fontSize: 10, fontWeight: 700, height: 20,
                   }} />
                 </GradientButton>

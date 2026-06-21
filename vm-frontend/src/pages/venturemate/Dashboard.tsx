@@ -15,7 +15,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import type { ViewType } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 
 interface DashboardProps {
   onViewChange: (view: ViewType) => void;
@@ -440,7 +439,6 @@ const statsCards = b ? [
           </Card>
         </Box>
       </Box>
-      <DomainChat domain="dashboard" placeholder="Ask me for insights about your business..." />
     </Box>
   );
 }

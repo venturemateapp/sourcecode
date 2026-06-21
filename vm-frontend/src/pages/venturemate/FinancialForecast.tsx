@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Box, Typography, Card, Chip, Stack, Grid } from '@mui/material';
 import { Sparkles, TrendingUp, DollarSign, Users, Calendar, Download } from 'lucide-react';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 
@@ -384,7 +383,6 @@ export function FinancialForecast() {
           </Stack>
         </Grid>
       </Grid>
-      <DomainChat domain="financial forecast" placeholder="Ask me about financial projections..." />
     </Box>
   );
 }

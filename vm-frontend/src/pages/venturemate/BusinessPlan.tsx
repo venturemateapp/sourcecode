@@ -1,405 +1,89 @@
-import { useState } from 'react';
-import { Box, Typography, Card, Chip, TextField, Stack, IconButton, Menu, MenuItem } from '@mui/material';
-import { Plus, MoreVertical, Edit2, Trash2, Sparkles, Share2, Save, X } from 'lucide-react';
-import type { PlanSection } from '../../types/venturemate';
-import { useBusiness } from '../../contexts/BusinessContext';
-import { DomainChat } from '../../components/venturemate/DomainChat';
+import { Box, Card, Chip, Divider, Typography } from '@mui/material';
+import { BookOpen, Building2, FileCheck2, Sparkles } from 'lucide-react';
+import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
+import { useBusiness } from '../../contexts/BusinessContext';
+import type { BusinessPlan as BusinessPlanType } from '../../types/venturemate';
 
-export function BusinessPlan() {
-  const { selectedBusiness: business, updateBusiness, refreshBusiness } = useBusiness();
-  const businessPlan = business?.businessPlan;
-  const sections = businessPlan?.sections ?? [];
-  const [activeTab, setActiveTab] = useState(0);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedSection, setSelectedSection] = useState<PlanSection | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [draftTitle, setDraftTitle] = useState('');
-  const [draftContent, setDraftContent] = useState('');
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, section: PlanSection) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedSection(section);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedSection(null);
-  };
-
-  const handleAddSection = () => {
-    if (!businessPlan) return;
-    const newSection: PlanSection = {
-      id: `sec_${Date.now()}`,
-      title: `New Section ${sections.length + 1}`,
-      content: '',
-      aiGenerated: false,
-      order: sections.length,
-    };
-    const updatedPlan = {
-      ...businessPlan,
-      sections: [...sections, newSection],
-      lastModified: new Date().toISOString(),
-    };
-    updateBusiness(business!.id, { businessPlan: updatedPlan });
-    setActiveTab(sections.length);
-  };
-
-  const handleEnterEditMode = () => {
-    if (sections[activeTab]) {
-      setDraftTitle(sections[activeTab].title);
-      setDraftContent(sections[activeTab].content);
-      setEditMode(true);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditMode(false);
-  };
-
-  const handleSaveSection = () => {
-    if (!businessPlan || !sections[activeTab]) return;
-    const updatedSections = sections.map((s, i) =>
-      i === activeTab
-        ? { ...s, title: draftTitle, content: draftContent }
-        : s
-    );
-    const updatedPlan = {
-      ...businessPlan,
-      sections: updatedSections,
-      lastModified: new Date().toISOString(),
-    };
-    setSaving(true);
-    updateBusiness(business!.id, { businessPlan: updatedPlan }).then(() => {
-      setEditMode(false);
-      refreshBusiness();
-      setSaving(false);
-    });
-  };
-
-  const handleDeleteSection = () => {
-    if (!businessPlan || !selectedSection) return;
-    const updatedSections = sections.filter(s => s.id !== selectedSection.id);
-    const updatedPlan = {
-      ...businessPlan,
-      sections: updatedSections,
-      lastModified: new Date().toISOString(),
-    };
-    updateBusiness(business!.id, { businessPlan: updatedPlan });
-    if (activeTab >= updatedSections.length && activeTab > 0) {
-      setActiveTab(activeTab - 1);
-    }
-    handleMenuClose();
-  };
-
-  const handleEditFromMenu = () => {
-    handleMenuClose();
-    handleEnterEditMode();
-  };
-
-  if (!business) {
-    return <NoBusinessSelected message="Select a business to view business plan" />;
+function parsePlan(change: ProposedChange): BusinessPlanType | null {
+  try {
+    return JSON.parse(change.newValue) as BusinessPlanType;
+  } catch {
+    return null;
   }
+}
 
+function PlanPreview({ plan, proposed = false }: { plan: BusinessPlanType; proposed?: boolean }) {
+  const sections = plan.sections || [];
   return (
     <Box>
-      {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 2, md: 3 }, mb: { xs: 3, md: 4 } }}>
-        {[
-          { label: 'Sections', value: sections.length },
-          { label: 'AI Generated', value: sections.filter(s => s.aiGenerated).length },
-          { label: 'Words', value: sections.reduce((acc, s) => acc + s.content.split(' ').length, 0).toLocaleString() },
-          { label: 'Version', value: businessPlan?.version ?? '1.0' },
-        ].map((stat) => (
-          <Card
-            key={stat.label}
-            sx={{
-              bgcolor: 'var(--vm-bg-secondary)',
-              border: '1px solid var(--vm-border-subtle)',
-              borderRadius: 3,
-              p: 3,
-            }}
-          >
-            <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-              {stat.value}
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-              {stat.label}
-            </Typography>
+      <Box sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2.5, bgcolor: 'var(--vm-bg-tertiary)', border: proposed ? '1px solid var(--vm-primary-500)' : '1px solid var(--vm-border-subtle)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+          <Box>
+            <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 19, sm: 24 }, fontWeight: 900 }}>{plan.title || 'Business Plan'}</Typography>
+            <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.5 }}>Version {plan.version || '1.0'} · {sections.length} sections</Typography>
+          </Box>
+          <Chip icon={<FileCheck2 size={14} />} label={proposed ? 'Awaiting approval' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
+        </Box>
+        {plan.executiveSummary && (
+          <Box sx={{ mt: 1.5 }}>
+            <Typography sx={{ color: 'var(--vm-primary-300)', fontSize: 12, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.08em' }}>Executive summary</Typography>
+            <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13, lineHeight: 1.75, mt: 0.75, whiteSpace: 'pre-wrap' }}>{plan.executiveSummary}</Typography>
+          </Box>
+        )}
+      </Box>
+
+      <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        {sections.map((section, index) => (
+          <Card key={section.id || `${section.title}-${index}`} sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'var(--vm-bg-tertiary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+            <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'flex-start' }}>
+              <Box sx={{ flexShrink: 0, width: 28, height: 28, borderRadius: 1.5, display: 'grid', placeItems: 'center', bgcolor: 'var(--vm-primary-900)', color: 'var(--vm-primary-300)', fontSize: 12, fontWeight: 900 }}>{index + 1}</Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 15, fontWeight: 900 }}>{section.title}</Typography>
+                <Divider sx={{ my: 1, borderColor: 'var(--vm-border-subtle)' }} />
+                <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{section.content}</Typography>
+              </Box>
+            </Box>
           </Card>
         ))}
+        {sections.length === 0 && <Typography sx={{ color: 'var(--vm-text-muted)', py: 4, textAlign: 'center' }}>This version has no sections yet.</Typography>}
       </Box>
+    </Box>
+  );
+}
 
-      {/* Content */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '280px 1fr' }, gap: { xs: 2, md: 3 } }}>
-        {/* Sidebar - Sections List */}
-        <Card
-          sx={{
-            bgcolor: 'var(--vm-bg-secondary)',
-            border: '1px solid var(--vm-border-subtle)',
-            borderRadius: 3,
-            p: { xs: 1.5, sm: 2 },
-            height: 'fit-content',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-              Sections
-            </Typography>
-            <Box
-              component="button"
-              onClick={handleAddSection}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 28,
-                height: 28,
-                borderRadius: 1,
-                border: 'none',
-                bgcolor: 'var(--vm-primary-600)',
-                color: 'white',
-                cursor: 'pointer',
-                '&:hover': { bgcolor: 'var(--vm-primary-500)' },
-              }}
-            >
-              <Plus size={16} />
-            </Box>
-          </Box>
-          <Stack spacing={0.5}>
-            {sections.map((section, index) => (
-              <Box
-                key={section.id}
-                onClick={() => setActiveTab(index)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  p: 1.5,
-                  borderRadius: 1.5,
-                  cursor: 'pointer',
-                  bgcolor: activeTab === index ? 'var(--vm-bg-hover)' : 'transparent',
-                  border: '1px solid',
-                  borderColor: activeTab === index ? 'var(--vm-border-secondary)' : 'transparent',
-                  '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
-                }}
-              >
-                <Typography
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '50%',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    bgcolor: section.aiGenerated ? 'var(--vm-primary-900)' : 'var(--vm-bg-tertiary)',
-                    color: section.aiGenerated ? 'var(--vm-primary-400)' : 'var(--vm-text-muted)',
-                  }}
-                >
-                  {index + 1}
-                </Typography>
-                <Typography
-                  sx={{
-                    flex: 1,
-                    fontSize: 13,
-                    fontWeight: activeTab === index ? 600 : 400,
-                    color: activeTab === index ? 'var(--vm-text-primary)' : 'var(--vm-text-secondary)',
-                  }}
-                >
-                  {section.title}
-                </Typography>
-                {section.aiGenerated && (
-                  <Sparkles size={14} color="#34d399" />
-                )}
-              </Box>
-            ))}
-          </Stack>
-        </Card>
+export function BusinessPlan() {
+  const { selectedBusiness } = useBusiness();
+  if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its business plan with AI." />;
 
-        {/* Main Content */}
-        <Card
-          sx={{
-            bgcolor: 'var(--vm-bg-secondary)',
-            border: '1px solid var(--vm-border-subtle)',
-            borderRadius: 3,
-            p: 4,
-          }}
-        >
-          {sections.length > 0 ? (
-            editMode ? (
-              <Stack spacing={3}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <TextField
-                    value={draftTitle}
-                    onChange={(e) => setDraftTitle(e.target.value)}
-                    fullWidth
-                    sx={{
-                      '& .MuiInputBase-root': {
-                        bgcolor: 'var(--vm-bg-primary)',
-                        color: 'var(--vm-text-primary)',
-                        fontSize: 24,
-                        fontWeight: 700,
-                      },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', gap: 1, ml: 2 }}>
-                    <Box
-                      component="button"
-                      onClick={handleCancelEdit}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        py: 1,
-                        px: 2,
-                        borderRadius: 1.5,
-                        border: '1px solid var(--vm-border-primary)',
-                        bgcolor: 'transparent',
-                        color: 'var(--vm-text-secondary)',
-                        fontSize: 13,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <X size={14} />
-                      Cancel
-                    </Box>
-                    <Box
-                      component="button"
-                      onClick={handleSaveSection}
-                      disabled={saving}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        py: 1,
-                        px: 2,
-                        borderRadius: 1.5,
-                        border: 'none',
-                        bgcolor: 'var(--vm-primary-600)',
-                        color: 'white',
-                        fontSize: 13,
-                        cursor: 'pointer',
-                        opacity: saving ? 0.6 : 1,
-                      }}
-                    >
-                      <Save size={14} />
-                      {saving ? 'Saving...' : 'Save'}
-                    </Box>
-                  </Box>
-                </Box>
-                <TextField
-                  multiline
-                  rows={20}
-                  value={draftContent}
-                  onChange={(e) => setDraftContent(e.target.value)}
-                  sx={{
-                    '& .MuiInputBase-root': {
-                      bgcolor: 'var(--vm-bg-primary)',
-                      color: 'var(--vm-text-primary)',
-                      alignItems: 'flex-start',
-                    },
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                  }}
-                />
-              </Stack>
-            ) : (
-              <>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                  <Box>
-                    <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
-                      {sections[activeTab].title}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {sections[activeTab].aiGenerated && (
-                        <Chip
-                          size="small"
-                          icon={<Sparkles size={14} />}
-                          label="AI Generated"
-                          sx={{
-                            bgcolor: 'var(--vm-primary-900)',
-                            color: 'var(--vm-primary-400)',
-                            fontSize: 11,
-                          }}
-                        />
-                      )}
-                      <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-                        Last edited {new Date(businessPlan?.lastModified ?? Date.now()).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <IconButton
-                      onClick={handleEnterEditMode}
-                      sx={{ color: 'var(--vm-text-muted)' }}
-                    >
-                      <Edit2 size={18} />
-                    </IconButton>
-                    <IconButton
-                      onClick={(e) => handleMenuOpen(e, sections[activeTab])}
-                      sx={{ color: 'var(--vm-text-muted)' }}
-                    >
-                      <MoreVertical size={18} />
-                    </IconButton>
-                  </Box>
-                </Box>
-                <Typography
-                  sx={{
-                    fontSize: 15,
-                    color: 'var(--vm-text-secondary)',
-                    lineHeight: 1.8,
-                    whiteSpace: 'pre-wrap',
-                  }}
-                >
-                  {sections[activeTab].content}
-                </Typography>
-              </>
-            )
-          ) : (
-            <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography sx={{ color: 'var(--vm-text-muted)' }}>
-                No sections yet. Add your first section to get started.
-              </Typography>
-            </Box>
-          )}
-        </Card>
+  const plan = selectedBusiness.businessPlan;
+  const hasPlan = Boolean(plan?.sections?.length || plan?.executiveSummary);
+
+  return (
+    <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+        <BookOpen size={19} color="var(--vm-primary-400)" />
+        <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" />
+        <Chip icon={<Sparkles size={13} />} label="AI writes · You approve" size="small" color="success" variant="outlined" />
       </Box>
-
-      {/* Context Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        PaperProps={{
-          sx: {
-            bgcolor: 'var(--vm-bg-secondary)',
-            border: '1px solid var(--vm-border-subtle)',
-            borderRadius: 2,
-          },
+      <AICreationStudio
+        domain="business-plan"
+        title="AI Business Plan"
+        description="The plan is generated from the approved business profile, brand, team, milestones, metrics, and financial records. Ask AI to create it or revise a particular sentence, section, assumption, or tone; the current plan changes only after you approve the proposal."
+        placeholder="Example: Generate a complete investor-ready business plan from my business details. Clearly label assumptions and include go-to-market, operations, risks, and three-year priorities."
+        starterPrompts={[
+          'Generate a complete business plan from everything known about my business.',
+          'Rewrite the executive summary to be clearer and more convincing.',
+          'Add a detailed go-to-market section without inventing customer numbers.',
+          'Make the plan more realistic for a Ghanaian startup at my current stage.',
+        ]}
+        emptyLabel="No approved business plan exists. Ask AI to generate the first complete version."
+        renderCurrent={() => hasPlan ? <PlanPreview plan={plan} /> : null}
+        renderProposal={(change) => {
+          const proposed = parsePlan(change);
+          return proposed ? <PlanPreview plan={proposed} proposed /> : <Typography color="error">The AI returned an invalid business-plan preview.</Typography>;
         }}
-      >
-        <MenuItem onClick={handleEditFromMenu} sx={{ color: 'var(--vm-text-primary)', fontSize: 14 }}>
-          <Edit2 size={16} style={{ marginRight: 8 }} />
-          Edit Section
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose} sx={{ color: 'var(--vm-text-primary)', fontSize: 14 }}>
-          <Sparkles size={16} style={{ marginRight: 8 }} />
-          Regenerate with AI
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose} sx={{ color: 'var(--vm-text-primary)', fontSize: 14 }}>
-          <Share2 size={16} style={{ marginRight: 8 }} />
-          Share Section
-        </MenuItem>
-        <MenuItem onClick={handleDeleteSection} sx={{ color: '#ef4444', fontSize: 14 }}>
-          <Trash2 size={16} style={{ marginRight: 8 }} />
-          Delete Section
-        </MenuItem>
-      </Menu>
-      <DomainChat domain="business plan" placeholder="Ask me to help with your business plan..." />
+      />
     </Box>
   );
 }
