@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+dist
+*.md
+.env
+.env.*
+vm-backend/main
+vm-backend/vm-backend
