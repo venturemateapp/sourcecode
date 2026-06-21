@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Card, Chip, CircularProgress, Link, Typography } from '@mui/material';
-import { Building2, ExternalLink, Globe2, MonitorSmartphone, Sparkles } from 'lucide-react';
+import { Alert, Box, Button, Card, Chip, CircularProgress, Link, Typography } from '@mui/material';
+import { Building2, ExternalLink, Globe2, MonitorSmartphone, Sparkles, UploadCloud, XCircle } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -59,6 +59,22 @@ const WEBSITE_QUERY = `
     myWebsite(businessId: $businessId) {
       id businessId templateId subdomain customDomain pages globalStyles navigation footer status
       publishedAt lastModified publicUrl draftRevision publishedRevision hasUnpublishedChanges customDomainStatus
+    }
+  }
+`;
+
+const PUBLISH_WEBSITE_MUTATION = `
+  mutation PublishWebsite($id: ID!, $businessId: ID!) {
+    publishWebsite(id: $id, businessId: $businessId) {
+      id status publishedAt publicUrl publishedRevision hasUnpublishedChanges
+    }
+  }
+`;
+
+const UNPUBLISH_WEBSITE_MUTATION = `
+  mutation UnpublishWebsite($id: ID!, $businessId: ID!) {
+    unpublishWebsite(id: $id, businessId: $businessId) {
+      id status publishedAt publicUrl publishedRevision hasUnpublishedChanges
     }
   }
 `;
@@ -172,20 +188,38 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
   const [website, setWebsite] = useState<WebsiteRecord | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [unpublishing, setUnpublishing] = useState(false);
 
-  const loadWebsite = useCallback(async () => {
-    if (!selectedBusiness) return;
-    setLoading(true);
+  const handlePublish = useCallback(async () => {
+    if (!website || !selectedBusiness) return;
+    setPublishing(true);
     setError(null);
     try {
-      const data = await graphqlRequest<{ myWebsite: WebsiteRecord | null }>(WEBSITE_QUERY, { businessId: selectedBusiness.id });
-      setWebsite(data.myWebsite || null);
+      const data = await graphqlRequest<{ publishWebsite: WebsiteRecord }>(PUBLISH_WEBSITE_MUTATION, { id: website.id, businessId: selectedBusiness.id });
+      setWebsite(data.publishWebsite);
+      void loadWebsite();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load the website draft.');
+      setError(err instanceof Error ? err.message : 'Failed to publish website.');
     } finally {
-      setLoading(false);
+      setPublishing(false);
     }
-  }, [selectedBusiness]);
+  }, [website, selectedBusiness, loadWebsite]);
+
+  const handleUnpublish = useCallback(async () => {
+    if (!website || !selectedBusiness) return;
+    setUnpublishing(true);
+    setError(null);
+    try {
+      const data = await graphqlRequest<{ unpublishWebsite: WebsiteRecord }>(UNPUBLISH_WEBSITE_MUTATION, { id: website.id, businessId: selectedBusiness.id });
+      setWebsite(data.unpublishWebsite);
+      void loadWebsite();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to unpublish website.');
+    } finally {
+      setUnpublishing(false);
+    }
+  }, [website, selectedBusiness, loadWebsite]);
 
   useEffect(() => { void loadWebsite(); }, [loadWebsite]);
 
@@ -233,16 +267,25 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
             <Box>
               <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 13, fontWeight: 900 }}>Hosting & publication</Typography>
               <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.25 }}>
-                Draft changes remain private. Tell the floating AI assistant “Publish this website; I explicitly confirm” when the approved draft is ready.
+                {website.status === 'published' ? 'Your website is live at the address above.' : 'Review the draft below, then press Publish when you are ready to go live.'}
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', maxWidth: '100%' }}>
+            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center' }}>
               {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />}
-              {website.hasUnpublishedChanges && <Chip label="Unpublished AI changes" size="small" color="warning" />}
+              {website.hasUnpublishedChanges && <Chip label="Unpublished changes" size="small" color="warning" />}
               {website.publicUrl && (
                 <Link href={website.publicUrl} target="_blank" rel="noreferrer" underline="none">
                   <Chip icon={<ExternalLink size={13} />} label="Open live site" size="small" color="success" clickable />
                 </Link>
+              )}
+              {website.status !== 'published' ? (
+                <Button size="small" variant="contained" startIcon={publishing ? <CircularProgress size={13} /> : <UploadCloud size={14} />} disabled={publishing || !website.subdomain} onClick={handlePublish} sx={{ whiteSpace: 'nowrap', textTransform: 'none' }}>
+                  {publishing ? 'Publishing…' : 'Publish'}
+                </Button>
+              ) : (
+                <Button size="small" variant="outlined" color="error" startIcon={unpublishing ? <CircularProgress size={13} /> : <XCircle size={14} />} disabled={unpublishing} onClick={handleUnpublish} sx={{ whiteSpace: 'nowrap', textTransform: 'none' }}>
+                  {unpublishing ? 'Unpublishing…' : 'Unpublish'}
+                </Button>
               )}
             </Box>
           </Box>
