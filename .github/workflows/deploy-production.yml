@@ -127,4 +127,8 @@ jobs:
 
             docker compose build --no-cache
             docker compose up --build -d --force-recreate
+
+            cp Caddyfile /etc/caddy/Caddyfile
+            systemctl reload caddy || systemctl restart caddy
+
             docker system prune -af
