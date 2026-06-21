@@ -40,12 +40,12 @@ export const documentCategories = [
 
 // File type icons and colors
 export const fileTypeConfig: Record<string, { icon: string; color: string; bgColor: string }> = {
-  pdf: { icon: 'FileText', color: '#ef4444', bgColor: '#fef2f2' },
-  docx: { icon: 'FileText', color: '#3b82f6', bgColor: '#eff6ff' },
-  xlsx: { icon: 'Table', color: '#22c55e', bgColor: '#f0fdf4' },
-  pptx: { icon: 'Presentation', color: '#f97316', bgColor: '#fff7ed' },
-  image: { icon: 'Image', color: '#8b5cf6', bgColor: '#f5f3ff' },
-  other: { icon: 'File', color: '#6b7280', bgColor: '#f3f4f6' },
+  pdf: { icon: 'FileText', color: '#f87171', bgColor: 'rgba(239,68,68,.14)' },
+  docx: { icon: 'FileText', color: '#60a5fa', bgColor: 'rgba(59,130,246,.14)' },
+  xlsx: { icon: 'Table', color: '#4ade80', bgColor: 'rgba(34,197,94,.14)' },
+  pptx: { icon: 'Presentation', color: '#fb923c', bgColor: 'rgba(249,115,22,.14)' },
+  image: { icon: 'Image', color: '#a78bfa', bgColor: 'rgba(139,92,246,.14)' },
+  other: { icon: 'File', color: '#9ca3af', bgColor: 'rgba(107,114,128,.16)' },
 };
 
 // Document templates for quick creation

@@ -203,8 +203,9 @@ export interface Page {
 
 export interface Section {
   id: string;
-  type: 'hero' | 'features' | 'testimonials' | 'pricing' | 'team' | 'contact' | 'cta' | 'about' | 'stats' | 'faq' | 'custom';
-  content: Record<string, unknown>;
+  type: 'hero' | 'features' | 'carousel' | 'testimonials' | 'pricing' | 'team' | 'contact' | 'cta' | 'about' | 'stats' | 'faq' | 'image' | 'video' | 'custom';
+  content?: Record<string, unknown>;
+  props?: Record<string, unknown>;
   order: number;
   visible: boolean;
 }

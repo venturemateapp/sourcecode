@@ -466,7 +466,7 @@ export function LandingPage() {
                   }}
                 >
                   <Typography sx={{ color: '#64748b', fontSize: { xs: '0.65rem', md: '0.8rem' }, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    app.venturemate.net/dashboard
+                    venturemate.net/vm
                   </Typography>
                 </Box>
                 <Box sx={{ width: { xs: 40, md: 80 } }} />

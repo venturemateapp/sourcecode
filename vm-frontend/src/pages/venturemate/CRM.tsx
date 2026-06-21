@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 import {
   Box,
   Typography,
@@ -1091,7 +1090,6 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
           )}
         </DialogContent>
       </Dialog>
-      <DomainChat domain="crm" placeholder="Ask me about customer management..." />
     </Box>
   );
 }

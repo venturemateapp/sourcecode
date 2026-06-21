@@ -3,7 +3,6 @@ import { Box, Typography, Card, Chip, Avatar, IconButton, Menu, MenuItem, Dialog
 import { Plus, MoreVertical, Edit2, Trash2, Mail, Briefcase, PieChart } from 'lucide-react';
 import type { TeamMember } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 const ROLE_OPTIONS = [
@@ -565,7 +564,6 @@ export function TeamPage() {
           </Stack>
         </DialogContent>
       </Dialog>
-      <DomainChat domain="team" placeholder="Ask me to help manage your team..." />
     </Box>
   );
 }

@@ -6,38 +6,38 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/banking"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/db"
 	"github.com/venturemate/vmbackend/internal/domains"
-	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/email"
 	"github.com/venturemate/vmbackend/internal/investors"
+	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/notifications"
+	"github.com/venturemate/vmbackend/internal/oauth"
 	"github.com/venturemate/vmbackend/internal/rates"
 	"github.com/venturemate/vmbackend/internal/registrations"
 	"github.com/venturemate/vmbackend/internal/s3"
 	"github.com/venturemate/vmbackend/internal/scores"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
 	"github.com/venturemate/vmbackend/internal/users"
-	"github.com/venturemate/vmbackend/internal/ai"
-	"github.com/venturemate/vmbackend/internal/oauth"
 	"github.com/venturemate/vmbackend/internal/websites"
 )
 
 type Container struct {
-	DB                *pgxpool.Pool
-	S3                *s3.Service
-	Email             *email.Service
-	UserRepo          *users.Repository
-	OTPRepo           *auth.OTPRepository
-	GoogleAuth        *auth.GoogleOAuth
-	JWTSecret         string
-	SubscriptionRepo  *subscriptions.Repository
-	BusinessRepo      *businesses.Repository
-	WebsiteRepo       *websites.Repository
-	DomainRepo        *domains.Repository
+	DB                  *pgxpool.Pool
+	S3                  *s3.Service
+	Email               *email.Service
+	UserRepo            *users.Repository
+	OTPRepo             *auth.OTPRepository
+	GoogleAuth          *auth.GoogleOAuth
+	JWTSecret           string
+	SubscriptionRepo    *subscriptions.Repository
+	BusinessRepo        *businesses.Repository
+	WebsiteRepo         *websites.Repository
+	DomainRepo          *domains.Repository
 	InvestorRepo        *investors.Repository
 	NotificationRepo    *notifications.Repository
 	NotificationService *notifications.Service
@@ -46,11 +46,13 @@ type Container struct {
 	HealthEngine        *scores.HealthEngine
 	RateService         *rates.Service
 	GeminiAPIKey        string
-	OpenAIAPIKey      string
-	ClaudeAPIKey      string
-	FileHandler       *ai.FileHandler
-	OAuthRepo         *oauth.Repository
-	OAuthManager      *oauth.OAuthManager
+	OpenAIAPIKey        string
+	ClaudeAPIKey        string
+	GrokAPIKey          string
+	AIManager           *ai.ProviderManager
+	FileHandler         *ai.FileHandler
+	OAuthRepo           *oauth.Repository
+	OAuthManager        *oauth.OAuthManager
 	BankAccountRepo     *banking.Repository
 	InvoiceRepo         *invoices.Repository
 	RegistrationRepo    *registrations.Repository
@@ -113,6 +115,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	geminiKey := os.Getenv("GEMINI_API_KEY")
 	openAIKey := os.Getenv("OPENAI_API_KEY")
 	claudeKey := os.Getenv("CLAUDE_API_KEY")
+	grokKey := os.Getenv("GROK_API_KEY")
+	aiManager := ai.NewProviderManagerFromEnv()
 
 	// 7. OAuth
 	oauthRepo := oauth.NewRepository(dbPool)
@@ -129,33 +133,36 @@ func NewContainer(ctx context.Context) (*Container, error) {
 
 	// 8. File handler
 	fileHandler := ai.NewFileHandler(s3Svc, bizRepo, geminiKey)
+	fileHandler.Providers = aiManager
 
 	return &Container{
-		DB:                dbPool,
-		S3:                s3Svc,
-		Email:             emailSvc,
-		UserRepo:          userRepo,
-		OTPRepo:           otpRepo,
-		SubscriptionRepo:  subRepo,
-		BusinessRepo:      bizRepo,
-		WebsiteRepo:       webRepo,
-		DomainRepo:        domainRepo,
+		DB:                  dbPool,
+		S3:                  s3Svc,
+		Email:               emailSvc,
+		UserRepo:            userRepo,
+		OTPRepo:             otpRepo,
+		SubscriptionRepo:    subRepo,
+		BusinessRepo:        bizRepo,
+		WebsiteRepo:         webRepo,
+		DomainRepo:          domainRepo,
 		InvestorRepo:        investorRepo,
 		NotificationRepo:    notificationRepo,
 		NotificationService: notificationSvc,
 		ScoreRepo:           scoreRepo,
-		ScoreEngine:           scoreEngine,
-		HealthEngine:          healthEngine,
+		ScoreEngine:         scoreEngine,
+		HealthEngine:        healthEngine,
 		RateService:         rateService,
 		JWTSecret:           jwtSecret,
-		GeminiAPIKey:      geminiKey,
-		OpenAIAPIKey:      openAIKey,
-		ClaudeAPIKey:      claudeKey,
-		FileHandler:       fileHandler,
-		OAuthRepo:         oauthRepo,
-		OAuthManager:      oauthManager,
-		BankAccountRepo:   bankAccountRepo,
-		InvoiceRepo:       invoiceRepo,
-		RegistrationRepo:  registrationRepo,
+		GeminiAPIKey:        geminiKey,
+		OpenAIAPIKey:        openAIKey,
+		ClaudeAPIKey:        claudeKey,
+		GrokAPIKey:          grokKey,
+		AIManager:           aiManager,
+		FileHandler:         fileHandler,
+		OAuthRepo:           oauthRepo,
+		OAuthManager:        oauthManager,
+		BankAccountRepo:     bankAccountRepo,
+		InvoiceRepo:         invoiceRepo,
+		RegistrationRepo:    registrationRepo,
 	}, nil
 }

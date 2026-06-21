@@ -7,7 +7,6 @@ import {
 import { Plus, Edit2, Trash2, Target, Calendar, User, ArrowUp } from 'lucide-react';
 import type { Milestone } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 import { GradientButton } from '../../components/shared/buttons';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
@@ -326,7 +325,6 @@ export function MilestonesPage() {
         </DialogActions>
       </Dialog>
 
-      <DomainChat domain="milestones" placeholder="Ask me to help plan your milestones..." />
     </Box>
   );
 }

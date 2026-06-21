@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { graphqlRequest } from '../lib/api';
 
 const DOMAIN_DATA_QUERY = `
@@ -42,6 +42,18 @@ export function useDomainData(businessId: string | undefined, domain: string) {
       setLoading(false);
     }
   }, [businessId, domain]);
+
+  useEffect(() => {
+    void fetch();
+    const handleAIRefresh = (event: Event) => {
+      const detail = (event as CustomEvent<{ businessId?: string; domain?: string }>).detail;
+      if (detail?.businessId && detail.businessId !== businessId) return;
+      if (detail?.domain && detail.domain !== domain && detail.domain !== 'general') return;
+      void fetch();
+    };
+    window.addEventListener('venturemate:ai-data-changed', handleAIRefresh);
+    return () => window.removeEventListener('venturemate:ai-data-changed', handleAIRefresh);
+  }, [businessId, domain, fetch]);
 
   const save = useCallback(async (newData: string): Promise<boolean> => {
     if (!businessId) return false;

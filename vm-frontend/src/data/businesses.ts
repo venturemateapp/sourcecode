@@ -12,7 +12,7 @@ export const businesses: Business[] = [
     stage: 'mvp',
     foundedDate: '2024-01-20',
     location: 'San Francisco, CA',
-    website: 'neurotask.venturemate.app',
+    website: 'neurotask.venturemate.net',
     brandKit: {
       logo: 'https://placeholder.com/logo-neurotask.png',
       logoWhite: 'https://placeholder.com/logo-neurotask-white.png',
@@ -176,7 +176,7 @@ export const businesses: Business[] = [
       template: 'modern-tech',
       lastModified: '2024-04-03T10:00:00Z',
       exportFormats: ['pdf', 'pptx'],
-      shareLink: 'https://venturemate.app/p/neurotask-deck',
+      shareLink: 'https://venturemate.net/p/neurotask-deck',
       views: 147
     },
     businessPlan: {
