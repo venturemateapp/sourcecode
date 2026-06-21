@@ -6,7 +6,6 @@ export function AIProviderSettingsCard() {
   const {
     providers,
     selectedProvider,
-    selectedProviderInfo,
     allowOverride,
     loading,
     setSelectedProvider,
