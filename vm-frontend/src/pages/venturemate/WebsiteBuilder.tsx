@@ -191,6 +191,20 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
   const [publishing, setPublishing] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
 
+  const loadWebsite = useCallback(async () => {
+    if (!selectedBusiness) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await graphqlRequest<{ myWebsite: WebsiteRecord | null }>(WEBSITE_QUERY, { businessId: selectedBusiness.id });
+      setWebsite(data.myWebsite || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load the website draft.');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBusiness]);
+
   const handlePublish = useCallback(async () => {
     if (!website || !selectedBusiness) return;
     setPublishing(true);
