@@ -125,5 +125,5 @@ jobs:
             apply_default VITE_GOOGLE_AUTH_URL "/auth/google"
             apply_default VITE_CALLBACK_URL "http://localhost:3000/vm/auth/callback"
 
-            docker compose up --build -d
+            docker compose up --build -d --force-recreate
             docker system prune -af
