@@ -491,12 +491,12 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 2 }}>
                 {provider.completed_projects} projects • {provider.response_time} response
               </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center' }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center', maxWidth: '100%' }}>
                 {provider.expertise.map((exp) => (
                   <Chip
-                    key={tag}
+                    key={exp}
                     size="small"
-                    label={tag}
+                    label={exp}
                     sx={{
                       bgcolor: 'var(--vm-bg-tertiary)',
                       color: 'var(--vm-text-muted)',
