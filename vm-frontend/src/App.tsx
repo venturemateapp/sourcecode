@@ -113,29 +113,29 @@ function BusinessOverview() {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(12, 1fr)' }, gap: { xs: 2, md: 3 } }}>
         <Box sx={{ gridColumn: { md: 'span 8' } }}>
           <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 3 }, mb: 3 }}>
-            <Typography sx={{ fontSize: 18, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2 }}>
+            <Typography sx={{ fontSize: { xs: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2 }}>
               About
             </Typography>
-            <Typography sx={{ fontSize: 14, color: 'var(--vm-text-secondary)', lineHeight: 1.8 }}>
+            <Typography sx={{ fontSize: { xs: 13, md: 14 }, color: 'var(--vm-text-secondary)', lineHeight: 1.8, wordBreak: 'break-word' }}>
               {business.description}
             </Typography>
           </Card>
         </Box>
         <Box sx={{ gridColumn: { md: 'span 4' } }}>
           <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 3 } }}>
-            <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2 }}>
+            <Typography sx={{ fontSize: { xs: 15, md: 16 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2 }}>
               Quick Stats
             </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: { xs: 1, md: 2 } }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: { xs: 1, sm: 1.5, md: 2 } }}>
               {[
                 { label: 'Stage', value: business.stage },
                 { label: 'Industry', value: business.industry },
                 { label: 'Location', value: business.location },
                 { label: 'Founded', value: new Date(business.foundedDate).toLocaleDateString('en-GB') },
               ].map((stat) => (
-                <Box key={stat.label} sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2, p: { xs: 1.5, md: 2 }, textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5, textTransform: 'uppercase', fontWeight: 600 }}>{stat.label}</Typography>
-                  <Typography sx={{ fontSize: { xs: 13, md: 14 }, color: 'var(--vm-text-primary)', fontWeight: 600 }}>{stat.value}</Typography>
+                <Box key={stat.label} sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2, p: { xs: 1.5, sm: 2 }, textAlign: 'center' }}>
+                  <Typography sx={{ fontSize: { xs: 10, sm: 11, md: 11 }, color: 'var(--vm-text-muted)', mb: 0.5, textTransform: 'uppercase', fontWeight: 600, lineHeight: 1.3 }}>{stat.label}</Typography>
+                  <Typography sx={{ fontSize: { xs: 12, sm: 13, md: 14 }, color: 'var(--vm-text-primary)', fontWeight: 600, wordBreak: 'break-word' }}>{stat.value}</Typography>
                 </Box>
               ))}
             </Box>

@@ -66,7 +66,7 @@ const statsCards = b ? [
                 bgcolor: 'var(--vm-bg-secondary)',
                 border: '1px solid var(--vm-border-subtle)',
                 borderRadius: 3,
-                p: 3,
+                p: { xs: 2, sm: 2.5, md: 3 },
                 transition: 'all 0.3s',
                 cursor: 'pointer',
                 '&:hover': {
