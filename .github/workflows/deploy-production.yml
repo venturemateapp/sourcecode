@@ -44,47 +44,86 @@ jobs:
             git fetch origin
             git reset --hard origin/Production
 
-            cat > vm-backend/.env << ENVEOF
-            PORT=$PORT
-            DB_HOST=$DB_HOST
-            DB_PORT=$DB_PORT
-            DB_USER=$DB_USER
-            DB_PASSWORD=$DB_PASSWORD
-            DB_NAME=$DB_NAME
-            DB_SSLMODE=$DB_SSLMODE
-            JWT_SECRET=$JWT_SECRET
-            OAUTH_REDIRECT_BASE=$OAUTH_REDIRECT_BASE
-            FRONTEND_URL=$FRONTEND_URL
-            SMTP_HOST=$SMTP_HOST
-            SMTP_PORT=$SMTP_PORT
-            SMTP_USER=$SMTP_USER
-            SMTP_PASSWORD=$SMTP_PASSWORD
-            S3_BUCKET=$S3_BUCKET
-            S3_REGION=$S3_REGION
-            AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-            AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-            GEMINI_API_KEY=$GEMINI_API_KEY
-            CLAUDE_API_KEY=$CLAUDE_API_KEY
-            GROK_API_KEY=$GROK_API_KEY
-            OPENAI_API_KEY=$OPENAI_API_KEY
-            OPENROUTER_API_KEY=$OPENROUTER_API_KEY
-            OPENROUTER_ENDPOINT=$OPENROUTER_ENDPOINT
-            OPENROUTER_MODEL=$OPENROUTER_MODEL
-            AI_PROVIDER=$AI_PROVIDER
-            AI_ALLOW_PROVIDER_OVERRIDE=$AI_ALLOW_PROVIDER_OVERRIDE
-            AI_FALLBACK_PROVIDERS=$AI_FALLBACK_PROVIDERS
-            EMAIL_FROM_NAME=$EMAIL_FROM_NAME
-            EMAIL_LOGO_URL=$EMAIL_LOGO_URL
-            PUBLIC_SITE_BASE_DOMAIN=$PUBLIC_SITE_BASE_DOMAIN
-            PUBLIC_SITE_CNAME_TARGET=$PUBLIC_SITE_CNAME_TARGET
-            ENVEOF
+            . ./vm-backend/.env 2>/dev/null || true
 
-            cat > vm-frontend/.env << ENVEOF
-            VITE_GRAPHQL_URL=$VITE_GRAPHQL_URL
-            VITE_AUTH_SERVER_URL=$VITE_AUTH_SERVER_URL
-            VITE_GOOGLE_AUTH_URL=$VITE_GOOGLE_AUTH_URL
-            VITE_CALLBACK_URL=$VITE_CALLBACK_URL
-            ENVEOF
+            write_if_set() {
+              local KEY="$1"
+              local VALUE="${!KEY:-}"
+              if [ -n "$VALUE" ]; then
+                if grep -qE "^${KEY}=" vm-backend/.env 2>/dev/null; then
+                  sed -i "s|^${KEY}=.*|${KEY}=${VALUE}|" vm-backend/.env
+                else
+                  echo "${KEY}=${VALUE}" >> vm-backend/.env
+                fi
+              fi
+            }
+
+            apply_default() {
+              local KEY="$1"
+              local DEFAULT="$2"
+              if [ -z "${!KEY:-}" ]; then
+                if grep -qE "^${KEY}=" vm-backend/.env 2>/dev/null; then
+                  return
+                fi
+                echo "${KEY}=${DEFAULT}" >> vm-backend/.env
+              fi
+            }
+
+            > vm-frontend/.env
+            write_if_set VITE_GRAPHQL_URL
+            write_if_set VITE_AUTH_SERVER_URL
+            write_if_set VITE_GOOGLE_AUTH_URL
+            write_if_set VITE_CALLBACK_URL
+
+            write_if_set PORT
+            write_if_set DB_HOST
+            write_if_set DB_PORT
+            write_if_set DB_USER
+            write_if_set DB_PASSWORD
+            write_if_set DB_NAME
+            write_if_set DB_SSLMODE
+            write_if_set JWT_SECRET
+            write_if_set OAUTH_REDIRECT_BASE
+            write_if_set FRONTEND_URL
+            write_if_set SMTP_HOST
+            write_if_set SMTP_PORT
+            write_if_set SMTP_USER
+            write_if_set SMTP_PASSWORD
+            write_if_set S3_BUCKET
+            write_if_set S3_REGION
+            write_if_set AWS_ACCESS_KEY_ID
+            write_if_set AWS_SECRET_ACCESS_KEY
+            write_if_set GEMINI_API_KEY
+            write_if_set CLAUDE_API_KEY
+            write_if_set GROK_API_KEY
+            write_if_set OPENAI_API_KEY
+            write_if_set OPENROUTER_API_KEY
+            write_if_set OPENROUTER_ENDPOINT
+            write_if_set OPENROUTER_MODEL
+            write_if_set AI_PROVIDER
+            write_if_set AI_ALLOW_PROVIDER_OVERRIDE
+            write_if_set AI_FALLBACK_PROVIDERS
+            write_if_set EMAIL_FROM_NAME
+            write_if_set EMAIL_LOGO_URL
+            write_if_set PUBLIC_SITE_BASE_DOMAIN
+            write_if_set PUBLIC_SITE_CNAME_TARGET
+
+            apply_default PORT "8080"
+            apply_default DB_HOST "localhost"
+            apply_default DB_PORT "5432"
+            apply_default DB_USER "venturematedb"
+            apply_default DB_NAME "venturematedb"
+            apply_default DB_SSLMODE "disable"
+            apply_default SMTP_PORT "587"
+            apply_default AI_ALLOW_PROVIDER_OVERRIDE "true"
+            apply_default AI_FALLBACK_PROVIDERS "openrouter,gemini,openai,claude,grok"
+            apply_default PUBLIC_SITE_BASE_DOMAIN "venturemate.net"
+            apply_default PUBLIC_SITE_CNAME_TARGET "sites.venturemate.net"
+            apply_default EMAIL_FROM_NAME "VentureMate"
+            apply_default VITE_GRAPHQL_URL "/graphql"
+            apply_default VITE_AUTH_SERVER_URL "/auth"
+            apply_default VITE_GOOGLE_AUTH_URL "/auth/google"
+            apply_default VITE_CALLBACK_URL "http://localhost:3000/vm/auth/callback"
 
             docker compose up --build -d
             docker system prune -af
