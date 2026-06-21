@@ -198,7 +198,7 @@ const shared = {
       styleOverrides: { root: { color: '#a7f3d0' } },
     },
     MuiTypography: {
-      styleOverrides: { root: { overflowWrap: 'anywhere' } },
+      styleOverrides: { root: { overflowWrap: 'anywhere' as const } },
     },
   },
 };

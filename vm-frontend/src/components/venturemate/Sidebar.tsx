@@ -448,7 +448,7 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
               bgcolor: user?.avatar ? 'transparent' : 'var(--vm-primary-600)',
             }}
           >
-            {!user?.avatar && <Person size={18} />}
+            {!user?.avatar && <Person sx={{ fontSize: 18 }} />}
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
