@@ -76,10 +76,10 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandK
           <Typography sx={{ color: 'rgba(255,255,255,.76)', fontFamily: brand.fontBody || 'Inter', mt: 0.75, fontSize: 13 }}>
             {brand.logoConcept?.rationale || 'An AI-created identity using the approved business details.'}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mt: 1.5, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
-            {brand.logoConcept?.style && <Chip size="small" label={brand.logoConcept.style} />}
-            {brand.logoConcept?.shape && <Chip size="small" label={brand.logoConcept.shape} />}
-            {brand.logoConcept?.mark && <Chip size="small" label={`Mark: ${brand.logoConcept.mark}`} />}
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mt: 1.5, justifyContent: { xs: 'center', sm: 'flex-start' }, maxWidth: '100%' }}>
+            {brand.logoConcept?.style && <Chip size="small" label={brand.logoConcept.style} sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />}
+            {brand.logoConcept?.shape && <Chip size="small" label={brand.logoConcept.shape} sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />}
+            {brand.logoConcept?.mark && <Chip size="small" label={`Mark: ${brand.logoConcept.mark}`} sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />}
           </Box>
         </Box>
       </Box>

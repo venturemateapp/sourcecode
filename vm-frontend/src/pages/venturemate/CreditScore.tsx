@@ -524,7 +524,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
 
               <Box sx={{ mb: 2 }}>
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1 }}>Requirements</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, maxWidth: '100%' }}>
                   {offer.requirements.map((req, idx) => (
                     <Chip
                       key={idx}
@@ -534,6 +534,8 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                         bgcolor: 'var(--vm-bg-tertiary)',
                         color: 'var(--vm-text-muted)',
                         fontSize: 10,
+                        maxWidth: '100%',
+                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                       }}
                     />
                   ))}

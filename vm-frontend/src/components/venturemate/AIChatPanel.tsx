@@ -536,9 +536,9 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
             <Typography sx={{ mt: 0.5, mb: 2, px: 2, fontSize: 12, color: 'var(--vm-text-muted)' }}>
               I can read module data, create or update records, build websites, generate a local SVG logo, and carry out confirmed destructive actions.
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.75 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.75, maxWidth: '100%' }}>
               {QUICK_ACTIONS.map(action => (
-                <Chip key={action} size="small" label={action} onClick={() => setInput(action)} sx={{ fontSize: 11 }} />
+                <Chip key={action} size="small" label={action} onClick={() => setInput(action)} sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
               ))}
             </Box>
           </Box>
@@ -560,9 +560,9 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
                 {message.content}
               </Typography>
               {message.attachments && message.attachments.length > 0 && (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1, maxWidth: '100%' }}>
                   {message.attachments.map(file => (
-                    <Chip key={file.id} size="small" icon={file.type === 'image' ? <ImageIcon size={13} /> : <FileIcon size={13} />} label={file.name} />
+                    <Chip key={file.id} size="small" icon={file.type === 'image' ? <ImageIcon size={13} /> : <FileIcon size={13} />} label={file.name} sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
                   ))}
                 </Box>
               )}
@@ -575,7 +575,7 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
                       color={operation.success ? 'success' : 'warning'}
                       variant="outlined"
                       label={`${operation.success ? 'Completed' : 'Needs attention'}: ${operation.tool}`}
-                      sx={{ justifyContent: 'flex-start', maxWidth: '100%' }}
+                      sx={{ justifyContent: 'flex-start', maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }}
                     />
                   ))}
                 </Box>

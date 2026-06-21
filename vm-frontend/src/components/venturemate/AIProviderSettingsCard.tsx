@@ -75,6 +75,7 @@ export function AIProviderSettingsCard() {
             label={`${provider.name.toUpperCase()}: ${provider.configured ? (provider.available ? provider.message || 'Ready' : 'Unavailable') : 'Not configured'}`}
             color={provider.configured && provider.available ? 'success' : provider.configured ? 'warning' : 'default'}
             variant={provider.name === selectedProvider ? 'filled' : 'outlined'}
+            sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }}
           />
         ))}
       </Box>

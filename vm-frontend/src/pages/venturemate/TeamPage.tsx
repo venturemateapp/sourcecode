@@ -308,7 +308,7 @@ export function TeamPage() {
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2, maxWidth: '100%' }}>
               {member.responsibilities.slice(0, 3).map((resp) => (
                 <Chip
                   key={resp}
@@ -318,17 +318,21 @@ export function TeamPage() {
                     bgcolor: 'var(--vm-bg-tertiary)',
                     color: 'var(--vm-text-secondary)',
                     fontSize: 11,
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    maxWidth: '100%',
                   }}
                 />
               ))}
               {member.responsibilities.length > 3 && (
                 <Chip
+                  key={`+${member.responsibilities.length - 3}`}
                   size="small"
                   label={`+${member.responsibilities.length - 3}`}
                   sx={{
                     bgcolor: 'var(--vm-bg-tertiary)',
                     color: 'var(--vm-text-muted)',
                     fontSize: 11,
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                   }}
                 />
               )}

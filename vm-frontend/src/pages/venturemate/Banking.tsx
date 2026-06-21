@@ -357,7 +357,7 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
                     </Box>
                   </Box>
                   <Chip size="small" icon={statusIcon(account.status)} label={account.status}
-                    sx={{ bgcolor: `${statusColor(account.status)}20`, color: statusColor(account.status), fontSize: 10, fontWeight: 600, textTransform: 'capitalize' }} />
+                    sx={{ bgcolor: `${statusColor(account.status)}20`, color: statusColor(account.status), fontSize: 10, fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
                 </Box>
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1 }}>{account.accountName} • {account.accountNumber}</Typography>
                 {account.status === 'pending' && isAdmin && (
@@ -400,7 +400,7 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                     <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>{inv.invoiceNumber}</Typography>
                     <Chip size="small" icon={statusIcon(actualStatus)} label={actualStatus}
-                      sx={{ bgcolor: `${statusColor(actualStatus)}20`, color: statusColor(actualStatus), fontSize: 10, fontWeight: 600, textTransform: 'capitalize' }} />
+                      sx={{ bgcolor: `${statusColor(actualStatus)}20`, color: statusColor(actualStatus), fontSize: 10, fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
                   </Box>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
                     {format(inv.amount)}

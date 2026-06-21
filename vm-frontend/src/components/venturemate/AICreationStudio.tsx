@@ -334,7 +334,7 @@ export function AICreationStudio({
           </Button>
 
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 1.75, mb: 0.75 }}>Try saying:</Typography>
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
             {starterPrompts.map(item => (
               <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)} sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
             ))}

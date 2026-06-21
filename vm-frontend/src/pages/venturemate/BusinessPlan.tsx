@@ -23,7 +23,7 @@ function PlanPreview({ plan, proposed = false }: { plan: BusinessPlanType; propo
             <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 19, sm: 24 }, fontWeight: 900 }}>{plan.title || 'Business Plan'}</Typography>
             <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.5 }}>Version {plan.version || '1.0'} · {sections.length} sections</Typography>
           </Box>
-          <Chip icon={<FileCheck2 size={14} />} label={proposed ? 'Awaiting approval' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
+          <Chip icon={<FileCheck2 size={14} />} label={proposed ? 'Awaiting approval' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" sx={{ '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
         </Box>
         {plan.executiveSummary && (
           <Box sx={{ mt: 1.5 }}>

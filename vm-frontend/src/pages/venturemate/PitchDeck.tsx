@@ -31,7 +31,7 @@ function SlidePreview({ slide, index, total, primary, dark }: { slide: Slide; in
       }}
     >
       <Typography sx={{ position: 'absolute', top: 12, right: 14, color: 'rgba(255,255,255,.55)', fontSize: 10 }}>{index + 1} / {total}</Typography>
-      <Chip label={slide.type} size="small" sx={{ position: 'absolute', top: 10, left: 12, textTransform: 'capitalize', bgcolor: 'rgba(255,255,255,.1)', color: 'white' }} />
+      <Chip label={slide.type} size="small" sx={{ position: 'absolute', top: 10, left: 12, textTransform: 'capitalize', bgcolor: 'rgba(255,255,255,.1)', color: 'white', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
       <Typography sx={{ color: 'white', fontSize: { xs: 19, sm: 25 }, fontWeight: 900, textAlign: slide.layout === 'center' ? 'center' : 'left' }}>{slide.title}</Typography>
       {slide.content && <Typography sx={{ color: 'rgba(255,255,255,.8)', fontSize: { xs: 12, sm: 13 }, lineHeight: 1.6, mt: 1, textAlign: slide.layout === 'center' ? 'center' : 'left' }}>{slide.content}</Typography>}
       {slide.bullets && slide.bullets.length > 0 && (

@@ -72,7 +72,7 @@ export function ProfileStep({ data, updateData }: ProfileStepProps) {
         <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: 'rgba(255,255,255,0.8)', mb: 1.5 }}>
           Select your top skills
         </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, maxWidth: '100%' }}>
           {commonSkills.map((skill) => {
             const selected = data.skills.includes(skill);
             return (
@@ -89,6 +89,8 @@ export function ProfileStep({ data, updateData }: ProfileStepProps) {
                   color: selected ? '#34d399' : 'rgba(255,255,255,0.7)',
                   border: '1px solid',
                   borderColor: selected ? 'rgba(52, 211, 153, 0.4)' : 'rgba(255,255,255,0.1)',
+                  maxWidth: '100%',
+                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                   '&:hover': {
                     bgcolor: selected ? 'rgba(52, 211, 153, 0.25)' : 'rgba(255,255,255,0.1)',
                   },

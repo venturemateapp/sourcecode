@@ -216,9 +216,9 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
 
   return (
     <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap', maxWidth: '100%' }}>
         <MonitorSmartphone size={19} color="var(--vm-primary-400)" />
-        <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" />
+        <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
         <Chip icon={<Sparkles size={13} />} label="No-code means conversation only" size="small" color="success" variant="outlined" />
         {website && <Chip label={`Draft v${website.draftRevision}`} size="small" variant="outlined" />}
         {website?.status === 'published' && <Chip label={`Live v${website.publishedRevision}`} size="small" color="success" />}
@@ -236,8 +236,8 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
                 Draft changes remain private. Tell the floating AI assistant “Publish this website; I explicitly confirm” when the approved draft is ready.
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-              {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" />}
+            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', maxWidth: '100%' }}>
+              {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />}
               {website.hasUnpublishedChanges && <Chip label="Unpublished AI changes" size="small" color="warning" />}
               {website.publicUrl && (
                 <Link href={website.publicUrl} target="_blank" rel="noreferrer" underline="none">

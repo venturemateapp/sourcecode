@@ -189,6 +189,7 @@ export function FinancialForecast() {
                 sx={{
                   bgcolor: 'var(--vm-primary-900)',
                   color: 'var(--vm-primary-400)',
+                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                 }}
               />
             </Box>

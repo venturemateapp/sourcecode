@@ -275,7 +275,7 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
               {investor.thesis.substring(0, 100)}...
             </Typography>
 
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 3 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 3, maxWidth: '100%' }}>
               {investor.focusIndustries.slice(0, 3).map((industry) => (
                 <Chip
                   key={industry}
@@ -285,11 +285,14 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
                     bgcolor: 'var(--vm-bg-tertiary)',
                     color: 'var(--vm-text-secondary)',
                     fontSize: 10,
+                    maxWidth: '100%',
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                   }}
                 />
               ))}
               {investor.focusIndustries.length > 3 && (
                 <Chip
+                  key={`+${investor.focusIndustries.length - 3}`}
                   size="small"
                   label={`+${investor.focusIndustries.length - 3}`}
                   sx={{

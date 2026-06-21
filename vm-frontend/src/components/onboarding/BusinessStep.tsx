@@ -53,7 +53,7 @@ export function BusinessStep({ data, updateData, industries }: BusinessStepProps
         {industries.map((industry) => {
           const isSelected = data.industry === industry;
           return (
-            <Chip
+             <Chip
               key={industry}
               label={industry}
               onClick={() => selectIndustry(industry)}
@@ -62,6 +62,8 @@ export function BusinessStep({ data, updateData, industries }: BusinessStepProps
                 color: isSelected ? '#fff' : 'var(--vm-text-secondary)',
                 border: '1px solid',
                 borderColor: isSelected ? 'var(--vm-primary-500)' : 'var(--vm-border-primary)',
+                maxWidth: '100%',
+                '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                 cursor: 'pointer',
                 '&:hover': {
                   bgcolor: isSelected ? 'var(--vm-primary-500)' : 'var(--vm-bg-hover)',

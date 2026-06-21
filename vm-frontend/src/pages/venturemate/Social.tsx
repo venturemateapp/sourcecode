@@ -176,6 +176,7 @@ export function SocialPage(_props: SocialProps) {
                     color: account.connected ? '#22c55e' : 'var(--vm-text-muted)',
                     fontSize: 10,
                     fontWeight: 600,
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                   }}
                 />
               </Box>
@@ -234,6 +235,7 @@ export function SocialPage(_props: SocialProps) {
                     fontSize: 10,
                     fontWeight: 600,
                     textTransform: 'capitalize',
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                   }}
                 />
               </Box>

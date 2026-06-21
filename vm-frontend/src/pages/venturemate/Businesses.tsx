@@ -238,7 +238,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 {business.tagline}
               </Typography>
 
-              <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap', maxWidth: '100%' }}>
                 <Chip
                   size="small"
                   label={business.stage.toUpperCase()}
@@ -247,6 +247,8 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                     color: stageColors[business.stage],
                     fontWeight: 600,
                     fontSize: 10,
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    maxWidth: '100%',
                   }}
                 />
                 <Chip
@@ -257,6 +259,8 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                     color: business.status === 'active' ? '#4ade80' : 'var(--vm-text-muted)',
                     fontWeight: 600,
                     fontSize: 10,
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    maxWidth: '100%',
                   }}
                 />
                 {registrations[business.id] && (
@@ -268,6 +272,8 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                       color: registrations[business.id].status === 'approved' ? '#60a5fa' : registrations[business.id].status === 'pending' ? '#f59e0b' : '#ef4444',
                       fontWeight: 600,
                       fontSize: 10,
+                      '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                      maxWidth: '100%',
                     }}
                   />
                 )}

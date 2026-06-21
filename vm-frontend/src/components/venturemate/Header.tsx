@@ -14,7 +14,7 @@ import {
   Tooltip,
   Button,
 } from '@mui/material';
-import { Person, CameraAlt, Settings as SettingsIcon, Logout, AccountCircle } from '@mui/icons-material';
+import { Person, CameraAlt, Settings as SettingsIcon, Logout } from '@mui/icons-material';
 import {
   Menu as MenuIcon,
   Bell,
@@ -98,7 +98,7 @@ export function Header({
     e.target.value = '';
   };
 
-  const handleUserMenuClick = (action: 'profile' | 'settings' | 'logout') => {
+  const handleUserMenuClick = (action: 'settings' | 'logout') => {
     setUserMenuAnchor(null);
     if (action === 'logout') {
       logout();
@@ -428,14 +428,6 @@ export function Header({
             </ListItemIcon>
             <ListItemText>
               <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)' }}>Change Picture</Typography>
-            </ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => handleUserMenuClick('profile')} sx={{ py: 1.5, '&:hover': { bgcolor: 'var(--vm-bg-hover)' } }}>
-            <ListItemIcon sx={{ minWidth: 32, color: 'var(--vm-text-muted)' }}>
-              <AccountCircle sx={{ fontSize: 18 }} />
-            </ListItemIcon>
-            <ListItemText>
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)' }}>Profile</Typography>
             </ListItemText>
           </MenuItem>
           <MenuItem onClick={() => handleUserMenuClick('settings')} sx={{ py: 1.5, '&:hover': { bgcolor: 'var(--vm-bg-hover)' } }}>

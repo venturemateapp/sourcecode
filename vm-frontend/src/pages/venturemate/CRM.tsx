@@ -497,6 +497,7 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                         fontSize: 10,
                         fontWeight: 600,
                         textTransform: 'capitalize',
+                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                       }}
                     />
                   </Box>

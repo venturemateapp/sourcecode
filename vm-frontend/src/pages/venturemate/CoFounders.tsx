@@ -329,7 +329,7 @@ export function CoFoundersPage({ onViewChange }: CoFoundersProps) {
         {cofounder.bio.substring(0, 120)}...
       </Typography>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2, maxWidth: '100%' }}>
         {cofounder.skills.slice(0, 4).map((skill) => (
           <Chip
             key={skill}
@@ -339,6 +339,8 @@ export function CoFoundersPage({ onViewChange }: CoFoundersProps) {
               bgcolor: 'var(--vm-bg-tertiary)',
               color: 'var(--vm-text-secondary)',
               fontSize: 10,
+              maxWidth: '100%',
+              '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
             }}
           />
         ))}

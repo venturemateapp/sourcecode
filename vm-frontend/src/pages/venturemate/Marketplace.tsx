@@ -349,6 +349,8 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                       bgcolor: 'var(--vm-bg-tertiary)',
                       color: 'var(--vm-text-secondary)',
                       fontSize: 10,
+                      maxWidth: '100%',
+                      '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                     }}
                   />
                 </Box>
@@ -360,7 +362,7 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                   {service.description}
                 </Typography>
 
-                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap', maxWidth: '100%' }}>
                   {service.tags.map((tag) => (
                     <Chip
                       key={tag}
@@ -370,6 +372,8 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                         bgcolor: 'var(--vm-bg-tertiary)',
                         color: 'var(--vm-text-muted)',
                         fontSize: 10,
+                        maxWidth: '100%',
+                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                       }}
                     />
                   ))}
@@ -414,17 +418,19 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                 <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
                   {booking.service_title}
                 </Typography>
-                <Chip
-                  size="small"
-                  label={booking.status.replace('_', ' ')}
-                  sx={{
-                    bgcolor: `${getStatusColor(booking.status)}20`,
-                    color: getStatusColor(booking.status),
-                    fontSize: 10,
-                    fontWeight: 600,
-                    textTransform: 'capitalize',
-                  }}
-                />
+                 <Chip
+                   size="small"
+                   label={booking.status.replace('_', ' ')}
+                   sx={{
+                     bgcolor: `${getStatusColor(booking.status)}20`,
+                     color: getStatusColor(booking.status),
+                     fontSize: 10,
+                     fontWeight: 600,
+                     textTransform: 'capitalize',
+                     maxWidth: '100%',
+                     '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                   }}
+                 />
               </Box>
 
               <Typography sx={{ fontSize: 14, color: 'var(--vm-text-secondary)', mb: 2 }}>
@@ -488,13 +494,15 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center' }}>
                 {provider.expertise.map((exp) => (
                   <Chip
-                    key={exp}
+                    key={tag}
                     size="small"
-                    label={exp}
+                    label={tag}
                     sx={{
                       bgcolor: 'var(--vm-bg-tertiary)',
                       color: 'var(--vm-text-muted)',
                       fontSize: 10,
+                      maxWidth: '100%',
+                      '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                     }}
                   />
                 ))}
@@ -537,6 +545,8 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                         color: 'var(--vm-primary-400)',
                         fontSize: 11,
                         fontWeight: 600,
+                        maxWidth: '100%',
+                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                       }}
                     />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -824,6 +834,7 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                     color: '#6b7280',
                     fontSize: 10,
                     fontWeight: 600,
+                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                   }}
                 />
               </Box>
