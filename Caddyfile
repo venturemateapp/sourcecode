@@ -4,7 +4,14 @@
 }
 
 
-# VentureMate test site
+# Published websites (wildcard subdomains)
+*.venturemate.net {
+	route {
+		reverse_proxy 127.0.0.1:8080
+	}
+}
+
+# Main app
 venturemate.net {
 	@callback path /auth/callback*
 	redir @callback /vm{uri} 301
