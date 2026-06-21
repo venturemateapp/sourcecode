@@ -56,6 +56,15 @@ const componentLabels: Record<string, string> = {
   digital_presence: 'Digital Presence',
 };
 
+const componentView: Record<string, ViewType> = {
+  compliance: 'business-settings',
+  revenue_viability: 'financial-forecast',
+  market_fit: 'market-research',
+  team_structure: 'team',
+  financial_sustainability: 'banking',
+  digital_presence: 'websites',
+};
+
 const HEALTH_SCORE_QUERY = `
   query BusinessScore($businessId: ID!, $scoreType: String!) {
     businessScore(businessId: $businessId, scoreType: $scoreType) {
@@ -86,7 +95,7 @@ const componentIcons: Record<string, React.ComponentType<{ size?: number; color?
   digital_presence: Globe,
 };
 
-export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProps) {
+export function HealthScorePage({ onViewChange }: HealthScoreProps) {
   const { selectedBusiness } = useBusiness();
   const [healthScore, setHealthScore] = useState({
     overallScore: 0, calculatedAt: '',
@@ -257,11 +266,18 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
           return (
             <Card
               key={key}
+              onClick={() => onViewChange?.(componentView[key])}
               sx={{
                 bgcolor: 'var(--vm-bg-secondary)',
                 border: '1px solid var(--vm-border-subtle)',
                 borderRadius: 3,
                 p: 3,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  borderColor: 'var(--vm-primary-600)',
+                  transform: 'translateY(-2px)',
+                },
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -313,11 +329,18 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
         {healthScore.recommendations.map((rec) => (
           <Card
             key={rec.id}
+            onClick={() => onViewChange?.(componentView[rec.component])}
             sx={{
               bgcolor: 'var(--vm-bg-secondary)',
               border: '1px solid var(--vm-border-subtle)',
               borderRadius: 3,
               p: 3,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                borderColor: 'var(--vm-primary-600)',
+                transform: 'translateY(-2px)',
+              },
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -372,6 +395,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
         {healthScore.priorityActions.map((action, idx) => (
           <Box
             key={action.id}
+            onClick={() => onViewChange?.(componentView[action.component])}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -379,6 +403,9 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
               p: 3,
               borderBottom: idx < healthScore.priorityActions.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
               bgcolor: action.completed ? 'rgba(34, 197, 94, 0.05)' : 'transparent',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -427,7 +454,7 @@ export function HealthScorePage({ onViewChange: _onViewChange }: HealthScoreProp
                 }}
               />
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                Due: {new Date(action.deadline).toLocaleDateString()}
+                Due: {new Date(action.deadline).toLocaleDateString('en-GB')}
               </Typography>
             </Box>
           </Box>

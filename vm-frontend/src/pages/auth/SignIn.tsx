@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Box, Typography, Card, Stack } from '@mui/material'
 import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -230,6 +230,21 @@ export function SignIn() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
               Sign in with Google
+            </Box>
+
+            {/* Visit our site */}
+            <Box sx={{ textAlign: 'center', pt: 1 }}>
+              <Link to="/" style={{ textDecoration: 'none' }}>
+                <Typography
+                  sx={{
+                    color: '#6ee7b7',
+                    fontSize: '0.8125rem',
+                    '&:hover': { color: '#34d399', textDecoration: 'underline' },
+                  }}
+                >
+                  Visit our site ↗
+                </Typography>
+              </Link>
             </Box>
           </Stack>
         </form>

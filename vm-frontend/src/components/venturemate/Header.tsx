@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -6,9 +7,14 @@ import {
   Avatar,
   Badge,
   Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
   Tooltip,
   Button,
 } from '@mui/material';
+import { Person, CameraAlt, Settings as SettingsIcon, Logout, AccountCircle } from '@mui/icons-material';
 import {
   Menu as MenuIcon,
   Bell,
@@ -21,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useToast } from '../shared/toast';
 import { BusinessSwitcher } from './BusinessSwitcher';
 import type { ViewType } from '../../types/venturemate';
 
@@ -69,11 +76,37 @@ export function Header({
   activeView,
   onViewChange,
 }: HeaderProps) {
-  const { user } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, deleteAllRead } = useNotifications();
+  const toast = useToast();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
+  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   const unreadMessages = 0;
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      updateProfile({ avatar: dataUrl });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleUserMenuClick = (action: 'profile' | 'settings' | 'logout') => {
+    setUserMenuAnchor(null);
+    if (action === 'logout') {
+      logout();
+      navigate('/vm/auth/signin');
+      return;
+    }
+    onViewChange(action);
+  };
 
   const typeIcon: Record<string, string> = {
     message: '💬',
@@ -95,7 +128,7 @@ export function Header({
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
     if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
   };
 
   return (
@@ -221,7 +254,7 @@ export function Header({
 
         <Tooltip title="Messages">
           <IconButton
-            onClick={() => onViewChange('messages')}
+            onClick={() => toast.info('Coming Soon', { description: 'We\'re building something great here — stay tuned!' })}
             sx={{ color: 'var(--vm-text-secondary)', p: { xs: 0.5, md: 0.75 } }}
           >
             <Badge
@@ -347,17 +380,82 @@ export function Header({
           </Box>
         </Menu>
 
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
         <Avatar
-          src={user?.avatar || `https://i.pravatar.cc/150?u=${user?.email}`}
-          onClick={() => onViewChange('profile')}
+          src={user?.avatar || undefined}
+          onClick={(e) => setUserMenuAnchor(e.currentTarget)}
           sx={{
             width: { xs: 28, md: 36 },
             height: { xs: 28, md: 36 },
             cursor: 'pointer',
             border: '2px solid var(--vm-primary-600)',
             ml: { xs: 0.25, md: 1 },
+            bgcolor: user?.avatar ? 'transparent' : 'var(--vm-primary-600)',
           }}
-        />
+        >
+          {!user?.avatar && <Person sx={{ fontSize: { xs: 16, md: 20 } }} />}
+        </Avatar>
+        <Menu
+          anchorEl={userMenuAnchor}
+          open={Boolean(userMenuAnchor)}
+          onClose={() => setUserMenuAnchor(null)}
+          onClick={() => setUserMenuAnchor(null)}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          slotProps={{
+            paper: {
+              sx: {
+                bgcolor: 'var(--vm-bg-secondary)',
+                border: '1px solid var(--vm-border-subtle)',
+                borderRadius: 2,
+                mt: 1,
+                minWidth: 200,
+              },
+            },
+          }}
+        >
+          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid var(--vm-border-subtle)' }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+              {user?.firstName} {user?.lastName}
+            </Typography>
+            <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.25 }}>
+              {user?.email}
+            </Typography>
+          </Box>
+          <MenuItem onClick={() => { fileInputRef.current?.click(); setUserMenuAnchor(null); }} sx={{ py: 1.5, '&:hover': { bgcolor: 'var(--vm-bg-hover)' } }}>
+            <ListItemIcon sx={{ minWidth: 32, color: 'var(--vm-text-muted)' }}>
+              <CameraAlt sx={{ fontSize: 18 }} />
+            </ListItemIcon>
+            <ListItemText>
+              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)' }}>Change Picture</Typography>
+            </ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => handleUserMenuClick('profile')} sx={{ py: 1.5, '&:hover': { bgcolor: 'var(--vm-bg-hover)' } }}>
+            <ListItemIcon sx={{ minWidth: 32, color: 'var(--vm-text-muted)' }}>
+              <AccountCircle sx={{ fontSize: 18 }} />
+            </ListItemIcon>
+            <ListItemText>
+              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)' }}>Profile</Typography>
+            </ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => handleUserMenuClick('settings')} sx={{ py: 1.5, '&:hover': { bgcolor: 'var(--vm-bg-hover)' } }}>
+            <ListItemIcon sx={{ minWidth: 32, color: 'var(--vm-text-muted)' }}>
+              <SettingsIcon sx={{ fontSize: 18 }} />
+            </ListItemIcon>
+            <ListItemText>
+              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)' }}>Settings</Typography>
+            </ListItemText>
+          </MenuItem>
+          <Divider sx={{ borderColor: 'var(--vm-border-subtle)' }} />
+          <MenuItem onClick={() => handleUserMenuClick('logout')} sx={{ py: 1.5, '&:hover': { bgcolor: 'var(--vm-bg-hover)' } }}>
+            <ListItemIcon sx={{ minWidth: 32, color: 'var(--vm-text-muted)' }}>
+              <Logout sx={{ fontSize: 18 }} />
+            </ListItemIcon>
+            <ListItemText>
+              <Typography sx={{ fontSize: 13, color: '#ef4444' }}>Log out</Typography>
+            </ListItemText>
+          </MenuItem>
+        </Menu>
       </Box>
     </Box>
   );

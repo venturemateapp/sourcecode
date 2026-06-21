@@ -52,7 +52,7 @@ function mapApiUserToUser(apiUser: ApiUser): User {
     password: '',
     firstName: apiUser.firstName,
     lastName: apiUser.surname,
-    avatar: apiUser.picture || `https://i.pravatar.cc/150?u=${apiUser.email}`,
+    avatar: apiUser.picture || '',
     role: 'founder',
     bio: apiUser.bio || '',
     location: apiUser.city || '',

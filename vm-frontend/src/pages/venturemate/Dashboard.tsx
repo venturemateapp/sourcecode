@@ -360,7 +360,7 @@ const statsCards = b ? [
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar src={`https://i.pravatar.cc/150?u=${milestone.assignee}`} sx={{ width: 24, height: 24 }} />
                       <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                        Due {new Date(milestone.dueDate).toLocaleDateString()}
+                        Due {new Date(milestone.dueDate).toLocaleDateString('en-GB')}
                       </Typography>
                     </Box>
                   </Box>

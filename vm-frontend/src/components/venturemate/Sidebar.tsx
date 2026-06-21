@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Box,
   List,
@@ -7,10 +7,10 @@ import {
   ListItemText,
   Typography,
   Avatar,
-  Collapse,
   Badge,
   IconButton,
 } from '@mui/material';
+import { Person } from '@mui/icons-material';
 import type { ViewType, NavSection } from '../../types/venturemate';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
@@ -148,12 +148,12 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
   };
 
   const toast = useToast();
-  const comingSoon: ViewType[] = ['social', 'marketplace', 'crm'];
+  const comingSoon: ViewType[] = useMemo(() => ['social', 'marketplace', 'crm'], []);
 
-  const badgeCounts: Record<string, number> = {
+  const badgeCounts: Record<string, number> = useMemo(() => ({
     documents: selectedBusiness?.documents?.length || 0,
     milestones: selectedBusiness?.milestones?.filter(m => m.status === 'pending' || m.status === 'overdue').length || 0,
-  };
+  }), [selectedBusiness?.documents?.length, selectedBusiness?.milestones]);
 
   const handleViewChange = (view: ViewType) => {
     if (comingSoon.includes(view)) {
@@ -247,7 +247,6 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 1,
-            transition: 'all 0.2s',
             '&:hover': {
               bgcolor: 'var(--vm-primary-900)',
               boxShadow: '0 0 12px rgba(16, 185, 129, 0.3)',
@@ -291,7 +290,6 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
                   borderRadius: 1,
                   mx: 1,
                   minHeight: { xs: 44, md: 'auto' },
-                  transition: 'background-color 0.2s',
                   ...(hasChildren ? {
                     '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
                     '&:active': { bgcolor: 'var(--vm-bg-tertiary)' },
@@ -315,7 +313,7 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
                 )}
               </Box>
 
-              <Collapse in={isExpanded}>
+              {isExpanded && (
                 <List dense disablePadding>
                   {section.items.map((item) => {
                     const Icon = iconMap[item.icon];
@@ -332,6 +330,7 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
                           borderRadius: 2,
                           py: { xs: 0.75, md: 0.5 },
                           minHeight: { xs: 44, md: 'auto' },
+                          transition: 'none',
                           '&:hover': {
                             bgcolor: 'var(--vm-bg-hover)',
                           },
@@ -386,84 +385,47 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
                     );
                   })}
                 </List>
-              </Collapse>
+              )}
             </Box>
           );
         })}
       </Box>
 
-      {/* AI Assistant Card */}
-      <Box sx={{ p: 2 }}>
-        <Box
-          sx={{
-            background: 'linear-gradient(135deg, var(--vm-primary-900) 0%, var(--vm-bg-tertiary) 100%)',
-            borderRadius: 3,
-            p: 2.5,
-            border: '1px solid var(--vm-border-primary)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Decorative glow */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -30,
-              right: -30,
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, var(--vm-primary-600) 0%, transparent 70%)',
-              opacity: 0.3,
-            }}
-          />
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1.5,
-                bgcolor: 'var(--vm-primary-600)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Bot size={18} color="white" />
-            </Box>
-            <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-              AI Assistant
-            </Typography>
-          </Box>
-          
-          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 2, lineHeight: 1.5 }}>
-            I can help with pitch decks, business plans, and investor outreach.
-          </Typography>
-          
-          <Box
-            component="button"
-            onClick={() => handleViewChange('ai-assistant')}
-            sx={{
-              width: '100%',
-              py: 1,
-              px: 2,
-              borderRadius: 1.5,
-              border: '1px solid var(--vm-primary-600)',
-              bgcolor: 'transparent',
-              color: 'var(--vm-primary-400)',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': {
-                bgcolor: 'var(--vm-primary-900)',
-              },
-            }}
-          >
-            Start Chat
-          </Box>
-        </Box>
+      {/* Ask AI Floating Button */}
+      <Box
+        component="button"
+        onClick={() => handleViewChange('ai-assistant')}
+        sx={{
+          mx: 2,
+          mb: 1,
+          py: 2,
+          px: 3,
+          borderRadius: '999px',
+          border: '1px solid var(--vm-primary-600)',
+          background: 'linear-gradient(135deg, var(--vm-primary-900) 0%, #064e3b 100%)',
+          color: 'var(--vm-primary-400)',
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 1.5,
+          position: 'relative',
+          boxShadow: '0 0 24px rgba(16, 185, 129, 0.3)',
+          animation: 'askAiPulse 2.5s ease-in-out infinite',
+          '@keyframes askAiPulse': {
+            '0%, 100%': { boxShadow: '0 0 16px rgba(16, 185, 129, 0.25)', transform: 'scale(1)' },
+            '50%': { boxShadow: '0 0 32px rgba(16, 185, 129, 0.5)', transform: 'scale(1.02)' },
+          },
+          '&:hover': {
+            bgcolor: 'var(--vm-primary-900)',
+            boxShadow: '0 0 40px rgba(16, 185, 129, 0.6)',
+          },
+        }}
+      >
+        <Bot size={18} color="var(--vm-primary-400)" />
+        Ask AI
       </Box>
 
       {/* User Profile */}
@@ -478,13 +440,16 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar
-            src={user?.avatar}
+            src={user?.avatar || undefined}
             sx={{
               width: 36,
               height: 36,
               border: '2px solid var(--vm-primary-600)',
+              bgcolor: user?.avatar ? 'transparent' : 'var(--vm-primary-600)',
             }}
-          />
+          >
+            {!user?.avatar && <Person size={18} />}
+          </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               sx={{

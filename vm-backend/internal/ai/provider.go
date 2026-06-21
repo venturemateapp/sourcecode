@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultOllamaEndpoint = "http://localhost:11434/api/chat"
+	DefaultOllamaEndpoint = "https://llm.edspike.com/api/chat"
 	DefaultOllamaModel    = "qwen2.5:3b"
 
 	requestTimeout    = 90 * time.Second
@@ -779,8 +779,14 @@ func (p *cascadeProvider) Chat(ctx context.Context, systemPrompt string, message
 func NewProviderFromConfig(cfg ProviderConfig) (Provider, error) {
 	name := strings.ToLower(strings.TrimSpace(cfg.Name))
 	switch name {
-	case "ollama", "local":
-		return newOllamaProvider(cfg.Endpoint, cfg.Model), nil
+	case "openrouter", "local":
+		if cfg.Endpoint == "" {
+			cfg.Endpoint = "https://openrouter.ai/api/v1/chat/completions"
+		}
+		if cfg.Model == "" {
+			cfg.Model = "google/gemini-2.5-flash"
+		}
+		return newOpenAICompatibleProvider("openrouter", cfg.APIKey, cfg.Endpoint, cfg.Model), nil
 	case "openai":
 		if cfg.Endpoint == "" {
 			cfg.Endpoint = "https://api.openai.com/v1/chat/completions"

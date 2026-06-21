@@ -7,7 +7,6 @@ import {
   Tab,
   Chip,
   Avatar,
-  LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -602,25 +601,12 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                       {deal.probability}%
                     </Typography>
                   </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={deal.probability}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      bgcolor: 'var(--vm-bg-tertiary)',
-                      '& .MuiLinearProgress-bar': {
-                        bgcolor: getStageColor(deal.stage),
-                        borderRadius: 3,
-                      },
-                    }}
-                  />
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Calendar size={14} color="var(--vm-text-muted)" />
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                    Close: {new Date(deal.expected_close_date).toLocaleDateString()}
+                    Close: {new Date(deal.expected_close_date).toLocaleDateString('en-GB')}
                   </Typography>
                 </Box>
               </Card>
@@ -687,7 +673,7 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                   {activity.description}
                 </Typography>
                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>
-                  {new Date(activity.created_at).toLocaleString()} by {activity.created_by}
+                  {new Date(activity.created_at).toLocaleString('en-GB')} by {activity.created_by}
                 </Typography>
               </Box>
             </Box>
@@ -766,14 +752,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     value={newContact.name}
                     onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Grid>
@@ -785,14 +766,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     value={newContact.email}
                     onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Grid>
@@ -803,14 +779,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     value={newContact.phone}
                     onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Grid>
@@ -821,14 +792,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     value={newContact.company}
                     onChange={(e) => setNewContact({ ...newContact, company: e.target.value })}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Grid>
@@ -839,35 +805,23 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     value={newContact.job_title}
                     onChange={(e) => setNewContact({ ...newContact, job_title: e.target.value })}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Grid>
                 <Grid size={12}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth size="small">
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Contact Type</InputLabel>
                     <Select
                       value={newContact.contact_type}
                       label="Contact Type"
                       onChange={(e) => setNewContact({ ...newContact, contact_type: e.target.value as Contact['contact_type'] })}
-                      sx={{
-                        color: 'var(--vm-text-primary)',
-                        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' },
-                      }}
+                      sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
                     >
                       {contactTypes.map((type) => (
-                        <MenuItem key={type.value} value={type.value}>
-                          {type.label}
-                        </MenuItem>
+                        <MenuItem key={type.value} value={type.value} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{type.label}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
@@ -881,14 +835,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     value={newContact.notes}
                     onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Grid>
@@ -1010,14 +959,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                   value={callNotes}
                   onChange={(e) => setCallNotes(e.target.value)}
                   sx={{
+                    '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                     '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                    '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                    '& .MuiOutlinedInput-root': {
-                      color: 'var(--vm-text-primary)',
-                      '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                      '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                    },
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                   }}
                 />
               ) : (
@@ -1030,14 +974,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     onChange={(e) => setEmailSubject(e.target.value)}
                     sx={{
                       mb: 2,
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                   <TextField
@@ -1049,14 +988,9 @@ export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
                     value={emailBody}
                     onChange={(e) => setEmailBody(e.target.value)}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </>

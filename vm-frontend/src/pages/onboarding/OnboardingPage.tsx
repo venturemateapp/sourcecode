@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Box, Typography, Container, Fade, LinearProgress } from '@mui/material';
 import { OnboardingWizard, type OnboardingData } from '../../components/onboarding/OnboardingWizard';
 import { useToast } from '../../components/shared/toast';
@@ -158,6 +158,20 @@ export function OnboardingPage() {
               >
                 Sign in
               </Typography>
+            </Typography>
+            <Typography
+              component={Link}
+              to="/"
+              sx={{
+                display: 'inline-block',
+                mt: 1.5,
+                color: '#6ee7b7',
+                fontSize: '0.8125rem',
+                textDecoration: 'none',
+                '&:hover': { color: '#34d399', textDecoration: 'underline' },
+              }}
+            >
+              Visit our site ↗
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
               Your data stays private and is only used to personalize your experience

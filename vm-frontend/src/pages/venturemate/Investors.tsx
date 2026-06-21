@@ -125,13 +125,9 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
             }}
             sx={{
               flex: { xs: 1, sm: 'none' },
-              '& .MuiOutlinedInput-root': {
-                bgcolor: 'var(--vm-bg-secondary)',
-                borderRadius: 2,
-                color: 'var(--vm-text-primary)',
-                '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                '&:hover fieldset': { borderColor: 'var(--vm-border-primary)' },
-              },
+              '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-secondary)', color: 'var(--vm-text-primary)' },
+              '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
             }}
           />
           <Box

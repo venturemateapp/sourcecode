@@ -8,11 +8,11 @@ import (
 var businessScoreType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "BusinessScore",
 	Fields: graphql.Fields{
-		"id":           &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"businessId":   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"scoreType":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"scoreData":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"calculatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"id":           &graphql.Field{Type: graphql.ID},
+		"businessId":   &graphql.Field{Type: graphql.ID},
+		"scoreType":    &graphql.Field{Type: graphql.String},
+		"scoreData":    &graphql.Field{Type: graphql.String},
+		"calculatedAt": &graphql.Field{Type: graphql.String},
 	},
 })
 

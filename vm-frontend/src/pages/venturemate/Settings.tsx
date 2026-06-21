@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { Person } from '@mui/icons-material';
 import {
   Box, Typography, Card, Avatar, TextField, Switch, Chip, Alert, Divider,
   Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Grid,
@@ -91,7 +92,7 @@ export function SettingsPage() {
   const [avatarData, setAvatarData] = useState<string | null>(null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [settings, setSettings] = useState<SettingsData>({
-    language: 'en', timezone: 'UTC', dateFormat: 'MM/DD/YYYY',
+    language: 'en', timezone: 'UTC', dateFormat: 'DD/MM/YYYY',
     notifications: defaultNotifications,
     connectedApps: defaultConnectedApps,
     apiKey: '',
@@ -139,7 +140,7 @@ export function SettingsPage() {
         setSettings({
           language: parsed.language || 'en',
           timezone: parsed.timezone || 'UTC',
-          dateFormat: parsed.dateFormat || 'MM/DD/YYYY',
+          dateFormat: parsed.dateFormat || 'DD/MM/YYYY',
           notifications: parsed.notifications || defaultNotifications,
           connectedApps: parsed.connectedApps || defaultConnectedApps,
           apiKey: parsed.apiKey || '',
@@ -367,7 +368,17 @@ export function SettingsPage() {
             <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 3, md: 4 } }}>
               <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 3 }}>Profile Information</Typography>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 2, md: 3 }, mb: 4 }}>
-                <Avatar src={avatarData || user?.avatar || ''} sx={{ width: 100, height: 100, border: '3px solid var(--vm-primary-600)' }} />
+                <Avatar
+                  src={avatarData || user?.avatar || undefined}
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    border: '3px solid var(--vm-primary-600)',
+                    bgcolor: (avatarData || user?.avatar) ? 'transparent' : 'var(--vm-primary-600)',
+                  }}
+                >
+                  {!(avatarData || user?.avatar) && <Person sx={{ fontSize: 48 }} />}
+                </Avatar>
                 <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
                   <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileUpload} />
                   <GradientButton variant="outline" size="sm" sx={{ mb: 1 }} onClick={() => fileInputRef.current?.click()}>
@@ -391,31 +402,31 @@ export function SettingsPage() {
               </Dialog>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField fullWidth label="First Name" value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                  <TextField fullWidth label="First Name" value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField fullWidth label="Last Name" value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                  <TextField fullWidth label="Last Name" value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
                 <Grid size={12}>
-                  <TextField fullWidth label="Email" type="email" value={profile.email} disabled InputProps={{ startAdornment: <InputAdornment position="start"><Mail size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
+                  <TextField fullWidth label="Email" type="email" value={profile.email} disabled InputProps={{ startAdornment: <InputAdornment position="start"><Mail size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
                 <Grid size={12}>
-                  <TextField fullWidth label="Bio" multiline rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Tell us about yourself..." sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                  <TextField fullWidth label="Bio" multiline rows={3} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Tell us about yourself..." sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
                 <Grid size={12}>
-                  <TextField fullWidth label="Location" value={profile.location} onChange={(e) => setProfile({ ...profile, location: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                  <TextField fullWidth label="Location" value={profile.location} onChange={(e) => setProfile({ ...profile, location: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
                 <Grid size={12}>
                   <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mt: 2, mb: 2 }}>Social Links</Typography>
                 </Grid>
                 <Grid size={12}>
-                  <TextField fullWidth label="LinkedIn Profile" value={profile.linkedIn} onChange={(e) => setProfile({ ...profile, linkedIn: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                  <TextField fullWidth label="LinkedIn Profile" value={profile.linkedIn} onChange={(e) => setProfile({ ...profile, linkedIn: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField fullWidth label="Twitter Handle" value={profile.twitter} onChange={(e) => setProfile({ ...profile, twitter: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                  <TextField fullWidth label="Twitter Handle" value={profile.twitter} onChange={(e) => setProfile({ ...profile, twitter: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField fullWidth label="Website" value={profile.website} onChange={(e) => setProfile({ ...profile, website: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                  <TextField fullWidth label="Website" value={profile.website} onChange={(e) => setProfile({ ...profile, website: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><Globe size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                 </Grid>
               </Grid>
             </Card>
@@ -429,13 +440,13 @@ export function SettingsPage() {
                 {passwordSuccess && <Alert severity="success" sx={{ mb: 2, bgcolor: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>{passwordSuccess}</Alert>}
                 <Grid container spacing={3}>
                   <Grid size={12}>
-                    <TextField fullWidth label="Current Password" type={showPassword ? 'text' : 'password'} value={passwordData.currentPassword} onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })} InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)} sx={{ color: 'var(--vm-text-muted)' }}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</IconButton></InputAdornment> }} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                    <TextField fullWidth label="Current Password" type={showPassword ? 'text' : 'password'} value={passwordData.currentPassword} onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })} InputProps={{ endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPassword(!showPassword)} sx={{ color: 'var(--vm-text-muted)' }}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</IconButton></InputAdornment> }} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField fullWidth label="New Password" type="password" value={passwordData.newPassword} onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                    <TextField fullWidth label="New Password" type="password" value={passwordData.newPassword} onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField fullWidth label="Confirm Password" type="password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+                    <TextField fullWidth label="Confirm Password" type="password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                   </Grid>
                 </Grid>
                 <Box sx={{ mt: 3, textAlign: 'center' }}>
@@ -506,49 +517,49 @@ export function SettingsPage() {
               <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 3 }}>Regional & Language Preferences</Typography>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth size="small">
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Language</InputLabel>
-                    <Select value={settings.language} label="Language" onChange={(e) => setSettings({ ...settings, language: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
-                      <MenuItem value="en">English</MenuItem>
-                      <MenuItem value="es">Spanish</MenuItem>
-                      <MenuItem value="fr">French</MenuItem>
-                      <MenuItem value="de">German</MenuItem>
-                      <MenuItem value="pt">Portuguese</MenuItem>
+                    <Select value={settings.language} label="Language" onChange={(e) => setSettings({ ...settings, language: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                      <MenuItem value="en" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>English</MenuItem>
+                      <MenuItem value="es" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Spanish</MenuItem>
+                      <MenuItem value="fr" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>French</MenuItem>
+                      <MenuItem value="de" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>German</MenuItem>
+                      <MenuItem value="pt" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Portuguese</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth size="small">
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Timezone</InputLabel>
-                    <Select value={settings.timezone} label="Timezone" onChange={(e) => setSettings({ ...settings, timezone: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
-                      <MenuItem value="UTC">UTC</MenuItem>
-                      <MenuItem value="EST">Eastern Time (EST)</MenuItem>
-                      <MenuItem value="PST">Pacific Time (PST)</MenuItem>
-                      <MenuItem value="GMT">London (GMT)</MenuItem>
-                      <MenuItem value="CET">Central European (CET)</MenuItem>
-                      <MenuItem value="JST">Tokyo (JST)</MenuItem>
+                    <Select value={settings.timezone} label="Timezone" onChange={(e) => setSettings({ ...settings, timezone: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                      <MenuItem value="UTC" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>UTC</MenuItem>
+                      <MenuItem value="EST" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Eastern Time (EST)</MenuItem>
+                      <MenuItem value="PST" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Pacific Time (PST)</MenuItem>
+                      <MenuItem value="GMT" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>London (GMT)</MenuItem>
+                      <MenuItem value="CET" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Central European (CET)</MenuItem>
+                      <MenuItem value="JST" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Tokyo (JST)</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth size="small">
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Date Format</InputLabel>
-                    <Select value={settings.dateFormat} label="Date Format" onChange={(e) => setSettings({ ...settings, dateFormat: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
-                      <MenuItem value="MM/DD/YYYY">MM/DD/YYYY</MenuItem>
-                      <MenuItem value="DD/MM/YYYY">DD/MM/YYYY</MenuItem>
-                      <MenuItem value="YYYY-MM-DD">YYYY-MM-DD</MenuItem>
+                    <Select value={settings.dateFormat} label="Date Format" onChange={(e) => setSettings({ ...settings, dateFormat: e.target.value })} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                      <MenuItem value="DD/MM/YYYY" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>DD/MM/YYYY</MenuItem>
+                      <MenuItem value="MM/DD/YYYY" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>MM/DD/YYYY</MenuItem>
+                      <MenuItem value="YYYY-MM-DD" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>YYYY-MM-DD</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth size="small">
                     <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
-                    <Select value={ctxCurrency || 'USD'} label="Currency" onChange={(e) => setCtxCurrency(e.target.value)} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-primary-600)' } }} MenuProps={{ PaperProps: { sx: { '& .MuiMenuItem-root': { color: 'var(--vm-text-primary)' } } } }}>
-                      <MenuItem value="USD">USD ($)</MenuItem>
-                      <MenuItem value="EUR">EUR (€)</MenuItem>
-                      <MenuItem value="GBP">GBP (£)</MenuItem>
-                      <MenuItem value="GHS">GHS (₵)</MenuItem>
-                      <MenuItem value="NGN">NGN (₦)</MenuItem>
+                    <Select value={ctxCurrency || 'USD'} label="Currency" onChange={(e) => setCtxCurrency(e.target.value)} sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                      <MenuItem value="USD" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>USD ($)</MenuItem>
+                      <MenuItem value="EUR" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>EUR (€)</MenuItem>
+                      <MenuItem value="GBP" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>GBP (£)</MenuItem>
+                      <MenuItem value="GHS" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>GHS (₵)</MenuItem>
+                      <MenuItem value="NGN" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>NGN (₦)</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -589,7 +600,7 @@ export function SettingsPage() {
                   <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>Secret API Key</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <TextField fullWidth value={settings.apiKey ? settings.apiKey.slice(0, 12) + '••••••••••••••••••••••••' : 'No API key generated'} disabled sx={{ minWidth: { xs: '100%', md: 300 }, flex: { md: 1 }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-muted)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
+                  <TextField fullWidth value={settings.apiKey ? settings.apiKey.slice(0, 12) + '••••••••••••••••••••••••' : 'No API key generated'} disabled sx={{ minWidth: { xs: '100%', md: 300 }, flex: { md: 1 }, '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
                   <GradientButton variant="outline" size="sm" onClick={() => handleApiKeyAction('reveal')}>Reveal</GradientButton>
                   <GradientButton variant="outline" size="sm" onClick={() => handleApiKeyAction('regenerate')}>Regenerate</GradientButton>
                 </Box>
@@ -610,7 +621,7 @@ export function SettingsPage() {
                       </Box>
                       <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
                         ${(subscription.plan?.priceMonthly || 0).toFixed(2)}/month
-                        {subscription.currentPeriodEnd ? ` • Renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ''}
+                        {subscription.currentPeriodEnd ? ` • Renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB')}` : ''}
                       </Typography>
                     </Box>
                   </Box>
@@ -659,16 +670,16 @@ export function SettingsPage() {
         <DialogContent sx={{ pt: 3 }}>
           <Grid container spacing={3}>
             <Grid size={12}>
-              <TextField fullWidth label="Cardholder Name" value={newPaymentMethod.cardholderName} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, cardholderName: e.target.value })} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+              <TextField fullWidth label="Cardholder Name" value={newPaymentMethod.cardholderName} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, cardholderName: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             </Grid>
             <Grid size={12}>
-              <TextField fullWidth label="Card Number" placeholder="1234 5678 9012 3456" value={newPaymentMethod.cardNumber} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, cardNumber: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><CreditCard size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+              <TextField fullWidth label="Card Number" placeholder="1234 5678 9012 3456" value={newPaymentMethod.cardNumber} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, cardNumber: e.target.value })} InputProps={{ startAdornment: <InputAdornment position="start"><CreditCard size={18} color="var(--vm-text-muted)" /></InputAdornment> }} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Expiry Date" placeholder="MM/YY" value={newPaymentMethod.expiryDate} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, expiryDate: e.target.value })} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+              <TextField fullWidth label="Expiry Date" placeholder="MM/YY" value={newPaymentMethod.expiryDate} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, expiryDate: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="CVV" placeholder="123" type="password" value={newPaymentMethod.cvv} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, cvv: e.target.value })} sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' }, '& .MuiOutlinedInput-root': { color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' }, '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' } } }} />
+              <TextField fullWidth label="CVV" placeholder="123" type="password" value={newPaymentMethod.cvv} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, cvv: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             </Grid>
           </Grid>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4 }}>

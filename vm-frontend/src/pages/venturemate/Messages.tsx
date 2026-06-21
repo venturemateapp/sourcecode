@@ -191,9 +191,9 @@ export function MessagesPage({ onViewChange: _onViewChange }: MessagesProps) {
     } else if (days === 1) {
       return 'Yesterday';
     } else if (days < 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
+      return date.toLocaleDateString('en-GB', { weekday: 'short' });
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
     }
   };
 
