@@ -36,7 +36,7 @@ export const currentUser: User = {
 
 export const adminUser: User = {
   id: 'usr_admin',
-  email: 'admin@venturemate.io',
+  email: 'admin@venturemate.net',
   password: 'admin123',
   firstName: 'Admin',
   lastName: 'User',
@@ -195,7 +195,7 @@ export const updateUser = (userId: string, updates: Partial<User>): User | undef
 // Pre-onboarded users (skip onboarding)
 export const PRE_ONBOARDED_USERS = [
   'alex@techfounder.com',
-  'admin@venturemate.io',
+  'admin@venturemate.net',
   'sarah@designstudio.com',
   'michael@fintech.io',
   'emma@healthtech.com',

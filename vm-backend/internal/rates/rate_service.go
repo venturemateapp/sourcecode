@@ -26,8 +26,8 @@ var defaultRates = []Rate{
 }
 
 type Service struct {
-	mu     sync.RWMutex
-	rates  []Rate
+	mu       sync.RWMutex
+	rates    []Rate
 	ratesMap map[string]float64
 }
 

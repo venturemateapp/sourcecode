@@ -9,7 +9,6 @@ import {
   DollarSign,
 } from 'lucide-react';
 import type { ViewType, Investor } from '../../types/venturemate';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 import { graphqlRequest } from '../../lib/api';
 
 const INVESTORS_QUERY = `
@@ -348,7 +347,6 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
           </Card>
         ))}
       </Box>
-      <DomainChat domain="investors" placeholder="Ask me about investor relations..." />
     </Box>
   );
 }

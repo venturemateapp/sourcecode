@@ -19,8 +19,8 @@ type Service struct {
 	port     int
 	username string
 	password string
-	from     string   // e.g. "VentureMate <ops@venturemate.net>"
-	logo     string   // either https:// public URL or data:image/png;base64,...
+	from     string // e.g. "VentureMate <ops@venturemate.net>"
+	logo     string // either https:// public URL or data:image/png;base64,...
 }
 
 type TemplateData struct {

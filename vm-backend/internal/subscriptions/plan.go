@@ -17,7 +17,7 @@ type Plan struct {
 }
 
 const (
-	PlanFree   = "free"
-	PlanPro    = "pro"
+	PlanFree    = "free"
+	PlanPro     = "pro"
 	PlanProPlus = "pro_plus"
 )

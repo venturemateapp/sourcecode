@@ -54,16 +54,16 @@ func Login(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr,
 	}
 
 	claims := jwt.MapClaims{
-		"user_id":           user.ID,
-		"email":             user.Email,
-		"first_name":        user.FirstName,
-		"surname":           user.Surname,
-		"onboarded":         user.Onboarded,
-		"status":            user.Status,
-		"subscription_plan": planName,
+		"user_id":             user.ID,
+		"email":               user.Email,
+		"first_name":          user.FirstName,
+		"surname":             user.Surname,
+		"onboarded":           user.Onboarded,
+		"status":              user.Status,
+		"subscription_plan":   planName,
 		"subscription_status": subStatus,
-		"exp":               time.Now().Add(24 * time.Hour).Unix(),
-		"iat":               time.Now().Unix(),
+		"exp":                 time.Now().Add(24 * time.Hour).Unix(),
+		"iat":                 time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(jwtSecret))
@@ -111,16 +111,16 @@ func Signup(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr
 	}
 
 	claims := jwt.MapClaims{
-		"user_id":          user.ID,
-		"email":            user.Email,
-		"first_name":       user.FirstName,
-		"surname":          user.Surname,
-		"onboarded":        user.Onboarded,
-		"status":           user.Status,
-		"subscription_plan": planName,
+		"user_id":             user.ID,
+		"email":               user.Email,
+		"first_name":          user.FirstName,
+		"surname":             user.Surname,
+		"onboarded":           user.Onboarded,
+		"status":              user.Status,
+		"subscription_plan":   planName,
 		"subscription_status": subStatus,
-		"exp":              time.Now().Add(24 * time.Hour).Unix(),
-		"iat":              time.Now().Unix(),
+		"exp":                 time.Now().Add(24 * time.Hour).Unix(),
+		"iat":                 time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(jwtSecret))
@@ -203,16 +203,16 @@ func UpdateProfile(repo *users.Repository, subRepo *subscriptions.Repository, us
 	}
 
 	claims := jwt.MapClaims{
-		"user_id":            user.ID,
-		"email":              user.Email,
-		"first_name":         user.FirstName,
-		"surname":            user.Surname,
-		"onboarded":          user.Onboarded,
-		"status":             user.Status,
-		"subscription_plan":  planName,
+		"user_id":             user.ID,
+		"email":               user.Email,
+		"first_name":          user.FirstName,
+		"surname":             user.Surname,
+		"onboarded":           user.Onboarded,
+		"status":              user.Status,
+		"subscription_plan":   planName,
 		"subscription_status": subStatus,
-		"exp":                time.Now().Add(24 * time.Hour).Unix(),
-		"iat":                time.Now().Unix(),
+		"exp":                 time.Now().Add(24 * time.Hour).Unix(),
+		"iat":                 time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(jwtSecret))

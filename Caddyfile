@@ -4,9 +4,8 @@
 }
 
 
-
 # VentureMate test site
-	venturemate.net {
+venturemate.net {
 	@callback path /auth/callback*
 	redir @callback /vm{uri} 301
 
@@ -15,6 +14,10 @@
 	}
 
 	route /auth/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	route /graphql {
 		reverse_proxy 127.0.0.1:8080
 	}
 

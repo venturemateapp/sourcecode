@@ -1,54 +1,40 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
 
-type Theme = 'dark' | 'light'
+type Theme = 'dark' | 'light';
 
 type ThemeContextValue = {
-  theme: Theme
-  setTheme: (theme: Theme) => void
-  toggleTheme: () => void
-}
+  theme: Theme;
+  setTheme: (_theme: Theme) => void;
+  toggleTheme: () => void;
+};
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
-
-const STORAGE_KEY = 'compliance_theme'
-
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark'
-
-  const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
-  if (stored === 'light' || stored === 'dark') return stored
-
-  // Default to dark mode for VentureMate
-  return 'dark'
-}
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const STORAGE_KEY = 'venturemate_theme';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme)
-
   useEffect(() => {
-    const root = document.documentElement
-    if (theme === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    localStorage.setItem(STORAGE_KEY, theme)
-  }, [theme])
+    document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = 'dark';
+    localStorage.setItem(STORAGE_KEY, 'dark');
+  }, []);
 
-  const setTheme = (next: Theme) => setThemeState(next)
-  const toggleTheme = () => setThemeState((t) => (t === 'dark' ? 'light' : 'dark'))
+  // VentureMate is a dark-theme product. These methods remain for compatibility
+  // with older components, but intentionally keep the application in dark mode.
+  const setTheme = (_theme: Theme) => {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem(STORAGE_KEY, 'dark');
+  };
+  const toggleTheme = () => setTheme('dark');
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark', setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
-  )
+  );
 }
 
 export function useTheme() {
-  const ctx = useContext(ThemeContext)
-  if (!ctx) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
-  return ctx
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within a ThemeProvider');
+  return ctx;
 }

@@ -6,7 +6,6 @@ import { RegisterBusinessModal } from '../../components/venturemate/RegisterBusi
 import type { ViewType, Business } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 
 interface BusinessRegistrationStatus {
   id: string;
@@ -411,7 +410,6 @@ export function Businesses({ onViewChange }: BusinessesProps) {
           fetchRegistrations();
         }}
       />
-      <DomainChat domain="businesses" placeholder="Ask me to manage your businesses..." />
     </Box>
   );
 }

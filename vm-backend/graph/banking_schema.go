@@ -64,7 +64,7 @@ func init() {
 			}
 			a := &banking.BankAccount{
 				UserID:        p.Args["userId"].(string),
-				BusinessID:   p.Args["businessId"].(string),
+				BusinessID:    p.Args["businessId"].(string),
 				BankName:      p.Args["bankName"].(string),
 				AccountType:   p.Args["accountType"].(string),
 				AccountNumber: p.Args["accountNumber"].(string),

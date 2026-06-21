@@ -323,3 +323,60 @@ body {
   font-size: var(--vm-font-sm);
   line-height: 1.5;
 }
+
+/* Dark-theme safety net for native controls and legacy components. */
+input,
+textarea,
+select,
+option {
+  color: var(--vm-text-primary);
+  background-color: var(--vm-bg-tertiary);
+  border-color: var(--vm-border-primary);
+}
+
+option:checked,
+option:hover {
+  background-color: var(--vm-primary-800);
+  color: #fff;
+}
+
+label,
+legend {
+  color: var(--vm-text-secondary);
+}
+
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.MuiPaper-root,
+.MuiCard-root,
+.MuiDialog-paper,
+.MuiPopover-paper,
+.MuiMenu-paper {
+  background-image: none !important;
+}
+
+.MuiInputBase-input,
+.MuiSelect-select,
+.MuiFormLabel-root,
+.MuiInputLabel-root,
+.MuiFormHelperText-root {
+  opacity: 1 !important;
+}
+
+.Mui-disabled {
+  -webkit-text-fill-color: var(--vm-text-muted) !important;
+}
+
+/* Prevent browser autofill from injecting white fields. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #fff !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--vm-bg-tertiary) inset !important;
+}

@@ -4,6 +4,8 @@ import { Sidebar } from '../components/venturemate/Sidebar';
 import { Header } from '../components/venturemate/Header';
 import { Footer } from '../components/shared/Footer';
 import { AnimatedBackground } from '../components/AnimatedBackground';
+import { DomainChat } from '../components/venturemate/DomainChat';
+import { AIManagedModuleData } from '../components/venturemate/AIManagedModuleData';
 import type { ViewType } from '../types/venturemate';
 
 interface VentureMateLayoutProps {
@@ -110,10 +112,17 @@ export function VentureMateLayout({
         >
           <Box sx={{ flex: 1, p: { xs: 1.5, sm: 2, md: 3 } }}>
             {children}
+            {activeView !== 'ai-assistant' && <AIManagedModuleData domain={activeView} />}
           </Box>
           <Footer />
         </Box>
       </Box>
+      {activeView !== 'ai-assistant' && (
+        <DomainChat
+          domain={activeView}
+          placeholder={`Ask AI to work in ${activeView.replace(/-/g, ' ')}…`}
+        />
+      )}
     </Box>
   );
 }

@@ -39,9 +39,9 @@ import { BusinessProvider, useBusiness } from './contexts/BusinessContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import { AIProviderProvider } from './contexts/AIProviderContext';
 import type { ViewType } from './types/venturemate';
 import {
-  Globe,
   TrendingUp,
   Lightbulb,
 } from 'lucide-react';
@@ -215,7 +215,8 @@ function VentureMateApp() {
       case 'branding-kit':
         return <BrandingKitPage onViewChange={handleViewChange} />;
       case 'website-builder':
-        return <PlaceholderPage title="Website Builder" description="Build your startup website with AI assistance." icon={Globe} />;
+      case 'websites':
+        return <WebsiteBuilderPage onViewChange={setActiveView} />;
       case 'documents':
         return <DocumentsPage onViewChange={handleViewChange} />;
       case 'market-research':
@@ -240,8 +241,6 @@ function VentureMateApp() {
         return <CreditScorePage onViewChange={handleViewChange} />;
       case 'health-score':
         return <HealthScorePage onViewChange={handleViewChange} />;
-      case 'websites':
-        return <WebsiteBuilderPage onViewChange={setActiveView} />;
       default:
         return <Dashboard onViewChange={handleViewChange} />;
     }
@@ -250,6 +249,7 @@ function VentureMateApp() {
   return (
     <SubscriptionProvider>
       <BusinessProvider>
+        <AIProviderProvider>
         <NotificationProvider>
         <ToastProvider>
         <CurrencyProvider>
@@ -262,6 +262,7 @@ function VentureMateApp() {
         </CurrencyProvider>
         </ToastProvider>
         </NotificationProvider>
+        </AIProviderProvider>
       </BusinessProvider>
     </SubscriptionProvider>
   );

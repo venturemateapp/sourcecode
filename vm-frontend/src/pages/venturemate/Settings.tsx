@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { DomainChat } from '../../components/venturemate/DomainChat';
 import {
   Box, Typography, Card, Avatar, TextField, Switch, Chip, Alert, Divider,
   Select, MenuItem, FormControl, InputLabel, InputAdornment, IconButton, Grid,
@@ -14,6 +13,7 @@ import {
   Globe, Mail, Eye, EyeOff, CheckCircle, Save, Upload, LogOut, Key, X, Plus,
 } from 'lucide-react';
 import { graphqlRequest } from '../../lib/api';
+import { AIProviderSettingsCard } from '../../components/venturemate/AIProviderSettingsCard';
 
 const AVATAR_COLORS = ['#059669', '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'];
 
@@ -344,6 +344,8 @@ export function SettingsPage() {
           Settings saved successfully!
         </Alert>
       )}
+
+      <AIProviderSettingsCard />
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
         <Card sx={{ width: { xs: '100%', md: 240 }, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 1, md: 2 }, flexShrink: 0, display: 'flex', flexDirection: { xs: 'row', md: 'column' }, gap: { xs: 0.5, md: 0.5 }, overflow: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
@@ -677,7 +679,6 @@ export function SettingsPage() {
           </Box>
         </DialogContent>
       </Dialog>
-      <DomainChat domain="settings" placeholder="Ask me about your settings..." />
     </Box>
   );
 }

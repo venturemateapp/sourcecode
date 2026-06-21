@@ -1,12 +1,12 @@
 package auth
 
 import (
-	"log"
-	"github.com/venturemate/vmbackend/internal/email"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/venturemate/vmbackend/internal/email"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
