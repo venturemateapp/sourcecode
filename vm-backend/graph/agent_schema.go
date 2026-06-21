@@ -166,7 +166,7 @@ func init() {
 			provider, err := getProviderForUser(p.Context, userID, requestedProvider)
 			if err != nil {
 				log.Printf("AI provider error for user %s: %v", userID, err)
-				return map[string]interface{}{"message": "AI service is unavailable. Confirm Ollama is running or configure another provider."}, nil
+				return map[string]interface{}{"message": "AI service is unavailable. Verify your OpenRouter API key and try again."}, nil
 			}
 			agent := ai.NewDomainAgent(provider, fullAgentTools(), userID, businessID, domain)
 			result, err := agent.ExecuteWithHistory(p.Context, prompt, parseAgentHistory(historyRaw))

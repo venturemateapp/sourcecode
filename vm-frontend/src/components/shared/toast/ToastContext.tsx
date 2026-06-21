@@ -82,7 +82,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             alignItems: 'flex-start',
             ...(severity === 'info' && {
               backgroundColor: theme.palette.success.main,
-              '& .MuiAlert-icon': { color: theme.palette.success.contrastText },
+              color: '#fff',
+              '& .MuiAlert-icon': { color: '#fff' },
+              '& .MuiAlert-message': { color: '#fff' },
             }),
           })}
         >

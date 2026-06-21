@@ -5,6 +5,7 @@ import {
   FormControl, InputLabel,
 } from '@mui/material';
 import { Plus, Edit2, Trash2, Target, Calendar, User, ArrowUp } from 'lucide-react';
+import { DatePicker } from '@mui/x-date-pickers';
 import type { Milestone } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { GradientButton } from '../../components/shared/buttons';
@@ -187,7 +188,7 @@ export function MilestonesPage() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
               <Calendar size={14} color="var(--vm-text-muted)" />
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                Due {new Date(milestone.dueDate).toLocaleDateString()}
+                Due {new Date(milestone.dueDate).toLocaleDateString('en-GB')}
               </Typography>
               {milestone.assignee && (
                 <>
@@ -302,17 +303,21 @@ export function MilestonesPage() {
                 }}
               />
             </Box>
-            <TextField
+            <DatePicker
               label="Due Date"
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
+              value={formData.dueDate ? new Date(formData.dueDate) : null}
+              onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : '' })}
+              format="dd/MM/yyyy"
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  size: 'small',
+                  sx: {
+                    '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
+                    '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
+                  },
+                },
               }}
             />
           </Box>

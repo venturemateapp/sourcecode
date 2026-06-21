@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Box, Typography, Card, Chip, Avatar, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, Stack } from '@mui/material';
-import { Plus, MoreVertical, Edit2, Trash2, Mail, Briefcase, PieChart } from 'lucide-react';
+import { Person } from '@mui/icons-material';
+import { Plus, MoreVertical, Edit2, Trash2, Mail, Briefcase, PieChart, Camera } from 'lucide-react';
 import type { TeamMember } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
@@ -56,16 +57,29 @@ export function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     name: '',
     email: '',
     role: '',
     title: '',
+    avatar: '',
     equity: 0,
     status: 'active',
     responsibilities: [],
   });
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData(prev => ({ ...prev, avatar: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, member: TeamMember) => {
     setAnchorEl(event.currentTarget);
@@ -84,6 +98,7 @@ export function TeamPage() {
       email: '',
       role: '',
       title: '',
+      avatar: '',
       equity: 0,
       status: 'active',
       responsibilities: [],
@@ -129,7 +144,7 @@ export function TeamPage() {
         email: formData.email || '',
         role: formData.role || '',
         title: formData.title || '',
-        avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
+        avatar: formData.avatar || '',
         equity: formData.equity || 0,
         status: (formData.status as TeamMember['status']) || 'active',
         joinedDate: new Date().toISOString().split('T')[0],
@@ -244,7 +259,16 @@ export function TeamPage() {
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar src={member.avatar} sx={{ width: 56, height: 56 }} />
+                <Avatar
+                  src={member.avatar || undefined}
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    bgcolor: member.avatar ? 'transparent' : 'var(--vm-primary-600)',
+                  }}
+                >
+                  {!member.avatar && <Person sx={{ fontSize: 28 }} />}
+                </Avatar>
                 <Box>
                   <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
                     {member.name}
@@ -324,7 +348,7 @@ export function TeamPage() {
                 }}
               />
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                Joined {new Date(member.joinedDate).toLocaleDateString()}
+                Joined {new Date(member.joinedDate).toLocaleDateString('en-GB')}
               </Typography>
             </Box>
           </Card>
@@ -385,6 +409,43 @@ export function TeamPage() {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                src={formData.avatar || undefined}
+                sx={{
+                  width: 64,
+                  height: 64,
+                  bgcolor: formData.avatar ? 'transparent' : 'var(--vm-primary-600)',
+                }}
+              >
+                {!formData.avatar && <Person sx={{ fontSize: 32 }} />}
+              </Avatar>
+              <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
+              <Box
+                component="button"
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  py: 1,
+                  px: 2,
+                  borderRadius: 2,
+                  border: '1px solid var(--vm-border-primary)',
+                  bgcolor: 'transparent',
+                  color: 'var(--vm-text-secondary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
+                }}
+              >
+                <Camera size={16} />
+                Upload Photo
+              </Box>
+            </Box>
+
             <TextField
               label="Full Name"
               value={formData.name}
@@ -457,8 +518,11 @@ export function TeamPage() {
             <TextField
               label="Equity (%)"
               type="number"
-              value={formData.equity}
-              onChange={(e) => setFormData(prev => ({ ...prev, equity: parseFloat(e.target.value) || 0 }))}
+              value={formData.equity || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData(prev => ({ ...prev, equity: val === '' ? 0 : parseFloat(val) || 0 }));
+              }}
               fullWidth
               inputProps={{ min: 0, max: 100, step: 0.1 }}
               helperText={`Total allocated: ${totalEquity}%${formData.equity ? ` → ${isEditing ? totalEquity : totalEquity + formData.equity}%` : ''}`}

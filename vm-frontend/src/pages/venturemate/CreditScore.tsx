@@ -610,7 +610,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                   />
                   {app.submitted_at && (
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                      {new Date(app.submitted_at).toLocaleDateString()}
+                      {new Date(app.submitted_at).toLocaleDateString('en-GB')}
                     </Typography>
                   )}
                 </Box>
@@ -652,7 +652,7 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                   }}
                 >
                   <Typography sx={{ fontSize: 14, color: 'var(--vm-text-primary)' }}>
-                    {new Date(item.calculatedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    {new Date(item.calculatedAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <LinearProgress
@@ -774,17 +774,15 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                     fullWidth
                     label="Loan Term (months)"
                     type="number"
-                    value={applicationData.term}
-                    onChange={(e) => setApplicationData({ ...applicationData, term: parseInt(e.target.value) })}
+                    value={applicationData.term || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setApplicationData({ ...applicationData, term: val === '' ? 0 : parseInt(val) || 0 });
+                    }}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Grid>
@@ -797,14 +795,9 @@ export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProp
                     value={applicationData.purpose}
                     onChange={(e) => setApplicationData({ ...applicationData, purpose: e.target.value })}
                     sx={{
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
-                      '& .MuiOutlinedInput-root': {
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                        '&:hover fieldset': { borderColor: 'var(--vm-primary-600)' },
-                        '&.Mui-focused fieldset': { borderColor: 'var(--vm-primary-600)' },
-                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   >
                     <option value="">Select purpose...</option>

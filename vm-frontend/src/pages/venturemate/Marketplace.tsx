@@ -438,7 +438,7 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <Calendar size={14} color="var(--vm-text-muted)" />
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                  Deadline: {new Date(booking.deadline).toLocaleDateString()}
+                  Deadline: {new Date(booking.deadline).toLocaleDateString('en-GB')}
                 </Typography>
               </Box>
 
@@ -701,7 +701,7 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                                   {review.author}
                                 </Typography>
                                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>
-                                  {new Date(review.date).toLocaleDateString()}
+                                  {new Date(review.date).toLocaleDateString('en-GB')}
                                 </Typography>
                               </Box>
                               <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -882,13 +882,9 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                     onChange={(e) => setBookingForm({ ...bookingForm, projectTitle: e.target.value })}
                     fullWidth
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: 'var(--vm-bg-primary)',
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                      },
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
 
@@ -901,27 +897,19 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                     fullWidth
                     InputProps={{ startAdornment: <Typography sx={{ color: 'var(--vm-text-muted)', mr: 1 }}>$</Typography> }}
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: 'var(--vm-bg-primary)',
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                      },
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
 
-                  <DatePicker label="Desired Deadline"
+                  <DatePicker label="Desired Deadline" format="dd/MM/yyyy"
                     value={bookingForm.deadline ? new Date(bookingForm.deadline) : null}
                     onChange={(date) => setBookingForm({ ...bookingForm, deadline: date ? date.toISOString().split('T')[0] : '' })}
                     slotProps={{ textField: { fullWidth: true, sx: {
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: 'var(--vm-bg-primary)',
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                      },
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     } } }}
                   />
                 </Box>
@@ -943,13 +931,9 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                     multiline
                     rows={6}
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: 'var(--vm-bg-primary)',
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                      },
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
 
@@ -962,13 +946,9 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                     multiline
                     rows={3}
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: 'var(--vm-bg-primary)',
-                        color: 'var(--vm-text-primary)',
-                        '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                      },
+                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
                       '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiInputLabel-root.Mui-focused': { color: 'var(--vm-primary-400)' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   />
                 </Box>
@@ -1012,7 +992,7 @@ export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProp
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>Deadline</Typography>
                         <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'var(--vm-text-primary)' }}>
-                          {bookingForm.deadline ? new Date(bookingForm.deadline).toLocaleDateString() : 'Not specified'}
+                          {bookingForm.deadline ? new Date(bookingForm.deadline).toLocaleDateString('en-GB') : 'Not specified'}
                         </Typography>
                       </Box>
                     </Box>

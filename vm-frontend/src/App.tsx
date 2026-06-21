@@ -131,7 +131,7 @@ function BusinessOverview() {
                 { label: 'Stage', value: business.stage },
                 { label: 'Industry', value: business.industry },
                 { label: 'Location', value: business.location },
-                { label: 'Founded', value: new Date(business.foundedDate).toLocaleDateString() },
+                { label: 'Founded', value: new Date(business.foundedDate).toLocaleDateString('en-GB') },
               ].map((stat) => (
                 <Box key={stat.label} sx={{ bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2, p: { xs: 1.5, md: 2 }, textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5, textTransform: 'uppercase', fontWeight: 600 }}>{stat.label}</Typography>

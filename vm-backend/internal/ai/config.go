@@ -28,10 +28,10 @@ type ProviderManager struct {
 }
 
 func NewProviderManagerFromEnv() *ProviderManager {
-	active := normalizeProviderName(envOr("AI_PROVIDER", "ollama"))
-	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "ollama,gemini,openai,claude,grok"))
+	active := normalizeProviderName(envOr("AI_PROVIDER", "openrouter"))
+	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "openrouter,gemini,openai,claude,grok"))
 	if len(fallback) == 0 {
-		fallback = []string{"ollama"}
+		fallback = []string{"openrouter"}
 	}
 
 	return &ProviderManager{
@@ -39,10 +39,11 @@ func NewProviderManagerFromEnv() *ProviderManager {
 		allowOverride:  envBool("AI_ALLOW_PROVIDER_OVERRIDE", true),
 		fallbackOrder:  fallback,
 		configs: map[string]ProviderConfig{
-			"ollama": {
-				Name:     "ollama",
-				Endpoint: envOr("OLLAMA_ENDPOINT", DefaultOllamaEndpoint),
-				Model:    envOr("OLLAMA_MODEL", DefaultOllamaModel),
+			"openrouter": {
+				Name:     "openrouter",
+				APIKey:   strings.TrimSpace(envOr("OPENROUTER_API_KEY", "")),
+				Endpoint: envOr("OPENROUTER_ENDPOINT", "https://openrouter.ai/api/v1/chat/completions"),
+				Model:    envOr("OPENROUTER_MODEL", "google/gemini-2.5-flash"),
 			},
 			"gemini": {
 				Name:     "gemini",
@@ -74,7 +75,7 @@ func NewProviderManagerFromEnv() *ProviderManager {
 
 func (m *ProviderManager) ActiveProvider() string {
 	if m == nil || m.activeProvider == "" {
-		return "ollama"
+		return "openrouter"
 	}
 	return m.activeProvider
 }
@@ -101,7 +102,7 @@ func (m *ProviderManager) Resolve(requested string) (Provider, error) {
 		if !ok {
 			continue
 		}
-		if name != "ollama" && strings.TrimSpace(cfg.APIKey) == "" {
+		if strings.TrimSpace(cfg.APIKey) == "" {
 			continue
 		}
 		provider, err := NewProviderFromConfig(cfg)
@@ -115,7 +116,7 @@ func (m *ProviderManager) Resolve(requested string) (Provider, error) {
 		if len(configErrors) > 0 {
 			return nil, fmt.Errorf("no usable AI provider: %s", strings.Join(configErrors, "; "))
 		}
-		return nil, fmt.Errorf("no AI provider is configured; Ollama should be available at %s", DefaultOllamaEndpoint)
+		return nil, fmt.Errorf("no AI provider is configured; ensure OPENROUTER_API_KEY is set")
 	}
 	return newCascadeProvider(providers), nil
 }
@@ -124,11 +125,11 @@ func (m *ProviderManager) Status(ctx context.Context, checkHealth bool) []Provid
 	if m == nil {
 		m = NewProviderManagerFromEnv()
 	}
-	order := []string{"ollama", "gemini", "openai", "claude", "grok"}
+	order := []string{"openrouter", "gemini", "openai", "claude", "grok"}
 	infos := make([]ProviderInfo, 0, len(order))
 	for _, name := range order {
 		cfg := m.configs[name]
-		configured := name == "ollama" || strings.TrimSpace(cfg.APIKey) != ""
+		configured := strings.TrimSpace(cfg.APIKey) != ""
 		info := ProviderInfo{
 			Name:       name,
 			Model:      cfg.Model,
@@ -159,11 +160,7 @@ func (m *ProviderManager) Status(ctx context.Context, checkHealth bool) []Provid
 				}
 			}
 		} else if configured {
-			if name == "ollama" {
-				info.Message = "Configured locally; health not checked"
-			} else {
-				info.Message = "Configured"
-			}
+			info.Message = "Configured"
 		}
 		infos = append(infos, info)
 	}
@@ -209,7 +206,7 @@ func normalizeProviderName(name string) string {
 	name = strings.ToLower(strings.TrimSpace(name))
 	switch name {
 	case "local":
-		return "ollama"
+		return "openrouter"
 	case "anthropic":
 		return "claude"
 	case "xai":

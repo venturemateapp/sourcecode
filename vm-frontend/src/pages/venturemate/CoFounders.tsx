@@ -451,12 +451,9 @@ export function CoFoundersPage({ onViewChange }: CoFoundersProps) {
           }}
           sx={{
             width: { xs: '100%', sm: 320 },
-            '& .MuiOutlinedInput-root': {
-              bgcolor: 'var(--vm-bg-secondary)',
-              borderRadius: 2,
-              color: 'var(--vm-text-primary)',
-              '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-            },
+            '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-secondary)', color: 'var(--vm-text-primary)' },
+            '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
+            '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
           }}
         />
       </Box>
@@ -762,11 +759,9 @@ export function CoFoundersPage({ onViewChange }: CoFoundersProps) {
                 onChange={(e) => setMatchMessage(e.target.value)}
                 fullWidth
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'var(--vm-bg-primary)',
-                    color: 'var(--vm-text-primary)',
-                    '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-                  },
+                  '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
+                  '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                 }}
               />
               <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
