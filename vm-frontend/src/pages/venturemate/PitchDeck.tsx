@@ -31,7 +31,7 @@ function SlidePreview({ slide, index, total, primary, dark }: { slide: Slide; in
       }}
     >
       <Typography sx={{ position: 'absolute', top: 12, right: 14, color: 'rgba(255,255,255,.55)', fontSize: 10 }}>{index + 1} / {total}</Typography>
-      <Chip label={slide.type} size="small" sx={{ position: 'absolute', top: 10, left: 12, textTransform: 'capitalize', bgcolor: 'rgba(255,255,255,.1)', color: 'white', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
+      <Chip label={slide.type} size="small" sx={{ position: 'absolute', top: 10, left: 12, textTransform: 'capitalize', bgcolor: 'rgba(255,255,255,.1)', color: 'white', maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
       <Typography sx={{ color: 'white', fontSize: { xs: 19, sm: 25 }, fontWeight: 900, textAlign: slide.layout === 'center' ? 'center' : 'left' }}>{slide.title}</Typography>
       {slide.content && <Typography sx={{ color: 'rgba(255,255,255,.8)', fontSize: { xs: 12, sm: 13 }, lineHeight: 1.6, mt: 1, textAlign: slide.layout === 'center' ? 'center' : 'left' }}>{slide.content}</Typography>}
       {slide.bullets && slide.bullets.length > 0 && (
@@ -52,7 +52,7 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
           <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 20, fontWeight: 900 }}>{deck.title || 'Pitch Deck'}</Typography>
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11 }}>{slides.length} slides · {deck.template || 'AI-designed story'}</Typography>
         </Box>
-        <Chip label={proposed ? 'Review this story' : 'Approved deck'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
+        <Chip label={proposed ? 'Review this story' : 'Approved deck'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1.5 }}>
         {slides.map((slide, index) => <SlidePreview key={slide.id || index} slide={slide} index={index} total={slides.length} primary={primary} dark={dark} />)}
@@ -76,8 +76,8 @@ export function PitchDeck({}: { onViewChange?: (_view: ViewType) => void }) {
     <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
         <Presentation size={19} color="var(--vm-primary-400)" />
-        <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" />
-        <Chip icon={<Sparkles size={13} />} label="AI story · AI design · Your approval" size="small" color="success" variant="outlined" />
+        <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
+        <Chip icon={<Sparkles size={13} />} label="AI story · AI design · Your approval" size="small" color="success" variant="outlined" sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
       </Box>
       <AICreationStudio
         domain="pitch-deck"

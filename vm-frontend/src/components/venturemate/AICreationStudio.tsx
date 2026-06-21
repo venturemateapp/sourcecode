@@ -334,9 +334,9 @@ export function AICreationStudio({
           </Button>
 
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 1.75, mb: 0.75 }}>Try saying:</Typography>
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {starterPrompts.map(item => (
-              <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)} sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
+              <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)} sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
             ))}
           </Box>
         </Box>
