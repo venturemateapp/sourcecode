@@ -13,7 +13,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/auth': {
-        target: process.env.VITE_AUTH_PROXY_URL || 'http://localhost:8081',
+        target: process.env.VITE_AUTH_PROXY_URL || 'http://localhost:8080',
         changeOrigin: true,
       },
     },

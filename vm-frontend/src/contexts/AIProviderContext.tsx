@@ -47,17 +47,17 @@ const STATUS_QUERY = `
 `;
 
 const fallbackStatus: AIProviderStatus = {
-  activeProvider: 'ollama',
+  activeProvider: 'openrouter',
   allowOverride: true,
   providers: [
     {
-      name: 'ollama',
-      model: 'qwen2.5:3b',
-      endpoint: 'http://localhost:11434/api/chat',
+      name: 'openrouter',
+      model: 'google/gemini-2.5-flash',
+      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
       configured: true,
       available: true,
       isDefault: true,
-      message: 'Local default provider',
+      message: 'OpenRouter default provider',
     },
   ],
 };
@@ -66,7 +66,7 @@ const AIProviderContext = createContext<AIProviderContextValue | undefined>(unde
 
 export function AIProviderProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AIProviderStatus>(fallbackStatus);
-  const [selectedProvider, setSelectedProviderState] = useState(() => localStorage.getItem(STORAGE_KEY) || 'ollama');
+  const [selectedProvider, setSelectedProviderState] = useState(() => localStorage.getItem(STORAGE_KEY) || 'openrouter');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,7 +79,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
       setStatus(nextStatus);
       setSelectedProviderState(current => {
         const usable = nextStatus.providers.some(provider => provider.name === current && provider.configured);
-        const next = usable ? current : (nextStatus.activeProvider || 'ollama');
+        const next = usable ? current : (nextStatus.activeProvider || 'openrouter');
         localStorage.setItem(STORAGE_KEY, next);
         return next;
       });
@@ -96,7 +96,7 @@ export function AIProviderProvider({ children }: { children: ReactNode }) {
   }, [refreshProviders]);
 
   const setSelectedProvider = useCallback((provider: string) => {
-    const normalized = provider.trim().toLowerCase() || 'ollama';
+    const normalized = provider.trim().toLowerCase() || 'openrouter';
     setSelectedProviderState(normalized);
     localStorage.setItem(STORAGE_KEY, normalized);
   }, []);

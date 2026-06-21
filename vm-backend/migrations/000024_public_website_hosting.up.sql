@@ -1,5 +1,39 @@
 -- +goose Up
 -- Published snapshots keep draft edits private until the owner explicitly republishes.
+
+-- Ensure tables exist in case migration 000009 was not fully applied.
+CREATE TABLE IF NOT EXISTS website_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    thumbnail VARCHAR(500) NOT NULL DEFAULT '',
+    category VARCHAR(50) NOT NULL DEFAULT 'startup',
+    template_data JSONB NOT NULL DEFAULT '{}',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_websites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    template_id UUID REFERENCES website_templates(id),
+    subdomain VARCHAR(255) NOT NULL DEFAULT '',
+    custom_domain VARCHAR(255) NOT NULL DEFAULT '',
+    pages JSONB NOT NULL DEFAULT '[]',
+    global_styles JSONB NOT NULL DEFAULT '{}',
+    navigation JSONB NOT NULL DEFAULT '{}',
+    footer JSONB NOT NULL DEFAULT '{}',
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    published_at TIMESTAMPTZ,
+    last_modified TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_websites_business_id ON user_websites(business_id);
+CREATE INDEX IF NOT EXISTS idx_user_websites_status ON user_websites(status);
+
 ALTER TABLE user_websites
     ADD COLUMN IF NOT EXISTS published_subdomain VARCHAR(255) NOT NULL DEFAULT '',
     ADD COLUMN IF NOT EXISTS published_custom_domain VARCHAR(255) NOT NULL DEFAULT '',

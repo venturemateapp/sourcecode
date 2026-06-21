@@ -151,9 +151,9 @@ export function Businesses({ onViewChange }: BusinessesProps) {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: '24px', mb: 4 }}>
         {[
           { label: 'Total Businesses', value: businessList.length },
-          { label: 'Total Funding Raised', value: `$${(businessList.reduce((acc, b) => acc + b.financials.fundingRaised, 0) / 1000000).toFixed(1)}M` },
-          { label: 'Combined MRR', value: `$${businessList.reduce((acc, b) => acc + b.financials.revenue.currentMRR, 0).toLocaleString()}` },
-          { label: 'Team Members', value: businessList.reduce((acc, b) => acc + b.team.length, 0) },
+          { label: 'Total Funding Raised', value: `$${(businessList.reduce((acc, b) => acc + (b.financials?.fundingRaised ?? 0), 0) / 1000000).toFixed(1)}M` },
+          { label: 'Combined MRR', value: `$${businessList.reduce((acc, b) => acc + (b.financials?.revenue?.currentMRR ?? 0), 0).toLocaleString()}` },
+          { label: 'Team Members', value: businessList.reduce((acc, b) => acc + (b.team?.length ?? 0), 0) },
         ].map((stat) => (
           <div key={stat.label}>
             <Card
@@ -276,19 +276,19 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    ${business.financials.revenue.currentMRR.toLocaleString()}
+                    ${(business.financials?.revenue?.currentMRR ?? 0).toLocaleString()}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>MRR</Typography>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {business.metrics.totalUsers}
+                    {business.metrics?.totalUsers ?? 0}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Users</Typography>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {business.team.length}
+                    {business.team?.length ?? 0}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Team</Typography>
                 </div>

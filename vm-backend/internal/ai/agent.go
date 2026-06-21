@@ -103,7 +103,7 @@ type Proposal struct {
 }
 
 // ProviderForPlan now intentionally ignores subscription plan routing. The active
-// provider is controlled by AI_PROVIDER and defaults to Ollama for every plan.
+// provider is controlled by AI_PROVIDER and defaults to OpenRouter for every plan.
 func ProviderForPlan(_ string, _ *AIKeySet) (Provider, error) {
 	return NewProviderManagerFromEnv().Resolve("")
 }

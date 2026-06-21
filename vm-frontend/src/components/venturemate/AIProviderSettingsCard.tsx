@@ -35,7 +35,7 @@ export function AIProviderSettingsCard() {
           <Box sx={{ minWidth: 0 }}>
             <Typography sx={{ fontWeight: 800, color: 'var(--vm-text-primary)' }}>AI Provider</Typography>
             <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-              Ollama is the server default. Provider selection is applied to both the full assistant and the floating module assistant.
+              OpenRouter is the server default. Provider selection is applied to both the full assistant and the floating module assistant.
             </Typography>
           </Box>
         </Box>

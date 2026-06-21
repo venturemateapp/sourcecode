@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Grid } from '@mui/material';
+import { Box, Typography, Card, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Grid, FormControl, InputLabel, Select } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -408,7 +408,7 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
                   <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.customerName}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     {actualStatus === 'overdue' ? <AlertTriangle size={14} color="#ef4444" /> : actualStatus === 'paid' ? <CheckCircle size={14} color="#22c55e" /> : <Calendar size={14} color="var(--vm-text-muted)" />}
-                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Due: {new Date(inv.dueDate).toLocaleDateString()}</Typography>
+                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Due: {new Date(inv.dueDate).toLocaleDateString('en-GB')}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 1, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
                     {inv.status === 'draft' && (
@@ -445,21 +445,27 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
         <DialogContent sx={{ p: 3, pt: 0 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
             <TextField label="Bank Name" value={accountForm.bankName} onChange={(e) => setAccountForm({ ...accountForm, bankName: e.target.value })} fullWidth placeholder="e.g. Chase Bank, GCB Bank"
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
-            <TextField select label="Account Type" value={accountForm.accountType} onChange={(e) => setAccountForm({ ...accountForm, accountType: e.target.value })} fullWidth
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }}>
-              <MenuItem value="checking">Checking</MenuItem>
-              <MenuItem value="savings">Savings</MenuItem>
-              <MenuItem value="credit">Credit</MenuItem>
-            </TextField>
+              sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+            <FormControl fullWidth>
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Account Type</InputLabel>
+              <Select value={accountForm.accountType} label="Account Type" onChange={(e) => setAccountForm({ ...accountForm, accountType: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                <MenuItem value="checking" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Checking</MenuItem>
+                <MenuItem value="savings" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Savings</MenuItem>
+                <MenuItem value="credit" sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>Credit</MenuItem>
+              </Select>
+            </FormControl>
             <TextField label="Account Name" value={accountForm.accountName} onChange={(e) => setAccountForm({ ...accountForm, accountName: e.target.value })} fullWidth placeholder="e.g. Primary Operating Account"
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
+              sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             <TextField label="Account Number" value={accountForm.accountNumber} onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })} fullWidth placeholder="Last 4 digits or full number"
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
-            <TextField select label="Currency" value={accountForm.currency} onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })} fullWidth
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }}>
-              {rates.map(r => <MenuItem key={r.code} value={r.code}>{r.code} - {r.name} ({r.symbol})</MenuItem>)}
-            </TextField>
+              sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+            <FormControl fullWidth>
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
+              <Select value={accountForm.currency} label="Currency" onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                {rates.map(r => <MenuItem key={r.code} value={r.code} sx={{ color: 'var(--vm-text-primary)' }}>{r.code} - {r.name} ({r.symbol})</MenuItem>)}
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, justifyContent: 'center' }}>
@@ -481,33 +487,36 @@ export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
         <DialogContent sx={{ p: 3, pt: 0 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
             <TextField label="Customer Name" value={invoiceForm.customerName} onChange={(e) => setInvoiceForm({ ...invoiceForm, customerName: e.target.value })} fullWidth placeholder="Company or individual name"
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
+              sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             <TextField label="Customer Email" type="email" value={invoiceForm.customerEmail} onChange={(e) => setInvoiceForm({ ...invoiceForm, customerEmail: e.target.value })} fullWidth placeholder="customer@example.com"
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
+              sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField label="Amount" type="number" value={invoiceForm.amount || ''} onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: parseFloat(e.target.value) || 0 })} fullWidth
-                  sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
+                  sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField select label="Currency" value={invoiceForm.currency} onChange={(e) => setInvoiceForm({ ...invoiceForm, currency: e.target.value })} fullWidth
-                  sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }}>
-                  {rates.map(r => <MenuItem key={r.code} value={r.code}>{r.code} - {r.name} ({r.symbol})</MenuItem>)}
-                </TextField>
+                <FormControl fullWidth>
+                  <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
+                  <Select value={invoiceForm.currency} label="Currency" onChange={(e) => setInvoiceForm({ ...invoiceForm, currency: e.target.value })}
+                    sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                    {rates.map(r => <MenuItem key={r.code} value={r.code} sx={{ color: 'var(--vm-text-primary)' }}>{r.code} - {r.name} ({r.symbol})</MenuItem>)}
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <DatePicker label="Issue Date" value={invoiceForm.issueDate ? new Date(invoiceForm.issueDate) : null}
+                <DatePicker label="Issue Date" format="dd/MM/yyyy" value={invoiceForm.issueDate ? new Date(invoiceForm.issueDate) : null}
                   onChange={(date) => setInvoiceForm({ ...invoiceForm, issueDate: date ? date.toISOString().split('T')[0] : '' })}
-                  slotProps={{ textField: { fullWidth: true, sx: { '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } } }} />
+                  slotProps={{ textField: { fullWidth: true, sx: { '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } } } }} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <DatePicker label="Due Date" value={invoiceForm.dueDate ? new Date(invoiceForm.dueDate) : null}
+                <DatePicker label="Due Date" format="dd/MM/yyyy" value={invoiceForm.dueDate ? new Date(invoiceForm.dueDate) : null}
                   onChange={(date) => setInvoiceForm({ ...invoiceForm, dueDate: date ? date.toISOString().split('T')[0] : '' })}
-                  slotProps={{ textField: { fullWidth: true, sx: { '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } } }} />
+                  slotProps={{ textField: { fullWidth: true, sx: { '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } } } }} />
               </Grid>
             </Grid>
             <TextField label="Notes (optional)" multiline rows={3} value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} fullWidth
-              sx={{ '& .MuiInputLabel-root': { color: 'var(--vm-text-secondary)' }, '& .MuiInputBase-input': { color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } }} />
+              sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, justifyContent: 'center' }}>

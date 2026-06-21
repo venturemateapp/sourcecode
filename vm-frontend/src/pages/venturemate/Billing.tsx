@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Card, Tabs, Tab, Chip, LinearProgress, Dialog, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, Card, Tabs, Tab, Chip, Dialog, useTheme, useMediaQuery } from '@mui/material';
 import {
   CreditCard,
   Receipt,
@@ -152,27 +152,9 @@ export function BillingPage(_props: BillingProps) {
 
   const usage = subscription ? (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Businesses</Typography>
-          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-primary)' }}>N/A</Typography>
-        </Box>
-        <LinearProgress variant="determinate" value={0} sx={{ height: 6, borderRadius: 3, bgcolor: 'var(--vm-bg-hover)', '& .MuiLinearProgress-bar': { bgcolor: currentPlanData?.color, borderRadius: 3 } }} />
-      </Box>
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Team Members</Typography>
-          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-primary)' }}>N/A</Typography>
-        </Box>
-        <LinearProgress variant="determinate" value={0} sx={{ height: 6, borderRadius: 3, bgcolor: 'var(--vm-bg-hover)', '& .MuiLinearProgress-bar': { bgcolor: currentPlanData?.color, borderRadius: 3 } }} />
-      </Box>
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Storage</Typography>
-          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-primary)' }}>N/A</Typography>
-        </Box>
-        <LinearProgress variant="determinate" value={0} sx={{ height: 6, borderRadius: 3, bgcolor: 'var(--vm-bg-hover)', '& .MuiLinearProgress-bar': { bgcolor: currentPlanData?.color, borderRadius: 3 } }} />
-      </Box>
+      <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', fontStyle: 'italic' }}>
+        Usage tracking coming soon
+      </Typography>
     </Box>
   ) : null;
 
@@ -287,7 +269,7 @@ export function BillingPage(_props: BillingProps) {
                 <Calendar size={16} color="var(--vm-text-muted)" />
                 <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)' }}>
                   {subscription?.currentPeriodEnd
-                    ? `Renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}`
+                    ? `Renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB')}`
                     : 'No active billing period'}
                 </Typography>
               </Box>

@@ -19,7 +19,6 @@ import type { SelectChangeEvent } from '@mui/material/Select';
 import {
   Bot,
   Check,
-  ChevronUp,
   File as FileIcon,
   Image as ImageIcon,
   Paperclip,
@@ -691,17 +690,25 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           variant="contained"
           onClick={() => setOpen(true)}
           startIcon={<Bot size={20} />}
-          endIcon={<ChevronUp size={17} />}
           sx={{
             borderRadius: 999,
-            px: 2.25,
-            py: 1.2,
-            boxShadow: '0 12px 35px rgba(0,0,0,0.35)',
+            px: 2.5,
+            py: 1.3,
+            boxShadow: '0 0 24px rgba(16, 185, 129, 0.35)',
             textTransform: 'none',
             fontWeight: 800,
+            fontSize: 14,
+            animation: 'askAiFloat 2.5s ease-in-out infinite',
+            '@keyframes askAiFloat': {
+              '0%, 100%': { boxShadow: '0 0 20px rgba(16, 185, 129, 0.3)', transform: 'translateY(0)' },
+              '50%': { boxShadow: '0 0 36px rgba(16, 185, 129, 0.55)', transform: 'translateY(-3px)' },
+            },
+            '&:hover': {
+              boxShadow: '0 0 44px rgba(16, 185, 129, 0.7)',
+            },
           }}
         >
-          Ask AI · {selectedProvider.toUpperCase()}
+          Ask AI
         </Button>
       )}
     </Box>

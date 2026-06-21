@@ -244,7 +244,7 @@ export function SocialPage(_props: SocialProps) {
 
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                  {new Date(content.scheduled_date).toLocaleString()}
+                  {new Date(content.scheduled_date).toLocaleString('en-GB')}
                 </Typography>
 
                 {content.engagement && (

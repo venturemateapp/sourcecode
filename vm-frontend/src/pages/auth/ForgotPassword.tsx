@@ -215,6 +215,21 @@ export function ForgotPassword() {
             </Stack>
           </form>
         )}
+
+        {/* Visit our site */}
+        <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Link to="/" style={{ textDecoration: 'none' }}>
+            <Typography
+              sx={{
+                color: '#6ee7b7',
+                fontSize: '0.8125rem',
+                '&:hover': { color: '#34d399', textDecoration: 'underline' },
+              }}
+            >
+              Visit our site ↗
+            </Typography>
+          </Link>
+        </Box>
       </Card>
 
     </Box>

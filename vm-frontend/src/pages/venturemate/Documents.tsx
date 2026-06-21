@@ -198,7 +198,7 @@ export function DocumentsPage({}: DocumentsProps) {
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-GB');
   };
 
   if (!selectedBusiness) {
@@ -293,11 +293,9 @@ export function DocumentsPage({}: DocumentsProps) {
             sx={{
               flex: 1,
               minWidth: 200,
-              '& .MuiOutlinedInput-root': {
-                bgcolor: 'var(--vm-bg-tertiary)',
-                color: 'var(--vm-text-primary)',
-                '& fieldset': { borderColor: 'var(--vm-border-subtle)' },
-              },
+              '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-tertiary)', color: 'var(--vm-text-primary)' },
+              '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
             }}
             InputProps={{
               startAdornment: (
@@ -313,15 +311,11 @@ export function DocumentsPage({}: DocumentsProps) {
             <Select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              sx={{
-                bgcolor: 'var(--vm-bg-tertiary)',
-                color: 'var(--vm-text-primary)',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' },
-              }}
+              sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
             >
-              <MenuItem value="all">All Categories</MenuItem>
+              <MenuItem value="all" sx={{ color: 'var(--vm-text-primary)' }}>All Categories</MenuItem>
               {documentCategories.map(cat => (
-                <MenuItem key={cat.id} value={cat.id}>
+                <MenuItem key={cat.id} value={cat.id} sx={{ color: 'var(--vm-text-primary)' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     {(() => {
                       const Icon = categoryIcons[cat.id] || FileIcon;
@@ -339,15 +333,11 @@ export function DocumentsPage({}: DocumentsProps) {
             <Select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'name' | 'date' | 'size')}
-              sx={{
-                bgcolor: 'var(--vm-bg-tertiary)',
-                color: 'var(--vm-text-primary)',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' },
-              }}
+              sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
             >
-              <MenuItem value="date">Date Modified</MenuItem>
-              <MenuItem value="name">Name</MenuItem>
-              <MenuItem value="size">Size</MenuItem>
+              <MenuItem value="date" sx={{ color: 'var(--vm-text-primary)' }}>Date Modified</MenuItem>
+              <MenuItem value="name" sx={{ color: 'var(--vm-text-primary)' }}>Name</MenuItem>
+              <MenuItem value="size" sx={{ color: 'var(--vm-text-primary)' }}>Size</MenuItem>
             </Select>
           </FormControl>
 
