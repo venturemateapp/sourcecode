@@ -40,6 +40,7 @@ jobs:
             VITE_GRAPHQL_URL,VITE_AUTH_SERVER_URL,VITE_GOOGLE_AUTH_URL,VITE_CALLBACK_URL,
             VM_GITHUB_TOKEN,NETLIFY_AUTH_TOKEN
           script: |
+            set -e
             cd "$APP_DIR"
 
             git remote set-url origin https://$GIT_PAT@github.com/venturemateapp/sourcecode.git
@@ -137,7 +138,7 @@ jobs:
             docker compose build --no-cache
             docker compose up --build -d --force-recreate
 
-            cp Caddyfile /etc/caddy/Caddyfile
-            systemctl reload caddy || systemctl restart caddy
+            cp Caddyfile /etc/caddy/Caddyfile 2>/dev/null || true
+            systemctl reload caddy 2>/dev/null || systemctl restart caddy 2>/dev/null || true
 
-            docker system prune -af
+            docker image prune -af
