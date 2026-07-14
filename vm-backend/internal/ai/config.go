@@ -29,7 +29,7 @@ type ProviderManager struct {
 
 func NewProviderManagerFromEnv() *ProviderManager {
 	active := normalizeProviderName(envOr("AI_PROVIDER", "openrouter"))
-	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "openrouter,gemini,openai,claude,grok"))
+	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "openrouter,gemini,openai,claude,grok,deepseek"))
 	if len(fallback) == 0 {
 		fallback = []string{"openrouter"}
 	}
@@ -68,6 +68,12 @@ func NewProviderManagerFromEnv() *ProviderManager {
 				APIKey:   strings.TrimSpace(os.Getenv("GROK_API_KEY")),
 				Endpoint: envOr("GROK_ENDPOINT", "https://api.x.ai/v1/chat/completions"),
 				Model:    envOr("GROK_MODEL", "grok-4.3"),
+			},
+			"deepseek": {
+				Name:     "deepseek",
+				APIKey:   strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
+				Endpoint: envOr("DEEPSEEK_ENDPOINT", "https://api.deepseek.com/v1/chat/completions"),
+				Model:    envOr("DEEPSEEK_MODEL", "deepseek-chat"),
 			},
 		},
 	}
@@ -125,7 +131,7 @@ func (m *ProviderManager) Status(ctx context.Context, checkHealth bool) []Provid
 	if m == nil {
 		m = NewProviderManagerFromEnv()
 	}
-	order := []string{"openrouter", "gemini", "openai", "claude", "grok"}
+	order := []string{"openrouter", "gemini", "openai", "claude", "grok", "deepseek"}
 	infos := make([]ProviderInfo, 0, len(order))
 	for _, name := range order {
 		cfg := m.configs[name]

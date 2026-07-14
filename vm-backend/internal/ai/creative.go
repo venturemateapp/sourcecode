@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,127 @@ import (
 	"time"
 
 	"github.com/venturemate/vmbackend/internal/businesses"
+)
+
+const (
+	brandingDesignRules = `You are a legendary logo designer at the level of Pentagram, Wolff Olins, and Landor.
+
+DESIGN DOCTRINE (non-negotiable):
+1. SIMPLICITY — describable in ONE sentence, drawable from memory. Max 3 shapes, max 3 colors.
+2. BLACK-AND-WHITE FIRST — design the mark as if it will only ever exist in a single color. Structure, hierarchy and meaning must be carried entirely by SHAPE, never by color, gradient or effect. Color is applied at the end as a finishing layer. If the design stops working when every fill becomes #111111, it is rejected.
+3. SCALABILITY — legible at 16px (favicon) and on a building facade. No fine details, minimum stroke width ≥ 4px.
+4. RELEVANCE WITHOUT LITERALNESS — evoke the industry and values; NEVER illustrate the product (Apple's logo is not a computer, Nike's is not a shoe). Abstraction beats depiction.
+5. TIMELESSNESS OVER TREND — no fashionable effects, no fake 3D, no decorative noise. Simple geometry ages best.
+6. DISTINCTIVENESS — the mark must be recognizable from its filled SILHOUETTE alone.
+7. DECLINABILITY — the mark must survive light/dark/monochrome recoloring and icon-only extraction without any redesign.
+
+INDUSTRY ARCHETYPES (choose ONE based on business):
+- tech_precision: sharp angles, monochrome, geometric grids, negative space
+- tech_human: rounded, warm palette, approachable forms
+- finance_trust: deep navy/green, serif influence, stability, shield-like structure
+- health_wellness: clean whites, soft teal/blue, open space, organic curves
+- luxury_heritage: black/gold, tight spacing, minimal, serif
+- energy_motion: diagonals, bold red/orange, dynamic forms
+- creative_studio: asymmetry, accent color, personality, unexpected shapes
+- sustainability: organic curves, greens, earth tones, leaf motifs, recycled textures
+- food_hospitality: warm colors, friendly curves, fork/spoon/leaf icons, appetite appeal
+- education: book/open/light motifs, approachable serif, humanist, knowledge marks
+- retail_ecommerce: bag/cart motifs, friendly bold marks, colorful, promotional energy
+- industrial_manufacturing: heavy forms, bold sans, angular, structural, rugged
+- logistics_transport: speed lines, arrows, motion marks, bold geometric, fleet-ready
+- media_entertainment: dynamic shapes, vibrant colors, bold typography, spotlight motifs
+- legal_professional: shield/balance motifs, restrained serif/sans, deep blues, authoritative
+- nonprofit_social: open hands/circle motifs, warm tones, humanist fonts, approachable, inclusive
+
+VISUAL SEED (pick one style per concept):
+- seed_A: letterform-driven (derived from the brand initials or first letter)
+- seed_B: geometry-first (derived from pure mathematics — circles, arcs, polygons)
+- seed_C: narrative (contains hidden meaning/story relevant to the brand)
+- seed_D: negative space (the empty area IS the meaning — FedEx arrow principle)
+
+SYMMETRY MODE (pick one):
+- axial_vertical: mirror across vertical center line (default, safest)
+- axial_horizontal: mirror across horizontal center
+- radial: N identical units rotated around center (N = 2, 3, 4, 6)
+- point_symmetry: 180° rotational symmetry around center
+- balanced_asym: asymmetric but visual masses balance around vertical axis
+
+THREE LOGO TYPES — generate exactly one of each:
+
+TYPE A — ICON + WORDMARK:
+- Icon: max 2 shapes (3 only if structurally necessary), must work standalone as app icon
+- Positioned LEFT of brand name, bounding box 48x48
+- Wordmark: real <text> element with proper font, right of icon with 12px spacing
+- Font size = totalHeight * 0.35, weight 600 or 700
+- Icon must pass black-and-white and silhouette tests on its own
+
+TYPE B — WORDMARK ONLY (logotype):
+- Typography IS the logo. No icon or symbol.
+- Exactly ONE deliberate typographic strategy (choose: weight_statement, color_sequence, tracking_play, case_contrast, letterform_hack, baseline_rhythm, weight_contrast, hidden_element)
+- Real type only — <text> element with proper font, no freehand letterforms
+- Pass black-and-white test: the strategy must work through FORM, not color alone
+
+TYPE C — MONOGRAM (initials only):
+- Max 2-3 initials, UPPERCASE, from brand name
+- Container: circle, square, rounded, or none
+- Exactly ONE advanced technique (overlap, cutout, weight_contrast, color_split, rotation, monogram_lock)
+
+CONSTRUCTION SYSTEM:
+- MODULAR GRID: use a consistent unit (u = icon_height / 8). Every coordinate/width/gap is a multiple of u/2. Snap to grid.
+- PROPORTION SCALE: use Golden Ratio (1:1.618) or Rational (1:1.5, 1:2) for size ratios.
+- STROKE CONSISTENCY: maximum 2 distinct stroke widths (ideally 1).
+- CANONICAL ANGLES ONLY: every angle in the mark belongs to {0, 15, 30, 45, 60, 90} degrees.
+- NEGATIVE SPACE: every enclosed empty area is a conscious design decision with its own geometry.
+
+TECHNICAL STANDARDS:
+- viewBox="0 0 W H" — fit content with 12px padding minimum
+- No filters, drop-shadows, masks, foreignObject, scripts, or inline CSS
+- Forbidden clichés (auto-reject): globe, gear, lightbulb, upward arrow, speech bubble, shield, menu burger, orbit, swoosh, handshake
+- Font fallbacks: Inter, Helvetica Neue, Arial, sans-serif (700 weight); Playfair Display, Georgia, serif (for luxury)
+
+COLOR RULES:
+- Use ONLY the brand palette colors (primary, secondary, accent) + white + near-black
+- Max 3 colors total
+- Primary carries 60-70%, secondary 25-30%, accent ≤10% visual weight
+- Adjacent fills must remain distinguishable when converted to grayscale
+- Ensure WCAG AA contrast (4.5:1 text, 3:1 elements)
+- If the final logo uses a gradient, it must still work with the gradient flattened to a single color
+
+QUALITY GATES (verify internally before output):
+1. BLACK-AND-WHITE TEST: set every fill to #111111 — mark remains readable, hierarchical, meaningful
+2. SILHOUETTE TEST: filled outline alone is distinctive and recognizable
+3. Symmetry: computed twins, not eyeballed coordinates
+4. Coordinates snapped to grid; all angles canonical
+5. Legible at 16x16px (counters open, no fine details)
+6. No forbidden symbols; no literal product illustration
+7. Only brand palette colors (no invented hex)
+8. Describable in one sentence; drawable from memory
+
+Return SVG as a valid <svg> string in the "svg" field of each logo object.`
+
+	brandingCritiquePrompt = `You are an uncompromising design director at a world-class identity studio (Pentagram level). You review junior designers' logo work before it ever reaches a client.
+
+AUDIT CHECKLIST — score each criterion mentally, then aggregate:
+1. BLACK-AND-WHITE TEST — with every fill set to a single color, does the mark keep its structure, hierarchy and meaning? Color must never carry the design.
+2. SILHOUETTE — is the filled outline distinctive and recognizable on its own?
+3. GEOMETRY & SYMMETRY — are shapes mathematically clean (aligned, symmetric where intended, snapped to a coherent grid, canonical angles)? "Almost aligned" elements are an automatic fail.
+4. SIMPLICITY — describable in one sentence? ≤ 3 shapes? No decorative noise?
+5. SCALABILITY — legible at 16px? Open counters, no fine details, minimum stroke widths?
+6. STROKE & VALUE DISCIPLINE — at most 2 stroke widths? Radii/gaps from one coherent scale?
+7. TYPOGRAPHY — real, undistorted letterforms? Correct kerning? No clipped or overflowing text? Baseline consistent?
+8. LAYOUT — nothing clipped by the viewBox, clear space respected, icon/text balance correct?
+9. COLOR — ≤ 3 colors, from the brand palette, hierarchy survives grayscale, sufficient contrast?
+10. CLICHÉS — no globe, gear, bulb, generic swoosh, handshake, shield, speech bubble?
+11. RELEVANCE — evokes the industry/values without literally illustrating the product?
+
+VERDICT RULES:
+- FAIL if ANY of: text clipped or overflowing, broken/asymmetric geometry that was meant to be symmetric, illegible at small size, > 3 colors or non-palette colors, distorted letterforms, forbidden cliché, mark unreadable in one color.
+- FAIL if aggregate quality is below professional standard (score < 70).
+- PASS otherwise. A pass means you would sign this work with your name.
+- Be strict but fair: do not fail a clean, simple mark for stylistic taste alone.
+
+Return JSON: {"pass": true/false, "score": 0-100, "issues": ["specific issue 1","specific issue 2"], "suggestions": "precise revision instructions in English (actionable coordinates, values, operations)"}
+Score < 70 = fail. Only pass logos that are genuinely professional-grade.`
 )
 
 func creativeDomain(domain string) string {
@@ -21,6 +143,8 @@ func creativeDomain(domain string) string {
 		return "pitch-deck"
 	case "website", "website-builder", "site":
 		return "website"
+	case "mockup", "mockups", "mock-up", "mock-ups", "brand-mockup":
+		return "mockups"
 	default:
 		return normalizeDomain(domain)
 	}
@@ -28,7 +152,7 @@ func creativeDomain(domain string) string {
 
 func isCreativeDomain(domain string) bool {
 	switch creativeDomain(domain) {
-	case "branding", "business-plan", "pitch-deck", "website":
+	case "branding", "business-plan", "pitch-deck", "website", "mockups":
 		return true
 	default:
 		return false
@@ -75,6 +199,10 @@ func creativeBusinessContextJSON(biz *businesses.Business, domain string) []byte
 		context["existingWebsiteConfig"] = creativeContextValue(biz.WebsiteConfig, 850)
 		context["team"] = creativeContextValue(biz.Team, 500)
 		context["metrics"] = creativeContextValue(biz.Metrics, 400)
+	case "mockups":
+		context["brandKit"] = creativeContextValue(biz.BrandKit, 2000)
+		context["website"] = biz.Website
+		context["industry"] = biz.Industry
 	}
 	encoded, err := json.Marshal(context)
 	if err != nil {
@@ -122,6 +250,8 @@ func defaultCreativeChange(domain string, biz *businesses.Business) ProposedChan
 		field, current, summary = "pitchDeck", biz.PitchDeck, "Generate or revise the complete pitch deck"
 	case "website":
 		field, current, summary = "websiteDraft", biz.WebsiteConfig, "Generate or revise the private website draft"
+	case "mockups":
+		field, current, summary = "brandKit", biz.BrandKit, "Generate brand mockup visualizations"
 	}
 	return ProposedChange{ID: "1", Type: "update", Field: field, Summary: summary, CurrentValue: current, NewValue: "{}"}
 }
@@ -129,65 +259,210 @@ func defaultCreativeChange(domain string, biz *businesses.Business) ProposedChan
 func creativeProposalGuidance(domain string) string {
 	switch creativeDomain(domain) {
 	case "branding":
-		return `
-This is an AI-first branding workflow. Return exactly one change with field "brandKit" whenever the user asks to generate, revise, replace, or refine a logo or brand identity.
+		return fmt.Sprintf(`
+This is an AI-first branding workflow. Return exactly one change with field "brandKit" for generation or revision.
+
+%s
+
 The newValue must be a COMPLETE JSON object with:
 {
-  "logo":"optional data URL; the server will generate one when omitted",
-  "logoWhite":"optional",
-  "logoIcon":"optional",
-  "primaryColor":"#RRGGBB",
-  "secondaryColor":"#RRGGBB",
-  "accentColor":"#RRGGBB",
-  "darkColor":"#RRGGBB",
-  "fontHeading":"font name",
-  "fontBody":"font name",
+  "logos":[{"svg":"<svg>...</svg>","name":"concept name","concept":"design rationale","type":"icon|name|initial","colors":["#HEX","#HEX"],"fonts":["font name"]}],
+  "selectedLogo":0,
+  "colors":[{"name":"palette name","colors":{"primary":"#RRGGBB","secondary":"#RRGGBB","accent":"#RRGGBB","background":"#RRGGBB","text":"#RRGGBB"},"rationale":"color theory reasoning"}],
+  "selectedColors":0,
+  "typography":[{"name":"pair name","primaryFont":"Google Font name","secondaryFont":"Google Font name","rationale":"pairing reasoning"}],
+  "selectedTypography":0,
+  "logoWhite":"generated from logo SVG",
+  "logoIcon":"generated from logo SVG",
   "patterns":[],
-  "socialBanners":[],
-  "logoConcept":{"mark":"1-4 letters or a simple symbol","shape":"rounded|circle|square","style":"modern|minimal|bold|friendly|premium","rationale":"why it fits the business"}
+  "socialBanners":[]
 }
-Preserve any existing brand values the user did not ask to change. Never ask the user to upload a logo.`
+- Generate EXACTLY 3 logo concepts with different approaches (icon+text, wordmark, monogram)
+- Generate EXACTLY 3 color palettes with different moods
+- Generate EXACTLY 3 typography pairs with distinct personalities
+- Every SVG must be a valid standalone <svg> element with viewBox="0 0 128 128"
+- Preserve any existing brand values the user did not ask to change
+- Never ask the user to upload a logo`, brandingDesignRules)
 	case "business-plan":
 		return `
 This is an AI-first business-plan workflow. Return exactly one change with field "businessPlan" for generation or revision.
-The newValue must be a COMPLETE JSON object with:
+
+You are a world-class business strategist. Produce a complete, investor-ready business plan with ALL 9 sections below. Each section must be written as detailed prose (2-5 paragraphs per section) with data, insights, and strategic thinking.
+
+BUSINESS PLAN STRUCTURE:
+
+1. COVER PAGE
+- Company name, tagline, date, version, "CONFIDENTIAL" notice
+
+2. EXECUTIVE SUMMARY (brief overview of the entire plan)
+- The problem, solution, target market, business model, financial highlights, funding ask
+- 1 paragraph summary
+
+3. COMPANY SUMMARY
+- Mission, Vision, Company Story, Business Structure, Leadership, Core Values, Culture
+- Adapt tone to industry (Startup/Professional/Creative/Retail/Healthcare/Finance)
+
+4. MARKET OPPORTUNITY
+- Problem Statement, Market Context, Why Now, TAM/SAM/SOM, Competitive Landscape, Unique Value Proposition, Market Entry Strategy
+
+5. TARGET AUDIENCE
+- 2-3 Customer Personas with demographics, Pain Points, Motivations, Market Segmentation, Customer Journey, Acquisition Channels
+
+6. PRODUCTS & SERVICES
+- Core Offerings, Key Features, Customer Benefits, Competitive Advantages, Development Roadmap, Pricing Strategy, Delivery/Support model
+
+7. MARKETING & SALES
+- Marketing Strategy, Acquisition Channels, Sales Process, Customer Retention, KPIs, Budget Allocation, Implementation Timeline
+
+8. FINANCIAL PLAN
+- Revenue Model, 3-year Projections (Year 1-3), Cost Structure, Break-even Analysis, Funding Requirements, Financial Risks
+- Label all projections as "Projection — estimate". Never invent precise figures without basis.
+
+9. GOAL PLANNING
+- Strategic SMART Objectives, Key Milestones, Implementation Timeline, Resource Allocation, Risk Assessment, Success Metrics, Contingency Planning
+
+10. APPENDIX
+- Financial Assumptions, Market Research Sources, Team Profiles, Product Details
+
+The newValue must be a COMPLETE JSON object:
 {
-  "id":"plan id",
-  "title":"...",
-  "executiveSummary":"...",
-  "sections":[{"id":"...","title":"...","content":"detailed prose","aiGenerated":true,"order":0}],
-  "lastModified":"ISO timestamp",
+  "title":"Business Name Business Plan",
+  "executiveSummary":"2-3 paragraph overview",
+  "sections":[
+    {"id":"cover","title":"Cover Page","content":"...","order":0},
+    {"id":"executive-summary","title":"Executive Summary","content":"...","order":1},
+    {"id":"company-summary","title":"Company Summary","content":"...","order":2},
+    {"id":"market-opportunity","title":"Market Opportunity","content":"detailed analysis with TAM/SAM/SOM","order":3},
+    {"id":"target-audience","title":"Target Audience","content":"personas with demographics and psychographics","order":4},
+    {"id":"products-services","title":"Products & Services","content":"offerings with features and benefits","order":5},
+    {"id":"marketing-sales","title":"Marketing & Sales","content":"go-to-market strategy with channels and KPIs","order":6},
+    {"id":"financial-plan","title":"Financial Plan","content":"3-year projections and break-even analysis","order":7},
+    {"id":"goal-planning","title":"Goal Planning","content":"SMART objectives and milestones","order":8},
+    {"id":"appendix","title":"Appendix","content":"supporting details and assumptions","order":9}
+  ],
   "version":"1.0",
   "exportFormats":["pdf","docx","md"]
 }
-Use the business profile, metrics, financials, milestones, team, and prior plan. Do not invent precise financial or legal facts; label assumptions clearly.`
+- Use business profile, metrics, financials, milestones, team, and prior plan
+- Label financial projections clearly as "Projection — estimate"
+- Each section content must be COMPLETE prose (2-5 paragraphs), not outlines or bullet lists alone`
 	case "pitch-deck":
 		return `
 This is an AI-first pitch-deck workflow. Return exactly one change with field "pitchDeck" for generation or revision.
+
+You are pitching to investors. Produce a complete, compelling investor pitch deck with ALL 11 slides below. Each slide must have: a clear title, 2-4 bullet points, and 1-2 paragraphs of narrative content. Tone: confident, concise, data-driven.
+
+PITCH DECK STRUCTURE:
+
+1. COVER — Company name, 1-line positioning statement, "PITCH DECK" label, date, "Confidential"
+2. PROBLEM — 3 pain points with real context, 1 bold statistic. "Why this matters now"
+3. SOLUTION — Your value proposition, 3 key capability points. "How we solve it"
+4. MARKET — TAM/SAM/SOM with numbers, growth trend, market context. "The opportunity size"
+5. PRODUCT — How it works: 3-5 step breakdown. "What we built"
+6. BUSINESS MODEL — Revenue streams, pricing model, unit economics (ARPU/LTV/CAC). "How we make money"
+7. TRACTION — Key metrics, milestones achieved, roadmap ahead. "Our progress"
+8. COMPETITION — Competitive landscape, unfair advantage, differentiators. "Why we win"
+9. TEAM — Key members with names, roles, credibility highlights. "The people"
+10. FINANCIALS — 3-year outlook (Year 1-3), revenue/cost projections, key assumptions
+11. ASK — Funding target, use of funds (3 buckets), closing statement, contact
+
+Design guidelines:
+- Every slide must tell a story. Lead with the insight, then support with data.
+- Content should be concise but complete (2-4 bullets + 1-2 paragraph narrative per slide)
+- Numbers should be specific, realistic, and labeled as projections where applicable
+
+The newValue must be a COMPLETE JSON object:
+{
+  "title":"Business Name Pitch Deck",
+  "template":"ai-modern",
+  "slides":[
+    {"id":"cover","type":"title","title":"Business Name","content":"One-line positioning statement","bullets":["PITCH DECK","Date","Confidential"],"order":0,"layout":"center"},
+    {"id":"problem","type":"problem","title":"The Problem","content":"paragraph explaining the problem","bullets":["Pain point 1","Pain point 2","Pain point 3"],"order":1,"layout":"split"},
+    {"id":"solution","type":"solution","title":"Our Solution","content":"paragraph explaining solution","bullets":["Capability 1","Capability 2","Capability 3"],"order":2,"layout":"split"},
+    {"id":"market","type":"market","title":"Market Opportunity","content":"market analysis paragraph","bullets":["TAM: $X","SAM: $Y","SOM: $Z"],"order":3,"layout":"center"},
+    {"id":"product","type":"product","title":"How It Works","content":"product description","bullets":["Step 1","Step 2","Step 3"],"order":4,"layout":"split"},
+    {"id":"business-model","type":"business-model","title":"Business Model","content":"revenue model paragraph","bullets":["Revenue stream","Pricing tier 1","Pricing tier 2"],"order":5,"layout":"split"},
+    {"id":"traction","type":"traction","title":"Traction","content":"progress paragraph","bullets":["Metric 1","Metric 2","Metric 3"],"order":6,"layout":"center"},
+    {"id":"competition","type":"competition","title":"Why We Win","content":"competitive advantage","bullets":["Differentiator 1","Differentiator 2","Differentiator 3"],"order":7,"layout":"split"},
+    {"id":"team","type":"team","title":"The Team","content":"team overview paragraph","bullets":["Name — Role — Credibility","Name — Role — Credibility","Name — Role — Credibility"],"order":8,"layout":"center"},
+    {"id":"financials","type":"financials","title":"Financial Outlook","content":"3-year projection paragraph","bullets":["Year 1: Revenue $X, Costs $Y","Year 2: Revenue $X, Costs $Y","Year 3: Revenue $X, Costs $Y"],"order":9,"layout":"center"},
+    {"id":"ask","type":"ask","title":"The Ask","content":"funding request paragraph","bullets":["Use bucket 1: $X","Use bucket 2: $Y","Use bucket 3: $Z"],"order":10,"layout":"center"}
+  ],
+  "exportFormats":["pdf","pptx"]
+}
+- Build the story from the approved business profile and business plan
+- Do not invent traction, revenue, valuation, customer counts, or funding figures without basis — label projections
+- Every slide type must have real, complete content — no placeholders or "..."`
+	case "mockups":
+		return `
+This is an AI-only mockup generation workflow. Return exactly one change with field "brandKit" whenever the user asks to generate brand mockups.
 The newValue must be a COMPLETE JSON object with:
 {
-  "id":"deck id",
-  "title":"...",
-  "template":"ai-modern",
-  "slides":[{"id":"...","type":"title|problem|solution|market|product|business-model|traction|team|financials|competition|roadmap|ask|closing|custom","title":"...","content":"...","bullets":["..."],"order":0,"layout":"center|split|grid"}],
-  "lastModified":"ISO timestamp",
-  "exportFormats":["pdf","pptx"],
-  "views":0
+  "mockups": [
+    {
+      "supportType":"business_cards|signage|packaging|digital_interfaces|uniforms|vehicle_branding|storefront",
+      "supportName":"Business Cards",
+      "svg":"<svg>...</svg>",
+      "title":"Business Cards Mockup",
+      "description":"Description of the mockup"
+    }
+  ]
 }
-Build the story from the approved business profile and business plan. Do not invent traction, revenue, valuation, customer counts, or funding figures.`
+Generate 3 SVG mockups showing the brand identity on different physical items suitable for the business industry. Use the existing brand kit colors and logo. Each SVG must be a valid standalone <svg viewBox="0 0 800 600"> element.`
 	case "website":
 		return `
-This is an AI-only website-builder workflow. Return exactly one change with field "websiteDraft" for website generation or revision.
-The newValue must be a COMPLETE JSON object with:
+This is an AI-first website builder. Return exactly one change with field "websiteDraft" for generation or revision.
+
+WEBSITE DESIGN PRINCIPLES:
+- Responsive: mobile-first, works on all screen sizes
+- Accessible: WCAG AA contrast, semantic HTML, ARIA labels
+- Fast: minimal dependencies, optimized images, lazy loading
+- On-brand: use the approved brand kit colors, fonts, and logo
+- Conversion-focused: clear CTAs, trust signals, social proof
+- Complete: every page fully fleshed out, no placeholders
+
+PAGE STRUCTURE (recommend pages based on business type):
+- Tech/SaaS: Home, Features, Pricing, About, Blog, Contact
+- Retail/E-commerce: Home, Shop, About, FAQ, Contact
+- Service/Consulting: Home, Services, About, Case Studies, Contact
+- Restaurant/Food: Home, Menu, About, Gallery, Contact, Reservations
+- Portfolio/Creative: Home, Work, About, Services, Contact
+- Minimum viable: Home, About, Services, Contact
+
+SECTION TYPES AND PROPS FORMATS:
+- hero: {"headline":"...","subheadline":"...","ctaPrimary":"...","secondaryCta":"...","logo":"..."}
+- features: {"title":"...","subtitle":"...","features":[{"icon":"Zap|Shield|TrendingUp|Briefcase|Layers|BarChart3","title":"...","description":"..."}]}
+- carousel: {"title":"...","subtitle":"...","autoplay":true,"interval":5000,"items":[{"title":"...","description":"...","image":"...","cta":"...","href":"..."}]}
+- testimonials: {"title":"...","subtitle":"...","testimonials":[{"quote":"...","author":"...","role":"..."}]}
+- pricing: {"title":"...","subtitle":"...","items":[{"name":"Starter|Growth|Enterprise","description":"...","price":"...","features":["..."],"cta":"...","href":"..."}]}
+- team: {"title":"...","subtitle":"...","items":[{"name":"...","role":"...","bio":"...","image":""}]}
+- stats: {"title":"...","stats":[{"value":"...","label":"..."}]}
+- contact: {"title":"...","subtitle":"...","showCompany":true,"showPhone":false}
+- cta: {"headline":"...","subheadline":"...","cta":"...","href":"..."}
+- about: {"title":"...","content":"..."}
+- faq: {"title":"...","items":[{"question":"...","answer":"..."}]}
+- image: {"src":"...","alt":"...","caption":"..."}
+- video: {"url":"...","title":"...","description":"..."}
+
+DEVELOPMENT CONFIG (include to enable code generation):
+"developmentConfig": {
+  "stack": "react-vite-tailwind",
+  "features": {"seo":true,"contactForm":true,"analytics":true,"i18n":true}
+}
+
+The newValue must be a COMPLETE JSON object:
 {
-  "templateId":"optional existing template UUID; otherwise empty",
-  "subdomain":"optional preferred venturemate.net subdomain",
-  "pages":[{"id":"...","slug":"/","title":"Home","metaDescription":"...","isHome":true,"isPublished":false,"sections":[{"id":"...","type":"hero|features|carousel|testimonials|pricing|team|contact|cta|about|stats|faq|image|video|custom","props":{},"order":0,"visible":true}]}],
-  "globalStyles":{"primaryColor":"#RRGGBB","secondaryColor":"#RRGGBB","accentColor":"#RRGGBB","darkColor":"#RRGGBB","fontHeading":"Inter","fontBody":"Inter","radius":"16px"},
+  "templateId":"",
+  "subdomain":"auto",
+  "developmentConfig":{...},
+  "pages":[{"id":"page-home","slug":"/","title":"Home","metaDescription":"...","isHome":true,"isPublished":false,"sections":[...]}],
+  "globalStyles":{"primaryColor":"#RRGGBB","secondaryColor":"#RRGGBB","accentColor":"#RRGGBB","fontHeading":"Inter","fontBody":"Inter","radius":"16px"},
   "navigation":{"items":[{"label":"Home","href":"/"}],"style":"horizontal","position":"top"},
   "footer":{"showLogo":true,"showSocial":true,"customText":"..."}
 }
-Automatically use the approved business name, tagline, description, location, and brand kit. Put section data in "props". For carousel sections use {"title":"...","subtitle":"...","autoplay":true,"interval":5000,"items":[{"title":"...","description":"...","image":"optional safe URL","cta":"optional","href":"optional"}]}. Create a complete responsive site, not a fragment. The proposal only updates the PRIVATE DRAFT; publishing requires a later explicit confirmation.`
+- Use brand kit colors, fonts, and logo automatically
+- Create 4-5 pages minimum with real content in every section
+- The proposal only updates the PRIVATE DRAFT; publishing requires later confirmation`
 	default:
 		return ""
 	}
@@ -237,9 +512,90 @@ func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, dom
 				return err
 			}
 			change.NewValue = normalized
+		case "mockups":
+			change.Field = "brandKit"
+			normalized, err := normalizeMockupProposal(change.NewValue, biz)
+			if err != nil {
+				return err
+			}
+			change.NewValue = normalized
 		}
 	}
 	return nil
+}
+
+func critiqueAndReviseLogo(ctx context.Context, provider Provider, biz *businesses.Business, svg string) string {
+	original := svg
+	critiquePrompt := fmt.Sprintf(`%s
+
+Logo SVG to review:
+%s
+
+Business: %s | Industry: %s | Tagline: %s`, brandingCritiquePrompt, svg, biz.Name, biz.Industry, biz.Tagline)
+
+	resp, err := provider.Chat(ctx, "", []Message{{Role: "user", Content: critiquePrompt}}, nil)
+	if err != nil {
+		return svg
+	}
+	content := extractJSONObject(resp.Content)
+	var critique struct {
+		Pass        bool     `json:"pass"`
+		Score       float64  `json:"score"`
+		Suggestions string   `json:"suggestions"`
+	}
+	if json.Unmarshal([]byte(content), &critique) != nil || critique.Pass || critique.Score >= 70 {
+		return svg
+	}
+
+	for retry := 0; retry < 2; retry++ {
+		revisionPrompt := fmt.Sprintf(`Revise this logo SVG based on the design director's feedback.
+
+Current SVG:
+%s
+
+Feedback to address:
+%s
+
+Produce an improved SVG following the design doctrine. Return ONLY the <svg> element.`, svg, critique.Suggestions)
+
+		resp, err := provider.Chat(ctx, brandingDesignRules, []Message{{Role: "user", Content: revisionPrompt}}, nil)
+		if err != nil {
+			return svg
+		}
+		if s := extractSVG(resp.Content); s != "" {
+			svg = s
+		} else {
+			return original
+		}
+
+		critiquePrompt = fmt.Sprintf(`%s
+
+Logo SVG to review:
+%s
+
+Business: %s | Industry: %s | Tagline: %s`, brandingCritiquePrompt, svg, biz.Name, biz.Industry, biz.Tagline)
+		resp, err = provider.Chat(ctx, "", []Message{{Role: "user", Content: critiquePrompt}}, nil)
+		if err != nil {
+			return svg
+		}
+		content = extractJSONObject(resp.Content)
+		if json.Unmarshal([]byte(content), &critique) == nil && (critique.Pass || critique.Score >= 70) {
+			return svg
+		}
+	}
+	return svg
+}
+
+func extractSVG(content string) string {
+	start := strings.Index(content, "<svg")
+	if start < 0 {
+		return ""
+	}
+	end := strings.Index(content, "</svg>")
+	if end < 0 {
+		return ""
+	}
+	return content[start : end+6]
 }
 
 func decodeJSONMap(raw string) (map[string]interface{}, error) {
@@ -278,12 +634,101 @@ func normalizeBrandKitProposal(raw string, biz *businesses.Business) (string, er
 	incoming := map[string]interface{}{}
 	_ = json.Unmarshal([]byte(raw), &incoming)
 	brand := mergeJSONMap(raw, biz.BrandKit)
+
+	// Extract multi-option design candidates if present
+	logos, _ := incoming["logos"].([]interface{})
+	colors, _ := incoming["colors"].([]interface{})
+	typos, _ := incoming["typography"].([]interface{})
+
+	selLogo := intFromMap(incoming, "selectedLogo", 0)
+	selColor := intFromMap(incoming, "selectedColors", 0)
+	selTypo := intFromMap(incoming, "selectedTypography", 0)
+
+	// Process selected logo
+	if selLogo >= 0 && selLogo < len(logos) {
+		if logoObj, ok := logos[selLogo].(map[string]interface{}); ok {
+			svgStr, _ := logoObj["svg"].(string)
+			if s := extractSVG(svgStr); s != "" {
+				dataURL := svgToDataURL(s)
+				brand["logo"] = dataURL
+				brand["logoIcon"] = dataURL
+				brand["logoWhite"] = svgToDataURL(recolorSVGForWhite(s))
+			}
+			if name, _ := logoObj["name"].(string); name != "" {
+				brand["logoName"] = name
+			}
+			if concept, _ := logoObj["concept"].(string); concept != "" {
+				brand["logoConcept"] = concept
+			}
+			if c, _ := logoObj["colors"].([]interface{}); len(c) > 0 {
+				brand["logoColors"] = c
+			}
+		}
+	} else {
+		// Fallback: server-generated SVG
+		concept, _ := brand["logoConcept"].(map[string]interface{})
+		if concept == nil {
+			concept = map[string]interface{}{}
+		}
+		mark := stringValue(concept, "mark", initials(biz.Name))
+		if len([]rune(mark)) > 4 {
+			mark = string([]rune(mark)[:4])
+		}
+		shape := stringValue(concept, "shape", "rounded")
+		if shape != "rounded" && shape != "circle" && shape != "square" {
+			shape = "rounded"
+		}
+		style := stringValue(concept, "style", "modern")
+		if style != "modern" && style != "minimal" && style != "bold" && style != "friendly" && style != "premium" {
+			style = "modern"
+		}
+		logo, _ := incoming["logo"].(string)
+		if !strings.HasPrefix(logo, "data:image/") && !strings.HasPrefix(logo, "https://") {
+			logo = generatedLogoDataURL(mark, shape, style, "#10b981", "#059669", false)
+		}
+		brand["logo"] = logo
+		brand["logoIcon"] = generatedLogoDataURL(mark, shape, style, "#10b981", "#059669", false)
+		brand["logoWhite"] = generatedLogoDataURL(mark, shape, style, "#ffffff", "#d1fae5", true)
+	}
+
+	// Process selected color palette
+	if selColor >= 0 && selColor < len(colors) {
+		if cObj, ok := colors[selColor].(map[string]interface{}); ok {
+			if c, ok := cObj["colors"].(map[string]interface{}); ok {
+				for _, key := range []string{"primary", "secondary", "accent", "background", "text"} {
+					if v, ok := c[key].(string); ok && v != "" {
+						brand[key+"Color"] = validHexOr(v, "#10b981")
+					}
+				}
+			}
+		}
+	}
 	brand["primaryColor"] = validHexOr(stringValue(brand, "primaryColor", "#10b981"), "#10b981")
 	brand["secondaryColor"] = validHexOr(stringValue(brand, "secondaryColor", "#059669"), "#059669")
 	brand["accentColor"] = validHexOr(stringValue(brand, "accentColor", "#34d399"), "#34d399")
-	brand["darkColor"] = validHexOr(stringValue(brand, "darkColor", "#052e24"), "#052e24")
+	dark := stringValue(brand, "darkColor", "")
+	if dark == "" {
+		dark = stringValue(brand, "backgroundColor", "#052e24")
+	}
+	brand["darkColor"] = validHexOr(dark, "#052e24")
+	if _, ok := brand["background"]; !ok {
+		brand["background"] = "#ffffff"
+	}
+
+	// Process selected typography
+	if selTypo >= 0 && selTypo < len(typos) {
+		if tObj, ok := typos[selTypo].(map[string]interface{}); ok {
+			if pf, _ := tObj["primaryFont"].(string); pf != "" {
+				brand["fontHeading"] = pf
+			}
+			if sf, _ := tObj["secondaryFont"].(string); sf != "" {
+				brand["fontBody"] = sf
+			}
+		}
+	}
 	brand["fontHeading"] = stringValue(brand, "fontHeading", "Inter")
 	brand["fontBody"] = stringValue(brand, "fontBody", "Inter")
+
 	if _, ok := brand["patterns"]; !ok {
 		brand["patterns"] = []interface{}{}
 	}
@@ -291,44 +736,31 @@ func normalizeBrandKitProposal(raw string, biz *businesses.Business) (string, er
 		brand["socialBanners"] = []interface{}{}
 	}
 
-	concept, _ := brand["logoConcept"].(map[string]interface{})
-	if concept == nil {
-		concept = map[string]interface{}{}
-	}
-	mark := stringValue(concept, "mark", initials(biz.Name))
-	if len([]rune(mark)) > 4 {
-		mark = string([]rune(mark)[:4])
-	}
-	shape := stringValue(concept, "shape", "rounded")
-	switch shape {
-	case "rounded", "circle", "square":
-	default:
-		shape = "rounded"
-	}
-	style := stringValue(concept, "style", "modern")
-	switch style {
-	case "modern", "minimal", "bold", "friendly", "premium":
-	default:
-		style = "modern"
-	}
-	concept["mark"], concept["shape"], concept["style"] = mark, shape, style
-	if _, ok := concept["rationale"]; !ok {
-		concept["rationale"] = "Generated from the business name, industry, and positioning."
-	}
-	brand["logoConcept"] = concept
-
-	// Only accept a logo explicitly returned in this proposal. Otherwise render a
-	// fresh SVG from the proposed concept so "change my logo" cannot silently
-	// retain the previously approved image through the merge fallback.
-	logo, _ := incoming["logo"].(string)
-	if !strings.HasPrefix(logo, "data:image/") && !strings.HasPrefix(logo, "https://") {
-		logo = generatedLogoDataURL(mark, shape, style, brand["primaryColor"].(string), brand["secondaryColor"].(string), false)
-	}
-	brand["logo"] = logo
-	brand["logoIcon"] = generatedLogoDataURL(mark, shape, style, brand["primaryColor"].(string), brand["secondaryColor"].(string), false)
-	brand["logoWhite"] = generatedLogoDataURL(mark, shape, style, "#ffffff", "#d1fae5", true)
 	encoded, err := json.Marshal(brand)
 	return string(encoded), err
+}
+
+func svgToDataURL(svg string) string {
+	return "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(svg))
+}
+
+func recolorSVGForWhite(svg string) string {
+	result := strings.ReplaceAll(svg, "#10b981", "#ffffff")
+	result = strings.ReplaceAll(result, "#059669", "#d1fae5")
+	return strings.ReplaceAll(result, "#34d399", "#a7f3d0")
+}
+
+func intFromMap(m map[string]interface{}, key string, fallback int) int {
+	switch v := m[key].(type) {
+	case float64:
+		return int(v)
+	case int:
+		return v
+	case json.Number:
+		n, _ := v.Int64()
+		return int(n)
+	}
+	return fallback
 }
 
 func generatedLogoDataURL(mark, shape, style, primary, secondary string, transparent bool) string {
@@ -358,13 +790,13 @@ func generatedLogoDataURL(mark, shape, style, primary, secondary string, transpa
 func normalizeBusinessPlanProposal(raw string, biz *businesses.Business) (string, error) {
 	now := time.Now().UTC().Format(time.RFC3339)
 	plan := mergeJSONMap(raw, biz.BusinessPlan)
-	
-	plan["id"] = stringValue(plan, "id", "plan-"+biz.ID)
+
 	plan["title"] = stringValue(plan, "title", biz.Name+" Business Plan")
 	plan["executiveSummary"] = stringValue(plan, "executiveSummary", biz.Description)
 	plan["lastModified"] = now
 	plan["version"] = stringValue(plan, "version", "1.0")
 	plan["exportFormats"] = []string{"pdf", "docx", "md"}
+
 	sections, _ := plan["sections"].([]interface{})
 	for i, item := range sections {
 		section, ok := item.(map[string]interface{})
@@ -379,9 +811,16 @@ func normalizeBusinessPlanProposal(raw string, biz *businesses.Business) (string
 	}
 	if len(sections) == 0 {
 		sections = []interface{}{
-			map[string]interface{}{"id": "section-1", "title": "Executive Summary", "content": stringValue(plan, "executiveSummary", biz.Description), "aiGenerated": true, "order": 0},
-			map[string]interface{}{"id": "section-2", "title": "Business Overview", "content": biz.Description, "aiGenerated": true, "order": 1},
-			map[string]interface{}{"id": "section-3", "title": "Market and Growth Strategy", "content": "AI-generated strategy based on the approved business profile. Validate market assumptions before external use.", "aiGenerated": true, "order": 2},
+			map[string]interface{}{"id": "cover", "title": "Cover Page", "content": biz.Name + "\n" + biz.Tagline + "\nBusiness Plan\nCONFIDENTIAL", "aiGenerated": true, "order": 0},
+			map[string]interface{}{"id": "executive-summary", "title": "Executive Summary", "content": biz.Description + "\n\nThis business plan outlines the vision, strategy, and financial projections for " + biz.Name + ".", "aiGenerated": true, "order": 1},
+			map[string]interface{}{"id": "company-summary", "title": "Company Summary", "content": biz.Name + " is a " + biz.Industry + " company founded to deliver value through innovation. Based in " + biz.Location + ", the company focuses on " + biz.Description, "aiGenerated": true, "order": 2},
+			map[string]interface{}{"id": "market-opportunity", "title": "Market Opportunity", "content": "The " + biz.Industry + " market presents a significant opportunity for " + biz.Name + ". Market analysis shows growing demand and favorable conditions for entry and expansion.", "aiGenerated": true, "order": 3},
+			map[string]interface{}{"id": "target-audience", "title": "Target Audience", "content": biz.Name + " serves customers in the " + biz.Industry + " sector, with a focus on delivering tailored solutions that address specific market needs.", "aiGenerated": true, "order": 4},
+			map[string]interface{}{"id": "products-services", "title": "Products & Services", "content": biz.Name + " offers a range of products and services designed to meet the evolving needs of " + biz.Industry + " customers.", "aiGenerated": true, "order": 5},
+			map[string]interface{}{"id": "marketing-sales", "title": "Marketing & Sales", "content": "The go-to-market strategy for " + biz.Name + " leverages targeted acquisition channels and a structured sales process to reach " + biz.Industry + " customers.", "aiGenerated": true, "order": 6},
+			map[string]interface{}{"id": "financial-plan", "title": "Financial Plan", "content": "Financial projections show a sustainable growth trajectory. Revenue model, cost structure, and funding requirements are detailed below.", "aiGenerated": true, "order": 7},
+			map[string]interface{}{"id": "goal-planning", "title": "Goal Planning", "content": "Strategic objectives with key milestones and implementation timeline for " + biz.Name + ".", "aiGenerated": true, "order": 8},
+			map[string]interface{}{"id": "appendix", "title": "Appendix", "content": "Supporting documentation, market research sources, financial assumptions, and detailed team profiles.", "aiGenerated": true, "order": 9},
 		}
 	}
 	plan["sections"] = sections
@@ -391,14 +830,11 @@ func normalizeBusinessPlanProposal(raw string, biz *businesses.Business) (string
 
 func normalizePitchDeckProposal(raw string, biz *businesses.Business) (string, error) {
 	deck := mergeJSONMap(raw, biz.PitchDeck)
-	deck["id"] = stringValue(deck, "id", "deck-"+biz.ID)
 	deck["title"] = stringValue(deck, "title", biz.Name+" Pitch Deck")
 	deck["template"] = stringValue(deck, "template", "ai-modern")
 	deck["lastModified"] = time.Now().UTC().Format(time.RFC3339)
 	deck["exportFormats"] = []string{"pdf", "pptx"}
-	if _, ok := deck["views"]; !ok {
-		deck["views"] = 0
-	}
+
 	slides, _ := deck["slides"].([]interface{})
 	for i, item := range slides {
 		slide, ok := item.(map[string]interface{})
@@ -417,9 +853,17 @@ func normalizePitchDeckProposal(raw string, biz *businesses.Business) (string, e
 	}
 	if len(slides) == 0 {
 		slides = []interface{}{
-			map[string]interface{}{"id": "slide-1", "type": "title", "title": biz.Name, "content": biz.Tagline, "bullets": []interface{}{}, "order": 0, "layout": "center"},
-			map[string]interface{}{"id": "slide-2", "type": "problem", "title": "The Problem", "content": "Define the customer problem using verified business information.", "bullets": []interface{}{}, "order": 1, "layout": "split"},
-			map[string]interface{}{"id": "slide-3", "type": "solution", "title": "Our Solution", "content": biz.Description, "bullets": []interface{}{}, "order": 2, "layout": "split"},
+			map[string]interface{}{"id": "cover", "type": "title", "title": biz.Name, "content": biz.Tagline + " — " + biz.Industry + "\nPITCH DECK\nConfidential", "bullets": []interface{}{"PITCH DECK", biz.Location, "Confidential"}, "order": 0, "layout": "center"},
+			map[string]interface{}{"id": "problem", "type": "problem", "title": "The Problem", "content": biz.Industry + " customers face significant challenges that " + biz.Name + " is uniquely positioned to solve.", "bullets": []interface{}{"Pain point in " + biz.Industry, "Current solutions fall short", biz.Name + " addresses the gap"}, "order": 1, "layout": "split"},
+			map[string]interface{}{"id": "solution", "type": "solution", "title": "Our Solution", "content": biz.Description, "bullets": []interface{}{"Core capability 1", "Core capability 2", "Core capability 3"}, "order": 2, "layout": "split"},
+			map[string]interface{}{"id": "market", "type": "market", "title": "Market Opportunity", "content": "The " + biz.Industry + " market represents a substantial opportunity for " + biz.Name + ".", "bullets": []interface{}{"Total Addressable Market", "Serviceable Addressable Market", "Serviceable Obtainable Market"}, "order": 3, "layout": "center"},
+			map[string]interface{}{"id": "product", "type": "product", "title": "How It Works", "content": biz.Name + " delivers its solution through a streamlined, customer-focused approach.", "bullets": []interface{}{"Step 1: Discovery", "Step 2: Solution design", "Step 3: Delivery & support"}, "order": 4, "layout": "split"},
+			map[string]interface{}{"id": "business-model", "type": "business-model", "title": "Business Model", "content": "Sustainable revenue model built on delivering measurable value to " + biz.Industry + " customers.", "bullets": []interface{}{"Primary revenue stream", "Pricing model", "Unit economics"}, "order": 5, "layout": "split"},
+			map[string]interface{}{"id": "traction", "type": "traction", "title": "Traction & Roadmap", "content": biz.Name + " is executing against a clear growth plan with measurable milestones.", "bullets": []interface{}{"Key achievement 1", "Key achievement 2", "Upcoming milestones"}, "order": 6, "layout": "center"},
+			map[string]interface{}{"id": "competition", "type": "competition", "title": "Why We Win", "content": biz.Name + " has clear competitive advantages that differentiate it in the " + biz.Industry + " market.", "bullets": []interface{}{"Key differentiator 1", "Key differentiator 2", "Key differentiator 3"}, "order": 7, "layout": "split"},
+			map[string]interface{}{"id": "team", "type": "team", "title": "The Team", "content": "Experienced team with deep " + biz.Industry + " expertise.", "bullets": []interface{}{"Leadership — Domain expertise", "Operations — Delivery excellence", "Advisors — Industry guidance"}, "order": 8, "layout": "center"},
+			map[string]interface{}{"id": "financials", "type": "financials", "title": "Financial Outlook", "content": "Three-year financial projections showing a clear path to sustainable growth. Projections — estimate.", "bullets": []interface{}{"Year 1: Building foundation", "Year 2: Growth & expansion", "Year 3: Scale & profitability"}, "order": 9, "layout": "center"},
+			map[string]interface{}{"id": "ask", "type": "ask", "title": "The Ask", "content": "We are seeking funding to accelerate growth and capture market share in the " + biz.Industry + " sector.", "bullets": []interface{}{"Product development", "Marketing & sales", "Operations & team"}, "order": 10, "layout": "center"},
 		}
 	}
 	deck["slides"] = slides
@@ -427,6 +871,32 @@ func normalizePitchDeckProposal(raw string, biz *businesses.Business) (string, e
 	return string(encoded), err
 }
 
+
+func normalizeMockupProposal(raw string, biz *businesses.Business) (string, error) {
+	var incoming struct {
+		Mockups []MockupResult `json:"mockups"`
+	}
+	_ = json.Unmarshal([]byte(raw), &incoming)
+
+	brand := mergeJSONMap(raw, biz.BrandKit)
+	if len(incoming.Mockups) > 0 {
+		var svgs []map[string]interface{}
+		for _, m := range incoming.Mockups {
+			svgs = append(svgs, map[string]interface{}{
+				"supportType": m.SupportType,
+				"supportName": m.SupportName,
+				"svg":         m.SVG,
+				"title":       m.Title,
+				"description": m.Description,
+			})
+		}
+		brand["mockups"] = svgs
+	} else {
+		brand["mockups"] = []interface{}{}
+	}
+	encoded, err := json.Marshal(brand)
+	return string(encoded), err
+}
 
 func normalizeWebsiteDraftProposal(raw string, biz *businesses.Business) (string, error) {
 	draft := mergeJSONMap(raw, biz.WebsiteConfig)

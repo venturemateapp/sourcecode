@@ -1,8 +1,10 @@
-import { Box, Card, Chip, Typography } from '@mui/material';
-import { Building2, Palette, Sparkles, Type } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { Box, Button, Card, Chip, CircularProgress, Typography } from '@mui/material';
+import { BookOpen, Building2, Palette, Sparkles, Type } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { graphqlRequest } from '../../lib/api';
 import type { BrandKit, ViewType } from '../../types/venturemate';
 
 interface BrandingKitProps {
@@ -104,8 +106,71 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandK
   );
 }
 
+const BRAND_GUIDE_QUERY = `
+  mutation GenGuide($businessId: ID!) {
+    generateBrandGuide(businessId: $businessId) {
+      id title content order
+    }
+  }
+`;
+
+interface BrandGuideSection {
+  id: string;
+  title: string;
+  content: string;
+  order: number;
+}
+
+function VariationsGrid({ brand }: { brand: BrandKitWithConcept }) {
+  const logos = (brand as unknown as { logos?: Array<{ svg?: string; variations?: { lightBackground?: string; darkBackground?: string; monochrome?: string } }> }).logos;
+  if (!logos?.length) return null;
+  return (
+    <Box sx={{ mt: 2, p: 2, borderRadius: 3, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)' }}>
+      <Typography sx={{ fontWeight: 700, fontSize: 13, mb: 1.5 }}>Logo Variants (3 Concepts × 3 Variants)</Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+        {logos.map((logo, li) => {
+          const variants = logo.variations || {};
+          const cells = [
+            { svg: logo.svg || '', label: 'Primary' },
+            { svg: variants.lightBackground || '', label: 'Light BG' },
+            { svg: variants.darkBackground || '', label: 'Dark BG' },
+          ];
+          return cells.map((cell, ci) => (
+            <Box key={`${li}-${ci}`} sx={{ p: 1.5, borderRadius: 2, bgcolor: ci === 2 ? brand.darkColor : '#fff', border: '1px solid var(--vm-border-subtle)', textAlign: 'center' }}>
+              {cell.svg ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', '& svg': { width: 80, height: 80 } }} dangerouslySetInnerHTML={{ __html: cell.svg }} />
+              ) : (
+                <Sparkles size={32} color={ci === 2 ? '#fff' : brand.primaryColor} />
+              )}
+              <Typography sx={{ fontSize: 10, color: ci === 2 ? 'rgba(255,255,255,.7)' : 'var(--vm-text-muted)', mt: 0.5 }}>
+                C{li + 1} - {cell.label}
+              </Typography>
+            </Box>
+          ));
+        })}
+      </Box>
+    </Box>
+  );
+}
+
 export function BrandingKitPage({}: BrandingKitProps) {
   const { selectedBusiness } = useBusiness();
+  const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);
+  const [guideLoading, setGuideLoading] = useState(false);
+
+  const handleGenerateGuide = useCallback(async () => {
+    if (!selectedBusiness) return;
+    setGuideLoading(true);
+    try {
+      const data = await graphqlRequest<{ generateBrandGuide: BrandGuideSection[] }>(BRAND_GUIDE_QUERY, { businessId: selectedBusiness.id });
+      setGuideSections(data.generateBrandGuide);
+    } catch {
+      // ignore
+    } finally {
+      setGuideLoading(false);
+    }
+  }, [selectedBusiness]);
+
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to create its identity with AI." />;
 
   const brand = { ...DEFAULT_BRAND_KIT, ...(selectedBusiness.brandKit || {}) } as BrandKitWithConcept;
@@ -117,7 +182,32 @@ export function BrandingKitPage({}: BrandingKitProps) {
         <Palette size={19} color="var(--vm-primary-400)" />
         <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" />
         <Chip label="AI-only workflow" size="small" color="success" variant="outlined" />
+        {hasApprovedBrand && (
+          <Button size="small" variant="outlined" startIcon={guideLoading ? <CircularProgress size={13} /> : <BookOpen size={13} />} disabled={guideLoading} onClick={handleGenerateGuide} sx={{ textTransform: 'none', ml: 'auto' }}>
+            {guideLoading ? 'Generating…' : 'Brand Guide'}
+          </Button>
+        )}
       </Box>
+
+      <VariationsGrid brand={brand} />
+
+      {guideSections && (
+        <Card sx={{ mb: 2.5, border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
+          <Box sx={{ px: 2, py: 1.5, bgcolor: 'var(--vm-bg-secondary)', borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <BookOpen size={16} />
+            <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Brand Identity Guide</Typography>
+            <Button size="small" sx={{ ml: 'auto', textTransform: 'none', fontSize: 11 }} onClick={() => {
+              const html = guideSections.sort((a, b) => a.order - b.order).map(s => s.content).join('');
+              const w = window.open('', '_blank');
+              if (w) { w.document.write(html); w.document.close(); }
+            }}>Open Full Guide</Button>
+          </Box>
+          {guideSections.sort((a, b) => a.order - b.order).map(s => (
+            <Box key={s.id} sx={{ '& > *': { maxWidth: '100%' } }} dangerouslySetInnerHTML={{ __html: s.content }} />
+          ))}
+        </Card>
+      )}
+
       <AICreationStudio
         domain="branding"
         title="AI Brand & Logo Studio"

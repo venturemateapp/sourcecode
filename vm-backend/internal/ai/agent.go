@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/domains"
@@ -240,12 +241,16 @@ func UserPlanProvider(planName string, keys *AIKeySet, bizRepo *businesses.Repos
 
 func ProposeChanges(ctx context.Context, provider Provider, biz *businesses.Business, prompt, domain string, extraContext map[string]string) (*Proposal, error) {
 	domain = normalizeDomain(domain)
+	TrackGeneration(biz.ID)
+	UpdateGeneration(biz.ID, StepThinking, "Analyzing business profile...", 5)
+
 	var bizJSON []byte
 	if isCreativeDomain(domain) {
 		bizJSON = creativeBusinessContextJSON(biz, domain)
 	} else {
 		bizJSON, _ = json.Marshal(biz)
 	}
+	UpdateGeneration(biz.ID, StepProposing, "Generating proposal...", 15)
 	extra := ""
 	extraRemaining := 1800
 	extraKeys := make([]string, 0, len(extraContext))
@@ -309,8 +314,10 @@ Rules:
 	}
 	resp, err := provider.Chat(chatCtx, systemPrompt, []Message{{Role: "user", Content: prompt}}, nil)
 	if err != nil {
+		FailGeneration(biz.ID, err.Error())
 		return nil, fmt.Errorf("propose chat error: %w", err)
 	}
+	UpdateGeneration(biz.ID, StepCritiquing, "Reviewing quality...", 60)
 	content := extractJSONObject(resp.Content)
 	var proposal Proposal
 	if err := json.Unmarshal([]byte(content), &proposal); err != nil {
@@ -338,7 +345,97 @@ Rules:
 	if err := normalizeCreativeProposal(&proposal, biz, domain); err != nil {
 		return nil, err
 	}
+	kind := creativeDomain(domain)
+	if kind == "branding" {
+		UpdateGeneration(biz.ID, StepCritiquing, "Running design audit...", 65)
+		for i, ch := range proposal.Changes {
+			if ch.Field == "brandKit" {
+				var brand map[string]interface{}
+				if json.Unmarshal([]byte(ch.NewValue), &brand) == nil {
+					if logos, _ := brand["logos"].([]interface{}); len(logos) > 0 {
+						sel := intFromMap(brand, "selectedLogo", 0)
+						if sel >= 0 && sel < len(logos) {
+							if logo, ok := logos[sel].(map[string]interface{}); ok {
+								if svg := extractSVG(stringValue(logo, "svg", "")); svg != "" {
+									// Critique & revise
+									UpdateGeneration(biz.ID, StepCritiquing, "Design director review...", 70)
+									revised := critiqueAndReviseLogo(ctx, provider, biz, svg)
+									if revised != svg {
+										logo["svg"] = revised
+										logo["revised"] = true
+									}
+									UpdateGeneration(biz.ID, StepVariations, "Generating light/dark/monochrome variants...", 85)
+									// Generate light/dark/monochrome variants
+									brandKit := map[string]interface{}{}
+									_ = json.Unmarshal([]byte(biz.BrandKit), &brandKit)
+									primary := stringValue(brandKit, "primaryColor", "#10b981")
+									secondary := stringValue(brandKit, "secondaryColor", "#059669")
+									variants := GenerateLogoVariants(revised, primary, secondary)
+									if variants != nil {
+										logo["variations"] = map[string]interface{}{
+											"lightBackground": variants.LightBackground,
+											"darkBackground":  variants.DarkBackground,
+											"monochrome":      variants.Monochrome,
+										}
+									}
+									brand["logos"] = logos
+									b, _ := json.Marshal(brand)
+									proposal.Changes[i].NewValue = string(b)
+								}
+							}
+						}
+					}
+				}
+				break
+			}
+		}
+	}
+	if kind == "mockups" {
+		UpdateGeneration(biz.ID, StepMockups, "Generating brand mockups...", 20)
+		var brandKit map[string]interface{}
+		_ = json.Unmarshal([]byte(biz.BrandKit), &brandKit)
+		m, err := GenerateMockups(ctx, provider, biz, brandKit)
+		if err == nil && len(m) > 0 {
+			brand := mergeJSONMap("{}", biz.BrandKit)
+			var svgs []map[string]interface{}
+			for _, mock := range m {
+				svgs = append(svgs, map[string]interface{}{
+					"supportType": mock.SupportType,
+					"supportName": mock.SupportName,
+					"svg":         mock.SVG,
+					"html":        mock.HTML,
+					"title":       mock.Title,
+					"description": mock.Description,
+				})
+			}
+			brand["mockups"] = svgs
+			b, _ := json.Marshal(brand)
+			for i := range proposal.Changes {
+				if proposal.Changes[i].Field == "brandKit" {
+					proposal.Changes[i].NewValue = string(b)
+					break
+				}
+			}
+		}
+	}
+	UpdateGeneration(biz.ID, StepDone, "Generation complete", 100)
 	return &proposal, nil
+}
+
+func init() {
+	// Start cleaner goroutine for stale progress entries
+	go func() {
+		for {
+			time.Sleep(5 * time.Minute)
+			globalTracker.mu.Lock()
+			for id, s := range globalTracker.jobs {
+				if s.Done && time.Since(s.UpdatedAt) > 10*time.Minute {
+					delete(globalTracker.jobs, id)
+				}
+			}
+			globalTracker.mu.Unlock()
+		}
+	}()
 }
 
 type ApplyDependencies struct {

@@ -803,6 +803,14 @@ func NewProviderFromConfig(cfg ProviderConfig) (Provider, error) {
 			cfg.Model = "grok-4.3"
 		}
 		return newOpenAICompatibleProvider("grok", cfg.APIKey, cfg.Endpoint, cfg.Model), nil
+	case "deepseek":
+		if cfg.Endpoint == "" {
+			cfg.Endpoint = "https://api.deepseek.com/v1/chat/completions"
+		}
+		if cfg.Model == "" {
+			cfg.Model = "deepseek-chat"
+		}
+		return newOpenAICompatibleProvider("deepseek", cfg.APIKey, cfg.Endpoint, cfg.Model), nil
 	case "gemini":
 		return newGeminiProvider(cfg.APIKey, cfg.Endpoint, cfg.Model), nil
 	case "claude", "anthropic":

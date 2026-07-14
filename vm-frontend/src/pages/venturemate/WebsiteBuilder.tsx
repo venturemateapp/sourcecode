@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Button, Card, Chip, CircularProgress, Link, Typography } from '@mui/material';
-import { Building2, ExternalLink, Globe2, MonitorSmartphone, Sparkles, UploadCloud, XCircle } from 'lucide-react';
+import { Building2, Code2, ExternalLink, Eye, FileCode, Github, Globe2, MonitorSmartphone, Sparkles, Terminal, UploadCloud, XCircle } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -258,9 +258,59 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
     footer: safeJson<Record<string, unknown>>(website.footer, {}),
   }) : null, [website]);
 
-  if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate and host its website with AI." />;
-
   const logo = selectedBusiness.brandKit?.logo;
+  const [codeTab, setCodeTab] = useState<'preview' | 'code'>('preview');
+  const [codeResult, setCodeResult] = useState<{ files: Array<{ path: string; content: string }>; type: string; routes: string[] } | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [deployLoading, setDeployLoading] = useState<'github' | 'netlify' | null>(null);
+  const [deployResult, setDeployResult] = useState<{ platform: string; url: string; success: boolean; message: string } | null>(null);
+
+  const handleGenerateCode = useCallback(async (draft: WebsiteDraft) => {
+    if (!selectedBusiness) return;
+    setCodeLoading(true);
+    setDeployResult(null);
+    setCodeTab('code');
+    try {
+      const data = await graphqlRequest<{ generateWebsiteCode: { files: Array<{ path: string; content: string }>; type: string; routes: string[] } }>(
+        `mutation GenCode($businessId: ID!, $businessName: String!, $websiteDraft: String!) {
+          generateWebsiteCode(businessId: $businessId, businessName: $businessName, websiteDraft: $websiteDraft) {
+            files { path content } type routes
+          }
+        }`,
+        { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(draft) }
+      );
+      setCodeResult(data.generateWebsiteCode);
+      if (data.generateWebsiteCode.files.length > 0) setSelectedFile(data.generateWebsiteCode.files[0].path);
+    } catch (err) {
+      setDeployResult({ platform: '', url: '', success: false, message: err instanceof Error ? err.message : 'Code generation failed' });
+    } finally {
+      setCodeLoading(false);
+    }
+  }, [selectedBusiness]);
+
+  const handleDeploy = useCallback(async (platform: 'github' | 'netlify') => {
+    if (!selectedBusiness || !savedDraft) return;
+    setDeployLoading(platform);
+    setDeployResult(null);
+    try {
+      const data = await graphqlRequest<{ deployWebsite: { platform: string; url: string; success: boolean; message: string; repoName?: string; siteName?: string } }>(
+        `mutation DeploySite($businessId: ID!, $businessName: String!, $websiteDraft: String!, $platform: String!) {
+          deployWebsite(businessId: $businessId, businessName: $businessName, websiteDraft: $websiteDraft, platform: $platform) {
+            platform url success message repoName siteName
+          }
+        }`,
+        { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(savedDraft), platform }
+      );
+      setDeployResult(data.deployWebsite);
+    } catch (err) {
+      setDeployResult({ platform, url: '', success: false, message: err instanceof Error ? err.message : 'Deploy failed' });
+    } finally {
+      setDeployLoading(null);
+    }
+  }, [selectedBusiness, savedDraft]);
+
+  if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate and host its website with AI." />;
 
   return (
     <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
@@ -270,12 +320,18 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
         <Chip icon={<Sparkles size={13} />} label="No-code means conversation only" size="small" color="success" variant="outlined" />
         {website && <Chip label={`Draft v${website.draftRevision}`} size="small" variant="outlined" />}
         {website?.status === 'published' && <Chip label={`Live v${website.publishedRevision}`} size="small" color="success" />}
+        {savedDraft && (
+          <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => setCodeTab('preview')} startIcon={<Eye size={13} />} sx={{ textTransform: 'none', ml: 'auto' }}>Preview</Button>
+        )}
+        {savedDraft && (
+          <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => { handleGenerateCode(savedDraft); }} startIcon={codeLoading ? <CircularProgress size={13} /> : <Code2 size={13} />} disabled={codeLoading} sx={{ textTransform: 'none' }}>Code</Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {loading && !website && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><CircularProgress size={18} /><Typography sx={{ color: 'var(--vm-text-muted)' }}>Loading website…</Typography></Box>}
 
-      {website && (
+      {website && codeTab === 'preview' && (
         <Card sx={{ mb: 2.5, p: 1.5, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
             <Box>
@@ -306,10 +362,51 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
         </Card>
       )}
 
+      {deployResult && (
+        <Alert severity={deployResult.success ? 'success' : 'error'} sx={{ mb: 2 }} onClose={() => setDeployResult(null)}>
+          {deployResult.message}
+          {deployResult.url && <Link href={deployResult.url} target="_blank" rel="noreferrer" sx={{ ml: 1 }}>Open ↗</Link>}
+        </Alert>
+      )}
+
+      {codeTab === 'code' && codeResult && (
+        <Card sx={{ mb: 2.5, border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, bgcolor: 'var(--vm-bg-secondary)', borderBottom: '1px solid var(--vm-border-subtle)' }}>
+            <FileCode size={16} />
+            <Typography sx={{ fontSize: 13, fontWeight: 700, flex: 1 }}>Generated Project ({codeResult.type})</Typography>
+            <Button size="small" variant="outlined" startIcon={<Github size={13} />} disabled={deployLoading === 'github'} onClick={() => handleDeploy('github')} sx={{ textTransform: 'none', fontSize: 11 }}>
+              {deployLoading === 'github' ? <CircularProgress size={12} /> : 'Push to GitHub'}
+            </Button>
+            <Button size="small" variant="outlined" startIcon={<Terminal size={13} />} disabled={deployLoading === 'netlify'} onClick={() => handleDeploy('netlify')} sx={{ textTransform: 'none', fontSize: 11 }}>
+              {deployLoading === 'netlify' ? <CircularProgress size={12} /> : 'Deploy to Netlify'}
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', minHeight: 400 }}>
+            <Box sx={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--vm-border-subtle)', overflowY: 'auto', bgcolor: '#0d1117' }}>
+              {codeResult.files.map(f => (
+                <Box key={f.path} onClick={() => setSelectedFile(f.path)} sx={{ px: 1.5, py: 0.75, cursor: 'pointer', fontSize: 12, fontFamily: 'monospace', color: selectedFile === f.path ? 'var(--vm-primary-400)' : 'rgba(255,255,255,.7)', bgcolor: selectedFile === f.path ? 'rgba(255,255,255,.05)' : 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,.03)' } }}>
+                  <Code2 size={11} style={{ marginRight: 6, opacity: .5, display: 'inline' }} />{f.path}
+                </Box>
+              ))}
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#0d1117', p: 2 }}>
+              {selectedFile && (() => {
+                const file = codeResult.files.find(f => f.path === selectedFile);
+                return file ? (
+                  <Box component="pre" sx={{ m: 0, color: '#e6edf3', fontSize: 11, fontFamily: "'JetBrains Mono','Fira Code',monospace", lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {file.content}
+                  </Box>
+                ) : <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>Select a file</Typography>;
+              })()}
+            </Box>
+          </Box>
+        </Card>
+      )}
+
       <AICreationStudio
         domain="website"
         title="AI Website Studio"
-        description="Tell AI what the business website should communicate. It automatically uses the approved logo, colours, business name, tagline, description, location, and other business records. Request pages, sections, carousel changes, sizing, wording, or a complete redesign through conversation—there is no drag-and-drop editor."
+        description="Tell AI what the business website should communicate. It automatically uses the approved logo, colours, business name, tagline, description, location, and other business records."
         placeholder="Example: Generate a modern responsive website from my approved business details and brand. Include Home, About, Services, and Contact pages, with a strong hero, trust section, FAQ, and clear calls to action."
         starterPrompts={[
           'Generate a complete responsive website using my business details and approved brand.',

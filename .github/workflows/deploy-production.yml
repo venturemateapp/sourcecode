@@ -32,11 +32,13 @@ jobs:
             SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASSWORD,
             S3_BUCKET,S3_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,
             GEMINI_API_KEY,CLAUDE_API_KEY,GROK_API_KEY,OPENAI_API_KEY,
+            DEEPSEEK_API_KEY,DEEPSEEK_ENDPOINT,DEEPSEEK_MODEL,
             OPENROUTER_API_KEY,OPENROUTER_ENDPOINT,OPENROUTER_MODEL,
             AI_PROVIDER,AI_ALLOW_PROVIDER_OVERRIDE,AI_FALLBACK_PROVIDERS,
             EMAIL_FROM_NAME,EMAIL_LOGO_URL,
             PUBLIC_SITE_BASE_DOMAIN,PUBLIC_SITE_CNAME_TARGET,
-            VITE_GRAPHQL_URL,VITE_AUTH_SERVER_URL,VITE_GOOGLE_AUTH_URL,VITE_CALLBACK_URL
+            VITE_GRAPHQL_URL,VITE_AUTH_SERVER_URL,VITE_GOOGLE_AUTH_URL,VITE_CALLBACK_URL,
+            VM_GITHUB_TOKEN,NETLIFY_AUTH_TOKEN
           script: |
             cd "$APP_DIR"
 
@@ -97,6 +99,9 @@ jobs:
             write_if_set CLAUDE_API_KEY
             write_if_set GROK_API_KEY
             write_if_set OPENAI_API_KEY
+            write_if_set DEEPSEEK_API_KEY
+            write_if_set DEEPSEEK_ENDPOINT
+            write_if_set DEEPSEEK_MODEL
             write_if_set OPENROUTER_API_KEY
             write_if_set OPENROUTER_ENDPOINT
             write_if_set OPENROUTER_MODEL
@@ -107,6 +112,8 @@ jobs:
             write_if_set EMAIL_LOGO_URL
             write_if_set PUBLIC_SITE_BASE_DOMAIN
             write_if_set PUBLIC_SITE_CNAME_TARGET
+            write_if_set VM_GITHUB_TOKEN
+            write_if_set NETLIFY_AUTH_TOKEN
 
             apply_default PORT "8080"
             apply_default DB_HOST "localhost"
@@ -116,7 +123,7 @@ jobs:
             apply_default DB_SSLMODE "disable"
             apply_default SMTP_PORT "587"
             apply_default AI_ALLOW_PROVIDER_OVERRIDE "true"
-            apply_default AI_FALLBACK_PROVIDERS "openrouter,gemini,openai,claude,grok"
+            apply_default AI_FALLBACK_PROVIDERS "deepseek,openrouter,gemini,openai,claude,grok"
             apply_default PUBLIC_SITE_BASE_DOMAIN "venturemate.net"
             apply_default PUBLIC_SITE_CNAME_TARGET "sites.venturemate.net"
             apply_default EMAIL_FROM_NAME "VentureMate"

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/ai"
@@ -120,7 +121,37 @@ func parseAgentHistory(raw string) []ai.Message {
 	return history
 }
 
+var generationStatusType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "GenerationStatus",
+	Fields: graphql.Fields{
+		"step":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"message":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"progress":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"error":     &graphql.Field{Type: graphql.String},
+		"updatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"done":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+	},
+})
+
 func init() {
+	rootQuery.AddFieldConfig("generationStatus", &graphql.Field{
+		Type: generationStatusType,
+		Args: graphql.FieldConfigArgument{
+			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			businessID := p.Args["businessId"].(string)
+			s := ai.GetGenerationStatus(businessID)
+			if s == nil {
+				return map[string]interface{}{"step": "idle", "message": "No active generation", "progress": 0, "done": false, "updatedAt": ""}, nil
+			}
+			return map[string]interface{}{
+				"step": s.Step, "message": s.Message, "progress": s.Progress,
+				"error": s.Error, "done": s.Done, "updatedAt": s.UpdatedAt.Format(time.RFC3339),
+			}, nil
+		},
+	})
+
 	rootQuery.AddFieldConfig("aiProviderStatus", &graphql.Field{
 		Type: aiProviderStatusType,
 		Args: graphql.FieldConfigArgument{
