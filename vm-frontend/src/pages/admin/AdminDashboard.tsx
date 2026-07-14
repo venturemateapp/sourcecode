@@ -193,17 +193,47 @@ export function AdminDashboard() {
     </Card>
   );
 
+  const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
+
   const renderInvestors = () => (
-    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
-      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Globe size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors ({investors.length})</Typography>
-      </Box>
-      {investors.map(inv => <Box key={inv.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography></Box>
-        <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-          onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}><Trash2 size={12} /></Button>
-      </Box>)}
-    </Card>
+    <>
+      <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden', mb: 2 }}>
+        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Globe size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors ({investors.length})</Typography>
+          <Button size="small" startIcon={<Plus size={12} />} sx={{ color: '#f59e0b', fontSize: 11, textTransform: 'none' }}
+            onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: 'Invests in...' })}>Add Investor</Button>
+        </Box>
+        {investors.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 12, p: 2 }}>No investors yet. Add the first one.</Typography>}
+        {investors.map(inv => <Box key={inv.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+          <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography></Box>
+          <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+            onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}><Trash2 size={12} /></Button>
+        </Box>)}
+      </Card>
+      {invForm.name && (
+        <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5 }}>{invForm.id ? 'Edit' : 'New'} Investor</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+            {['name','location','industries','thesis'].map(f => (
+              <TextField key={f} size="small" label={f} value={(invForm as any)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
+                sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 12 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            ))}
+            <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)', fontSize: 12 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}
+              SelectProps={{ native: true }}>
+              {['vc','angel','accelerator','pe'].map(t => <option key={t} value={t}>{t}</option>)}
+            </TextField>
+          </Box>
+          <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+            <Button variant="contained" size="small" disabled={busy} onClick={async () => {
+              await exec(`mutation { adminUpsertInvestor(id:"${invForm.id || crypto.randomUUID()}",name:"${invForm.name.replace(/"/g,'\\"')}",type:"${invForm.type}",location:"${invForm.location.replace(/"/g,'\\"')}",focusIndustries:"${JSON.stringify(invForm.industries.split(',').map(s=>s.trim()))}",thesis:"${invForm.thesis.replace(/"/g,'\\"')}") }`, {});
+              setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
+            }} sx={{ textTransform: 'none' }}>Save</Button>
+            <Button size="small" onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' })} sx={{ color: 'rgba(255,255,255,.5)', textTransform: 'none' }}>Cancel</Button>
+          </Box>
+        </Card>
+      )}
+    </>
   );
 
   const renderLeads = () => (
