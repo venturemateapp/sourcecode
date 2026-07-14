@@ -72,6 +72,7 @@ export function AdminDashboard() {
   const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
   const [loadProv, setLoadProv] = useState(false);
   const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+  const provFileRef = useRef<HTMLInputElement>(null);
   const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
 
   const loadProviders = useCallback(async () => {
@@ -308,9 +309,20 @@ export function AdminDashboard() {
               sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
-            <TextField size="small" label="Picture URL" value={provForm.picture} onChange={e => setProvForm({...provForm, picture: e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}
-              InputProps={{ endAdornment: provForm.picture && <Avatar src={provForm.picture} sx={{ width: 24, height: 24 }} /> }} />
+            <Box>
+              <input ref={provFileRef} type="file" accept="image/*" hidden onChange={async e => {
+                const f = e.target.files?.[0]; if (!f) return;
+                try {
+                  const r = await (await import('../../lib/api')).uploadFile(f, 'admin', 'provider');
+                  setProvForm({...provForm, picture: r.document.url});
+                } catch { alert('Upload failed'); }
+              }} />
+              <Button fullWidth variant="outlined" size="small" component="span" onClick={() => provFileRef.current?.click()}
+                sx={{ height: 40, borderColor: 'rgba(255,255,255,.12)', color: provForm.picture ? '#22c55e' : 'rgba(255,255,255,.5)', fontSize: 11, textTransform: 'none' }}>
+                {provForm.picture ? 'Uploaded ✓' : 'Upload Picture'}
+              </Button>
+              {provForm.picture && <Avatar src={provForm.picture} sx={{ width: 28, height: 28, mt: 0.5, mx: 'auto' }} />}
+            </Box>
             <TextField select size="small" label="Category" value={provForm.category} onChange={e => setProvForm({...provForm, category: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}
               SelectProps={{ native: true }}>
