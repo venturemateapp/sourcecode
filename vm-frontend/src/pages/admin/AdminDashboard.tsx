@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Switch } from '@mui/material';
-import { Activity, BarChart3, Bell, BookOpen, Building2, ChevronRight, Globe, LogOut, Mail, Plus, Shield, Trash2, Users, UserPlus, UserX } from 'lucide-react';
+import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Switch, Avatar, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Activity, BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, UserCheck, UserX, XCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { graphqlRequest } from '../../lib/api';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'templates' | 'submissions' | 'broadcast';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard' },
@@ -13,6 +13,8 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string }> =
   { key: 'businesses', icon: Building2, label: 'Businesses' },
   { key: 'plans', icon: BookOpen, label: 'Plans' },
   { key: 'investors', icon: Globe, label: 'Investors' },
+  { key: 'providers', icon: Briefcase, label: 'Providers' },
+  { key: 'bookings', icon: ThumbsUp, label: 'Bookings' },
   { key: 'submissions', icon: Mail, label: 'Leads' },
   { key: 'broadcast', icon: Bell, label: 'Broadcast' },
 ];
@@ -67,6 +69,21 @@ export function AdminDashboard() {
     try { const d = await graphqlRequest<{ adminContactSubmissions: string }>('query { adminContactSubmissions }'); setLeads(JSON.parse(d.adminContactSubmissions)); } catch {}
   }, []);
 
+  const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
+  const [loadProv, setLoadProv] = useState(false);
+  const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+  const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
+
+  const loadProviders = useCallback(async () => {
+    setLoadProv(true);
+    try { const d = await graphqlRequest<{ serviceProviders: typeof providers }>('query { serviceProviders(activeOnly:false) { id name title category picture rateHourly } }'); setProviders(d.serviceProviders); } catch {}
+    finally { setLoadProv(false); }
+  }, []);
+
+  const loadBookings = useCallback(async () => {
+    try { const d = await graphqlRequest<{ myBookings: typeof bookings }>('query { myBookings { id providerName userName projectTitle status createdAt } }'); setBookings(d.myBookings); } catch {}
+  }, []);
+
   const loadInvestors = useCallback(async () => {
     try { const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string }> }>('query { investors { id name type location } }'); setInvestors(d.investors); } catch {}
   }, []);
@@ -76,6 +93,8 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'businesses') loadBiz(); }, [view, loadBiz]);
   useEffect(() => { if (view === 'submissions') loadLeads(); }, [view, loadLeads]);
   useEffect(() => { if (view === 'investors') loadInvestors(); }, [view, loadInvestors]);
+  useEffect(() => { if (view === 'providers') loadProviders(); }, [view, loadProviders]);
+  useEffect(() => { if (view === 'bookings') loadBookings(); }, [view, loadBookings]);
 
   const exec = async (mutation: string, vars: any) => {
     setBusy(true); try { await graphqlRequest(mutation, vars); /* reload */ } catch (e: any) { alert(e.message); } finally { setBusy(false); setModal(null); }
@@ -262,6 +281,78 @@ export function AdminDashboard() {
     </Card>
   );
 
+  const renderProviders = () => (
+    <>
+      <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden', mb: 2 }}>
+        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Briefcase size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Providers ({providers.length})</Typography>
+          <Button size="small" startIcon={<Plus size={12} />} sx={{ color: '#f59e0b', fontSize: 11, textTransform: 'none' }}
+            onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, skills: '' })}>Add Provider</Button>
+        </Box>
+        {loadProv && <Box sx={{ p: 2, color: 'rgba(255,255,255,.5)' }}><CircularProgress size={14} /> Loading...</Box>}
+        {!loadProv && providers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 12, p: 2 }}>No providers yet.</Typography>}
+        {providers.map(p => <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+          <Avatar src={p.picture || ''} sx={{ width: 32, height: 32, mr: 1.5, bgcolor: '#f59e0b' }}>{p.name[0]}</Avatar>
+          <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{p.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{p.title} · {p.category} · ${p.rateHourly}/hr</Typography></Box>
+          <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+            onClick={() => { if (confirm('Delete provider?')) exec(`mutation { adminDeleteProvider(id:"${p.id}") }`, {}); }}><Trash2 size={12} /></Button>
+        </Box>)}
+      </Card>
+      {provForm.name && (
+        <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5 }}>New Provider</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
+            <TextField size="small" label="Name" value={provForm.name} onChange={e => setProvForm({...provForm, name: e.target.value})}
+              sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Title" value={provForm.title} onChange={e => setProvForm({...provForm, title: e.target.value})}
+              sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Picture URL" value={provForm.picture} onChange={e => setProvForm({...provForm, picture: e.target.value})}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}
+              InputProps={{ endAdornment: provForm.picture && <Avatar src={provForm.picture} sx={{ width: 24, height: 24 }} /> }} />
+            <TextField select size="small" label="Category" value={provForm.category} onChange={e => setProvForm({...provForm, category: e.target.value})}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}
+              SelectProps={{ native: true }}>
+              {['engineering','design','marketing','legal','accounting','consulting','hr','media'].map(c => <option key={c} value={c}>{c}</option>)}
+            </TextField>
+            <TextField size="small" label="Skills (comma)" value={provForm.skills} onChange={e => setProvForm({...provForm, skills: e.target.value})}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+          </Box>
+          <TextField fullWidth size="small" label="Bio" multiline minRows={2} value={provForm.bio} onChange={e => setProvForm({...provForm, bio: e.target.value})}
+            sx={{ mt: 1.5, textarea: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+          <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+            <Button variant="contained" size="small" disabled={busy || !provForm.name} onClick={async () => {
+              await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim()))}") { id } }`, {});
+              setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+            }} sx={{ textTransform: 'none' }}>Save</Button>
+            <Button size="small" onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' })} sx={{ color: 'rgba(255,255,255,.5)', textTransform: 'none' }}>Cancel</Button>
+          </Box>
+        </Card>
+      )}
+    </>
+  );
+
+  const renderBookings = () => (
+    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Bookings ({bookings.length})</Typography></Box>
+      {bookings.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 12, p: 2 }}>No bookings yet.</Typography>}
+      {bookings.map(b => {
+        const isPending = b.status === 'pending';
+        return <Box key={b.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+          <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.projectTitle}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.providerName} → {b.userName} · {b.status}</Typography></Box>
+          {isPending && <>
+            <Button size="small" sx={{ minWidth: 0, px: 1, color: '#34d399', fontSize: 11 }}
+              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"approved") { id } }`, {})}><CheckCircle size={14} /></Button>
+            <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"rejected") { id } }`, {})}><XCircle size={14} /></Button>
+          </>}
+          {!isPending && <Chip label={b.status} size="small" sx={{ fontSize: 10, color: b.status === 'approved' ? '#34d399' : '#ef4444' }} />}
+        </Box>;
+      })}
+    </Card>
+  );
+
   const renderContent = () => {
     switch (view) {
       case 'dashboard': return renderDashboard();
@@ -269,6 +360,8 @@ export function AdminDashboard() {
       case 'businesses': return renderBiz();
       case 'plans': return renderPlans();
       case 'investors': return renderInvestors();
+      case 'providers': return renderProviders();
+      case 'bookings': return renderBookings();
       case 'submissions': return renderLeads();
       case 'broadcast': return renderBroadcast();
       default: return null;
@@ -281,7 +374,7 @@ export function AdminDashboard() {
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0f0d' }}>
       <AdminNav />
       <Box sx={{ flex: 1, p: { xs: 2, sm: 3 }, overflow: 'auto', maxHeight: '100vh' }}>
-        <PageTitle title={{ dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans', investors: 'Investors', submissions: 'Leads', broadcast: 'Broadcast' }[view]} />
+        <PageTitle title={{ dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans', investors: 'Investors', providers: 'Providers', bookings: 'Bookings', submissions: 'Leads', broadcast: 'Broadcast' }[view]} />
         {busy && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: '#f59e0b' }}><CircularProgress size={14} /><Typography sx={{ fontSize: 12 }}>Processing...</Typography></Box>}
         {renderContent()}
       </Box>
