@@ -97,6 +97,10 @@ const componentIcons: Record<string, React.ComponentType<{ size?: number; color?
 
 export function HealthScorePage({ onViewChange }: HealthScoreProps) {
   const { selectedBusiness } = useBusiness();
+  const milestones = selectedBusiness?.milestones || [];
+  const completedMiles = milestones.filter((m: any) => m.status === 'completed').length;
+  const overdueMiles = milestones.filter((m: any) => m.status === 'overdue').length;
+  const milestoneProgress = milestones.length > 0 ? (completedMiles / milestones.length) * 100 : 0;
   const [healthScore, setHealthScore] = useState({
     overallScore: 0, calculatedAt: '',
     components: {} as Record<string, { score: number; weight: number }>,
@@ -179,79 +183,76 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
       </Box>
 
       {/* Main Score Card */}
-      <Card
-        sx={{
-          bgcolor: 'var(--vm-bg-secondary)',
-          border: `2px solid ${getScoreColor(healthScore.overallScore)}`,
-          borderRadius: 3,
-          p: 4,
-          mb: 4,
-          background: `linear-gradient(135deg, ${getScoreColor(healthScore.overallScore)}15 0%, var(--vm-bg-tertiary) 100%)`,
-        }}
-      >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 6 }, alignItems: 'center' }}>
-          {/* Overall Score */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', mb: 1 }}>
-              Overall Health Score
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: { xs: 48, md: 80 },
-                fontWeight: 700,
-                color: getScoreColor(healthScore.overallScore),
-                lineHeight: 1,
-              }}
-            >
-              {healthScore.overallScore}
-            </Typography>
-            <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
-              of 100
-            </Typography>
+      <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 3, mb: 4, overflow: 'hidden' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '280px 1fr' }, gap: 3, alignItems: 'center' }}>
+          {/* Speedometer */}
+          <Box sx={{ textAlign: 'center', position: 'relative' }}>
+            <svg viewBox="0 0 200 120" style={{ width: '100%', maxWidth: 240, height: 'auto' }}>
+              <defs>
+                <linearGradient id="healthGauge" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#ef4444" />
+                  <stop offset="33%" stopColor="#f59e0b" />
+                  <stop offset="66%" stopColor="#22c55e" />
+                  <stop offset="100%" stopColor="#16a34a" />
+                </linearGradient>
+              </defs>
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="18" strokeLinecap="round" />
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#healthGauge)" strokeWidth="18" strokeLinecap="round"
+                strokeDasharray={`${(healthScore.overallScore / 100) * 230} 230`} />
+              {[0, 25, 50, 75, 100].map(t => {
+                const angle = 180 + (t / 100) * 180; const rad = (angle * Math.PI) / 180; const r = 80;
+                return <line key={t} x1={100 + (r - 8) * Math.cos(rad)} y1={100 + (r - 8) * Math.sin(rad)}
+                  x2={100 + (r - 18) * Math.cos(rad)} y2={100 + (r - 18) * Math.sin(rad)} stroke="rgba(255,255,255,.3)" strokeWidth="2" />;
+              })}
+              <line x1="100" y1="100" x2={100 + 55 * Math.cos((180 + (healthScore.overallScore / 100) * 180) * Math.PI / 180)}
+                y2={100 + 55 * Math.sin((180 + (healthScore.overallScore / 100) * 180) * Math.PI / 180)}
+                stroke={getScoreColor(healthScore.overallScore)} strokeWidth="3" strokeLinecap="round" />
+              <circle cx="100" cy="100" r="6" fill={getScoreColor(healthScore.overallScore)} />
+              <text x="100" y="64" textAnchor="middle" fill={getScoreColor(healthScore.overallScore)} fontSize="28" fontWeight="800" fontFamily="Inter,sans-serif">{healthScore.overallScore}</text>
+              <text x="100" y="78" textAnchor="middle" fill="rgba(255,255,255,.4)" fontSize="10" fontFamily="Inter,sans-serif">/ 100</text>
+            </svg>
+            <Chip size="small" label={getScoreStatus(healthScore.overallScore).label}
+              sx={{ mt: 0.5, bgcolor: `${getScoreStatus(healthScore.overallScore).color}20`, color: getScoreStatus(healthScore.overallScore).color, fontSize: 11, fontWeight: 700 }} />
           </Box>
 
-          {/* Status */}
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', mb: 1 }}>
-              Status
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: { xs: 24, md: 32 },
-                fontWeight: 700,
-                color: getScoreStatus(healthScore.overallScore).color,
-                mb: 1,
-              }}
-            >
-              {getScoreStatus(healthScore.overallScore).label}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                              {healthScore.overallScore >= 80 ? (
-                  <CheckCircle size={20} color="#22c55e" />
-                ) : (
-                  <TrendingUp size={20} color="#f59e0b" />
-                )}
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)' }}>
-                {healthScore.overallScore >= 80 
-                  ? 'Your startup is in great shape!' 
-                  : 'Some areas need attention'}
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Priority Actions */}
           <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
-              Priority Actions ({healthScore.priorityActions.filter(a => !a.completed).length})
-            </Typography>
-            {healthScore.priorityActions.filter(a => !a.completed).slice(0, 2).map((action) => (
-              <Box key={action.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
-                <ArrowRight size={14} color="var(--vm-primary-400)" style={{ marginTop: 3 }} />
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
-                  {action.title}
-                </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#22c55e', mb: 1 }}>Recommendations</Typography>
+                {healthScore.recommendations.slice(0, 3).map(r => (
+                  <Box key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                    <ArrowRight size={12} color="var(--vm-primary-400)" />
+                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>{r.title}</Typography>
+                  </Box>
+                ))}
               </Box>
-            ))}
+              <Box>
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', mb: 1 }}>Priority Actions</Typography>
+                {healthScore.priorityActions.filter(a => !a.completed).slice(0, 3).map(a => (
+                  <Box key={a.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.5 }}>
+                    <TrendingUp size={12} color="#f59e0b" style={{ marginTop: 2 }} />
+                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>{a.title}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+            {/* Milestone Progress */}
+            {milestones.length > 0 && (
+              <Box sx={{ bgcolor: 'rgba(255,255,255,.03)', borderRadius: 2, p: 1.5, mt: 1 }}>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.6)', mb: 0.5 }}>MILESTONES</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>{completedMiles}/{milestones.length} done</Typography>
+                      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>{overdueMiles} overdue</Typography>
+                    </Box>
+                    <LinearProgress variant="determinate" value={milestoneProgress} sx={{ height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,.06)',
+                      '& .MuiLinearProgress-bar': { bgcolor: '#22c55e', borderRadius: 2 } }} />
+                  </Box>
+                  <Chip size="small" label={`${Math.round(milestoneProgress)}%`} sx={{ fontSize: 10, color: '#22c55e', bgcolor: 'rgba(34,197,94,.12)' }} />
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
       </Card>
