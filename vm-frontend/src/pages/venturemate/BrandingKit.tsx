@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Box, Button, Card, Chip, CircularProgress, Typography } from '@mui/material';
 import { BookOpen, Building2, Palette, Sparkles, Type } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
+import { GenerationProgress } from '../../components/venturemate/GenerationProgress';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
@@ -66,7 +67,11 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandK
       >
         <Box sx={{ width: 132, height: 132, borderRadius: 3, bgcolor: 'rgba(255,255,255,.09)', display: 'grid', placeItems: 'center', mx: { xs: 'auto', sm: 0 }, overflow: 'hidden' }}>
           {brand.logo ? (
-            <Box component="img" src={brand.logo} alt={`${businessName} logo`} sx={{ width: 112, height: 112, objectFit: 'contain' }} />
+            brand.logo.startsWith('data:image/svg') || brand.logo.includes('<svg') ? (
+              <Box sx={{ width: 112, height: 112, display: 'flex', alignItems: 'center', justifyContent: 'center' }} dangerouslySetInnerHTML={{ __html: atob(brand.logo.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || brand.logo.split(',')[1] || '') }} />
+            ) : (
+              <Box component="img" src={brand.logo} alt={`${businessName} logo`} sx={{ width: 112, height: 112, objectFit: 'contain' }} />
+            )
           ) : (
             <Sparkles size={42} color="white" />
           )}
@@ -138,7 +143,7 @@ function VariationsGrid({ brand }: { brand: BrandKitWithConcept }) {
           return cells.map((cell, ci) => (
             <Box key={`${li}-${ci}`} sx={{ p: 1.5, borderRadius: 2, bgcolor: ci === 2 ? brand.darkColor : '#fff', border: '1px solid var(--vm-border-subtle)', textAlign: 'center' }}>
               {cell.svg ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', '& svg': { width: 80, height: 80 } }} dangerouslySetInnerHTML={{ __html: cell.svg }} />
+                <Box sx={{ display: 'flex', justifyContent: 'center', '& svg': { width: 80, height: 80 } }} dangerouslySetInnerHTML={{ __html: cell.svg.startsWith('data:') ? atob(cell.svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : cell.svg }} />
               ) : (
                 <Sparkles size={32} color={ci === 2 ? '#fff' : brand.primaryColor} />
               )}

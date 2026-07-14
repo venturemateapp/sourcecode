@@ -9,7 +9,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Bot, Check, Send, Sparkles, X } from 'lucide-react';
+import { Bot, Check, RefreshCw, Send, Sparkles, X } from 'lucide-react';
+import { GenerationProgress } from './GenerationProgress';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
 
@@ -258,6 +259,7 @@ export function AICreationStudio({
               <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11 }}>Describe it. Review it. Approve it.</Typography>
             </Box>
           </Box>
+          {loading && selectedBusiness && <GenerationProgress businessId={selectedBusiness.id} />}
         </Box>
 
         <Box sx={{ p: 1.75 }}>
