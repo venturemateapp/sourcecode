@@ -157,6 +157,7 @@ function VariationsGrid({ brand }: { brand: BrandKitWithConcept }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function BrandingKitPage(_props: BrandingKitProps) {
   const { selectedBusiness } = useBusiness();
   const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);

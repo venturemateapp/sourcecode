@@ -183,6 +183,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => void }) {
   const { selectedBusiness } = useBusiness();
   const [website, setWebsite] = useState<WebsiteRecord | null>(null);

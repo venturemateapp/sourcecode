@@ -138,6 +138,7 @@ interface MarketplaceProps {
 
 const bookingSteps = ['Service Details', 'Project Requirements', 'Review & Confirm'];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function MarketplacePage(_props: MarketplaceProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

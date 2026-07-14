@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import type { Plan } from '../../contexts/SubscriptionContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import type { ViewType } from '../../types/venturemate';
 import { GradientButton } from '../../components/shared/buttons';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -95,7 +94,7 @@ const fallbackPlanIcons: Record<string, React.ComponentType<{ size?: number; col
   pro_plus: TrendingUp,
 };
 
-export function BillingPage(_props: unknown) {
+export function BillingPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();

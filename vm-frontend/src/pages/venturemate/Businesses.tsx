@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, IconButton, Menu, MenuItem } from '@mui/material';
 import { Plus, MoreVertical, FileCheck } from 'lucide-react';
 import { CreateBusinessModal } from '../../components/venturemate/CreateBusinessModal';
@@ -35,7 +35,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registrations, setRegistrations] = useState<Record<string, BusinessRegistrationStatus>>({});
 
-  useEffect(() => {
+  const fetchRegistrations = useCallback(() => {
     if (businessList.length === 0) return;
     (async () => {
       try {
@@ -58,6 +58,8 @@ export function Businesses({ onViewChange }: BusinessesProps) {
       }
     })();
   }, [businessList]);
+
+  useEffect(() => { fetchRegistrations(); }, [fetchRegistrations]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, business: Business) => {
     setAnchorEl(event.currentTarget);

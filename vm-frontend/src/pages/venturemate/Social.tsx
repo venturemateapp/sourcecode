@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Box, Typography, Card, Chip } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import {
@@ -12,7 +11,7 @@ import {
   Plus,
   Globe,
 } from 'lucide-react';
-import type { ViewType } from '../../types/venturemate';
+
 
 const platforms = [
   { key: 'instagram', name: 'Instagram', color: '#E4405F' },
@@ -38,12 +37,6 @@ const contentCalendar = [
   { id: 'content_005', content_type: 'story', platform: 'instagram', content: 'Quick tip: Use keyboard shortcuts to save 10+ hours per week', scheduled_date: '2024-04-04T20:00:00Z', status: 'scheduled' },
 ];
 
-interface SocialProps {
-  onViewChange?: (_view: ViewType) => void;
-}
-
-
-
 const platformIcons: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
   instagram: Globe,
   twitter: Globe,
@@ -51,8 +44,7 @@ const platformIcons: Record<string, React.ComponentType<{ size?: number; color?:
   facebook: Globe,
 };
 
-export function SocialPage(_props: unknown) {
-  const [activeTab] = useState(0);
+export function SocialPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {

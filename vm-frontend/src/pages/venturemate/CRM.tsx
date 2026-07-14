@@ -301,6 +301,7 @@ interface CRMProps {
   onViewChange?: (_view: ViewType) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function CRMPage(_props: CRMProps) {
   const [activeTab, setActiveTab] = useState(0);
   

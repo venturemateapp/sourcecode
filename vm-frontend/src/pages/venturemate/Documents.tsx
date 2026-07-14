@@ -97,6 +97,7 @@ const categoryIcons: Record<string, React.ComponentType<{ size?: number; color?:
   other: FileIcon,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function DocumentsPage(_props: DocumentsProps) {
   const { selectedBusiness, refreshBusiness } = useBusiness();
   const [searchQuery, setSearchQuery] = useState('');

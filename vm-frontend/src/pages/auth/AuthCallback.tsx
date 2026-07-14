@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Box, Typography, CircularProgress } from '@mui/material'
 
@@ -31,7 +31,7 @@ export function AuthCallback() {
 
       window.location.href = '/vm'
     } catch {
-      setStatus('error')
+      startTransition(() => setStatus('error'))
     }
   }, [token])
 

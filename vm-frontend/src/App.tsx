@@ -202,7 +202,7 @@ function VentureMateApp() {
       case 'team':
         return <TeamPage />;
       case 'ai-assistant':
-        return <AIAssistant onViewChange={handleViewChange} />;
+        return <AIAssistant />;
       case 'investors':
         return <InvestorsPage onViewChange={handleViewChange} />;
       case 'cofounders':
@@ -227,7 +227,7 @@ function VentureMateApp() {
       case 'generate-idea':
         return <PlaceholderPage title="Generate Idea" description="Let AI help you brainstorm startup ideas." icon={Lightbulb} />;
       case 'billing':
-        return <BillingPage onViewChange={handleViewChange} />;
+        return <BillingPage />;
       case 'settings':
         return <SettingsPage />;
       case 'crm':
@@ -235,7 +235,7 @@ function VentureMateApp() {
       case 'banking':
         return <BankingPage onViewChange={handleViewChange} />;
       case 'social':
-        return <SocialPage onViewChange={handleViewChange} />;
+        return <SocialPage />;
       case 'marketplace':
         return <MarketplacePage onViewChange={handleViewChange} />;
       case 'credit-score':

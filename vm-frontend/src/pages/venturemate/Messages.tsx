@@ -154,6 +154,7 @@ const conversationMessages: Record<string, Message[]> = {
 // Common emojis
 const commonEmojis = ['😀', '😂', '🥰', '😎', '🤔', '👍', '👎', '👏', '🙏', '🔥', '💯', '❤️', '🎉', '✅', '⚠️', '🚀', '💡', '📊', '💰', '🤝', '👋', '😊', '😉', '🤯', '💪'];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function MessagesPage(_props: MessagesProps) {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(conversations[0]);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');

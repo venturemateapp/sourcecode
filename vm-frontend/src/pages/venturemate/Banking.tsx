@@ -115,6 +115,7 @@ const DELETE_INVOICE_MUTATION = `
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function BankingPage(_props: BankingProps) {
   const { format, rates } = useCurrency();
   const { user } = useAuth();

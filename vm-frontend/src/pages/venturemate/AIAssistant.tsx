@@ -1,11 +1,10 @@
 import { Box, Typography } from '@mui/material';
 import { Bot } from 'lucide-react';
-import type { ViewType } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { AIChatPanel } from '../../components/venturemate/AIChatPanel';
 
-export function AIAssistant(_props: unknown) {
+export function AIAssistant() {
   const { selectedBusiness } = useBusiness();
 
   if (!selectedBusiness) {
