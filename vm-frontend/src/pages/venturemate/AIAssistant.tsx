@@ -37,7 +37,7 @@ export function AIAssistant(_props: AIAssistantProps) {
             AI Operations Assistant
           </Typography>
           <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-            Powered by DeepSeek V4 Flash. Describe what you need and the AI will handle it.
+            Describe what you need and the AI will handle it.
           </Typography>
         </Box>
       </Box>
