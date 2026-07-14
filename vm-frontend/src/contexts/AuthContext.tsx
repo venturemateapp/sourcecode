@@ -42,6 +42,7 @@ interface ApiUser {
   website?: string
   onboarded: boolean
   status: string
+  isAdmin?: boolean
   preferredCurrency?: string
 }
 
@@ -64,8 +65,9 @@ function mapApiUserToUser(apiUser: ApiUser): User {
     onboarded: apiUser.onboarded,
     status: apiUser.status || 'active',
     preferredCurrency: apiUser.preferredCurrency || 'USD',
-    createdAt: new Date().toISOString(),
-    lastActive: new Date().toISOString(),
+  isAdmin: apiUser.isAdmin ?? false,
+  createdAt: new Date().toISOString(),
+  lastActive: new Date().toISOString(),
   }
 }
 

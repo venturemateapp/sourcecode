@@ -46,6 +46,7 @@ export interface JwtPayload {
   surname?: string;
   onboarded?: boolean;
   status?: string;
+  is_admin?: boolean;
   subscription_plan?: string;
   subscription_status?: string;
   exp: number;

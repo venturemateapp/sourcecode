@@ -45,6 +45,7 @@ import {
   Calculator,
   Settings,
   LogOut,
+  Shield,
   X,
 } from 'lucide-react';
 
@@ -71,6 +72,7 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; className?: s
   Calculator,
   Settings,
   LogOut,
+  Shield,
 };
 
 const navSections: NavSection[] = [
@@ -499,6 +501,21 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
           )}
         </Box>
       </Box>
+
+      {/* Admin link */}
+      {user?.isAdmin && (
+        <Box
+          sx={{ px: 2, pb: 1, cursor: 'pointer', '&:hover': { bgcolor: 'var(--vm-bg-hover)' } }}
+          onClick={() => { navigate('/vm/admin'); onClose?.(); }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1 }}>
+            <Box sx={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+              <Shield size={18} />
+            </Box>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#f59e0b' }}>Admin Dashboard</Typography>
+          </Box>
+        </Box>
+      )}
 
       {/* Logout */}
       <Box

@@ -12,6 +12,87 @@ type Repository struct {
 	db *pgxpool.Pool
 }
 
+type AdminDashboard struct {
+	TotalUsers       int              `json:"totalUsers"`
+	ActiveUsers      int              `json:"activeUsers"`
+	TotalBusinesses  int              `json:"totalBusinesses"`
+	PlansBreakdown   []PlanCount      `json:"plansBreakdown"`
+	RecentSignups    []User           `json:"recentSignups"`
+}
+
+type PlanCount struct {
+	PlanName string `json:"planName"`
+	Count    int    `json:"count"`
+}
+
+func (r *Repository) GetAdminDashboard(ctx context.Context) (*AdminDashboard, error) {
+	dash := &AdminDashboard{}
+
+	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM users`).Scan(&dash.TotalUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM users WHERE status = 'active'`).Scan(&dash.ActiveUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM businesses`).Scan(&dash.TotalBusinesses)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.Query(ctx, `SELECT sp.name, COUNT(us.id) as cnt FROM user_subscriptions us
+		JOIN subscription_plans sp ON sp.id = us.plan_id
+		GROUP BY sp.name ORDER BY cnt DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var pc PlanCount
+		if err := rows.Scan(&pc.PlanName, &pc.Count); err != nil {
+			return nil, err
+		}
+		dash.PlansBreakdown = append(dash.PlansBreakdown, pc)
+	}
+
+	rows2, err := r.db.Query(ctx, `SELECT id, first_name, surname, email, status, is_admin, created_at
+		FROM users ORDER BY created_at DESC LIMIT 10`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var u User
+		if err := rows2.Scan(&u.ID, &u.FirstName, &u.Surname, &u.Email, &u.Status, &u.IsAdmin, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		dash.RecentSignups = append(dash.RecentSignups, u)
+	}
+
+	return dash, nil
+}
+
+func (r *Repository) ListAllUsers(ctx context.Context) ([]User, error) {
+	rows, err := r.db.Query(ctx, `SELECT id, first_name, surname, email, status, is_admin, created_at, updated_at
+		FROM users ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.FirstName, &u.Surname, &u.Email, &u.Status, &u.IsAdmin, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
@@ -19,7 +100,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 func (r *Repository) FindByEmail(ctx context.Context, email string) (*User, error) {
 	query := `SELECT id, first_name, surname, COALESCE(other_names,''), COALESCE(dob::text,''), email, password, 
 	                 COALESCE(primary_phone,''), COALESCE(secondary_phone,''), COALESCE(picture,''), COALESCE(bio,''), COALESCE(country,''), COALESCE(city,''), COALESCE(language,''), COALESCE(linked_in,''), COALESCE(twitter,''), COALESCE(website,''),
-	                 onboarded, status, created_at, updated_at 
+	                 onboarded, status, is_admin, created_at, updated_at 
 	          FROM users WHERE email = $1`
 
 	var u User
@@ -27,7 +108,7 @@ func (r *Repository) FindByEmail(ctx context.Context, email string) (*User, erro
 		&u.ID, &u.FirstName, &u.Surname, &u.OtherNames, &u.DOB, &u.Email, &u.Password,
 		&u.PrimaryPhone, &u.SecondaryPhone, &u.Picture, &u.Bio, &u.Country, &u.City, &u.Language,
 		&u.LinkedIn, &u.Twitter, &u.Website,
-		&u.Onboarded, &u.Status, &u.CreatedAt, &u.UpdatedAt,
+		&u.Onboarded, &u.Status, &u.IsAdmin, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -94,13 +175,13 @@ func (r *Repository) Create(ctx context.Context, u *User) error {
 
 	query := `INSERT INTO users (id, first_name, surname, other_names, dob, email, password, 
 	                             primary_phone, secondary_phone, picture, bio, country, city, language, linked_in, twitter, website,
-	                             onboarded, status, created_at, updated_at)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`
+	                             onboarded, status, is_admin, created_at, updated_at)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`
 
 	_, err := r.db.Exec(ctx, query,
 		u.ID, u.FirstName, u.Surname, otherNames, dob, u.Email, u.Password,
 		primaryPhone, secondaryPhone, picture, bio, country, city, language, linkedIn, twitter, website,
-		u.Onboarded, u.Status, u.CreatedAt, u.UpdatedAt,
+		u.Onboarded, u.Status, u.IsAdmin, u.CreatedAt, u.UpdatedAt,
 	)
 	return err
 }
@@ -108,7 +189,7 @@ func (r *Repository) Create(ctx context.Context, u *User) error {
 func (r *Repository) FindByID(ctx context.Context, id string) (*User, error) {
 	query := `SELECT id, first_name, surname, COALESCE(other_names,''), COALESCE(dob::text,''), email, password, 
 	                 COALESCE(primary_phone,''), COALESCE(secondary_phone,''), COALESCE(picture,''), COALESCE(bio,''), COALESCE(country,''), COALESCE(city,''), COALESCE(language,''), COALESCE(linked_in,''), COALESCE(twitter,''), COALESCE(website,''),
-	                 onboarded, status, created_at, updated_at 
+	                 onboarded, status, is_admin, created_at, updated_at 
 	          FROM users WHERE id = $1`
 
 	var u User
@@ -116,7 +197,7 @@ func (r *Repository) FindByID(ctx context.Context, id string) (*User, error) {
 		&u.ID, &u.FirstName, &u.Surname, &u.OtherNames, &u.DOB, &u.Email, &u.Password,
 		&u.PrimaryPhone, &u.SecondaryPhone, &u.Picture, &u.Bio, &u.Country, &u.City, &u.Language,
 		&u.LinkedIn, &u.Twitter, &u.Website,
-		&u.Onboarded, &u.Status, &u.CreatedAt, &u.UpdatedAt,
+		&u.Onboarded, &u.Status, &u.IsAdmin, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err

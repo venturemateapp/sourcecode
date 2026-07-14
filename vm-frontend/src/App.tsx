@@ -30,6 +30,7 @@ import { DocumentsPage } from './pages/venturemate/Documents';
 import { BusinessPlan } from './pages/venturemate/BusinessPlan';
 import { FinancialForecast } from './pages/venturemate/FinancialForecast';
 import { BrandingKitPage } from './pages/venturemate/BrandingKit';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { MilestonesPage } from './pages/venturemate/MilestonesPage';
 import { SettingsPage } from './pages/venturemate/Settings';
 import { MessagesPage } from './pages/venturemate/Messages';
@@ -283,6 +284,7 @@ function App() {
         <Route path="/vm/onboarding" element={<ToastProvider><OnboardingPage /></ToastProvider>} />
         <Route element={<ProtectedRoute />}>
           <Route path="/vm/*" element={<VentureMateApp />} />
+          <Route path="/vm/admin" element={<AdminDashboard />} />
         </Route>
         <Route path="/" element={<LandingPage />} />
       </Routes>

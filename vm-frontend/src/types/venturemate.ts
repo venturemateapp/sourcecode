@@ -18,6 +18,7 @@ export interface User {
   website?: string;
   onboarded?: boolean;
   status?: string;
+  isAdmin?: boolean;
   preferredCurrency?: string;
   createdAt: string;
   lastActive: string;

@@ -83,6 +83,14 @@ func (r *Repository) ListByUser(ctx context.Context, userID string) ([]Business,
 	return scanBusinesses(rows)
 }
 
+func (r *Repository) ListAll(ctx context.Context) ([]Business, error) {
+	rows, err := r.db.Query(ctx, listQuery+" ORDER BY created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	return scanBusinesses(rows)
+}
+
 func (r *Repository) GetByID(ctx context.Context, id string) (*Business, error) {
 	return scanBusiness(r.db.QueryRow(ctx, listQuery+" WHERE id = $1", id))
 }

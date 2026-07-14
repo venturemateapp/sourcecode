@@ -21,6 +21,7 @@ type User struct {
 	Twitter           string    `json:"twitter,omitempty"`
 	Website           string    `json:"website,omitempty"`
 	Onboarded         bool      `json:"onboarded"`
+	IsAdmin           bool      `json:"isAdmin"`
 	Status            string    `json:"status"` // active, inactive, suspended, pending
 	PreferredCurrency string    `json:"preferredCurrency"`
 	CreatedAt         time.Time `json:"createdAt"`

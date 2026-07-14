@@ -176,6 +176,7 @@ func generateJWT(user *users.User, secret string) (string, error) {
 		"surname":    user.Surname,
 		"onboarded":  user.Onboarded,
 		"status":     user.Status,
+		"is_admin":   user.IsAdmin,
 		"exp":        time.Now().Add(24 * time.Hour).Unix(),
 		"iat":        time.Now().Unix(),
 	}
