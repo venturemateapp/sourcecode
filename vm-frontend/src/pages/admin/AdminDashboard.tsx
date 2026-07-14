@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Switch, Avatar, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { Activity, BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, UserCheck, UserX, XCircle, CheckCircle } from 'lucide-react';
+import { Box, Button, Card, Chip, CircularProgress, TextField, Typography, Avatar } from '@mui/material';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { graphqlRequest } from '../../lib/api';
 
@@ -36,10 +36,9 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [biz, setBiz] = useState<BizRow[]>([]);
-  const [subs, setSubs] = useState<Array<{ id?: string; name: string; displayName?: string; description?: string; isActive?: boolean; priceMonthly?: number }>>([]);
   const [leads, setLeads] = useState<Array<{ id: string; name: string; email: string; message: string; createdAt: string }>>([]);
   const [investors, setInvestors] = useState<Array<{ id: string; name: string; type: string; location: string }>>([]);
-  const [modal, setModal] = useState<{ type: string; data?: any } | null>(null);
+  const [, setModal] = useState<{ type: string; data?: Record<string, unknown> } | null>(null);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [busy, setBusy] = useState(false);
@@ -60,13 +59,11 @@ export function AdminDashboard() {
 
   const loadBiz = useCallback(async () => {
     const d = await graphqlRequest<{ adminBusinesses: string }>('query { adminBusinesses }');
-    try { setBiz(JSON.parse(d.adminBusinesses)); } catch {}
+    try { setBiz(JSON.parse(d.adminBusinesses)); } catch { /* ignore */ }
   }, []);
 
-  const loadSubs = useCallback(async () => { /* plans list from existing query */ }, []);
-
   const loadLeads = useCallback(async () => {
-    try { const d = await graphqlRequest<{ adminContactSubmissions: string }>('query { adminContactSubmissions }'); setLeads(JSON.parse(d.adminContactSubmissions)); } catch {}
+    try { const d = await graphqlRequest<{ adminContactSubmissions: string }>('query { adminContactSubmissions }'); setLeads(JSON.parse(d.adminContactSubmissions)); } catch { /* ignore */ }
   }, []);
 
   const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
@@ -77,16 +74,16 @@ export function AdminDashboard() {
 
   const loadProviders = useCallback(async () => {
     setLoadProv(true);
-    try { const d = await graphqlRequest<{ serviceProviders: typeof providers }>('query { serviceProviders(activeOnly:false) { id name title category picture rateHourly } }'); setProviders(d.serviceProviders); } catch {}
+    try { const d = await graphqlRequest<{ serviceProviders: typeof providers }>('query { serviceProviders(activeOnly:false) { id name title category picture rateHourly } }'); setProviders(d.serviceProviders); } catch { /* ignore */ }
     finally { setLoadProv(false); }
   }, []);
 
   const loadBookings = useCallback(async () => {
-    try { const d = await graphqlRequest<{ myBookings: typeof bookings }>('query { myBookings { id providerName userName projectTitle status createdAt } }'); setBookings(d.myBookings); } catch {}
+    try { const d = await graphqlRequest<{ myBookings: typeof bookings }>('query { myBookings { id providerName userName projectTitle status createdAt } }'); setBookings(d.myBookings); } catch { /* ignore */ }
   }, []);
 
   const loadInvestors = useCallback(async () => {
-    try { const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string }> }>('query { investors { id name type location } }'); setInvestors(d.investors); } catch {}
+    try { const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string }> }>('query { investors { id name type location } }'); setInvestors(d.investors); } catch { /* ignore */ }
   }, []);
 
   useEffect(() => { if (view === 'dashboard') loadData(); }, [view, loadData]);
@@ -97,8 +94,8 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'providers') loadProviders(); }, [view, loadProviders]);
   useEffect(() => { if (view === 'bookings') loadBookings(); }, [view, loadBookings]);
 
-  const exec = async (mutation: string, vars: any) => {
-    setBusy(true); try { await graphqlRequest(mutation, vars); /* reload */ } catch (e: any) { alert(e.message); } finally { setBusy(false); setModal(null); }
+  const exec = async (mutation: string, vars: Record<string, unknown>) => {
+    setBusy(true); try { await graphqlRequest(mutation, vars); /* reload */ } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
   };
 
   const AdminNav = () => (
@@ -235,7 +232,7 @@ export function AdminDashboard() {
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5 }}>{invForm.id ? 'Edit' : 'New'} Investor</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
             {['name','location','industries','thesis'].map(f => (
-              <TextField key={f} size="small" label={f} value={(invForm as any)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
+              <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
                 sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 12 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} />
             ))}
             <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}

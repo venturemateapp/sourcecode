@@ -26,7 +26,6 @@ import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import {
   TrendingUp,
-  TrendingDown,
   Landmark,
   CheckCircle,
   FileText,

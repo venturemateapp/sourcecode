@@ -10,7 +10,7 @@ import { API_CONFIG } from '../../lib/constants'
 export function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { user, login, loading, error: authError, clearError } = useAuth()
+  const { login, loading, error: authError, clearError } = useAuth()
   const { success, error: showError } = useToast()
   const navigate = useNavigate()
 

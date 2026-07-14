@@ -98,8 +98,8 @@ const componentIcons: Record<string, React.ComponentType<{ size?: number; color?
 export function HealthScorePage({ onViewChange }: HealthScoreProps) {
   const { selectedBusiness } = useBusiness();
   const milestones = selectedBusiness?.milestones || [];
-  const completedMiles = milestones.filter((m: any) => m.status === 'completed').length;
-  const overdueMiles = milestones.filter((m: any) => m.status === 'overdue').length;
+  const completedMiles = milestones.filter((m: { status: string }) => m.status === 'completed').length;
+  const overdueMiles = milestones.filter((m: { status: string }) => m.status === 'overdue').length;
   const milestoneProgress = milestones.length > 0 ? (completedMiles / milestones.length) * 100 : 0;
   const [healthScore, setHealthScore] = useState({
     overallScore: 0, calculatedAt: '',
