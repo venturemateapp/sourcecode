@@ -199,7 +199,11 @@ func init() {
 				log.Printf("AI provider error for user %s: %v", userID, err)
 				return map[string]interface{}{"message": "AI service is unavailable. Verify your OpenRouter API key and try again."}, nil
 			}
-			agent := ai.NewDomainAgent(provider, fullAgentTools(), userID, businessID, domain)
+			userName := biz.UserID
+			if user, uErr := AppContainer.UserRepo.FindByID(p.Context, userID); uErr == nil && user != nil {
+				userName = user.FirstName + " " + user.Surname
+			}
+			agent := ai.NewDomainAgentWithContext(provider, fullAgentTools(), userID, businessID, biz.Name, userName, domain)
 			result, err := agent.ExecuteWithHistory(p.Context, prompt, parseAgentHistory(historyRaw))
 			if err != nil {
 				log.Printf("Agent execution error for user %s: %v", userID, err)

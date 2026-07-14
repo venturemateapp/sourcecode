@@ -15,11 +15,13 @@ import (
 )
 
 type Agent struct {
-	provider   Provider
-	tools      *ToolRegistry
-	userID     string
-	businessID string
-	domain     string
+	provider     Provider
+	tools        *ToolRegistry
+	userID       string
+	businessID   string
+	businessName string
+	userName     string
+	domain       string
 }
 
 type AIKeySet struct {
@@ -117,6 +119,10 @@ func NewDomainAgent(provider Provider, tools *ToolRegistry, userID, businessID, 
 	return &Agent{provider: provider, tools: tools, userID: userID, businessID: businessID, domain: normalizeDomain(domain)}
 }
 
+func NewDomainAgentWithContext(provider Provider, tools *ToolRegistry, userID, businessID, businessName, userName, domain string) *Agent {
+	return &Agent{provider: provider, tools: tools, userID: userID, businessID: businessID, businessName: businessName, userName: userName, domain: normalizeDomain(domain)}
+}
+
 func (a *Agent) Execute(ctx context.Context, prompt string) (string, error) {
 	result, err := a.ExecuteWithHistory(ctx, prompt, nil)
 	if err != nil {
@@ -136,12 +142,18 @@ func (a *Agent) ExecuteWithHistory(ctx context.Context, prompt string, history [
 		return nil, fmt.Errorf("prompt is required")
 	}
 
+	userName := a.userName
+	if userName == "" {
+		userName = "the current user"
+	}
+	bizName := a.businessName
+	if bizName == "" {
+		bizName = "the current business"
+	}
+
 	systemPrompt := fmt.Sprintf(`You are VentureMate AI, the action assistant inside a startup operating system.
 
-Current authenticated scope:
-- userID: %s
-- businessID: %s
-- current module/domain: %s
+You are speaking with %s. The current business is "%s" (ID: %s). Current module/domain: %s.
 
 You can answer questions and use tools to perform real operations for this user across business profile, branding, local SVG logo generation, website building, module JSON data, banking records, invoices, investors, and documents.
 
@@ -158,7 +170,7 @@ Rules:
 10. For generic modules, store complete valid JSON with getDomainData and upsertDomainData.
 11. Website edits are private drafts. Publish only after explicit confirmation, then report the exact live venturemate.net or custom-domain URL.
 
-You are in a tool loop and may call multiple tools before answering.`, a.userID, a.businessID, a.domain)
+You are in a tool loop and may call multiple tools before answering.`, userName, bizName, a.businessID, a.domain)
 
 	conversation := make([]Message, 0, len(history)+8)
 	for _, m := range history {
