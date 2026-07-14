@@ -32,7 +32,7 @@ const STEPS = [
 
 export function GenerationProgress({ businessId, onDone }: { businessId: string; onDone?: () => void }) {
   const [status, setStatus] = useState<GenStatus | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     intervalRef.current = setInterval(async () => {

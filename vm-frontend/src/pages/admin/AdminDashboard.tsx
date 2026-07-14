@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Card, Chip, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Box, Card, Chip, CircularProgress, Typography } from '@mui/material';
 import { Building2, Shield, Users, Activity, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { graphqlRequest } from '../../lib/api';

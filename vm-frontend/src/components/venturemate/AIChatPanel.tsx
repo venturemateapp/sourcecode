@@ -10,6 +10,7 @@ import {
   IconButton,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material';
 import {
   Bot,
@@ -17,13 +18,14 @@ import {
   File as FileIcon,
   Image as ImageIcon,
   Paperclip,
+  RefreshCw,
   Send,
   Sparkles,
   X,
 } from 'lucide-react';
 import type { ProposedChange } from './AICreationStudio';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { useAIProvider } from '../../contexts/AIProviderContext';
+
 import { graphqlRequest, uploadFile } from '../../lib/api';
 
 interface Attachment {

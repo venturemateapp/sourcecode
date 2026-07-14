@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Button, Card, Chip, CircularProgress, Link, Typography } from '@mui/material';
-import { Building2, Code2, ExternalLink, Eye, FileCode, Github, Globe2, MonitorSmartphone, Sparkles, Terminal, UploadCloud, XCircle } from 'lucide-react';
+import { Building2, Code2, ExternalLink, Eye, FileCode, GitBranch, Globe2, MonitorSmartphone, Sparkles, Terminal, UploadCloud, XCircle } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -258,7 +258,7 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
     footer: safeJson<Record<string, unknown>>(website.footer, {}),
   }) : null, [website]);
 
-  const logo = selectedBusiness.brandKit?.logo;
+  const logo = selectedBusiness?.brandKit?.logo;
   const [codeTab, setCodeTab] = useState<'preview' | 'code'>('preview');
   const [codeResult, setCodeResult] = useState<{ files: Array<{ path: string; content: string }>; type: string; routes: string[] } | null>(null);
   const [codeLoading, setCodeLoading] = useState(false);
@@ -374,7 +374,7 @@ export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void })
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, bgcolor: 'var(--vm-bg-secondary)', borderBottom: '1px solid var(--vm-border-subtle)' }}>
             <FileCode size={16} />
             <Typography sx={{ fontSize: 13, fontWeight: 700, flex: 1 }}>Generated Project ({codeResult.type})</Typography>
-            <Button size="small" variant="outlined" startIcon={<Github size={13} />} disabled={deployLoading === 'github'} onClick={() => handleDeploy('github')} sx={{ textTransform: 'none', fontSize: 11 }}>
+            <Button size="small" variant="outlined" startIcon={<GitBranch size={13} />} disabled={deployLoading === 'github'} onClick={() => handleDeploy('github')} sx={{ textTransform: 'none', fontSize: 11 }}>
               {deployLoading === 'github' ? <CircularProgress size={12} /> : 'Push to GitHub'}
             </Button>
             <Button size="small" variant="outlined" startIcon={<Terminal size={13} />} disabled={deployLoading === 'netlify'} onClick={() => handleDeploy('netlify')} sx={{ textTransform: 'none', fontSize: 11 }}>

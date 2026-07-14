@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import { Box, Button, Card, Chip, CircularProgress, Typography } from '@mui/material';
 import { BookOpen, Building2, Palette, Sparkles, Type } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
-import { GenerationProgress } from '../../components/venturemate/GenerationProgress';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
