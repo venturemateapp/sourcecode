@@ -130,7 +130,8 @@ export function CreditScorePage(_props: CreditScoreProps) {
     score: 0, max_score: 100, grade: '', risk_level: 'moderate',
     calculated_at: '',
     factors: { positive: [] as string[], negative: [] as string[] },
-    components: { payment_history: 0, credit_utilization: 0, business_age: 0, revenue_stability: 0, debt_ratio: 0 },
+    components: { payment_history: 0, credit_utilization: 0, business_age: 0, revenue_stability: 0, debt_ratio: 0, profile_strength: 0 },
+    advice: [] as string[],
   });
   const [financingOffers, setFinancingOffers] = useState<FinancingOffer[]>([]);
   const [creditHistory, setCreditHistory] = useState<CreditHistoryItem[]>([]);
@@ -313,121 +314,93 @@ export function CreditScorePage(_props: CreditScoreProps) {
         </GradientButton>
       </Box>
 
-      {/* Score Card */}
+      {/* Speedometer Score Card */}
       {creditScore.score > 0 && (
-        <Card
-          sx={{
-            bgcolor: 'var(--vm-bg-secondary)',
-            border: '1px solid var(--vm-border-subtle)',
-            borderRadius: 3,
-            p: 4,
-            mb: 4,
-            background: `linear-gradient(135deg, ${getScoreColor(creditScore.score)}20 0%, var(--vm-bg-tertiary) 100%)`,
-            borderColor: getScoreColor(creditScore.score),
-          }}
-        >
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 3, md: 6 }, alignItems: 'center' }}>
-            {/* Score */}
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1 }}>
-                Business Credit Score
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: { xs: 36, sm: 48, md: 72 },
-                  fontWeight: 700,
-                  color: getScoreColor(creditScore.score),
-                  lineHeight: 1,
-                }}
-              >
-                {creditScore.score}
-              </Typography>
-              <Typography sx={{ fontSize: { xs: 12, sm: 14 } }}>
-                of {creditScore.max_score}
-              </Typography>
+        <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 3, mb: 4, overflow: 'hidden' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: 3, alignItems: 'center' }}>
+            {/* Speedometer */}
+            <Box sx={{ textAlign: 'center', position: 'relative' }}>
+              <svg viewBox="0 0 200 120" style={{ width: '100%', maxWidth: 260, height: 'auto' }}>
+                <defs>
+                  <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="30%" stopColor="#f97316" />
+                    <stop offset="55%" stopColor="#f59e0b" />
+                    <stop offset="80%" stopColor="#22c55e" />
+                    <stop offset="100%" stopColor="#16a34a" />
+                  </linearGradient>
+                </defs>
+                {/* Background arc */}
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="18" strokeLinecap="round" />
+                {/* Score arc */}
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" strokeWidth="18" strokeLinecap="round"
+                  strokeDasharray={`${(creditScore.score / 100) * 230} 230`} />
+                {/* Ticks */}
+                {[0, 25, 50, 75, 100].map(t => {
+                  const angle = 180 + (t / 100) * 180;
+                  const r = 80; const rad = (angle * Math.PI) / 180;
+                  const x1 = 100 + (r - 8) * Math.cos(rad); const y1 = 100 + (r - 8) * Math.sin(rad);
+                  const x2 = 100 + (r - 18) * Math.cos(rad); const y2 = 100 + (r - 18) * Math.sin(rad);
+                  return <line key={t} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,.3)" strokeWidth="2" />;
+                })}
+                {/* Needle */}
+                <line x1="100" y1="100" x2={100 + 55 * Math.cos((180 + (creditScore.score / 100) * 180) * Math.PI / 180)}
+                  y2={100 + 55 * Math.sin((180 + (creditScore.score / 100) * 180) * Math.PI / 180)}
+                  stroke={getScoreColor(creditScore.score)} strokeWidth="3" strokeLinecap="round" />
+                <circle cx="100" cy="100" r="6" fill={getScoreColor(creditScore.score)} />
+                {/* Score text */}
+                <text x="100" y="64" textAnchor="middle" fill={getScoreColor(creditScore.score)} fontSize="28" fontWeight="800" fontFamily="Inter,sans-serif">{creditScore.score}</text>
+                <text x="100" y="78" textAnchor="middle" fill="rgba(255,255,255,.4)" fontSize="10" fontFamily="Inter,sans-serif">/ {creditScore.max_score}</text>
+              </svg>
+              <Chip size="small" label={getRiskLabel(creditScore.risk_level).label}
+                sx={{ mt: 0.5, bgcolor: `${getRiskLabel(creditScore.risk_level).color}20`, color: getRiskLabel(creditScore.risk_level).color, fontSize: 11, fontWeight: 700 }} />
             </Box>
 
-            {/* Grade */}
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)', mb: 1 }}>
-                Grade
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: { xs: 40, md: 64 },
-                  fontWeight: 700,
-                  color: getScoreColor(creditScore.score),
-                  lineHeight: 1,
-                }}
-              >
-                {getScoreGrade(creditScore.score)}
-              </Typography>
-              <Chip
-                size="small"
-                label={getRiskLabel(creditScore.risk_level).label}
-                sx={{
-                  bgcolor: `${getRiskLabel(creditScore.risk_level).color}20`,
-                  color: getRiskLabel(creditScore.risk_level).color,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  mt: 1,
-                }}
-              />
-            </Box>
-
-            {/* Factors */}
+            {/* Factors + Advice */}
             <Box>
-              <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
-                Key Factors
-              </Typography>
-              {creditScore.factors.positive.slice(0, 2).map((factor, idx) => (
-                <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
-                  <CheckCircle size={14} color="#22c55e" style={{ marginTop: 3 }} />
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
-                    {factor}
-                  </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#22c55e', mb: 1 }}>Strengths</Typography>
+                  {creditScore.factors.positive.slice(0, 4).map((f, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                      <CheckCircle size={12} color="#22c55e" />
+                      <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>{f}</Typography>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-              {creditScore.factors.negative.slice(0, 1).map((factor, idx) => (
-                <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                  <TrendingDown size={14} color="#ef4444" style={{ marginTop: 3 }} />
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>
-                    {factor}
-                  </Typography>
+                <Box>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', mb: 1 }}>Grade</Typography>
+                  <Typography sx={{ fontSize: 36, fontWeight: 800, color: getScoreColor(creditScore.score), lineHeight: 1 }}>{getScoreGrade(creditScore.score)}</Typography>
+                  <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.4)', mt: 0.5 }}>Last updated: {new Date(creditScore.calculated_at).toLocaleDateString()}</Typography>
                 </Box>
-              ))}
+              </Box>
+
+              {/* Advice */}
+              {creditScore.advice.length > 0 && (
+                <Box sx={{ bgcolor: 'rgba(245,158,11,.08)', borderRadius: 2, p: 1.5, border: '1px solid rgba(245,158,11,.2)' }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', mb: 0.75 }}>How to improve</Typography>
+                  {creditScore.advice.map((a, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.4 }}>
+                      <Typography sx={{ color: '#f59e0b', fontSize: 11, fontWeight: 700, minWidth: 16 }}>{i + 1}.</Typography>
+                      <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)', lineHeight: 1.4 }}>{a}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           </Box>
 
           {/* Score Components */}
-          <Box sx={{ mt: 4 }}>
-            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
-              Score Components
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' }, gap: { xs: 2, md: 3 } }}>
+          <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(6, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
               {Object.entries(creditScore.components).map(([key, value]) => (
                 <Box key={key}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', textTransform: 'capitalize' }}>
-                      {key.replace('_', ' ')}
-                    </Typography>
-                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-primary)' }}>
-                      {value}%
-                    </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.5)', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</Typography>
+                    <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.7)', fontWeight: 700 }}>{value}%</Typography>
                   </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={value}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      bgcolor: 'var(--vm-bg-tertiary)',
-                      '& .MuiLinearProgress-bar': {
-                        bgcolor: getScoreColor(value * 8.5),
-                        borderRadius: 3,
-                      },
-                    }}
-                  />
+                  <LinearProgress variant="determinate" value={value} sx={{ height: 5, borderRadius: 3, bgcolor: 'rgba(255,255,255,.06)',
+                    '& .MuiLinearProgress-bar': { bgcolor: getScoreColor(value * 8.5), borderRadius: 3 } }} />
                 </Box>
               ))}
             </Box>

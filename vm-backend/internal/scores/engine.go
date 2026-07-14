@@ -17,6 +17,7 @@ type CreditComponents struct {
 	BusinessAge       int `json:"business_age"`
 	RevenueStability  int `json:"revenue_stability"`
 	DebtRatio         int `json:"debt_ratio"`
+	ProfileStrength   int `json:"profile_strength"`
 }
 
 type CreditFactors struct {
@@ -32,6 +33,7 @@ type CreditScoreData struct {
 	CalculatedAt string           `json:"calculated_at"`
 	Factors      CreditFactors    `json:"factors"`
 	Components   CreditComponents `json:"components"`
+	Advice       []string         `json:"advice"`
 }
 
 type FinancingOffer struct {
@@ -137,13 +139,15 @@ func (e *Engine) calculate(biz *businesses.Business, invoiceList []invoices.Invo
 	businessAge := calcBusinessAge(biz)
 	revenueStability := calcRevenueStability(biz)
 	debtRatio := calcDebtRatio(biz)
+	profileStrength := calcProfileStrength(biz)
 
 	score := int(math.Round(
-		0.30*float64(paymentHistory) +
-			0.20*float64(creditUtilization) +
+		0.20*float64(paymentHistory) +
+			0.15*float64(creditUtilization) +
 			0.15*float64(businessAge) +
-			0.20*float64(revenueStability) +
-			0.15*float64(debtRatio),
+			0.15*float64(revenueStability) +
+			0.10*float64(debtRatio) +
+			0.25*float64(profileStrength),
 	))
 	if score > 100 {
 		score = 100
@@ -154,39 +158,80 @@ func (e *Engine) calculate(biz *businesses.Business, invoiceList []invoices.Invo
 
 	var positive []string
 	var negative []string
+	var advice []string
 
 	if paymentHistory >= 80 {
 		positive = append(positive, "Strong payment history")
 	} else if paymentHistory < 50 {
 		negative = append(negative, "Poor payment history")
+		advice = append(advice, "Pay outstanding invoices on time to improve payment history.")
 	}
 
 	if creditUtilization >= 70 {
 		positive = append(positive, "Low credit utilization")
 	} else if creditUtilization < 40 {
 		negative = append(negative, "High credit utilization")
+		advice = append(advice, "Reduce outstanding debt to improve credit utilization.")
 	}
 
 	if businessAge >= 70 {
 		positive = append(positive, "Established business history")
 	} else if businessAge < 40 {
 		negative = append(negative, "Short business history")
+		advice = append(advice, "Your business is still young. Score improves as you build history.")
 	}
 
 	if revenueStability >= 70 {
 		positive = append(positive, "Consistent revenue")
 	} else if revenueStability < 40 {
 		negative = append(negative, "Inconsistent revenue")
+		advice = append(advice, "Track monthly revenue consistently to demonstrate stability.")
 	}
 
 	if debtRatio >= 70 {
 		positive = append(positive, "Low debt ratio")
 	} else if debtRatio < 40 {
 		negative = append(negative, "High debt ratio")
+		advice = append(advice, "Lower monthly expenses relative to revenue to improve debt ratio.")
+	}
+
+	// Profile strength factors
+	if biz.Website != "" {
+		positive = append(positive, "Business website is set up")
+	} else {
+		advice = append(advice, "Add a business website to strengthen your profile.")
+	}
+	if biz.BrandKit != "" && biz.BrandKit != "{}" {
+		positive = append(positive, "Brand identity is complete")
+	} else {
+		advice = append(advice, "Create a brand kit with AI to complete your business identity.")
+	}
+	if biz.Team != "" && biz.Team != "[]" {
+		positive = append(positive, "Team members are added")
+	} else {
+		advice = append(advice, "Add team members to show business capacity.")
+	}
+	if biz.Documents != "" && biz.Documents != "[]" {
+		positive = append(positive, "Documents uploaded")
+	} else {
+		advice = append(advice, "Upload business documents to strengthen your profile.")
+	}
+	if biz.Milestones != "" && biz.Milestones != "[]" {
+		positive = append(positive, "Milestones are tracked")
+	} else {
+		advice = append(advice, "Track business milestones to show progress.")
+	}
+	if biz.WebsiteConfig != "" && biz.WebsiteConfig != "{}" {
+		positive = append(positive, "Website has been configured")
+	} else {
+		advice = append(advice, "Use the AI website builder to create a professional site.")
 	}
 
 	if len(positive) == 0 {
-		positive = append(positive, "Sufficient business data")
+		positive = append(positive, "Complete your business profile to improve")
+	}
+	if len(advice) > 5 {
+		advice = advice[:5]
 	}
 
 	return &CreditScoreData{
@@ -205,8 +250,34 @@ func (e *Engine) calculate(biz *businesses.Business, invoiceList []invoices.Invo
 			BusinessAge:       businessAge,
 			RevenueStability:  revenueStability,
 			DebtRatio:         debtRatio,
+			ProfileStrength:   profileStrength,
 		},
+		Advice: advice,
 	}
+}
+
+func calcProfileStrength(biz *businesses.Business) int {
+	points := 0
+	total := 6
+	if biz.Website != "" {
+		points++
+	}
+	if biz.BrandKit != "" && biz.BrandKit != "{}" {
+		points++
+	}
+	if biz.Team != "" && biz.Team != "[]" {
+		points++
+	}
+	if biz.Documents != "" && biz.Documents != "[]" {
+		points++
+	}
+	if biz.Milestones != "" && biz.Milestones != "[]" {
+		points++
+	}
+	if biz.WebsiteConfig != "" && biz.WebsiteConfig != "{}" {
+		points++
+	}
+	return int(math.Round(float64(points) / float64(total) * 100))
 }
 
 func calcPaymentHistory(invoiceList []invoices.Invoice) int {

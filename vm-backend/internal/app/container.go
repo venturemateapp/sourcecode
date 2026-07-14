@@ -15,6 +15,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/email"
 	"github.com/venturemate/vmbackend/internal/investors"
 	"github.com/venturemate/vmbackend/internal/invoices"
+	"github.com/venturemate/vmbackend/internal/marketplace"
 	"github.com/venturemate/vmbackend/internal/notifications"
 	"github.com/venturemate/vmbackend/internal/oauth"
 	"github.com/venturemate/vmbackend/internal/rates"
@@ -56,6 +57,7 @@ type Container struct {
 	BankAccountRepo     *banking.Repository
 	InvoiceRepo         *invoices.Repository
 	RegistrationRepo    *registrations.Repository
+	MarketplaceRepo     *marketplace.Repository
 }
 
 func NewContainer(ctx context.Context) (*Container, error) {
@@ -90,6 +92,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	bankAccountRepo := banking.NewRepository(dbPool)
 	invoiceRepo := invoices.NewRepository(dbPool)
 	registrationRepo := registrations.NewRepository(dbPool)
+	marketplaceRepo := marketplace.NewRepository(dbPool)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
 	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
 	rateService := rates.NewService()
@@ -140,6 +143,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		S3:                  s3Svc,
 		Email:               emailSvc,
 		UserRepo:            userRepo,
+		MarketplaceRepo:     marketplaceRepo,
 		OTPRepo:             otpRepo,
 		SubscriptionRepo:    subRepo,
 		BusinessRepo:        bizRepo,
