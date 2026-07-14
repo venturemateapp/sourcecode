@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Card, Chip, CircularProgress, TextField, Typography, Avatar } from '@mui/material';
+import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar } from '@mui/material';
 import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
