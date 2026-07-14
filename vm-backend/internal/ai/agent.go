@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
@@ -334,6 +335,7 @@ Rules:
 	content := extractJSONObject(resp.Content)
 	var proposal Proposal
 	if err := json.Unmarshal([]byte(content), &proposal); err != nil {
+		log.Printf("AI proposal JSON parse error for domain %s: %v. AI response length: %d, content preview: %s", domain, err, len(content), truncate(content, 200))
 		proposal = Proposal{Message: strings.TrimSpace(resp.Content), Provider: resp.Provider, Model: resp.Model}
 		if isCreativeDomain(domain) {
 			proposal.Message = "I prepared a safe starter version from the approved business information. Review it and tell me what to change."
@@ -642,4 +644,11 @@ func extractJSONObject(content string) string {
 		return content[start : end+1]
 	}
 	return content
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
 }

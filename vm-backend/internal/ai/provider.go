@@ -26,10 +26,10 @@ const (
 	retryBaseDelay = 500 * time.Millisecond
 	retryMaxDelay  = 5 * time.Second
 
-	maxContextTokens       = 4096
-	maxResponseTokens      = 512
-	creativeResponseTokens = 1280
-	systemPromptTokens     = 200
+	maxContextTokens       = 32000
+	maxResponseTokens      = 2048
+	creativeResponseTokens = 4096
+	systemPromptTokens     = 1000
 	tokenEstimateRatio     = 3.5
 )
 
