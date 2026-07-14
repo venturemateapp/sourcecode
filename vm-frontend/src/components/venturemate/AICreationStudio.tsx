@@ -6,16 +6,11 @@ import {
   Card,
   Chip,
   CircularProgress,
-  FormControl,
-  MenuItem,
-  Select,
   TextField,
   Typography,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material/Select';
-import { Bot, Check, RefreshCw, Send, Sparkles, X } from 'lucide-react';
+import { Bot, Check, Send, Sparkles, X } from 'lucide-react';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { useAIProvider } from '../../contexts/AIProviderContext';
 import { graphqlRequest } from '../../lib/api';
 
 export interface ProposedChange {
@@ -31,8 +26,6 @@ export interface ProposedChange {
 interface ProposalResponse {
   proposeAgentAction: {
     message: string;
-    provider?: string;
-    model?: string;
     proposals: ProposedChange[];
   };
 }
@@ -62,11 +55,9 @@ interface AICreationStudioProps {
 }
 
 const PROPOSE_MUTATION = `
-  mutation ProposeAgentAction($userId: ID!, $businessId: ID!, $prompt: String!, $domain: String, $provider: String) {
-    proposeAgentAction(userId: $userId, businessId: $businessId, prompt: $prompt, domain: $domain, provider: $provider) {
+  mutation ProposeAgentAction($userId: ID!, $businessId: ID!, $prompt: String!, $domain: String) {
+    proposeAgentAction(userId: $userId, businessId: $businessId, prompt: $prompt, domain: $domain) {
       message
-      provider
-      model
       proposals { id type field domain summary currentValue newValue }
     }
   }
@@ -97,13 +88,6 @@ export function AICreationStudio({
   onApproved,
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
-  const {
-    providers,
-    selectedProvider,
-    selectedProviderInfo,
-    allowOverride,
-    setSelectedProvider,
-  } = useAIProvider();
   const [prompt, setPrompt] = useState('');
   const [revision, setRevision] = useState('');
   const [messages, setMessages] = useState<StudioMessage[]>([]);
@@ -113,11 +97,6 @@ export function AICreationStudio({
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  const configuredProviders = useMemo(
-    () => providers.filter(provider => provider.configured),
-    [providers],
-  );
 
   const requestProposal = async (instruction: string) => {
     if (!selectedBusiness || !userId || !instruction.trim() || loading) return;
@@ -134,7 +113,6 @@ export function AICreationStudio({
         businessId: selectedBusiness.id,
         prompt: contextualPrompt,
         domain,
-        provider: selectedProvider,
       });
       const result = data.proposeAgentAction;
       const nextProposal = result.proposals?.[0] ?? null;
@@ -202,7 +180,6 @@ export function AICreationStudio({
                 </Box>
                 <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 12 }}>{proposal.summary || proposalMessage}</Typography>
               </Box>
-              <Chip label={`${selectedProvider.toUpperCase()} · ${selectedProviderInfo?.model || 'AI'}`} size="small" variant="outlined" />
             </Box>
 
             {renderProposal(proposal)}
@@ -281,19 +258,6 @@ export function AICreationStudio({
               <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11 }}>Describe it. Review it. Approve it.</Typography>
             </Box>
           </Box>
-          <FormControl fullWidth size="small" sx={{ mt: 1.25 }}>
-            <Select
-              value={selectedProvider}
-              onChange={(event: SelectChangeEvent) => setSelectedProvider(String(event.target.value))}
-              disabled={!allowOverride || configuredProviders.length < 2}
-            >
-              {configuredProviders.map(provider => (
-                <MenuItem key={provider.name} value={provider.name}>
-                  {provider.name.toUpperCase()} · {provider.model}{provider.isDefault ? ' (default)' : ''}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
         </Box>
 
         <Box sx={{ p: 1.75 }}>

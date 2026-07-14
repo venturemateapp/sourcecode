@@ -7,22 +7,16 @@ import {
   Card,
   Chip,
   CircularProgress,
-  FormControl,
   IconButton,
-  MenuItem,
-  Select,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material/Select';
 import {
   Bot,
   Check,
   File as FileIcon,
   Image as ImageIcon,
   Paperclip,
-  RefreshCw,
   Send,
   Sparkles,
   X,
@@ -50,8 +44,6 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  provider?: string;
-  model?: string;
   operations?: AgentOperation[];
   attachments?: Attachment[];
 }
@@ -59,8 +51,6 @@ interface ChatMessage {
 interface AgentResponse {
   executeAgentQuery: {
     message: string;
-    provider?: string;
-    model?: string;
     operations?: AgentOperation[];
   };
 }
@@ -68,8 +58,6 @@ interface AgentResponse {
 interface ProposalResponse {
   proposeAgentAction: {
     message: string;
-    provider?: string;
-    model?: string;
     proposals: ProposedChange[];
   };
 }
@@ -95,7 +83,6 @@ const EXECUTE_AGENT_MUTATION = `
     $businessId: ID!
     $prompt: String!
     $domain: String
-    $provider: String
     $history: String
   ) {
     executeAgentQuery(
@@ -103,12 +90,9 @@ const EXECUTE_AGENT_MUTATION = `
       businessId: $businessId
       prompt: $prompt
       domain: $domain
-      provider: $provider
       history: $history
     ) {
       message
-      provider
-      model
       operations {
         tool
         success
@@ -119,9 +103,9 @@ const EXECUTE_AGENT_MUTATION = `
 `;
 
 const PROPOSE_MUTATION = `
-  mutation ProposeAgentAction($userId: ID!, $businessId: ID!, $prompt: String!, $domain: String, $provider: String) {
-    proposeAgentAction(userId: $userId, businessId: $businessId, prompt: $prompt, domain: $domain, provider: $provider) {
-      message provider model
+  mutation ProposeAgentAction($userId: ID!, $businessId: ID!, $prompt: String!, $domain: String) {
+    proposeAgentAction(userId: $userId, businessId: $businessId, prompt: $prompt, domain: $domain) {
+      message
       proposals { id type field domain summary currentValue newValue }
     }
   }
@@ -203,16 +187,6 @@ function CreativeProposalPreview({ proposal }: { proposal: PendingCreativePropos
 
 export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPanelProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
-  const {
-    providers,
-    selectedProvider,
-    selectedProviderInfo,
-    allowOverride,
-    loading: providersLoading,
-    error: providerError,
-    setSelectedProvider,
-    refreshProviders,
-  } = useAIProvider();
   const [open, setOpen] = useState(mode === 'page');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -224,11 +198,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
   const fileStoreRef = useRef<Map<string, File>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const configuredProviders = useMemo(
-    () => providers.filter(provider => provider.configured),
-    [providers],
-  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -287,7 +256,7 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
       return;
     }
     if (pendingProposal && /\b(discard|reject|cancel this|do not use|don['’]?t use)\b/i.test(rawPrompt)) {
-      setMessages(current => [...current, { id: `${Date.now()}-user`, role: 'user', content: rawPrompt }, { id: `${Date.now()}-assistant`, role: 'assistant', content: 'Discarded. The approved version was not changed.', provider: selectedProvider, model: selectedProviderInfo?.model }]);
+      setMessages(current => [...current, { id: `${Date.now()}-user`, role: 'user', content: rawPrompt }, { id: `${Date.now()}-assistant`, role: 'assistant', content: 'Discarded. The approved version was not changed.' }]);
       setPendingProposal(null);
       setInput('');
       return;
@@ -337,7 +306,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           businessId: selectedBusiness.id,
           prompt: creativePrompt,
           domain: creativeDomain,
-          provider: selectedProvider,
         });
         const response = data.proposeAgentAction;
         const proposal = response.proposals?.[0];
@@ -347,8 +315,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           id: `${Date.now()}-assistant`,
           role: 'assistant',
           content: response.message || 'I prepared a version for your review. Tell me what to adjust, ask for another option, or approve it.',
-          provider: response.provider || selectedProvider,
-          model: response.model || selectedProviderInfo?.model,
         }]);
       } else {
         const data = await graphqlRequest<AgentResponse>(EXECUTE_AGENT_MUTATION, {
@@ -356,7 +322,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           businessId: selectedBusiness.id,
           prompt,
           domain,
-          provider: selectedProvider,
           history,
         });
 
@@ -365,8 +330,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           id: `${Date.now()}-assistant`,
           role: 'assistant',
           content: response.message,
-          provider: response.provider || selectedProvider,
-          model: response.model || selectedProviderInfo?.model,
           operations: response.operations || [],
         }]);
 
@@ -384,7 +347,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
         id: `${Date.now()}-assistant-error`,
         role: 'assistant',
         content: `I could not complete that request. ${message}`,
-        provider: selectedProvider,
       }]);
     } finally {
       setLoading(false);
@@ -408,8 +370,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
         id: `${Date.now()}-assistant-approved`,
         role: 'assistant',
         content: `${data.applyAgentProposal.message || 'Approved and saved.'}${approvedDomain === 'website' ? (publishAfterPrompt ? ' I am publishing this approved draft now.' : ' The website remains a private draft until you explicitly ask me to publish it.') : ''}`,
-        provider: selectedProvider,
-        model: selectedProviderInfo?.model,
       }]);
       await refreshBusiness();
       window.dispatchEvent(new CustomEvent('venturemate:ai-data-changed', {
@@ -422,7 +382,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           businessId: selectedBusiness.id,
           prompt: `${publishAfterPrompt}\n\nThe user explicitly approved this exact website proposal and explicitly requested publication in the same message. Publish the newly approved draft now.`,
           domain: 'website',
-          provider: selectedProvider,
           history,
         });
         const publishResult = publishData.executeAgentQuery;
@@ -430,8 +389,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           id: `${Date.now()}-assistant-published`,
           role: 'assistant',
           content: publishResult.message,
-          provider: publishResult.provider || selectedProvider,
-          model: publishResult.model || selectedProviderInfo?.model,
           operations: publishResult.operations || [],
         }]);
         if ((publishResult.operations || []).some(operation => operation.success)) {
@@ -479,51 +436,18 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           </Avatar>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'var(--vm-text-primary)' }}>
-              VentureMate AI · {displayDomain(domain)}
+              VentureMate AI
             </Typography>
             <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }} noWrap>
-              {selectedBusiness.name} · {selectedProviderInfo?.model || selectedProvider}
+              {selectedBusiness.name}
             </Typography>
           </Box>
-          <Tooltip title="Check provider connections">
-            <span>
-              <IconButton size="small" disabled={providersLoading} onClick={() => void refreshProviders(true)}>
-                {providersLoading ? <CircularProgress size={16} /> : <RefreshCw size={16} />}
-              </IconButton>
-            </span>
-          </Tooltip>
           {mode === 'floating' && (
             <IconButton size="small" onClick={() => setOpen(false)} aria-label="Close AI assistant">
               <X size={18} />
             </IconButton>
           )}
         </Box>
-
-        <FormControl fullWidth size="small" sx={{ mt: 1.25 }}>
-          <Select
-            value={selectedProvider}
-            onChange={(event: SelectChangeEvent) => setSelectedProvider(String(event.target.value))}
-            disabled={!allowOverride || configuredProviders.length < 2}
-            sx={{
-              height: 36,
-              color: 'var(--vm-text-primary)',
-              bgcolor: 'var(--vm-bg-tertiary)',
-              fontSize: 12,
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' },
-            }}
-          >
-            {configuredProviders.map(provider => (
-              <MenuItem key={provider.name} value={provider.name}>
-                {provider.name.toUpperCase()} · {provider.model}{provider.isDefault ? ' (default)' : ''}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {(providerError || selectedProviderInfo?.available === false) && (
-          <Alert severity="warning" sx={{ mt: 1, py: 0, fontSize: 11 }}>
-            {providerError || selectedProviderInfo?.message}
-          </Alert>
-        )}
       </Box>
 
       <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
@@ -579,11 +503,6 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
                     />
                   ))}
                 </Box>
-              )}
-              {message.role === 'assistant' && (message.provider || message.model) && (
-                <Typography sx={{ mt: 0.75, fontSize: 10, color: 'var(--vm-text-muted)' }}>
-                  {message.provider?.toUpperCase()} {message.model ? `· ${message.model}` : ''}
-                </Typography>
               )}
             </Box>
           </Box>

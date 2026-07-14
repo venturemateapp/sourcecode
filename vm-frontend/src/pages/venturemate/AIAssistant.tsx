@@ -37,7 +37,7 @@ export function AIAssistant(_props: AIAssistantProps) {
             AI Operations Assistant
           </Typography>
           <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-            OpenRouter is the server default. Switch providers from the selector whenever another provider is configured.
+            Powered by DeepSeek V4 Flash. Describe what you need and the AI will handle it.
           </Typography>
         </Box>
       </Box>
