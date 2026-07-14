@@ -20,7 +20,8 @@ export function OAuthCallback() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/vm', { replace: true });
+      const stored = JSON.parse(localStorage.getItem('venturemate_user') || '{}');
+      navigate(stored?.isAdmin ? '/vm/admin' : '/vm', { replace: true });
     }, 3000);
     return () => clearTimeout(timer);
   }, [navigate]);

@@ -258,3 +258,18 @@ func (r *Repository) ChangePassword(ctx context.Context, userID, newPasswordHash
 	_, err := r.db.Exec(ctx, query, newPasswordHash, time.Now(), userID)
 	return err
 }
+
+func (r *Repository) UpdateStatus(ctx context.Context, id, status string) error {
+	_, err := r.db.Exec(ctx, `UPDATE users SET status = $1, updated_at = $2 WHERE id = $3`, status, time.Now(), id)
+	return err
+}
+
+func (r *Repository) UpdateIsAdmin(ctx context.Context, id string, isAdmin bool) error {
+	_, err := r.db.Exec(ctx, `UPDATE users SET is_admin = $1, updated_at = $2 WHERE id = $3`, isAdmin, time.Now(), id)
+	return err
+}
+
+func (r *Repository) Delete(ctx context.Context, id string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
+	return err
+}

@@ -89,3 +89,9 @@ func (r *Repository) DeleteAllRead(ctx context.Context, userID string) error {
 	_, err := r.db.Exec(ctx, "DELETE FROM notifications WHERE user_id = $1 AND read = TRUE", userID)
 	return err
 }
+
+func (r *Repository) Broadcast(ctx context.Context, title, description, notifType, actionURL, actionLabel string) error {
+	_, err := r.db.Exec(ctx, `INSERT INTO notifications (id, user_id, title, description, type, action_url, action_label, created_at)
+		SELECT gen_random_uuid(), id, $1, $2, $3, $4, $5, NOW() FROM users`, title, description, notifType, actionURL, actionLabel)
+	return err
+}

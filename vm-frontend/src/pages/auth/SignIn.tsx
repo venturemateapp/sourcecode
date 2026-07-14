@@ -10,7 +10,7 @@ import { API_CONFIG } from '../../lib/constants'
 export function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { login, loading, error: authError, clearError } = useAuth()
+  const { user, login, loading, error: authError, clearError } = useAuth()
   const { success, error: showError } = useToast()
   const navigate = useNavigate()
 
@@ -36,7 +36,8 @@ export function SignIn() {
     success('Welcome back!', {
       description: `Signed in as ${email}`,
     })
-    navigate('/vm')
+    const stored = JSON.parse(localStorage.getItem('venturemate_user') || '{}')
+    navigate(stored?.isAdmin ? '/vm/admin' : '/vm')
   }
 
   const handleGoogleSignIn = () => {

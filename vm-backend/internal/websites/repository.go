@@ -490,6 +490,45 @@ func (r *Repository) IsDomainAllowed(ctx context.Context, host, baseDomain strin
 	return site != nil, err
 }
 
+func (r *Repository) ListContactSubmissions(ctx context.Context) (string, error) {
+	rows, err := r.db.Query(ctx, `SELECT id, website_id, business_id, name, email, phone, company, message, status, created_at
+		FROM website_contact_submissions ORDER BY created_at DESC LIMIT 100`)
+	if err != nil {
+		return "[]", err
+	}
+	defer rows.Close()
+	type sub struct {
+		ID         string `json:"id"`
+		Name       string `json:"name"`
+		Email      string `json:"email"`
+		Phone      string `json:"phone"`
+		Company    string `json:"company"`
+		Message    string `json:"message"`
+		Status     string `json:"status"`
+		CreatedAt  string `json:"createdAt"`
+	}
+	var subs []sub
+	for rows.Next() {
+		var s sub
+		var createdAt string
+		if err := rows.Scan(&s.ID, &s.Name, &s.Email, &s.Phone, &s.Company, &s.Message, &s.Status, &createdAt); err != nil {
+			continue
+		}
+		s.CreatedAt = createdAt
+		subs = append(subs, s)
+	}
+	if subs == nil {
+		return "[]", nil
+	}
+	out, _ := json.Marshal(subs)
+	return string(out), nil
+}
+
+func (r *Repository) DeleteContactSubmission(ctx context.Context, id string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM website_contact_submissions WHERE id = $1`, id)
+	return err
+}
+
 func (r *Repository) SaveContactSubmission(ctx context.Context, submission ContactSubmission) error {
 	if strings.TrimSpace(submission.Email) == "" && strings.TrimSpace(submission.Message) == "" {
 		return fmt.Errorf("email or message is required")

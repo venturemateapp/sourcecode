@@ -2,6 +2,7 @@ package subscriptions
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -10,6 +11,19 @@ import (
 
 type Repository struct {
 	db *pgxpool.Pool
+}
+
+func (r *Repository) CreatePlan(ctx context.Context, name, displayName, description string, priceMonthly, priceYearly float64) error {
+	_, err := r.db.Exec(ctx,
+		`INSERT INTO subscription_plans (id, name, display_name, description, price_monthly, price_yearly)
+		 VALUES ($1, $2, $3, $4, $5, $6)`,
+		uuid.New().String(), name, displayName, description, priceMonthly, priceYearly)
+	return err
+}
+
+func (r *Repository) DeletePlan(ctx context.Context, id string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM subscription_plans WHERE id = $1`, id)
+	return err
 }
 
 func NewRepository(db *pgxpool.Pool) *Repository {
@@ -115,4 +129,39 @@ func (r *Repository) GetUserByID(ctx context.Context, userID string) (string, er
 	var id string
 	err := r.db.QueryRow(ctx, query, userID).Scan(&id)
 	return id, err
+}
+
+func (r *Repository) UpdatePlan(ctx context.Context, planID string, args map[string]interface{}) error {
+	displayName, _ := args["displayName"].(string)
+	description, _ := args["description"].(string)
+	priceMonthly, pmOk := args["priceMonthly"].(float64)
+	priceYearly, pyOk := args["priceYearly"].(float64)
+	isActive, iaOk := args["isActive"].(bool)
+	query := `UPDATE subscription_plans SET updated_at = NOW()`
+	var vals []interface{}
+	i := 1
+	if displayName != "" {
+		query += fmt.Sprintf(", display_name = $%d", i); i++
+		vals = append(vals, displayName)
+	}
+	if description != "" {
+		query += fmt.Sprintf(", description = $%d", i); i++
+		vals = append(vals, description)
+	}
+	if pmOk {
+		query += fmt.Sprintf(", price_monthly = $%d", i); i++
+		vals = append(vals, priceMonthly)
+	}
+	if pyOk {
+		query += fmt.Sprintf(", price_yearly = $%d", i); i++
+		vals = append(vals, priceYearly)
+	}
+	if iaOk {
+		query += fmt.Sprintf(", is_active = $%d", i); i++
+		vals = append(vals, isActive)
+	}
+	query += fmt.Sprintf(" WHERE id = $%d", i)
+	vals = append(vals, planID)
+	_, err := r.db.Exec(ctx, query, vals...)
+	return err
 }

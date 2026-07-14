@@ -1,212 +1,258 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Box, Card, Chip, CircularProgress, Typography } from '@mui/material';
-import { Activity, BarChart3, Building2, ChevronRight, LogOut, Shield, Users, UserCheck } from 'lucide-react';
+import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Switch } from '@mui/material';
+import { Activity, BarChart3, Bell, BookOpen, Building2, ChevronRight, Globe, LogOut, Mail, Plus, Shield, Trash2, Users, UserPlus, UserX } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { graphqlRequest } from '../../lib/api';
 
-interface AdminDashboardData {
-  totalUsers: number;
-  activeUsers: number;
-  totalBusinesses: number;
-  plansBreakdown: Array<{ planName: string; count: number }>;
-  recentSignups: Array<{ id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; createdAt: string }>;
-}
-
-const ADMIN_DASHBOARD_QUERY = `
-  query { adminDashboard { totalUsers activeUsers totalBusinesses plansBreakdown { planName count } recentSignups { id firstName surname email status isAdmin createdAt } } }
-`;
-
-type AdminView = 'dashboard' | 'users' | 'businesses';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'templates' | 'submissions' | 'broadcast';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard' },
   { key: 'users', icon: Users, label: 'Users' },
   { key: 'businesses', icon: Building2, label: 'Businesses' },
+  { key: 'plans', icon: BookOpen, label: 'Plans' },
+  { key: 'investors', icon: Globe, label: 'Investors' },
+  { key: 'submissions', icon: Mail, label: 'Leads' },
+  { key: 'broadcast', icon: Bell, label: 'Broadcast' },
 ];
+
+interface DashboardData {
+  totalUsers: number; activeUsers: number; totalBusinesses: number;
+  plansBreakdown: Array<{ planName: string; count: number }>;
+  recentSignups: Array<{ id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; createdAt: string }>;
+}
+
+interface UserRow { id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; createdAt: string; }
+interface BizRow { id: string; name: string; industry: string; status: string; ownerName: string; ownerEmail: string; }
 
 export function AdminDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [view, setView] = useState<AdminView>('dashboard');
-  const [data, setData] = useState<AdminDashboardData | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [allUsers, setAllUsers] = useState<AdminDashboardData['recentSignups']>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [biz, setBiz] = useState<BizRow[]>([]);
+  const [subs, setSubs] = useState<Array<{ id?: string; name: string; displayName?: string; description?: string; isActive?: boolean; priceMonthly?: number }>>([]);
+  const [leads, setLeads] = useState<Array<{ id: string; name: string; email: string; message: string; createdAt: string }>>([]);
+  const [investors, setInvestors] = useState<Array<{ id: string; name: string; type: string; location: string }>>([]);
+  const [modal, setModal] = useState<{ type: string; data?: any } | null>(null);
+  const [broadcastMsg, setBroadcastMsg] = useState('');
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!user?.isAdmin) {
-      navigate('/vm', { replace: true });
-      return;
-    }
+    if (!user?.isAdmin) { navigate('/vm', { replace: true }); }
   }, [user, navigate]);
 
-  const load = useCallback(async () => {
-    try {
-      const d = await graphqlRequest<{ adminDashboard: AdminDashboardData }>(ADMIN_DASHBOARD_QUERY);
-      setData(d.adminDashboard);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+  const loadData = useCallback(async () => {
+    const d = await graphqlRequest<{ adminDashboard: DashboardData }>('query { adminDashboard { totalUsers activeUsers totalBusinesses plansBreakdown { planName count } recentSignups { id firstName surname email status isAdmin createdAt } } }');
+    setData(d.adminDashboard); setLoading(false);
   }, []);
 
   const loadUsers = useCallback(async () => {
-    setUsersLoading(true);
-    try {
-      const d = await graphqlRequest<{ adminUsers: AdminDashboardData['recentSignups'] }>(
-        `query { adminUsers { id firstName surname email status isAdmin createdAt } }`
-      );
-      setAllUsers(d.adminUsers);
-    } catch {
-      // ignore
-    } finally {
-      setUsersLoading(false);
-    }
+    const d = await graphqlRequest<{ adminUsers: UserRow[] }>('query { adminUsers { id firstName surname email status isAdmin createdAt } }');
+    setUsers(d.adminUsers);
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
-  useEffect(() => { if (view === 'users') void loadUsers(); }, [view, loadUsers]);
+  const loadBiz = useCallback(async () => {
+    const d = await graphqlRequest<{ adminBusinesses: string }>('query { adminBusinesses }');
+    try { setBiz(JSON.parse(d.adminBusinesses)); } catch {}
+  }, []);
+
+  const loadSubs = useCallback(async () => { /* plans list from existing query */ }, []);
+
+  const loadLeads = useCallback(async () => {
+    try { const d = await graphqlRequest<{ adminContactSubmissions: string }>('query { adminContactSubmissions }'); setLeads(JSON.parse(d.adminContactSubmissions)); } catch {}
+  }, []);
+
+  const loadInvestors = useCallback(async () => {
+    try { const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string }> }>('query { investors { id name type location } }'); setInvestors(d.investors); } catch {}
+  }, []);
+
+  useEffect(() => { if (view === 'dashboard') loadData(); }, [view, loadData]);
+  useEffect(() => { if (view === 'users') loadUsers(); }, [view, loadUsers]);
+  useEffect(() => { if (view === 'businesses') loadBiz(); }, [view, loadBiz]);
+  useEffect(() => { if (view === 'submissions') loadLeads(); }, [view, loadLeads]);
+  useEffect(() => { if (view === 'investors') loadInvestors(); }, [view, loadInvestors]);
+
+  const exec = async (mutation: string, vars: any) => {
+    setBusy(true); try { await graphqlRequest(mutation, vars); /* reload */ } catch (e: any) { alert(e.message); } finally { setBusy(false); setModal(null); }
+  };
+
+  const AdminNav = () => (
+    <Box sx={{ width: 220, flexShrink: 0, bgcolor: '#07130f', borderRight: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ p: 2, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Shield size={20} color="#f59e0b" />
+        <Box><Typography sx={{ color: '#fff', fontSize: 14, fontWeight: 800 }}>Admin</Typography><Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 9 }}>{user?.email}</Typography></Box>
+      </Box>
+      <Box sx={{ flex: 1, py: 0.5 }}>
+        {NAV_ITEMS.map(item => {
+          const Icon = item.icon; const active = view === item.key;
+          return (
+            <Box key={item.key} onClick={() => setView(item.key)}
+              sx={{ px: 2, py: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1.5,
+                bgcolor: active ? 'rgba(245,158,11,.1)' : 'transparent',
+                borderRight: active ? '2px solid #f59e0b' : '2px solid transparent',
+                '&:hover': { bgcolor: 'rgba(255,255,255,.03)' } }}>
+              <Icon size={16} color={active ? '#f59e0b' : 'rgba(255,255,255,.4)'} />
+              <Typography sx={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'rgba(255,255,255,.6)' }}>{item.label}</Typography>
+              {active && <ChevronRight size={12} color="#f59e0b" style={{ marginLeft: 'auto' }} />}
+            </Box>
+          );
+        })}
+      </Box>
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,.06)', cursor: 'pointer' }} onClick={() => { logout(); navigate('/vm/auth/signin'); }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}><LogOut size={15} color="rgba(255,255,255,.4)" /><Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}>Log out</Typography></Box>
+      </Box>
+    </Box>
+  );
+
+  const PageTitle = ({ title }: { title: string }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
+      <Typography sx={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{title}</Typography>
+      <Chip label="Admin" size="small" color="warning" />
+    </Box>
+  );
+
+  const renderDashboard = () => {
+    if (loading) return <Box sx={{ color: 'rgba(255,255,255,.5)' }}><CircularProgress size={16} /> Loading...</Box>;
+    if (!data) return <Typography sx={{ color: 'rgba(255,255,255,.5)' }}>No data</Typography>;
+    return (
+      <>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2, mb: 2 }}>
+          {[{ icon: Users, label: 'Total Users', value: data.totalUsers, color: 'var(--vm-primary-400)' },
+            { icon: UserPlus, label: 'Active Users', value: data.activeUsers, color: '#34d399' },
+            { icon: Building2, label: 'Businesses', value: data.totalBusinesses, color: '#f59e0b' },
+          ].map(s => <Card key={s.label} sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
+            <s.icon size={22} color={s.color} />
+            <Typography sx={{ fontSize: 30, fontWeight: 900, color: '#fff', mt: 0.5 }}>{s.value}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.45)', fontSize: 12 }}>{s.label}</Typography>
+          </Card>)}
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <Card sx={{ p: 2, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
+            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1 }}>Plans</Typography>
+            {data.plansBreakdown.map(p => <Box key={p.planName} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+              <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, textTransform: 'capitalize' }}>{p.planName}</Typography>
+              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 12 }}>{p.count}</Typography>
+            </Box>)}
+          </Card>
+          <Card sx={{ p: 2, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
+            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1 }}>Recent Signups</Typography>
+            {data.recentSignups.slice(0, 5).map(u => <Box key={u.id} sx={{ py: 0.4, borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+              <Typography sx={{ color: '#fff', fontSize: 12 }}>{u.firstName} {u.surname}</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10 }}>{u.email}</Typography>
+            </Box>)}
+          </Card>
+        </Box>
+      </>
+    );
+  };
+
+  const renderUsers = () => (
+    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Users size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Users ({users.length})</Typography>
+      </Box>
+      {users.map(u => <Box key={u.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{u.firstName} {u.surname}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{u.email}</Typography></Box>
+        {u.isAdmin && <Chip label="Admin" size="small" color="warning" sx={{ fontSize: 9, mr: 0.5 }} />}
+        <Chip label={u.status} size="small" sx={{ fontSize: 9, mr: 1, color: u.status === 'active' ? '#34d399' : '#f59e0b' }} />
+        {!u.isAdmin && <><Button size="small" sx={{ minWidth: 0, px: 1, color: '#f59e0b', fontSize: 11 }} onClick={() => exec(`mutation { adminSetAdmin(userId:"${u.id}",isAdmin:true) { id } }`, {})}>Make Admin</Button>
+        <Button size="small" sx={{ minWidth: 0, px: 1, color: u.status === 'active' ? '#f59e0b' : '#34d399', fontSize: 11 }}
+          onClick={() => exec(`mutation { adminUpdateUserStatus(userId:"${u.id}",status:"${u.status === 'active' ? 'suspended' : 'active'}") { id } }`, {})}>{u.status === 'active' ? 'Suspend' : 'Activate'}</Button>
+        <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }} onClick={() => { if (confirm('Delete this user?')) exec(`mutation { adminDeleteUser(userId:"${u.id}") }`, {}); }}><Trash2 size={12} /></Button></>}
+      </Box>)}
+    </Card>
+  );
+
+  const renderBiz = () => (
+    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Businesses ({biz.length})</Typography></Box>
+      {biz.map(b => <Box key={b.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.ownerEmail} · {b.industry || 'N/A'}</Typography></Box>
+        <Chip label={b.status} size="small" sx={{ fontSize: 9, color: b.status === 'active' ? '#34d399' : '#f59e0b', mr: 1 }} />
+        <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+          onClick={() => { if (confirm('Delete this business?')) exec(`mutation { adminDeleteBusiness(businessId:"${b.id}") }`, {}); }}><Trash2 size={12} /></Button>
+      </Box>)}
+    </Card>
+  );
+
+  const renderPlans = () => (
+    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <BookOpen size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Plans</Typography>
+        <Button size="small" startIcon={<Plus size={12} />} sx={{ color: '#f59e0b', fontSize: 11, textTransform: 'none' }} onClick={() => setModal({ type: 'createPlan' })}>Add Plan</Button>
+      </Box>
+      {data?.plansBreakdown.map(p => <Box key={p.planName} sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+        <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600, textTransform: 'capitalize' }}>{p.planName}</Typography>
+        <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{p.count} users</Typography>
+      </Box>)}
+    </Card>
+  );
+
+  const renderInvestors = () => (
+    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Globe size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors ({investors.length})</Typography>
+      </Box>
+      {investors.map(inv => <Box key={inv.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography></Box>
+        <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+          onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}><Trash2 size={12} /></Button>
+      </Box>)}
+    </Card>
+  );
+
+  const renderLeads = () => (
+    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
+      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Leads ({leads.length})</Typography></Box>
+      {leads.map(l => <Box key={l.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{l.name || l.email}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{l.email} · {l.message?.slice(0, 80)}</Typography></Box>
+        <Button size="small" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+          onClick={() => { if (confirm('Delete this lead?')) exec(`mutation { adminDeleteContactSubmission(id:"${l.id}") }`, {}); }}><Trash2 size={12} /></Button>
+      </Box>)}
+    </Card>
+  );
+
+  const renderBroadcast = () => (
+    <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
+      <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5 }}>Broadcast Notification</Typography>
+      <TextField fullWidth size="small" placeholder="Title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)}
+        sx={{ mb: 1.5, input: { color: '#fff', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.15)' } }} />
+      <TextField fullWidth multiline minRows={3} placeholder="Message to all users..." value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)}
+        sx={{ mb: 1.5, textarea: { color: '#fff', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.15)' } }} />
+      <Button variant="contained" disabled={busy || !broadcastMsg} onClick={async () => {
+        if (!broadcastTitle || !broadcastMsg) return;
+        await exec(`mutation { adminBroadcastNotification(title:"${broadcastTitle.replace(/"/g, '\\"')}",description:"${broadcastMsg.replace(/"/g, '\\"')}") }`, {});
+        setBroadcastTitle(''); setBroadcastMsg('');
+      }} sx={{ textTransform: 'none' }}>Send to All Users</Button>
+    </Card>
+  );
+
+  const renderContent = () => {
+    switch (view) {
+      case 'dashboard': return renderDashboard();
+      case 'users': return renderUsers();
+      case 'businesses': return renderBiz();
+      case 'plans': return renderPlans();
+      case 'investors': return renderInvestors();
+      case 'submissions': return renderLeads();
+      case 'broadcast': return renderBroadcast();
+      default: return null;
+    }
+  };
 
   if (!user?.isAdmin) return null;
 
-  const renderContent = () => {
-    if (view === 'dashboard') {
-      if (loading) return <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'rgba(255,255,255,.5)' }}><CircularProgress size={16} /><Typography>Loading...</Typography></Box>;
-      if (!data) return <Typography sx={{ color: 'rgba(255,255,255,.5)' }}>Could not load dashboard data.</Typography>;
-      return (
-        <>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2, mb: 3 }}>
-            <Card sx={{ p: 3, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-              <Users size={24} color="var(--vm-primary-400)" />
-              <Typography sx={{ fontSize: 36, fontWeight: 900, color: '#fff', mt: 1 }}>{data.totalUsers}</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 13 }}>Total Users</Typography>
-            </Card>
-            <Card sx={{ p: 3, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-              <UserCheck size={24} color="#34d399" />
-              <Typography sx={{ fontSize: 36, fontWeight: 900, color: '#fff', mt: 1 }}>{data.activeUsers}</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 13 }}>Active Users</Typography>
-            </Card>
-            <Card sx={{ p: 3, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-              <Building2 size={24} color="#f59e0b" />
-              <Typography sx={{ fontSize: 36, fontWeight: 900, color: '#fff', mt: 1 }}>{data.totalBusinesses}</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 13 }}>Total Businesses</Typography>
-            </Card>
-          </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 3 }}>
-            <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15, mb: 1.5 }}>Subscription Plans</Typography>
-              {data.plansBreakdown.map(p => (
-                <Box key={p.planName} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: '1px solid rgba(255,255,255,.05)' }}>
-                  <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: 13, textTransform: 'capitalize' }}>{p.planName}</Typography>
-                  <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>{p.count}</Typography>
-                </Box>
-              ))}
-            </Card>
-            <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15, mb: 1.5 }}>Recent Signups</Typography>
-              {data.recentSignups.map(u => (
-                <Box key={u.id} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, borderBottom: '1px solid rgba(255,255,255,.05)' }}>
-                  <Box>
-                    <Typography sx={{ color: '#fff', fontSize: 13 }}>{u.firstName} {u.surname}</Typography>
-                    <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>{u.email}</Typography>
-                  </Box>
-                  <Chip label={u.status} size="small" sx={{ fontSize: 10, color: u.status === 'active' ? '#34d399' : '#f59e0b' }} />
-                </Box>
-              ))}
-            </Card>
-          </Box>
-        </>
-      );
-    }
-
-    if (view === 'users') {
-      return (
-        <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
-          <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>All Users</Typography>
-          </Box>
-          {usersLoading ? (
-            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 1, color: 'rgba(255,255,255,.5)' }}><CircularProgress size={16} /><Typography>Loading...</Typography></Box>
-          ) : (
-            allUsers.map(u => (
-              <Box key={u.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.05)' }}>
-                <Box>
-                  <Typography sx={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{u.firstName} {u.surname}</Typography>
-                  <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>{u.email}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 0.75 }}>
-                  {u.isAdmin && <Chip label="Admin" size="small" color="warning" sx={{ fontSize: 10 }} />}
-                  <Chip label={u.status} size="small" sx={{ fontSize: 10, color: u.status === 'active' ? '#34d399' : '#f59e0b' }} />
-                </Box>
-              </Box>
-            ))
-          )}
-        </Card>
-      );
-    }
-
-    if (view === 'businesses') {
-      return (
-        <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, p: 3 }}>
-          <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 700, mb: 1 }}>All Businesses</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 13 }}>Total: {data?.totalBusinesses || 0} businesses across the platform.</Typography>
-        </Card>
-      );
-    }
-    return null;
-  };
-
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0f0d' }}>
-      {/* Admin Sidebar */}
-      <Box sx={{ width: 240, flexShrink: 0, bgcolor: '#07130f', borderRight: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ p: 2.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Shield size={22} color="#f59e0b" />
-          <Box>
-            <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>{user.email}</Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ flex: 1, py: 1 }}>
-          {NAV_ITEMS.map(item => {
-            const Icon = item.icon;
-            const active = view === item.key;
-            return (
-              <Box key={item.key} onClick={() => setView(item.key)}
-                sx={{ px: 2.5, py: 1.25, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1.5,
-                  bgcolor: active ? 'rgba(245,158,11,.1)' : 'transparent',
-                  borderRight: active ? '2px solid #f59e0b' : '2px solid transparent',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,.03)' } }}>
-                <Icon size={17} color={active ? '#f59e0b' : 'rgba(255,255,255,.5)'} />
-                <Typography sx={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'rgba(255,255,255,.7)' }}>
-                  {item.label}
-                </Typography>
-                {active && <ChevronRight size={14} color="#f59e0b" style={{ marginLeft: 'auto' }} />}
-              </Box>
-            );
-          })}
-        </Box>
-
-        <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,.06)', cursor: 'pointer' }} onClick={() => { logout(); navigate('/vm/auth/signin'); }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <LogOut size={16} color="rgba(255,255,255,.5)" />
-            <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,.5)' }}>Log out</Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Content */}
-      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-          <Typography sx={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>
-            {view === 'dashboard' ? 'Overview' : view === 'users' ? 'Users' : 'Businesses'}
-          </Typography>
-          <Chip label="Admin" size="small" color="warning" />
-        </Box>
+      <AdminNav />
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 3 }, overflow: 'auto', maxHeight: '100vh' }}>
+        <PageTitle title={{ dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans', investors: 'Investors', submissions: 'Leads', broadcast: 'Broadcast' }[view]} />
+        {busy && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: '#f59e0b' }}><CircularProgress size={14} /><Typography sx={{ fontSize: 12 }}>Processing...</Typography></Box>}
         {renderContent()}
       </Box>
     </Box>

@@ -118,6 +118,20 @@ func (r *Repository) Update(ctx context.Context, i *Investor) error {
 	return err
 }
 
+func (r *Repository) Upsert(ctx context.Context, args map[string]interface{}) error {
+	id := args["id"].(string)
+	name := args["name"].(string)
+	investorType := args["type"].(string)
+	location := args["location"].(string)
+	thesis := args["thesis"].(string)
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO investors (id, name, type, location, focus_industries, thesis, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5::jsonb,$6,NOW(),NOW())
+		ON CONFLICT (id) DO UPDATE SET name=$2, type=$3, location=$4, focus_industries=$5::jsonb, thesis=$6, updated_at=NOW()`,
+		id, name, investorType, location, args["focusIndustries"].(string), thesis)
+	return err
+}
+
 func (r *Repository) Delete(ctx context.Context, id string) error {
 	_, err := r.db.Exec(ctx, "DELETE FROM investors WHERE id=$1", id)
 	return err
