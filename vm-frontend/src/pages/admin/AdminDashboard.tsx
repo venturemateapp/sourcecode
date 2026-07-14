@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Card, Chip, CircularProgress, TextField, Typography, Avatar } from '@mui/material';
+import { Box, Button, Card, Chip, CircularProgress, TextField, Typography, Avatar } from '@mui/material';
 import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
@@ -178,10 +178,10 @@ export function AdminDashboard() {
         <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{u.firstName} {u.surname}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{u.email}</Typography></Box>
         {u.isAdmin && <Chip label="Admin" size="small" color="warning" sx={{ fontSize: 9, mr: 0.5 }} />}
         <Chip label={u.status} size="small" sx={{ fontSize: 9, mr: 1, color: u.status === 'active' ? '#34d399' : '#f59e0b' }} />
-        {!u.isAdmin && <><GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#f59e0b', fontSize: 11 }} onClick={() => exec(`mutation { adminSetAdmin(userId:"${u.id}",isAdmin:true) { id } }`, {})}>Make Admin</GradientButton>
-        <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: u.status === 'active' ? '#f59e0b' : '#34d399', fontSize: 11 }}
-          onClick={() => exec(`mutation { adminUpdateUserStatus(userId:"${u.id}",status:"${u.status === 'active' ? 'suspended' : 'active'}") { id } }`, {})}>{u.status === 'active' ? 'Suspend' : 'Activate'}</GradientButton>
-        <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }} onClick={() => { if (confirm('Delete this user?')) exec(`mutation { adminDeleteUser(userId:"${u.id}") }`, {}); }}><Trash2 size={12} /></GradientButton></>}
+        {!u.isAdmin && <><Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#f59e0b', fontSize: 11 }} onClick={() => exec(`mutation { adminSetAdmin(userId:"${u.id}",isAdmin:true) { id } }`, {})}>Make Admin</Button>
+        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: u.status === 'active' ? '#f59e0b' : '#34d399', fontSize: 11 }}
+          onClick={() => exec(`mutation { adminUpdateUserStatus(userId:"${u.id}",status:"${u.status === 'active' ? 'suspended' : 'active'}") { id } }`, {})}>{u.status === 'active' ? 'Suspend' : 'Activate'}</Button>
+        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }} onClick={() => { if (confirm('Delete this user?')) exec(`mutation { adminDeleteUser(userId:"${u.id}") }`, {}); }}><Trash2 size={12} /></Button></>}
       </Box>)}
     </Card>
   );
@@ -192,8 +192,8 @@ export function AdminDashboard() {
       {biz.map(b => <Box key={b.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
         <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.ownerEmail} · {b.industry || 'N/A'}</Typography></Box>
         <Chip label={b.status} size="small" sx={{ fontSize: 9, color: b.status === 'active' ? '#34d399' : '#f59e0b', mr: 1 }} />
-        <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-          onClick={() => { if (confirm('Delete this business?')) exec(`mutation { adminDeleteBusiness(businessId:"${b.id}") }`, {}); }}><Trash2 size={12} /></GradientButton>
+        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+          onClick={() => { if (confirm('Delete this business?')) exec(`mutation { adminDeleteBusiness(businessId:"${b.id}") }`, {}); }}><Trash2 size={12} /></Button>
       </Box>)}
     </Card>
   );
@@ -224,8 +224,8 @@ export function AdminDashboard() {
         {investors.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 12, p: 2 }}>No investors yet. Add the first one.</Typography>}
         {investors.map(inv => <Box key={inv.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
           <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography></Box>
-          <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-            onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}><Trash2 size={12} /></GradientButton>
+          <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+            onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}><Trash2 size={12} /></Button>
         </Box>)}
       </Card>
       {invForm.name && (
@@ -259,8 +259,8 @@ export function AdminDashboard() {
       <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Leads ({leads.length})</Typography></Box>
       {leads.map(l => <Box key={l.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
         <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{l.name || l.email}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{l.email} · {l.message?.slice(0, 80)}</Typography></Box>
-        <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-          onClick={() => { if (confirm('Delete this lead?')) exec(`mutation { adminDeleteContactSubmission(id:"${l.id}") }`, {}); }}><Trash2 size={12} /></GradientButton>
+        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+          onClick={() => { if (confirm('Delete this lead?')) exec(`mutation { adminDeleteContactSubmission(id:"${l.id}") }`, {}); }}><Trash2 size={12} /></Button>
       </Box>)}
     </Card>
   );
@@ -293,8 +293,8 @@ export function AdminDashboard() {
         {providers.map(p => <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
           <Avatar src={p.picture || ''} sx={{ width: 32, height: 32, mr: 1.5, bgcolor: '#f59e0b' }}>{p.name[0]}</Avatar>
           <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{p.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{p.title} · {p.category} · ${p.rateHourly}/hr</Typography></Box>
-          <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-            onClick={() => { if (confirm('Delete provider?')) exec(`mutation { adminDeleteProvider(id:"${p.id}") }`, {}); }}><Trash2 size={12} /></GradientButton>
+          <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+            onClick={() => { if (confirm('Delete provider?')) exec(`mutation { adminDeleteProvider(id:"${p.id}") }`, {}); }}><Trash2 size={12} /></Button>
         </Box>)}
       </Card>
       {provForm.name && (
@@ -352,10 +352,10 @@ export function AdminDashboard() {
         return <Box key={b.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
           <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.projectTitle}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.providerName} → {b.userName} · {b.status}</Typography></Box>
           {isPending && <>
-            <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#34d399', fontSize: 11 }}
-              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"approved") { id } }`, {})}><CheckCircle size={14} /></GradientButton>
-            <GradientButton size="sm" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"rejected") { id } }`, {})}><XCircle size={14} /></GradientButton>
+            <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#34d399', fontSize: 11 }}
+              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"approved") { id } }`, {})}><CheckCircle size={14} /></Button>
+            <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
+              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"rejected") { id } }`, {})}><XCircle size={14} /></Button>
           </>}
           {!isPending && <Chip label={b.status} size="small" sx={{ fontSize: 10, color: b.status === 'approved' ? '#34d399' : '#ef4444' }} />}
         </Box>;
