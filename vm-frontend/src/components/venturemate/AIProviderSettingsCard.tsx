@@ -1,4 +1,4 @@
-import { Box, Card, Typography } from '@mui/material';
+import { Card, Typography } from '@mui/material';
 
 export function AIProviderSettingsCard() {
   return (
