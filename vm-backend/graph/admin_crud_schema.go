@@ -306,9 +306,14 @@ func init() {
 			}
 			actionURL, _ := p.Args["actionUrl"].(string)
 			actionLabel, _ := p.Args["actionLabel"].(string)
+			if AppContainer.NotificationService != nil {
+				userEmails := userEmailsFromRepo(p.Context)
+				return true, AppContainer.NotificationService.BroadcastWithEmail(p.Context,
+					p.Args["title"].(string), p.Args["description"].(string),
+					notifType, actionURL, actionLabel, userEmails)
+			}
 			return true, AppContainer.NotificationRepo.Broadcast(p.Context,
-				p.Args["title"].(string),
-				p.Args["description"].(string),
+				p.Args["title"].(string), p.Args["description"].(string),
 				notifType, actionURL, actionLabel)
 		},
 	})
@@ -345,4 +350,21 @@ func fetchAdminBusiness(ctx context.Context, bizID string) (map[string]interface
 		"status": b.Status, "ownerName": ownerName, "ownerEmail": ownerEmail,
 		"createdAt": b.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}, nil
+}
+
+func userEmailsFromRepo(ctx context.Context) []string {
+	if AppContainer == nil || AppContainer.UserRepo == nil {
+		return nil
+	}
+	users, err := AppContainer.UserRepo.ListAllUsers(ctx)
+	if err != nil {
+		return nil
+	}
+	var emails []string
+	for _, u := range users {
+		if u.Email != "" {
+			emails = append(emails, u.Email)
+		}
+	}
+	return emails
 }
