@@ -85,6 +85,7 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 		"website":           &graphql.Field{Type: graphql.String},
 		"onboarded":         &graphql.Field{Type: graphql.Boolean},
 		"status":            &graphql.Field{Type: graphql.String},
+		"isAdmin":           &graphql.Field{Type: graphql.Boolean},
 		"preferredCurrency": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 })

@@ -87,6 +87,7 @@ const LOGIN_MUTATION = `
         picture
         onboarded
         status
+        isAdmin
       }
     }
   }
