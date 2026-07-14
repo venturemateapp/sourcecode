@@ -183,7 +183,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
   );
 }
 
-export function WebsiteBuilder({}: { onViewChange?: (_view: ViewType) => void }) {
+export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => void }) {
   const { selectedBusiness } = useBusiness();
   const [website, setWebsite] = useState<WebsiteRecord | null>(null);
   const [loading, setLoading] = useState(false);

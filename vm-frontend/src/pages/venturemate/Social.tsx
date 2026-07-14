@@ -51,8 +51,8 @@ const platformIcons: Record<string, React.ComponentType<{ size?: number; color?:
   facebook: Globe,
 };
 
-export function SocialPage(_props: SocialProps) {
-  const [, _setActiveTab] = useState(0);
+export function SocialPage(_props: unknown) {
+  const [activeTab] = useState(0);
 
   const getStatusColor = (status: string) => {
     switch (status) {

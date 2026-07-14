@@ -62,7 +62,7 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
   );
 }
 
-export function PitchDeck({}: { onViewChange?: (_view: ViewType) => void }) {
+export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) {
   const { selectedBusiness } = useBusiness();
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its pitch deck with AI." />;
 

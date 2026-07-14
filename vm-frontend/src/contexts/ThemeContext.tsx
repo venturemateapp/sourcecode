@@ -20,7 +20,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // VentureMate is a dark-theme product. These methods remain for compatibility
   // with older components, but intentionally keep the application in dark mode.
-  const setTheme = (_theme: Theme) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const setTheme = (theme: Theme) => {
     document.documentElement.classList.add('dark');
     localStorage.setItem(STORAGE_KEY, 'dark');
   };
@@ -33,6 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error('useTheme must be used within a ThemeProvider');

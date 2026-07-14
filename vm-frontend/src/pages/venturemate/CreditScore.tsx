@@ -122,7 +122,7 @@ interface ApplicationData {
   documents: string[];
 }
 
-export function CreditScorePage({ onViewChange: _onViewChange }: CreditScoreProps) {
+export function CreditScorePage(_props: CreditScoreProps) {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
   const [creditScore, setCreditScore] = useState({

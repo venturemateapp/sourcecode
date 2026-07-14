@@ -95,11 +95,7 @@ const fallbackPlanIcons: Record<string, React.ComponentType<{ size?: number; col
   pro_plus: TrendingUp,
 };
 
-interface BillingProps {
-  onViewChange?: (_view: ViewType) => void;
-}
-
-export function BillingPage(_props: BillingProps) {
+export function BillingPage(_props: unknown) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();

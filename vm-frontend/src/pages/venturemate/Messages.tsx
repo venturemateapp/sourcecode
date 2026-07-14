@@ -154,7 +154,7 @@ const conversationMessages: Record<string, Message[]> = {
 // Common emojis
 const commonEmojis = ['😀', '😂', '🥰', '😎', '🤔', '👍', '👎', '👏', '🙏', '🔥', '💯', '❤️', '🎉', '✅', '⚠️', '🚀', '💡', '📊', '💰', '🤝', '👋', '😊', '😉', '🤯', '💪'];
 
-export function MessagesPage({ onViewChange: _onViewChange }: MessagesProps) {
+export function MessagesPage(_props: MessagesProps) {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(conversations[0]);
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [messageInput, setMessageInput] = useState('');
@@ -384,7 +384,7 @@ export function MessagesPage({ onViewChange: _onViewChange }: MessagesProps) {
               <MenuItem
                 key={filter.value}
                 onClick={() => {
-                  setActiveFilter(filter.value as any);
+                  setActiveFilter(filter.value as 'all' | 'unread' | 'investors' | 'cofounders');
                   setFilterAnchorEl(null);
                 }}
                 sx={{
@@ -851,7 +851,7 @@ export function MessagesPage({ onViewChange: _onViewChange }: MessagesProps) {
             ].map((tab) => (
               <Box
                 key={tab.value}
-                onClick={() => setNewChatType(tab.value as any)}
+                onClick={() => setNewChatType(tab.value as 'all' | 'investors' | 'cofounders' | 'team')}
                 sx={{
                   px: 2,
                   py: 0.75,

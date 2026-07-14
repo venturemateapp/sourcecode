@@ -97,8 +97,8 @@ const categoryIcons: Record<string, React.ComponentType<{ size?: number; color?:
   other: FileIcon,
 };
 
-export function DocumentsPage({}: DocumentsProps) {
-  const { selectedBusiness, userId: _userId, refreshBusiness } = useBusiness();
+export function DocumentsPage(_props: DocumentsProps) {
+  const { selectedBusiness, refreshBusiness } = useBusiness();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

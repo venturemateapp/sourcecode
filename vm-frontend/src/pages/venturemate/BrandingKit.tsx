@@ -157,7 +157,7 @@ function VariationsGrid({ brand }: { brand: BrandKitWithConcept }) {
   );
 }
 
-export function BrandingKitPage({}: BrandingKitProps) {
+export function BrandingKitPage(_props: BrandingKitProps) {
   const { selectedBusiness } = useBusiness();
   const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);

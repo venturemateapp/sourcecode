@@ -177,7 +177,7 @@ function VentureMateApp() {
     if (!onboardingCompleted && !location.pathname.includes('/onboarding')) {
       navigate('/vm/onboarding', { replace: true });
     }
-  }, []);
+  }, [location.pathname, navigate, onboardingCompleted]);
 
   if (!onboardingCompleted && !location.pathname.includes('/onboarding')) {
     return null;

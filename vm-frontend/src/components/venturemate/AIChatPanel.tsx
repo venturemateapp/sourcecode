@@ -492,20 +492,7 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
                   ))}
                 </Box>
               )}
-              {message.operations && message.operations.length > 0 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
-                  {message.operations.map((operation, index) => (
-                    <Chip
-                      key={`${operation.tool}-${index}`}
-                      size="small"
-                      color={operation.success ? 'success' : 'warning'}
-                      variant="outlined"
-                      label={`${operation.success ? 'Completed' : 'Needs attention'}: ${operation.tool}`}
-                      sx={{ justifyContent: 'flex-start', maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }}
-                    />
-                  ))}
-                </Box>
-              )}
+
             </Box>
           </Box>
         ))}

@@ -5,11 +5,7 @@ import { useBusiness } from '../../contexts/BusinessContext';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { AIChatPanel } from '../../components/venturemate/AIChatPanel';
 
-interface AIAssistantProps {
-  onViewChange?: (view: ViewType) => void;
-}
-
-export function AIAssistant(_props: AIAssistantProps) {
+export function AIAssistant(_props: unknown) {
   const { selectedBusiness } = useBusiness();
 
   if (!selectedBusiness) {

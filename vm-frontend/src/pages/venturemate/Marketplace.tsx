@@ -138,7 +138,7 @@ interface MarketplaceProps {
 
 const bookingSteps = ['Service Details', 'Project Requirements', 'Review & Confirm'];
 
-export function MarketplacePage({ onViewChange: _onViewChange }: MarketplaceProps) {
+export function MarketplacePage(_props: MarketplaceProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeTab, setActiveTab] = useState(0);

@@ -301,7 +301,7 @@ interface CRMProps {
   onViewChange?: (_view: ViewType) => void;
 }
 
-export function CRMPage({ onViewChange: _onViewChange }: CRMProps) {
+export function CRMPage(_props: CRMProps) {
   const [activeTab, setActiveTab] = useState(0);
   
   // Add Contact Modal State

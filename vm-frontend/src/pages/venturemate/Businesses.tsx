@@ -35,31 +35,29 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registrations, setRegistrations] = useState<Record<string, BusinessRegistrationStatus>>({});
 
-  const fetchRegistrations = useCallback(async () => {
-    if (businessList.length === 0) return;
-    try {
-      const results = await Promise.all(
-        businessList.map(b =>
-          graphqlRequest<{ businessRegistrations: BusinessRegistrationStatus[] }>(REGISTRATIONS_QUERY, {
-            businessId: b.id,
-          }).catch(() => ({ businessRegistrations: [] }))
-        )
-      );
-      const map: Record<string, BusinessRegistrationStatus> = {};
-      results.forEach((res, idx) => {
-        if (res.businessRegistrations.length > 0) {
-          map[businessList[idx].id] = res.businessRegistrations[0];
-        }
-      });
-      setRegistrations(map);
-    } catch {
-      // silently fail
-    }
-  }, [businessList]);
-
   useEffect(() => {
-    fetchRegistrations();
-  }, [fetchRegistrations]);
+    if (businessList.length === 0) return;
+    (async () => {
+      try {
+        const results = await Promise.all(
+          businessList.map(b =>
+            graphqlRequest<{ businessRegistrations: BusinessRegistrationStatus[] }>(REGISTRATIONS_QUERY, {
+              businessId: b.id,
+            }).catch(() => ({ businessRegistrations: [] }))
+          )
+        );
+        const map: Record<string, BusinessRegistrationStatus> = {};
+        results.forEach((res, idx) => {
+          if (res.businessRegistrations.length > 0) {
+            map[businessList[idx].id] = res.businessRegistrations[0];
+          }
+        });
+        setRegistrations(map);
+      } catch {
+        // silently fail
+      }
+    })();
+  }, [businessList]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, business: Business) => {
     setAnchorEl(event.currentTarget);

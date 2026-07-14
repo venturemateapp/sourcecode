@@ -115,7 +115,7 @@ const DELETE_INVOICE_MUTATION = `
   }
 `;
 
-export function BankingPage({ onViewChange: _onViewChange }: BankingProps) {
+export function BankingPage(_props: BankingProps) {
   const { format, rates } = useCurrency();
   const { user } = useAuth();
   const { selectedBusiness } = useBusiness();

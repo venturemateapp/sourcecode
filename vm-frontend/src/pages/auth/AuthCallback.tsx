@@ -4,14 +4,11 @@ import { Box, Typography, CircularProgress } from '@mui/material'
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams()
-  const [status, setStatus] = useState<'processing' | 'error'>('processing')
+  const token = searchParams.get('token')
+  const [status, setStatus] = useState<'processing' | 'error'>(token ? 'processing' : 'error')
 
   useEffect(() => {
-    const token = searchParams.get('token')
-    if (!token) {
-      setStatus('error')
-      return
-    }
+    if (!token) return
 
     try {
       const parts = token.split('.')
@@ -36,7 +33,7 @@ export function AuthCallback() {
     } catch {
       setStatus('error')
     }
-  }, [searchParams])
+  }, [token])
 
   if (status === 'error') {
     return (
