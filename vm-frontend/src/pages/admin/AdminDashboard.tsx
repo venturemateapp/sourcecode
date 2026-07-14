@@ -228,29 +228,29 @@ export function AdminDashboard() {
             onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}><Trash2 size={12} /></Button>
         </Box>)}
       </Card>
-      {invForm.name && (
-        <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5 }}>{invForm.id ? 'Edit' : 'New'} Investor</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+      <Dialog open={!!invForm.name} onClose={() => setInvForm({...invForm, name: ''})} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 } }}>
+        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid var(--vm-border-subtle)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             {['name','location','industries','thesis'].map(f => (
               <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
-                sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 12 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} />
+                sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} />
             ))}
             <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)', fontSize: 12 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}
-              SelectProps={{ native: true }}>
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} SelectProps={{ native: true }}>
               {['vc','angel','accelerator','pe'].map(t => <option key={t} value={t}>{t}</option>)}
             </TextField>
           </Box>
-          <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
-            <GradientButton size="sm" disabled={busy} onClick={async () => {
-              await exec(`mutation { adminUpsertInvestor(id:"${invForm.id || crypto.randomUUID()}",name:"${invForm.name.replace(/"/g,'\\"')}",type:"${invForm.type}",location:"${invForm.location.replace(/"/g,'\\"')}",focusIndustries:"${JSON.stringify(invForm.industries.split(',').map(s=>s.trim()))}",thesis:"${invForm.thesis.replace(/"/g,'\\"')}") }`, {});
-              setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
-            }} sx={{ textTransform: 'none' }}>Save</GradientButton>
-            <GradientButton variant="ghost" size="sm" onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' })} sx={{ textTransform: 'none' }}>Cancel</GradientButton>
-          </Box>
-        </Card>
-      )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' })}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={busy} onClick={async () => {
+            await exec(`mutation { adminUpsertInvestor(id:"${invForm.id || crypto.randomUUID()}",name:"${invForm.name.replace(/"/g,'\\"')}",type:"${invForm.type}",location:"${invForm.location.replace(/"/g,'\\"')}",focusIndustries:"${JSON.stringify(invForm.industries.split(',').map(s=>s.trim()))}",thesis:"${invForm.thesis.replace(/"/g,'\\"')}") }`, {});
+            setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
+          }}>Save</GradientButton>
+        </DialogActions>
+      </Dialog>
     </>
   );
 
@@ -297,49 +297,46 @@ export function AdminDashboard() {
             onClick={() => { if (confirm('Delete provider?')) exec(`mutation { adminDeleteProvider(id:"${p.id}") }`, {}); }}><Trash2 size={12} /></Button>
         </Box>)}
       </Card>
-      {provForm.name && (
-        <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5 }}>New Provider</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
+      <Dialog open={!!provForm.name} onClose={() => setProvForm({...provForm, name: ''})} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 } }}>
+        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid var(--vm-border-subtle)' }}>New Provider</DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <TextField size="small" label="Name" value={provForm.name} onChange={e => setProvForm({...provForm, name: e.target.value})}
-              sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Title" value={provForm.title} onChange={e => setProvForm({...provForm, title: e.target.value})}
-              sx={{ input: { color: '#fff', fontSize: 12 }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <Box>
               <input ref={provFileRef} type="file" accept="image/*" hidden onChange={async e => {
                 const f = e.target.files?.[0]; if (!f) return;
-                try {
-                  const r = await (await import('../../lib/api')).uploadFile(f, 'admin', 'provider');
-                  setProvForm({...provForm, picture: r.document.url});
-                } catch { alert('Upload failed'); }
+                try { const r = await (await import('../../lib/api')).uploadFile(f, 'admin', 'provider'); setProvForm({...provForm, picture: r.document.url}); } catch { alert('Upload failed'); }
               }} />
-              <GradientButton variant="outline" size="sm" component="span" onClick={() => provFileRef.current?.click()}
-                sx={{ height: 40, color: provForm.picture ? '#22c55e' : undefined, fontSize: 11 }}>
+              <GradientButton fullWidth variant="outline" size="sm" onClick={() => provFileRef.current?.click()}
+                sx={{ fontSize: 11, color: provForm.picture ? '#22c55e' : 'rgba(255,255,255,.5)' }}>
                 {provForm.picture ? 'Uploaded ✓' : 'Upload Picture'}
               </GradientButton>
               {provForm.picture && <Avatar src={provForm.picture} sx={{ width: 28, height: 28, mt: 0.5, mx: 'auto' }} />}
             </Box>
             <TextField select size="small" label="Category" value={provForm.category} onChange={e => setProvForm({...provForm, category: e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}
-              SelectProps={{ native: true }}>
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} SelectProps={{ native: true }}>
               {['engineering','design','marketing','legal','accounting','consulting','hr','media'].map(c => <option key={c} value={c}>{c}</option>)}
             </TextField>
             <TextField size="small" label="Skills (comma)" value={provForm.skills} onChange={e => setProvForm({...provForm, skills: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
           </Box>
           <TextField fullWidth size="small" label="Bio" multiline minRows={2} value={provForm.bio} onChange={e => setProvForm({...provForm, bio: e.target.value})}
-            sx={{ mt: 1.5, textarea: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
-          <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
-            <GradientButton size="sm" disabled={busy || !provForm.name} onClick={async () => {
-              await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim()))}") { id } }`, {});
-              setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
-            }} sx={{ textTransform: 'none' }}>Save</GradientButton>
-            <GradientButton variant="ghost" size="sm" onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' })} sx={{ textTransform: 'none' }}>Cancel</GradientButton>
-          </Box>
-        </Card>
-      )}
+            sx={{ mt: 2, textarea: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' })}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={busy || !provForm.name} onClick={async () => {
+            await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim()))}") { id } }`, {});
+            setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+          }}>Save</GradientButton>
+        </DialogActions>
+      </Dialog>
     </>
   );
 
