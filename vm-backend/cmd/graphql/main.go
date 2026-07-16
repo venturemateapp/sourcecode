@@ -226,6 +226,7 @@ func main() {
 	http.HandleFunc("/api/public-sites/allow-domain", publicSites.AllowDomain)
 	http.HandleFunc("/api/public-sites/subdomain-availability", publicSites.SubdomainAvailability)
 	http.HandleFunc("/api/public-sites/contact", publicSites.SubmitContact)
+	http.HandleFunc("/ws/chat", container.ChatHub.HandleWebSocket)
 	http.Handle("/", publicSites)
 
 	port := os.Getenv("PORT")

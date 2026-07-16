@@ -359,7 +359,7 @@ const statsCards = b ? [
                       {milestone.description}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar src={`https://i.pravatar.cc/150?u=${milestone.assignee}`} sx={{ width: 24, height: 24 }} />
+                      <Avatar sx={{ width: 24, height: 24, fontSize: 10, bgcolor: 'var(--vm-primary-600)' }}>{milestone.assignee?.charAt(0) || '?'}</Avatar>
                       <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
                         Due {new Date(milestone.dueDate).toLocaleDateString('en-GB')}
                       </Typography>

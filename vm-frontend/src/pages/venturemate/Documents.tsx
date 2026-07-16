@@ -463,7 +463,7 @@ export function DocumentsPage(_props: DocumentsProps) {
 
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={`https://i.pravatar.cc/150?u=${doc.uploadedBy}`} sx={{ width: 24, height: 24 }} />
+                    <Avatar sx={{ width: 24, height: 24, fontSize: 10, bgcolor: 'var(--vm-primary-600)' }}>{doc.uploadedBy?.charAt(0) || '?'}</Avatar>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
                       {formatDate(doc.lastModified)}
                     </Typography>
@@ -537,7 +537,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                  <Avatar src={`https://i.pravatar.cc/150?u=${doc.uploadedBy}`} sx={{ width: 28, height: 28 }} />
+                  <Avatar sx={{ width: 28, height: 28, fontSize: 11, bgcolor: 'var(--vm-primary-600)' }}>{doc.uploadedBy?.charAt(0) || '?'}</Avatar>
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', width: 80 }}>
                     {formatDate(doc.lastModified)}
                   </Typography>
