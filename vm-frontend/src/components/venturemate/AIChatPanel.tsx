@@ -27,6 +27,7 @@ import type { ProposedChange } from './AICreationStudio';
 import { useBusiness } from '../../contexts/BusinessContext';
 
 import { graphqlRequest, uploadFile } from '../../lib/api';
+import { AIResponseRenderer } from '../ai-response/AIResponseRenderer';
 
 interface Attachment {
   id: string;
@@ -482,9 +483,13 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
                 border: message.role === 'assistant' ? '1px solid var(--vm-border-subtle)' : 'none',
               }}
             >
-              <Typography sx={{ fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.55, overflowWrap: 'anywhere' }}>
-                {message.content}
-              </Typography>
+              {message.role === 'assistant' ? (
+                <AIResponseRenderer text={message.content} />
+              ) : (
+                <Typography sx={{ fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.55, overflowWrap: 'anywhere' }}>
+                  {message.content}
+                </Typography>
+              )}
               {message.attachments && message.attachments.length > 0 && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1, maxWidth: '100%' }}>
                   {message.attachments.map(file => (
