@@ -145,13 +145,7 @@ export function BillingPage() {
     return Math.round((savings / monthlyCost) * 100);
   };
 
-  const usage = subscription ? (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', fontStyle: 'italic' }}>
-        Usage tracking coming soon
-      </Typography>
-    </Box>
-  ) : null;
+  const usage = null;
 
   const selectedPlanName = selectedUpgradePlan ? displayPlans.find(p => p.id === selectedUpgradePlan)?.displayName : '';
 

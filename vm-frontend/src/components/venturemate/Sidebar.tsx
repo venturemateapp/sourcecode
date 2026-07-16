@@ -17,7 +17,7 @@ import { useSubscription } from '../../contexts/SubscriptionContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { PlanSelector } from '../subscription/PlanSelector';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../shared/toast';
+
 
 // Import Lucide icons
 import {
@@ -149,19 +149,12 @@ export function Sidebar({ onClose, activeView, onViewChange }: SidebarProps) {
     );
   };
 
-  const toast = useToast();
-  const comingSoon: ViewType[] = useMemo(() => ['social', 'marketplace', 'crm'], []);
-
   const badgeCounts: Record<string, number> = useMemo(() => ({
     documents: selectedBusiness?.documents?.length || 0,
     milestones: selectedBusiness?.milestones?.filter(m => m.status === 'pending' || m.status === 'overdue').length || 0,
   }), [selectedBusiness?.documents?.length, selectedBusiness?.milestones]);
 
   const handleViewChange = (view: ViewType) => {
-    if (comingSoon.includes(view)) {
-      toast.info('Coming Soon', { description: 'We\'re building something great here — stay tuned!' });
-      return;
-    }
     onViewChange(view);
     onClose?.();
   };

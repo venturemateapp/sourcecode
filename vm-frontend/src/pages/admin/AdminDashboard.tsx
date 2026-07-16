@@ -1,23 +1,24 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar } from '@mui/material';
-import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle } from 'lucide-react';
+import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, useMediaQuery, useTheme, Tooltip } from '@mui/material';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle, Search, X, Filter, ChevronDown, MoreHorizontal, Phone, Clock, CheckCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support';
 
-const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string }> = [
-  { key: 'dashboard', icon: BarChart3, label: 'Dashboard' },
-  { key: 'users', icon: Users, label: 'Users' },
-  { key: 'businesses', icon: Building2, label: 'Businesses' },
-  { key: 'plans', icon: BookOpen, label: 'Plans' },
-  { key: 'investors', icon: Globe, label: 'Investors' },
-  { key: 'providers', icon: Briefcase, label: 'Providers' },
-  { key: 'bookings', icon: ThumbsUp, label: 'Bookings' },
-  { key: 'submissions', icon: Mail, label: 'Leads' },
-  { key: 'broadcast', icon: Bell, label: 'Broadcast' },
+const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
+  { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
+  { key: 'users', icon: Users, label: 'Users', desc: 'Manage accounts' },
+  { key: 'businesses', icon: Building2, label: 'Businesses', desc: 'Startup profiles' },
+  { key: 'plans', icon: BookOpen, label: 'Plans', desc: 'Subscription tiers' },
+  { key: 'investors', icon: Globe, label: 'Investors', desc: 'Network partners' },
+  { key: 'providers', icon: Briefcase, label: 'Providers', desc: 'Service providers' },
+  { key: 'bookings', icon: ThumbsUp, label: 'Bookings', desc: 'Appointments' },
+  { key: 'submissions', icon: Mail, label: 'Leads', desc: 'Contact inquiries' },
+  { key: 'broadcast', icon: Bell, label: 'Broadcast', desc: 'Push notifications' },
+  { key: 'support', icon: MessageCircle, label: 'Support', desc: 'Chat sessions' },
 ];
 
 interface DashboardData {
@@ -29,9 +30,62 @@ interface DashboardData {
 interface UserRow { id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; createdAt: string; }
 interface BizRow { id: string; name: string; industry: string; status: string; ownerName: string; ownerEmail: string; }
 
+function StatCard({ icon: Icon, label, value, color, subtitle }: { icon: typeof Users; label: string; value: string | number; color: string; subtitle?: string }) {
+  return (
+    <Card sx={{
+      p: { xs: 2, sm: 2.5 },
+      background: `linear-gradient(135deg, ${color}15 0%, transparent 80%)`,
+      border: `1px solid ${color}25`,
+      borderRadius: 3,
+      position: 'relative',
+      overflow: 'hidden',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: 120,
+        height: 120,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${color}10 0%, transparent 70%)`,
+        transform: 'translate(30px, -30px)',
+      },
+    }}>
+      <Icon size={20} color={color} />
+      <Typography sx={{ fontSize: { xs: 26, sm: 32 }, fontWeight: 900, color: '#fff', mt: 0.5, lineHeight: 1.1 }}>{value}</Typography>
+      <Typography sx={{ color: `${color}cc`, fontSize: 12, fontWeight: 600, mt: 0.25 }}>{label}</Typography>
+      {subtitle && <Typography sx={{ color: 'rgba(255,255,255,.25)', fontSize: 10, mt: 0.5 }}>{subtitle}</Typography>}
+    </Card>
+  );
+}
+
+function StatusBadge({ status, escalated, active }: { status: string; escalated?: string; active?: string }) {
+  const map: Record<string, { color: string; bg: string }> = {
+    active: { color: '#34d399', bg: 'rgba(52,211,153,.15)' },
+    inactive: { color: '#94a3b8', bg: 'rgba(148,163,184,.12)' },
+    suspended: { color: '#f59e0b', bg: 'rgba(245,158,11,.15)' },
+    escalated: { color: '#f59e0b', bg: 'rgba(245,158,11,.15)' },
+    closed: { color: '#94a3b8', bg: 'rgba(148,163,184,.12)' },
+    open: { color: '#34d399', bg: 'rgba(52,211,153,.15)' },
+    pending: { color: '#f59e0b', bg: 'rgba(245,158,11,.15)' },
+    approved: { color: '#34d399', bg: 'rgba(52,211,153,.15)' },
+    rejected: { color: '#ef4444', bg: 'rgba(239,68,68,.15)' },
+  };
+  const s = map[escalated || active || status] || map.active;
+  return (
+    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.3, borderRadius: 6, bgcolor: s.bg }}>
+      <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: s.color }} />
+      <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: s.color, textTransform: 'capitalize' }}>{status}</Typography>
+    </Box>
+  );
+}
+
 export function AdminDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [view, setView] = useState<AdminView>('dashboard');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +97,14 @@ export function AdminDashboard() {
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [busy, setBusy] = useState(false);
+  const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
+  const [loadProv, setLoadProv] = useState(false);
+  const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+  const provFileRef = useRef<HTMLInputElement>(null);
+  const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
+  const [supportSessions, setSupportSessions] = useState<Array<{ id: string; userId: string; subject: string; status: string; createdByName: string; createdByEmail: string; summary: string; createdAt: string; updatedAt: string }>>([]);
+  const [supportMessages, setSupportMessages] = useState<Array<{ id: string; sessionId: string; role: string; content: string; createdAt: string }>>([]);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.isAdmin) { navigate('/vm', { replace: true }); }
@@ -67,16 +129,18 @@ export function AdminDashboard() {
     try { const d = await graphqlRequest<{ adminContactSubmissions: string }>('query { adminContactSubmissions }'); setLeads(JSON.parse(d.adminContactSubmissions)); } catch { /* ignore */ }
   }, []);
 
-  const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
-  const [loadProv, setLoadProv] = useState(false);
-  const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
-  const provFileRef = useRef<HTMLInputElement>(null);
-  const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
-
   const loadProviders = useCallback(async () => {
     setLoadProv(true);
     try { const d = await graphqlRequest<{ serviceProviders: typeof providers }>('query { serviceProviders(activeOnly:false) { id name title category picture rateHourly } }'); setProviders(d.serviceProviders); } catch { /* ignore */ }
     finally { setLoadProv(false); }
+  }, []);
+
+  const loadSupport = useCallback(async () => {
+    try { const d = await graphqlRequest<{ supportSessions: typeof supportSessions }>('query { supportSessions { id userId subject status createdByName createdByEmail summary createdAt updatedAt } }'); setSupportSessions(d.supportSessions); } catch { /* ignore */ }
+  }, []);
+
+  const loadSupportMessages = useCallback(async (sessionId: string) => {
+    try { const d = await graphqlRequest<{ supportSessionMessages: typeof supportMessages }>(`query { supportSessionMessages(sessionId:"${sessionId}") { id sessionId role content createdAt } }`); setSupportMessages(d.supportSessionMessages); } catch { /* ignore */ }
   }, []);
 
   const loadBookings = useCallback(async () => {
@@ -94,75 +158,164 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'investors') loadInvestors(); }, [view, loadInvestors]);
   useEffect(() => { if (view === 'providers') loadProviders(); }, [view, loadProviders]);
   useEffect(() => { if (view === 'bookings') loadBookings(); }, [view, loadBookings]);
+  useEffect(() => { if (view === 'support') { loadSupport(); setSelectedSession(null); setSupportMessages([]); } }, [view, loadSupport]);
 
   const exec = async (mutation: string, vars: Record<string, unknown>) => {
-    setBusy(true); try { await graphqlRequest(mutation, vars); /* reload */ } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
+    setBusy(true); try { await graphqlRequest(mutation, vars); } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
   };
 
-  const AdminNav = () => (
-    <Box sx={{ width: 220, flexShrink: 0, bgcolor: '#07130f', borderRight: '1px solid rgba(255,255,255,.06)', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Shield size={20} color="#f59e0b" />
-        <Box><Typography sx={{ color: '#fff', fontSize: 14, fontWeight: 800 }}>Admin</Typography><Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 9 }}>{user?.email}</Typography></Box>
+  const handleNav = (key: AdminView) => {
+    setView(key);
+    if (isMobile) setMobileNavOpen(false);
+  };
+
+  const NavSidebar = () => (
+    <Box sx={{
+      width: { xs: 260, md: 240 },
+      flexShrink: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      bgcolor: 'rgba(7, 19, 15, 0.95)',
+      borderRight: '1px solid rgba(255,255,255,.06)',
+      backdropFilter: 'blur(20px)',
+    }}>
+      <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(245,158,11,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Shield size={18} color="#f59e0b" />
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin Panel</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10, lineHeight: 1.2 }}>{user?.email}</Typography>
+        </Box>
+        {isMobile && (
+          <IconButton size="small" onClick={() => setMobileNavOpen(false)} sx={{ ml: 'auto', color: 'rgba(255,255,255,.4)' }}>
+            <X size={18} />
+          </IconButton>
+        )}
       </Box>
-      <Box sx={{ flex: 1, py: 0.5 }}>
+
+      <Box sx={{ flex: 1, py: 1, overflow: 'auto', px: 1 }}>
         {NAV_ITEMS.map(item => {
-          const Icon = item.icon; const active = view === item.key;
+          const Icon = item.icon;
+          const active = view === item.key;
           return (
-            <Box key={item.key} onClick={() => setView(item.key)}
-              sx={{ px: 2, py: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 1.5,
+            <Box
+              key={item.key}
+              onClick={() => handleNav(item.key)}
+              sx={{
+                px: 1.5, py: 1.2, mb: 0.25, cursor: 'pointer', borderRadius: 2,
+                display: 'flex', alignItems: 'center', gap: 1.5,
                 bgcolor: active ? 'rgba(245,158,11,.1)' : 'transparent',
-                borderRight: active ? '2px solid #f59e0b' : '2px solid transparent',
-                '&:hover': { bgcolor: 'rgba(255,255,255,.03)' } }}>
-              <Icon size={16} color={active ? '#f59e0b' : 'rgba(255,255,255,.4)'} />
-              <Typography sx={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'rgba(255,255,255,.6)' }}>{item.label}</Typography>
+                border: active ? '1px solid rgba(245,158,11,.2)' : '1px solid transparent',
+                transition: 'all .15s ease',
+                '&:hover': { bgcolor: active ? 'rgba(245,158,11,.12)' : 'rgba(255,255,255,.03)' },
+              }}
+            >
+              <Box sx={{ width: 28, height: 28, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: active ? 'rgba(245,158,11,.15)' : 'transparent' }}>
+                <Icon size={15} color={active ? '#f59e0b' : 'rgba(255,255,255,.35)'} />
+              </Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'rgba(255,255,255,.55)' }}>{item.label}</Typography>
+                <Typography sx={{ fontSize: 9.5, color: active ? 'rgba(245,158,11,.4)' : 'rgba(255,255,255,.2)', display: { xs: 'none', md: 'block' } }}>{item.desc}</Typography>
+              </Box>
               {active && <ChevronRight size={12} color="#f59e0b" style={{ marginLeft: 'auto' }} />}
             </Box>
           );
         })}
       </Box>
-      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,.06)', cursor: 'pointer' }} onClick={() => { logout(); navigate('/vm/auth/signin'); }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}><LogOut size={15} color="rgba(255,255,255,.4)" /><Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}>Log out</Typography></Box>
+
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+        <Box
+          onClick={() => { logout(); navigate('/vm/auth/signin'); }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', px: 1.5, py: 1, borderRadius: 2, '&:hover': { bgcolor: 'rgba(255,255,255,.03)' } }}
+        >
+          <LogOut size={14} color="rgba(255,255,255,.3)" />
+          <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Sign out</Typography>
+        </Box>
       </Box>
     </Box>
   );
 
-  const PageTitle = ({ title }: { title: string }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
-      <Typography sx={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{title}</Typography>
-      <Chip label="Admin" size="small" color="warning" />
+  const PageHeader = ({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) => (
+    <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, gap: 1.5, mb: 2.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+      <Box sx={{ flex: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {isMobile && (
+            <IconButton size="small" onClick={() => setMobileNavOpen(true)} sx={{ color: 'rgba(255,255,255,.5)' }}>
+              <Menu size={20} />
+            </IconButton>
+          )}
+          <Typography sx={{ fontSize: { xs: 18, sm: 22 }, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{title}</Typography>
+          <Chip label="Admin" size="small" sx={{ bgcolor: 'rgba(245,158,11,.15)', color: '#f59e0b', fontWeight: 700, fontSize: 9, height: 20 }} />
+        </Box>
+        {subtitle && <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 12, mt: 0.25, ml: { xs: 5, sm: 0 } }}>{subtitle}</Typography>}
+      </Box>
+      {action && <Box sx={{ ml: { xs: 5, sm: 0 } }}>{action}</Box>}
     </Box>
   );
 
   const renderDashboard = () => {
-    if (loading) return <Box sx={{ color: 'rgba(255,255,255,.5)' }}><CircularProgress size={16} /> Loading...</Box>;
-    if (!data) return <Typography sx={{ color: 'rgba(255,255,255,.5)' }}>No data</Typography>;
+    if (loading) return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 8, justifyContent: 'center' }}>
+        <CircularProgress size={18} sx={{ color: '#f59e0b' }} />
+        <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 13 }}>Loading dashboard...</Typography>
+      </Box>
+    );
+    if (!data) return <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 8 }}>No data available</Typography>;
+    const activePercent = data.totalUsers ? Math.round((data.activeUsers / data.totalUsers) * 100) : 0;
     return (
       <>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2, mb: 2 }}>
-          {[{ icon: Users, label: 'Total Users', value: data.totalUsers, color: 'var(--vm-primary-400)' },
-            { icon: UserPlus, label: 'Active Users', value: data.activeUsers, color: '#34d399' },
-            { icon: Building2, label: 'Businesses', value: data.totalBusinesses, color: '#f59e0b' },
-          ].map(s => <Card key={s.label} sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-            <s.icon size={22} color={s.color} />
-            <Typography sx={{ fontSize: 30, fontWeight: 900, color: '#fff', mt: 0.5 }}>{s.value}</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.45)', fontSize: 12 }}>{s.label}</Typography>
-          </Card>)}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)', lg: 'repeat(4,1fr)' }, gap: { xs: 1.5, sm: 2 }, mb: 3 }}>
+          <StatCard icon={Users} label="Total Users" value={data.totalUsers} color="#10b981" subtitle="Registered accounts" />
+          <StatCard icon={UserPlus} label="Active Users" value={data.activeUsers} color="#34d399" subtitle={`${activePercent}% of total`} />
+          <StatCard icon={Building2} label="Businesses" value={data.totalBusinesses} color="#f59e0b" subtitle="Startup profiles" />
+          <StatCard icon={BookOpen} label="Plans" value={data.plansBreakdown.length} color="#8b5cf6" subtitle="Subscription tiers" />
         </Box>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Card sx={{ p: 2, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1 }}>Plans</Typography>
-            {data.plansBreakdown.map(p => <Box key={p.planName} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, borderBottom: '1px solid rgba(255,255,255,.05)' }}>
-              <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, textTransform: 'capitalize' }}>{p.planName}</Typography>
-              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 12 }}>{p.count}</Typography>
-            </Box>)}
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 2 }}>
+          <Card sx={{ p: { xs: 2, sm: 2.5 }, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, backdropFilter: 'blur(12px)' }}>
+            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BookOpen size={15} color="#8b5cf6" /> Plan Distribution
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {data.plansBreakdown.map(p => {
+                const total = data.plansBreakdown.reduce((a, b) => a + b.count, 0);
+                const pct = total ? Math.round((p.count / total) * 100) : 0;
+                return (
+                  <Box key={p.planName}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                      <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, textTransform: 'capitalize' }}>{p.planName}</Typography>
+                      <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 12 }}>{p.count}</Typography>
+                    </Box>
+                    <Box sx={{ height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
+                      <Box sx={{ height: '100%', borderRadius: 2, width: `${pct}%`, bgcolor: '#8b5cf6', transition: 'width .6s ease' }} />
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
           </Card>
-          <Card sx={{ p: 2, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1 }}>Recent Signups</Typography>
-            {data.recentSignups.slice(0, 5).map(u => <Box key={u.id} sx={{ py: 0.4, borderBottom: '1px solid rgba(255,255,255,.05)' }}>
-              <Typography sx={{ color: '#fff', fontSize: 12 }}>{u.firstName} {u.surname}</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10 }}>{u.email}</Typography>
-            </Box>)}
+
+          <Card sx={{ p: { xs: 2, sm: 2.5 }, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, backdropFilter: 'blur(12px)' }}>
+            <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <UserPlus size={15} color="#34d399" /> Recent Signups
+            </Typography>
+            {data.recentSignups.slice(0, 6).map((u, i) => (
+              <Box key={u.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.75, borderBottom: i < 5 ? '1px solid rgba(255,255,255,.04)' : 'none' }}>
+                <Avatar sx={{ width: 28, height: 28, bgcolor: u.isAdmin ? '#f59e0b' : '#10b981', fontSize: 11, fontWeight: 700 }}>
+                  {u.firstName[0]}{u.surname[0]}
+                </Avatar>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ color: '#fff', fontSize: 12.5, fontWeight: 600 }}>{u.firstName} {u.surname}</Typography>
+                  <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10.5 }}>{u.email}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <StatusBadge status={u.status} />
+                  {u.isAdmin && <Chip label="Admin" size="small" sx={{ bgcolor: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: 8, height: 18, '& .MuiChip-label': { px: 0.5 } }} />}
+                </Box>
+              </Box>
+            ))}
           </Card>
         </Box>
       </>
@@ -170,44 +323,139 @@ export function AdminDashboard() {
   };
 
   const renderUsers = () => (
-    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
-      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Users size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Users ({users.length})</Typography>
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Users size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Users <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({users.length})</Typography></Typography>
       </Box>
-      {users.map(u => <Box key={u.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{u.firstName} {u.surname}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{u.email}</Typography></Box>
-        {u.isAdmin && <Chip label="Admin" size="small" color="warning" sx={{ fontSize: 9, mr: 0.5 }} />}
-        <Chip label={u.status} size="small" sx={{ fontSize: 9, mr: 1, color: u.status === 'active' ? '#34d399' : '#f59e0b' }} />
-        {!u.isAdmin && <><Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#f59e0b', fontSize: 11 }} onClick={() => exec(`mutation { adminSetAdmin(userId:"${u.id}",isAdmin:true) { id } }`, {})}>Make Admin</Button>
-        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: u.status === 'active' ? '#f59e0b' : '#34d399', fontSize: 11 }}
-          onClick={() => exec(`mutation { adminUpdateUserStatus(userId:"${u.id}",status:"${u.status === 'active' ? 'suspended' : 'active'}") { id } }`, {})}>{u.status === 'active' ? 'Suspend' : 'Activate'}</Button>
-        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }} onClick={() => { if (confirm('Delete this user?')) exec(`mutation { adminDeleteUser(userId:"${u.id}") }`, {}); }}><Trash2 size={12} /></Button></>}
-      </Box>)}
+      {users.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No users found.</Typography>}
+      <Box sx={{ overflow: 'auto' }}>
+        <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+          <Box component="thead">
+            <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+              {['Name', 'Email', 'Status', 'Role', 'Joined', 'Actions'].map(h => (
+                <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {users.map(u => (
+              <Box key={u.id} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{u.firstName} {u.surname}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{u.email}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <StatusBadge status={u.status} />
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  {u.isAdmin ? <Chip label="Admin" size="small" sx={{ bgcolor: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: 10, fontWeight: 700, height: 22 }} /> : <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 12 }}>User</Typography>}
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{new Date(u.createdAt).toLocaleDateString()}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  {!u.isAdmin ? (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Make Admin">
+                        <IconButton size="small" sx={{ color: '#f59e0b' }} onClick={() => exec(`mutation { adminSetAdmin(userId:"${u.id}",isAdmin:true) { id } }`, {})}>
+                          <Shield size={14} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={u.status === 'active' ? 'Suspend' : 'Activate'}>
+                        <IconButton size="small" sx={{ color: u.status === 'active' ? '#f59e0b' : '#34d399' }}
+                          onClick={() => exec(`mutation { adminUpdateUserStatus(userId:"${u.id}",status:"${u.status === 'active' ? 'suspended' : 'active'}") { id } }`, {})}>
+                          {u.status === 'active' ? <XCircle size={14} /> : <CheckCircle size={14} />}
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this user?')) exec(`mutation { adminDeleteUser(userId:"${u.id}") }`, {}); }}>
+                          <Trash2 size={14} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  ) : (
+                    <Typography sx={{ color: 'rgba(255,255,255,.2)', fontSize: 11 }}>—</Typography>
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
     </Card>
   );
 
   const renderBiz = () => (
-    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
-      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Businesses ({biz.length})</Typography></Box>
-      {biz.map(b => <Box key={b.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.ownerEmail} · {b.industry || 'N/A'}</Typography></Box>
-        <Chip label={b.status} size="small" sx={{ fontSize: 9, color: b.status === 'active' ? '#34d399' : '#f59e0b', mr: 1 }} />
-        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-          onClick={() => { if (confirm('Delete this business?')) exec(`mutation { adminDeleteBusiness(businessId:"${b.id}") }`, {}); }}><Trash2 size={12} /></Button>
-      </Box>)}
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Building2 size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Businesses <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({biz.length})</Typography></Typography>
+      </Box>
+      {biz.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No businesses found.</Typography>}
+      <Box sx={{ overflow: 'auto' }}>
+        <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+          <Box component="thead">
+            <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+              {['Name', 'Owner', 'Industry', 'Status', 'Actions'].map(h => (
+                <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {biz.map(b => (
+              <Box key={b.id} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.name}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{b.ownerEmail}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  {b.industry ? <Chip label={b.industry} size="small" sx={{ bgcolor: 'rgba(139,92,246,.12)', color: '#a78bfa', fontSize: 10, fontWeight: 600 }} /> : <Typography sx={{ color: 'rgba(255,255,255,.2)', fontSize: 11 }}>—</Typography>}
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <StatusBadge status={b.status} />
+                </Box>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  <Tooltip title="Delete">
+                    <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this business?')) exec(`mutation { adminDeleteBusiness(businessId:"${b.id}") }`, {}); }}>
+                      <Trash2 size={14} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
     </Card>
   );
 
   const renderPlans = () => (
-    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
-        <BookOpen size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Plans</Typography>
-        <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} sx={{ fontSize: 11 }} onClick={() => setModal({ type: 'createPlan' })}>Add Plan</GradientButton>
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <BookOpen size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Subscription Plans</Typography>
       </Box>
-      {data?.plansBreakdown.map(p => <Box key={p.planName} sx={{ display: 'flex', justifyContent: 'space-between', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-        <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600, textTransform: 'capitalize' }}>{p.planName}</Typography>
-        <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{p.count} users</Typography>
-      </Box>)}
+      {data?.plansBreakdown.map((p, i) => {
+        const total = data.plansBreakdown.reduce((a, b) => a + b.count, 0);
+        const pct = total ? Math.round((p.count / total) * 100) : 0;
+        return (
+          <Box key={p.planName} sx={{ display: 'flex', alignItems: 'center', px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: i < data.plansBreakdown.length - 1 ? '1px solid rgba(255,255,255,.04)' : 'none' }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600, textTransform: 'capitalize' }}>{p.planName}</Typography>
+              <Box sx={{ mt: 0.5, height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,.04)', overflow: 'hidden', maxWidth: 300 }}>
+                <Box sx={{ height: '100%', borderRadius: 3, width: `${pct}%`, bgcolor: ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'][i % 5] }} />
+              </Box>
+            </Box>
+            <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12, fontWeight: 600, ml: 2 }}>{p.count} users</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.25)', fontSize: 11, ml: 1.5, minWidth: 42, textAlign: 'right' }}>{pct}%</Typography>
+          </Box>
+        );
+      })}
     </Card>
   );
 
@@ -215,27 +463,40 @@ export function AdminDashboard() {
 
   const renderInvestors = () => (
     <>
-      <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden', mb: 2 }}>
-        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Globe size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors ({investors.length})</Typography>
-          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} sx={{ fontSize: 11 }}
-            onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: 'Invests in...' })}>Add Investor</GradientButton>
+      <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', mb: 2, backdropFilter: 'blur(12px)' }}>
+        <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          <Globe size={16} color="#f59e0b" />
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({investors.length})</Typography></Typography>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: 'Invests in...' })}>
+            Add Investor
+          </GradientButton>
         </Box>
-        {investors.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 12, p: 2 }}>No investors yet. Add the first one.</Typography>}
-        {investors.map(inv => <Box key={inv.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-          <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography></Box>
-          <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-            onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}><Trash2 size={12} /></Button>
-        </Box>)}
+        {investors.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No investors yet.</Typography>}
+        {investors.map(inv => (
+          <Box key={inv.id} sx={{ display: 'flex', alignItems: 'center', px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+            <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(245,158,11,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 1.5, flexShrink: 0 }}>
+              <Globe size={16} color="#f59e0b" />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography>
+            </Box>
+            <Tooltip title="Delete">
+              <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}>
+                <Trash2 size={14} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ))}
       </Card>
       <Dialog open={!!invForm.name} onClose={() => setInvForm({...invForm, name: ''})} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 } }}>
-        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid var(--vm-border-subtle)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
+        PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
+        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             {['name','location','industries','thesis'].map(f => (
               <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
-                sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} />
+                sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
             ))}
             <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} SelectProps={{ native: true }}>
@@ -255,57 +516,85 @@ export function AdminDashboard() {
   );
 
   const renderLeads = () => (
-    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
-      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Leads ({leads.length})</Typography></Box>
-      {leads.map(l => <Box key={l.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-        <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{l.name || l.email}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{l.email} · {l.message?.slice(0, 80)}</Typography></Box>
-        <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-          onClick={() => { if (confirm('Delete this lead?')) exec(`mutation { adminDeleteContactSubmission(id:"${l.id}") }`, {}); }}><Trash2 size={12} /></Button>
-      </Box>)}
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Mail size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Leads <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({leads.length})</Typography></Typography>
+      </Box>
+      {leads.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No leads yet.</Typography>}
+      {leads.map(l => (
+        <Box key={l.id} sx={{ display: 'flex', alignItems: 'center', px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(16,185,129,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 1.5, flexShrink: 0 }}>
+            <Mail size={16} color="#10b981" />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{l.name || l.email}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.email} · {l.message?.slice(0, 100)}</Typography>
+          </Box>
+          <Tooltip title="Delete">
+            <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this lead?')) exec(`mutation { adminDeleteContactSubmission(id:"${l.id}") }`, {}); }}>
+              <Trash2 size={14} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      ))}
     </Card>
   );
 
   const renderBroadcast = () => (
-    <Card sx={{ p: 2.5, bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3 }}>
-      <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, mb: 1.5 }}>Broadcast Notification</Typography>
-      <TextField fullWidth size="small" placeholder="Title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)}
-        sx={{ mb: 1.5, input: { color: '#fff', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.15)' } }} />
-      <TextField fullWidth multiline minRows={3} placeholder="Message to all users..." value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)}
-        sx={{ mb: 1.5, textarea: { color: '#fff', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.15)' } }} />
+    <Card sx={{ p: { xs: 2, sm: 3 }, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, backdropFilter: 'blur(12px)', maxWidth: 560 }}>
+      <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15, mb: 0.25, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Bell size={16} color="#f59e0b" /> Broadcast Notification
+      </Typography>
+      <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 11, mb: 2 }}>Send a push notification to all users</Typography>
+      <TextField fullWidth size="small" placeholder="Notification title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)}
+        sx={{ mb: 1.5, input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)' },
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
+      <TextField fullWidth multiline minRows={3} placeholder="Write your message..." value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)}
+        sx={{ mb: 2, textarea: { color: '#fff', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
       <GradientButton disabled={busy || !broadcastMsg} onClick={async () => {
         if (!broadcastTitle || !broadcastMsg) return;
         await exec(`mutation { adminBroadcastNotification(title:"${broadcastTitle.replace(/"/g, '\\"')}",description:"${broadcastMsg.replace(/"/g, '\\"')}") }`, {});
         setBroadcastTitle(''); setBroadcastMsg('');
-      }} sx={{ textTransform: 'none' }}>Send to All Users</GradientButton>
+      }} startIcon={busy ? <CircularProgress size={14} /> : <Send size={14} />}>Send to All Users</GradientButton>
     </Card>
   );
 
   const renderProviders = () => (
     <>
-      <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden', mb: 2 }}>
-        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Briefcase size={16} color="#f59e0b" /><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Providers ({providers.length})</Typography>
-          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} sx={{ fontSize: 11 }}
+      <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', mb: 2, backdropFilter: 'blur(12px)' }}>
+        <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          <Briefcase size={16} color="#f59e0b" />
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Providers <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({providers.length})</Typography></Typography>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />}
             onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, skills: '' })}>Add Provider</GradientButton>
         </Box>
-        {loadProv && <Box sx={{ p: 2, color: 'rgba(255,255,255,.5)' }}><CircularProgress size={14} /> Loading...</Box>}
-        {!loadProv && providers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 12, p: 2 }}>No providers yet.</Typography>}
-        {providers.map(p => <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-          <Avatar src={p.picture || ''} sx={{ width: 32, height: 32, mr: 1.5, bgcolor: '#f59e0b' }}>{p.name[0]}</Avatar>
-          <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{p.name}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{p.title} · {p.category} · ${p.rateHourly}/hr</Typography></Box>
-          <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-            onClick={() => { if (confirm('Delete provider?')) exec(`mutation { adminDeleteProvider(id:"${p.id}") }`, {}); }}><Trash2 size={12} /></Button>
-        </Box>)}
+        {loadProv && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 3, justifyContent: 'center' }}><CircularProgress size={16} sx={{ color: '#f59e0b' }} /><Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 13 }}>Loading...</Typography></Box>}
+        {!loadProv && providers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No providers yet.</Typography>}
+        {providers.map(p => (
+          <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+            <Avatar src={p.picture || ''} sx={{ width: 36, height: 36, mr: 1.5, bgcolor: '#f59e0b', fontSize: 13, fontWeight: 700 }}>{p.name[0]}</Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{p.name}</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{p.title} · {p.category} · ${p.rateHourly}/hr</Typography>
+            </Box>
+            <Tooltip title="Delete">
+              <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete provider?')) exec(`mutation { adminDeleteProvider(id:"${p.id}") }`, {}); }}>
+                <Trash2 size={14} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ))}
       </Card>
       <Dialog open={!!provForm.name} onClose={() => setProvForm({...provForm, name: ''})} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 } }}>
-        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid var(--vm-border-subtle)' }}>New Provider</DialogTitle>
+        PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
+        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>New Provider</DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Name" value={provForm.name} onChange={e => setProvForm({...provForm, name: e.target.value})}
-              sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
             <TextField size="small" label="Title" value={provForm.title} onChange={e => setProvForm({...provForm, title: e.target.value})}
-              sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <Box>
@@ -327,7 +616,7 @@ export function AdminDashboard() {
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
           </Box>
           <TextField fullWidth size="small" label="Bio" multiline minRows={2} value={provForm.bio} onChange={e => setProvForm({...provForm, bio: e.target.value})}
-            sx={{ mt: 2, textarea: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            sx={{ mt: 2, textarea: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' })}>Cancel</GradientButton>
@@ -341,23 +630,92 @@ export function AdminDashboard() {
   );
 
   const renderBookings = () => (
-    <Card sx={{ bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, overflow: 'hidden' }}>
-      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.08)' }}><Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Bookings ({bookings.length})</Typography></Box>
-      {bookings.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 12, p: 2 }}>No bookings yet.</Typography>}
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <ThumbsUp size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Bookings <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({bookings.length})</Typography></Typography>
+      </Box>
+      {bookings.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No bookings yet.</Typography>}
       {bookings.map(b => {
         const isPending = b.status === 'pending';
-        return <Box key={b.id} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-          <Box sx={{ flex: 1 }}><Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.projectTitle}</Typography><Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.providerName} → {b.userName} · {b.status}</Typography></Box>
-          {isPending && <>
-            <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#34d399', fontSize: 11 }}
-              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"approved") { id } }`, {})}><CheckCircle size={14} /></Button>
-            <Button size="small" variant="text" sx={{ minWidth: 0, px: 1, color: '#ef4444', fontSize: 11 }}
-              onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"rejected") { id } }`, {})}><XCircle size={14} /></Button>
-          </>}
-          {!isPending && <Chip label={b.status} size="small" sx={{ fontSize: 10, color: b.status === 'approved' ? '#34d399' : '#ef4444' }} />}
-        </Box>;
+        return (
+          <Box key={b.id} sx={{ display: 'flex', alignItems: 'center', px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.projectTitle}</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.providerName} → {b.userName}</Typography>
+            </Box>
+            <StatusBadge status={b.status} />
+            {isPending && (
+              <Box sx={{ display: 'flex', gap: 0.25, ml: 1 }}>
+                <Tooltip title="Approve">
+                  <IconButton size="small" sx={{ color: '#34d399' }} onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"approved") { id } }`, {})}>
+                    <CheckCircle size={16} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Reject">
+                  <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"rejected") { id } }`, {})}>
+                    <XCircle size={16} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
+          </Box>
+        );
       })}
     </Card>
+  );
+
+  const renderSupport = () => (
+    <Box sx={{ display: 'flex', gap: 2, height: { xs: 'auto', md: 'calc(100vh - 180px)' }, flexDirection: { xs: 'column', md: 'row' } }}>
+      <Card sx={{ width: { xs: '100%', md: 340 }, flexShrink: 0, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', backdropFilter: 'blur(12px)', maxHeight: { xs: 300, md: 'none' } }}>
+        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MessageCircle size={15} color="#f59e0b" />
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Sessions ({supportSessions.length})</Typography>
+        </Box>
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          {supportSessions.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No sessions yet.</Typography>}
+          {supportSessions.map(s => (
+            <Box key={s.id} onClick={() => { setSelectedSession(s.id); loadSupportMessages(s.id); }}
+              sx={{ px: 2, py: 1.25, cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,.04)', transition: 'all .15s ease',
+                bgcolor: selectedSession === s.id ? 'rgba(245,158,11,.1)' : 'transparent',
+                borderLeft: selectedSession === s.id ? '3px solid #f59e0b' : '3px solid transparent',
+                '&:hover': { bgcolor: selectedSession === s.id ? 'rgba(245,158,11,.12)' : 'rgba(255,255,255,.02)' } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+                <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600, flex: 1 }}>{s.createdByName}</Typography>
+                <StatusBadge status={s.status} />
+              </Box>
+              <Typography sx={{ color: 'rgba(255,255,255,.45)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.subject}</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,.2)', fontSize: 10, mt: 0.25 }}>{s.createdByEmail} · {new Date(s.createdAt).toLocaleDateString()}</Typography>
+            </Box>
+          ))}
+        </Box>
+      </Card>
+      <Card sx={{ flex: 1, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', backdropFilter: 'blur(12px)', minHeight: { xs: 300, md: 'auto' } }}>
+        {!selectedSession ? (
+          <Box sx={{ p: 6, textAlign: 'center', color: 'rgba(255,255,255,.25)' }}>
+            <MessageCircle size={48} />
+            <Typography sx={{ mt: 1.5, fontSize: 14 }}>Select a session to view messages</Typography>
+          </Box>
+        ) : (
+          <>
+            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Messages</Typography>
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'auto', p: 1.5 }}>
+              {supportMessages.map(m => (
+                <Box key={m.id} sx={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', mb: 1.5 }}>
+                  <Box sx={{ maxWidth: '80%', p: 1.25, borderRadius: 2.5, fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
+                    bgcolor: m.role === 'user' ? '#f59e0b' : 'rgba(255,255,255,.06)',
+                    color: m.role === 'user' ? '#000' : 'rgba(255,255,255,.87)',
+                  }}>{m.content}</Box>
+                </Box>
+              ))}
+              {supportMessages.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No messages in this session.</Typography>}
+            </Box>
+          </>
+        )}
+      </Card>
+    </Box>
   );
 
   const renderContent = () => {
@@ -371,19 +729,75 @@ export function AdminDashboard() {
       case 'bookings': return renderBookings();
       case 'submissions': return renderLeads();
       case 'broadcast': return renderBroadcast();
+      case 'support': return renderSupport();
       default: return null;
     }
   };
 
   if (!user?.isAdmin) return null;
 
+  const titles: Record<AdminView, string> = {
+    dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans',
+    investors: 'Investors', providers: 'Providers', bookings: 'Bookings',
+    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support',
+  };
+  const subtitles: Record<AdminView, string> = {
+    dashboard: 'Platform performance at a glance',
+    users: 'Manage user accounts and permissions',
+    businesses: 'Startup profiles registered on the platform',
+    plans: 'Subscription tiers and user distribution',
+    investors: 'Investment network partners',
+    providers: 'Service provider directory',
+    bookings: 'Provider appointment bookings',
+    submissions: 'Contact form inquiries',
+    broadcast: 'Send push notifications to all users',
+    support: 'AI support chat sessions and escalations',
+  };
+
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0a0f0d' }}>
-      <AdminNav />
-      <Box sx={{ flex: 1, p: { xs: 2, sm: 3 }, overflow: 'auto', maxHeight: '100vh' }}>
-        <PageTitle title={{ dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans', investors: 'Investors', providers: 'Providers', bookings: 'Bookings', submissions: 'Leads', broadcast: 'Broadcast' }[view]} />
-        {busy && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: '#f59e0b' }}><CircularProgress size={14} /><Typography sx={{ fontSize: 12 }}>Processing...</Typography></Box>}
-        {renderContent()}
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#050f0a', position: 'relative' }}>
+      {isMobile ? (
+        <Drawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)}
+          sx={{ '& .MuiDrawer-paper': { width: 260, bgcolor: 'transparent', border: 'none' } }}>
+          <NavSidebar />
+        </Drawer>
+      ) : (
+        <NavSidebar />
+      )}
+
+      <Box sx={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        minWidth: 0,
+        maxHeight: '100vh',
+        overflow: 'auto',
+      }}>
+        <Box sx={{
+          px: { xs: 2, sm: 3, md: 4 },
+          py: { xs: 2, sm: 3 },
+          flex: 1,
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'fixed',
+            top: 0, right: 0,
+            width: 400, height: 400,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(245,158,11,.03) 0%, transparent 70%)',
+            pointerEvents: 'none',
+            transform: 'translate(100px, -200px)',
+          },
+        }}>
+          <PageHeader title={titles[view]} subtitle={subtitles[view]} />
+          {busy && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, px: { xs: 5, sm: 0 } }}>
+              <CircularProgress size={12} sx={{ color: '#f59e0b' }} />
+              <Typography sx={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Processing...</Typography>
+            </Box>
+          )}
+          {renderContent()}
+        </Box>
       </Box>
     </Box>
   );

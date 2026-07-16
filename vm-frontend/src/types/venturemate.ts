@@ -553,3 +553,57 @@ export interface AppNotification {
   actionLabel?: string;
   createdAt: string;
 }
+
+// CRM
+export interface CrmContact {
+  id: string;
+  businessId: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  jobTitle: string;
+  contactType: string;
+  source: string;
+  notes: string;
+  avatar: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmDeal {
+  id: string;
+  businessId: string;
+  contactId: string;
+  title: string;
+  value: number;
+  currency: string;
+  stage: string;
+  probability: number;
+  expectedCloseDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmActivity {
+  id: string;
+  businessId: string;
+  contactId: string;
+  type: string;
+  description: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface CrmTask {
+  id: string;
+  businessId: string;
+  contactId: string;
+  title: string;
+  description: string;
+  dueDate: string | null;
+  status: string;
+  assignedTo: string;
+  createdAt: string;
+  updatedAt: string;
+}

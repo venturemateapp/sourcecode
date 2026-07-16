@@ -1,1031 +1,658 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  Box,
-  Typography,
-  Card,
-  Tabs,
-  Tab,
-  Chip,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  Grid,
-  // Alert removed
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
+  Box, Typography, Card, Tabs, Tab, Chip, Avatar, Dialog, DialogTitle, DialogContent,
+  TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Tooltip, Button, CircularProgress,
 } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { graphqlRequest } from '../../lib/api';
+import { useBusiness } from '../../contexts/BusinessContext';
 import {
-  Users,
-  TrendingUp,
-  Phone,
-  Mail,
-  Plus,
-  CheckCircle,
-  Calendar,
-  X,
-  Send,
-  PhoneCall,
-  // MessageSquare, Building2 removed
-  User,
+  Users, TrendingUp, Phone, Mail, Plus, CheckCircle, Calendar, X,
+  Trash2, Edit3, Building2, DollarSign, ListChecks,
+  UserPlus, PhoneCall,
 } from 'lucide-react';
-import type { ViewType } from '../../types/venturemate';
+import type { CrmContact, CrmDeal, CrmActivity, CrmTask } from '../../types/venturemate';
 
-interface Contact {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  job_title: string;
-  contact_type: 'lead' | 'customer' | 'partner' | 'investor';
-  source: string;
-  notes: string;
-  created_at: string;
-  last_contact: string;
-  avatar?: string;
-}
-
-interface Deal {
-  id: string;
-  title: string;
-  contact_id: string;
-  contact_name: string;
-  value: number;
-  currency: string;
-  stage: 'prospecting' | 'qualification' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost';
-  probability: number;
-  expected_close_date: string;
-  created_at: string;
-}
-
-interface Activity {
-  id: string;
-  type: 'call' | 'email' | 'meeting' | 'note' | 'task';
-  contact_id: string;
-  contact_name: string;
-  description: string;
-  created_at: string;
-  created_by: string;
-}
-
-interface CrmDashboardStats {
-  total_contacts: number;
-  total_deals: number;
-  total_value: number;
-  win_rate: number;
-  deals_by_stage: Record<string, number>;
-}
-
-const contactTypes = [
+const CONTACT_TYPES = [
   { value: 'lead', label: 'Lead', color: '#3b82f6' },
   { value: 'customer', label: 'Customer', color: '#22c55e' },
   { value: 'partner', label: 'Partner', color: '#8b5cf6' },
   { value: 'investor', label: 'Investor', color: '#f59e0b' },
-] as const;
+];
 
-const dealStages = [
-  { value: 'prospecting', label: 'Prospecting', color: '#6b7280', probability: 10 },
-  { value: 'qualification', label: 'Qualification', color: '#3b82f6', probability: 25 },
-  { value: 'proposal', label: 'Proposal', color: '#f59e0b', probability: 50 },
-  { value: 'negotiation', label: 'Negotiation', color: '#8b5cf6', probability: 75 },
-  { value: 'closed_won', label: 'Closed Won', color: '#22c55e', probability: 100 },
-  { value: 'closed_lost', label: 'Closed Lost', color: '#ef4444', probability: 0 },
-] as const;
+const DEAL_STAGES = [
+  { value: 'prospecting', label: 'Prospecting', color: '#6b7280' },
+  { value: 'qualification', label: 'Qualification', color: '#3b82f6' },
+  { value: 'proposal', label: 'Proposal', color: '#f59e0b' },
+  { value: 'negotiation', label: 'Negotiation', color: '#8b5cf6' },
+  { value: 'closed_won', label: 'Closed Won', color: '#22c55e' },
+  { value: 'closed_lost', label: 'Closed Lost', color: '#ef4444' },
+];
 
-const crmStats: CrmDashboardStats = {
-  total_contacts: 48,
-  total_deals: 12,
-  total_value: 2850000,
-  win_rate: 42,
-  deals_by_stage: {
-    prospecting: 3,
-    qualification: 4,
-    proposal: 2,
-    negotiation: 2,
-    closed_won: 1,
-    closed_lost: 0,
-  },
+const ACTIVITY_ICONS: Record<string, typeof Phone> = {
+  call: Phone, email: Mail, meeting: Users, note: Calendar, task: ListChecks,
 };
 
-const contacts: Contact[] = [
-  {
-    id: 'contact_001',
-    name: 'Sarah Chen',
-    email: 'sarah.chen@techcorp.com',
-    phone: '+1 (555) 123-4567',
-    company: 'TechCorp Inc',
-    job_title: 'VP of Engineering',
-    contact_type: 'lead',
-    source: 'LinkedIn',
-    notes: 'Interested in AI automation solutions. Follow up next week.',
-    created_at: '2024-03-15T10:00:00Z',
-    last_contact: '2024-04-02T14:30:00Z',
-    avatar: 'https://i.pravatar.cc/150?u=sarah',
-  },
-  {
-    id: 'contact_002',
-    name: 'Michael Rodriguez',
-    email: 'mrodriguez@startupxyz.io',
-    phone: '+1 (555) 987-6543',
-    company: 'StartupXYZ',
-    job_title: 'CEO',
-    contact_type: 'investor',
-    source: 'Referral',
-    notes: 'Angel investor looking for AI startups. Met at demo day.',
-    created_at: '2024-02-20T09:00:00Z',
-    last_contact: '2024-04-01T11:00:00Z',
-    avatar: 'https://i.pravatar.cc/150?u=michael',
-  },
-  {
-    id: 'contact_003',
-    name: 'Emily Watson',
-    email: 'emily.w@globaltech.com',
-    phone: '+1 (555) 456-7890',
-    company: 'GlobalTech Solutions',
-    job_title: 'Procurement Manager',
-    contact_type: 'customer',
-    source: 'Website',
-    notes: 'Existing customer. Looking to expand license.',
-    created_at: '2024-01-10T08:00:00Z',
-    last_contact: '2024-04-03T16:45:00Z',
-    avatar: 'https://i.pravatar.cc/150?u=emily',
-  },
-  {
-    id: 'contact_004',
-    name: 'David Kim',
-    email: 'david.kim@venturecap.com',
-    phone: '+1 (555) 234-5678',
-    company: 'Venture Capital Partners',
-    job_title: 'Partner',
-    contact_type: 'investor',
-    source: 'Warm Intro',
-    notes: 'Series A investor. Interested in follow-on round.',
-    created_at: '2024-03-01T14:00:00Z',
-    last_contact: '2024-04-02T10:00:00Z',
-    avatar: 'https://i.pravatar.cc/150?u=david',
-  },
-  {
-    id: 'contact_005',
-    name: 'Lisa Thompson',
-    email: 'lisa@innovatetech.co',
-    phone: '+1 (555) 876-5432',
-    company: 'InnovateTech',
-    job_title: 'CTO',
-    contact_type: 'partner',
-    source: 'Conference',
-    notes: 'Potential integration partner. Technical discussion pending.',
-    created_at: '2024-03-20T11:30:00Z',
-    last_contact: '2024-03-28T09:15:00Z',
-    avatar: 'https://i.pravatar.cc/150?u=lisa',
-  },
-];
-
-const deals: Deal[] = [
-  {
-    id: 'deal_001',
-    title: 'Enterprise License - TechCorp',
-    contact_id: 'contact_001',
-    contact_name: 'Sarah Chen',
-    value: 150000,
-    currency: 'USD',
-    stage: 'negotiation',
-    probability: 75,
-    expected_close_date: '2024-04-15',
-    created_at: '2024-03-15T10:00:00Z',
-  },
-  {
-    id: 'deal_002',
-    title: 'Seed Investment - Angel Round',
-    contact_id: 'contact_002',
-    contact_name: 'Michael Rodriguez',
-    value: 500000,
-    currency: 'USD',
-    stage: 'proposal',
-    probability: 50,
-    expected_close_date: '2024-05-01',
-    created_at: '2024-02-20T09:00:00Z',
-  },
-  {
-    id: 'deal_003',
-    title: 'License Expansion - GlobalTech',
-    contact_id: 'contact_003',
-    contact_name: 'Emily Watson',
-    value: 75000,
-    currency: 'USD',
-    stage: 'closed_won',
-    probability: 100,
-    expected_close_date: '2024-04-01',
-    created_at: '2024-01-10T08:00:00Z',
-  },
-  {
-    id: 'deal_004',
-    title: 'Series A Investment',
-    contact_id: 'contact_004',
-    contact_name: 'David Kim',
-    value: 2000000,
-    currency: 'USD',
-    stage: 'qualification',
-    probability: 25,
-    expected_close_date: '2024-06-15',
-    created_at: '2024-03-01T14:00:00Z',
-  },
-  {
-    id: 'deal_005',
-    title: 'Partnership Agreement - InnovateTech',
-    contact_id: 'contact_005',
-    contact_name: 'Lisa Thompson',
-    value: 125000,
-    currency: 'USD',
-    stage: 'prospecting',
-    probability: 10,
-    expected_close_date: '2024-05-30',
-    created_at: '2024-03-20T11:30:00Z',
-  },
-];
-
-const activities: Activity[] = [
-  {
-    id: 'act_001',
-    type: 'call',
-    contact_id: 'contact_001',
-    contact_name: 'Sarah Chen',
-    description: 'Discussed enterprise requirements and pricing options.',
-    created_at: '2024-04-02T14:30:00Z',
-    created_by: 'Alex Chen',
-  },
-  {
-    id: 'act_002',
-    type: 'email',
-    contact_id: 'contact_002',
-    contact_name: 'Michael Rodriguez',
-    description: 'Sent pitch deck and financial projections.',
-    created_at: '2024-04-01T11:00:00Z',
-    created_by: 'Alex Chen',
-  },
-  {
-    id: 'act_003',
-    type: 'meeting',
-    contact_id: 'contact_003',
-    contact_name: 'Emily Watson',
-    description: 'Quarterly business review and expansion discussion.',
-    created_at: '2024-04-03T16:45:00Z',
-    created_by: 'Sarah Kim',
-  },
-  {
-    id: 'act_004',
-    type: 'note',
-    contact_id: 'contact_004',
-    contact_name: 'David Kim',
-    description: 'Follow-up required: Send term sheet and cap table.',
-    created_at: '2024-04-02T10:00:00Z',
-    created_by: 'Alex Chen',
-  },
-  {
-    id: 'act_005',
-    type: 'task',
-    contact_id: 'contact_005',
-    contact_name: 'Lisa Thompson',
-    description: 'Schedule technical integration call with engineering team.',
-    created_at: '2024-03-28T09:15:00Z',
-    created_by: 'Mike Johnson',
-  },
-];
-
-interface CRMProps {
-   
-  onViewChange?: (_view: ViewType) => void;
+function getContactColor(type: string) {
+  return CONTACT_TYPES.find(t => t.value === type)?.color || '#6b7280';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function CRMPage(_props: CRMProps) {
-  const [activeTab, setActiveTab] = useState(0);
-  
-  // Add Contact Modal State
-  const [addContactModalOpen, setAddContactModalOpen] = useState(false);
-  const [newContact, setNewContact] = useState<Partial<Contact>>({
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-    job_title: '',
-    contact_type: 'lead',
-    notes: '',
-  });
-  const [contactAdded, setContactAdded] = useState(false);
-  
-  // Action Modal State (Call/Email)
-  const [actionModalOpen, setActionModalOpen] = useState(false);
-  const [actionType, setActionType] = useState<'call' | 'email' | null>(null);
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [emailSubject, setEmailSubject] = useState('');
-  const [emailBody, setEmailBody] = useState('');
-  const [callNotes, setCallNotes] = useState('');
-  const [actionSuccess, setActionSuccess] = useState(false);
+function formatCurrency(v: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+}
 
-  const getStageColor = (stage: string) => {
-    const stageData = dealStages.find(s => s.value === stage);
-    return stageData?.color || '#6b7280';
+function formatDate(s: string | null | undefined) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('en-GB');
+}
+
+export function CRMPage() {
+  const { selectedBusiness } = useBusiness();
+  const bizId = selectedBusiness?.id;
+
+  const [tab, setTab] = useState(0);
+  const [contacts, setContacts] = useState<CrmContact[]>([]);
+  const [deals, setDeals] = useState<CrmDeal[]>([]);
+  const [activities, setActivities] = useState<CrmActivity[]>([]);
+  const [tasks, setTasks] = useState<CrmTask[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Contact form
+  const [contactForm, setContactForm] = useState<Partial<CrmContact> | null>(null);
+  const [dealForm, setDealForm] = useState<Partial<CrmDeal> | null>(null);
+  const [activityForm, setActivityForm] = useState<{ open: boolean; type: string; contactId: string; description: string }>({ open: false, type: 'note', contactId: '', description: '' });
+  const [taskForm, setTaskForm] = useState<Partial<CrmTask> | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
+
+  const load = useCallback(async () => {
+    if (!bizId) return;
+    setLoading(true);
+    try {
+      const [c, d, a, t] = await Promise.all([
+        q<{ crmContacts: CrmContact[] }>('query C($b:ID!){crmContacts(businessId:$b){id businessId name email phone company jobTitle contactType source notes avatar createdAt updatedAt}}', { b: bizId }),
+        q<{ crmDeals: CrmDeal[] }>('query D($b:ID!){crmDeals(businessId:$b){id businessId contactId title value currency stage probability expectedCloseDate createdAt updatedAt}}', { b: bizId }),
+        q<{ crmActivities: CrmActivity[] }>('query A($b:ID!){crmActivities(businessId:$b){id businessId contactId type description createdBy createdAt}}', { b: bizId }),
+        q<{ crmTasks: CrmTask[] }>('query T($b:ID!){crmTasks(businessId:$b){id businessId contactId title description dueDate status assignedTo createdAt updatedAt}}', { b: bizId }),
+      ]);
+      setContacts(c.crmContacts);
+      setDeals(d.crmDeals);
+      setActivities(a.crmActivities);
+      setTasks(t.crmTasks);
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, [bizId, q]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const stats = {
+    totalContacts: contacts.length,
+    totalDeals: deals.length,
+    totalValue: deals.reduce((s, d) => s + (d.stage !== 'closed_lost' ? d.value : 0), 0),
+    tasksPending: tasks.filter(t => t.status === 'pending').length,
   };
 
-  const getContactTypeColor = (type: string) => {
-    const typeData = contactTypes.find(t => t.value === type);
-    return typeData?.color || '#6b7280';
+  // Create contact
+  const saveContact = async () => {
+    if (!bizId || !contactForm?.name) return;
+    setSaving(true);
+    try {
+      if (contactForm.id) {
+        await q('mutation M($id:ID!,$b:ID!,$n:String!,$e:String,$p:String,$c:String,$j:String,$t:String,$s:String,$o:String,$a:String){updateCrmContact(id:$id businessId:$b name:$n email:$e phone:$p company:$c jobTitle:$j contactType:$t source:$s notes:$o avatar:$a){id}}', {
+          id: contactForm.id, b: bizId, n: contactForm.name, e: contactForm.email || '', p: contactForm.phone || '',
+          c: contactForm.company || '', j: contactForm.jobTitle || '', t: contactForm.contactType || 'lead',
+          s: contactForm.source || '', o: contactForm.notes || '', a: contactForm.avatar || '',
+        });
+      } else {
+        await q('mutation M($b:ID!,$n:String!,$e:String,$p:String,$c:String,$j:String,$t:String,$s:String,$o:String){createCrmContact(businessId:$b name:$n email:$e phone:$p company:$c jobTitle:$j contactType:$t source:$s notes:$o){id}}', {
+          b: bizId, n: contactForm.name, e: contactForm.email || '', p: contactForm.phone || '',
+          c: contactForm.company || '', j: contactForm.jobTitle || '', t: contactForm.contactType || 'lead',
+          s: contactForm.source || '', o: contactForm.notes || '',
+        });
+      }
+      setContactForm(null);
+      load();
+    } catch { /* ignore */ }
+    setSaving(false);
   };
 
-  const handleAddContact = () => {
-    // Simulate adding contact
-    setContactAdded(true);
-    setTimeout(() => {
-      setAddContactModalOpen(false);
-      setContactAdded(false);
-      setNewContact({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        job_title: '',
-        contact_type: 'lead',
-        notes: '',
+  const deleteContact = async (id: string) => {
+    if (!bizId || !confirm('Delete this contact?')) return;
+    await q('mutation M($id:ID!,$b:ID!){deleteCrmContact(id:$id businessId:$b)}', { id, b: bizId });
+    load();
+  };
+
+  // Create deal
+  const saveDeal = async () => {
+    if (!bizId || !dealForm?.title || !dealForm?.contactId) return;
+    setSaving(true);
+    try {
+      if (dealForm.id) {
+        await q('mutation M($id:ID!,$b:ID!,$c:ID!,$t:String!,$v:Float!,$s:String,$p:Int,$e:String){updateCrmDeal(id:$id businessId:$b contactId:$c title:$t value:$v stage:$s probability:$p expectedCloseDate:$e){id}}', {
+          id: dealForm.id, b: bizId, c: dealForm.contactId, t: dealForm.title,
+          v: dealForm.value || 0, s: dealForm.stage || 'prospecting', p: dealForm.probability || 10, e: dealForm.expectedCloseDate || null,
+        });
+      } else {
+        await q('mutation M($b:ID!,$c:ID!,$t:String!,$v:Float!,$s:String,$p:Int,$e:String){createCrmDeal(businessId:$b contactId:$c title:$t value:$v stage:$s probability:$p expectedCloseDate:$e){id}}', {
+          b: bizId, c: dealForm.contactId, t: dealForm.title,
+          v: dealForm.value || 0, s: dealForm.stage || 'prospecting', p: dealForm.probability || 10, e: dealForm.expectedCloseDate || null,
+        });
+      }
+      setDealForm(null);
+      load();
+    } catch { /* ignore */ }
+    setSaving(false);
+  };
+
+  const deleteDeal = async (id: string) => {
+    if (!bizId || !confirm('Delete this deal?')) return;
+    await q('mutation M($id:ID!,$b:ID!){deleteCrmDeal(id:$id businessId:$b)}', { id, b: bizId });
+    load();
+  };
+
+  const updateDealStage = async (id: string, stage: string) => {
+    if (!bizId) return;
+    await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmDeal(id:$id businessId:$b stage:$s){id}}', { id, b: bizId, s: stage });
+    load();
+  };
+
+  // Create activity
+  const saveActivity = async () => {
+    if (!bizId || !activityForm.description) return;
+    setSaving(true);
+    try {
+      await q('mutation M($b:ID!,$c:String,$t:String!,$d:String!,$u:String!){createCrmActivity(businessId:$b contactId:$c type:$t description:$d createdBy:$u){id}}', {
+        b: bizId, c: activityForm.contactId || null, t: activityForm.type, d: activityForm.description, u: 'Admin',
       });
-    }, 1500);
+      setActivityForm({ open: false, type: 'note', contactId: '', description: '' });
+      load();
+    } catch { /* ignore */ }
+    setSaving(false);
   };
 
-  const handleCallClick = (contact: Contact) => {
-    setSelectedContact(contact);
-    setActionType('call');
-    setCallNotes('');
-    setActionSuccess(false);
-    setActionModalOpen(true);
+  const deleteActivity = async (id: string) => {
+    if (!bizId || !confirm('Delete this activity?')) return;
+    await q('mutation M($id:ID!,$b:ID!){deleteCrmActivity(id:$id businessId:$b)}', { id, b: bizId });
+    load();
   };
 
-  const handleEmailClick = (contact: Contact) => {
-    setSelectedContact(contact);
-    setActionType('email');
-    setEmailSubject('');
-    setEmailBody('');
-    setActionSuccess(false);
-    setActionModalOpen(true);
+  // Create task
+  const saveTask = async () => {
+    if (!bizId || !taskForm?.title) return;
+    setSaving(true);
+    try {
+      if (taskForm.id) {
+        await q('mutation M($id:ID!,$b:ID!,$t:String!,$s:String){updateCrmTask(id:$id businessId:$b title:$t status:$s){id}}', {
+          id: taskForm.id, b: bizId, t: taskForm.title, s: taskForm.status || 'pending',
+        });
+      } else {
+        await q('mutation M($b:ID!,$c:String,$t:String!,$d:String,$s:String,$u:String){createCrmTask(businessId:$b contactId:$c title:$t description:$d status:$s assignedTo:$u){id}}', {
+          b: bizId, c: taskForm.contactId || null, t: taskForm.title,
+          d: taskForm.description || '', s: 'pending', u: taskForm.assignedTo || '',
+        });
+      }
+      setTaskForm(null);
+      load();
+    } catch { /* ignore */ }
+    setSaving(false);
   };
 
-  const handleSendAction = () => {
-    // Simulate sending/calling
-    setActionSuccess(true);
-    setTimeout(() => {
-      setActionModalOpen(false);
-      setActionSuccess(false);
-    }, 1500);
+  const deleteTask = async (id: string) => {
+    if (!bizId || !confirm('Delete this task?')) return;
+    await q('mutation M($id:ID!,$b:ID!){deleteCrmTask(id:$id businessId:$b)}', { id, b: bizId });
+    load();
   };
+
+  const updateTaskStatus = async (id: string, status: string) => {
+    if (!bizId) return;
+    await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmTask(id:$id businessId:$b status:$s){id}}', { id, b: bizId, s: status });
+    load();
+  };
+
+  if (!bizId) {
+    return <Box sx={{ p: 4, textAlign: 'center', color: 'var(--vm-text-muted)' }}><Building2 size={40} /><Typography sx={{ mt: 1 }}>Select a business to manage CRM</Typography></Box>;
+  }
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 4, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 } }}>
+      <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 0 } }}>
         <Box>
-          <Typography sx={{ fontSize: { xs: 18, sm: 20, md: 28 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
-            CRM
-          </Typography>
-          <Typography sx={{ fontSize: { xs: 12, sm: 13, md: 15 }, color: 'var(--vm-text-muted)' }}>
-            Manage your contacts, deals, and relationships
-          </Typography>
+          <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>CRM</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>Contacts · Deals · Activities · Tasks</Typography>
         </Box>
-        <GradientButton variant="primary" size="md" onClick={() => setAddContactModalOpen(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Plus size={18} />
-            Add Contact
-          </Box>
-        </GradientButton>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {tab === 0 && <GradientButton variant="primary" size="sm" startIcon={<UserPlus size={14} />} onClick={() => setContactForm({ name: '', contactType: 'lead' })}>Add Contact</GradientButton>}
+          {tab === 1 && <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setDealForm({ title: '', contactId: contacts[0]?.id || '', stage: 'prospecting', value: 0, probability: 10 })}>Add Deal</GradientButton>}
+          {tab === 3 && <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setTaskForm({ title: '', status: 'pending' })}>Add Task</GradientButton>}
+        </Box>
       </Box>
 
-      {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: '24px', mb: '32px' }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(4,1fr)' }, gap: { xs: 1.5, sm: 2 }, mb: 3 }}>
         {[
-          { label: 'Total Contacts', value: crmStats.total_contacts, icon: Users, color: '#3b82f6' },
-          { label: 'Active Deals', value: crmStats.total_deals, icon: TrendingUp, color: '#22c55e' },
-          { label: 'Pipeline Value', value: `$${(crmStats.total_value / 1000000).toFixed(2)}M`, icon: TrendingUp, color: '#f59e0b' },
-          { label: 'Win Rate', value: `${crmStats.win_rate}%`, icon: CheckCircle, color: '#8b5cf6' },
-        ].map((stat) => (
-          <Card
-            key={stat.label}
-            sx={{
-              bgcolor: 'var(--vm-bg-secondary)',
-              border: '1px solid var(--vm-border-subtle)',
-              borderRadius: 3,
-              p: { xs: 2, sm: 3 },
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 2,
-                  bgcolor: `${stat.color}20`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <stat.icon size={22} color={stat.color} />
-              </Box>
+          { icon: Users, label: 'Contacts', value: stats.totalContacts, color: '#3b82f6' },
+          { icon: TrendingUp, label: 'Deals', value: stats.totalDeals, color: '#22c55e' },
+          { icon: DollarSign, label: 'Pipeline Value', value: formatCurrency(stats.totalValue), color: '#f59e0b' },
+          { icon: ListChecks, label: 'Pending Tasks', value: stats.tasksPending, color: '#8b5cf6' },
+        ].map(s => (
+          <Card key={s.label} sx={{ p: { xs: 1.5, sm: 2.5 }, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
+            <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <s.icon size={18} color={s.color} />
             </Box>
-            <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-              {stat.value}
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-              {stat.label}
-            </Typography>
+            <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 800, color: 'var(--vm-text-primary)', lineHeight: 1.1 }}>{s.value}</Typography>
+            <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mt: 0.25 }}>{s.label}</Typography>
           </Card>
         ))}
       </Box>
 
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onChange={(_, v) => setActiveTab(v)}
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{
-          mb: 3,
-          '& .MuiTabs-indicator': { bgcolor: 'var(--vm-primary-500)' },
-          '& .MuiTab-root': {
-            color: 'var(--vm-text-muted)',
-            textTransform: 'none',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-            minWidth: { xs: 'auto', sm: 90 },
-            '&.Mui-selected': { color: 'var(--vm-primary-400)' },
-          },
-        }}
-      >
-        <Tab label="Contacts" />
-        <Tab label="Deals" />
-        <Tab label="Activities" />
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto" sx={{ mb: 2.5,
+        '& .MuiTabs-indicator': { bgcolor: 'var(--vm-primary-500)' },
+        '& .MuiTab-root': { color: 'var(--vm-text-muted)', textTransform: 'none', fontSize: { xs: 12, sm: 14 }, minWidth: { xs: 'auto', sm: 90 }, '&.Mui-selected': { color: 'var(--vm-primary-400)' } },
+      }}>
+        <Tab label={`Contacts (${contacts.length})`} />
+        <Tab label={`Deals (${deals.length})`} />
+        <Tab label={`Activity (${activities.length})`} />
+        <Tab label={`Tasks (${tasks.length})`} />
       </Tabs>
 
       {/* Contacts Tab */}
-      {activeTab === 0 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: '24px' }}>
-          {contacts.map((contact) => (
-            <Card
-              key={contact.id}
-              sx={{
-                bgcolor: 'var(--vm-bg-secondary)',
-                border: '1px solid var(--vm-border-subtle)',
-                borderRadius: 3,
-                p: { xs: 2, sm: 3 },
-                width: '100%',
-                maxWidth: '100%',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-                <Avatar src={contact.avatar} sx={{ width: 56, height: 56, flexShrink: 0 }} />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                    <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {contact.name}
-                    </Typography>
-                    <Chip
-                      size="small"
-                      label={contact.contact_type}
-                      sx={{
-                        bgcolor: `${getContactTypeColor(contact.contact_type)}20`,
-                        color: getContactTypeColor(contact.contact_type),
-                        fontSize: 10,
-                        fontWeight: 600,
-                        textTransform: 'capitalize',
-                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
-                      }}
-                    />
+      {tab === 0 && (
+        loading ? <Loading /> : contacts.length === 0 ? <Empty icon={Users} text="No contacts yet" /> : (
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2,1fr)', lg: 'repeat(3,1fr)' }, gap: 2 }}>
+            {contacts.map(c => (
+              <Card key={c.id} sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
+                  <Avatar sx={{ width: 44, height: 44, bgcolor: `${getContactColor(c.contactType)}22`, color: getContactColor(c.contactType), fontWeight: 700, fontSize: 16 }}>
+                    {c.name.charAt(0)}{c.name.split(' ')[1]?.charAt(0)}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{c.name}</Typography>
+                      <Chip label={c.contactType} size="small" sx={{ bgcolor: `${getContactColor(c.contactType)}18`, color: getContactColor(c.contactType), fontSize: 9, fontWeight: 700, height: 20 }} />
+                    </Box>
+                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{c.jobTitle} {c.company ? `· ${c.company}` : ''}</Typography>
                   </Box>
-                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-                    {contact.job_title} at {contact.company}
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
-                  <Mail size={14} color="var(--vm-text-muted)" />
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {contact.email}
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              }}>
-                {contact.notes}
-              </Typography>
-
-              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                <GradientButton 
-                  variant="outline" 
-                  size="sm" 
-                  sx={{ fontSize: 12, flex: { xs: 1, sm: 'none' } }}
-                  onClick={() => handleCallClick(contact)}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Phone size={14} />
-                    Call
-                  </Box>
-                </GradientButton>
-                <GradientButton 
-                  variant="outline" 
-                  size="sm" 
-                  sx={{ fontSize: 12, flex: { xs: 1, sm: 'none' } }}
-                  onClick={() => handleEmailClick(contact)}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Mail size={14} />
-                    Email
-                  </Box>
-                </GradientButton>
-              </Box>
-            </Card>
-          ))}
-        </Box>
-      )}
-
-      {/* Deals Tab */}
-      {activeTab === 1 && (
-        <Box sx={{ overflowX: 'auto' }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '280px 280px', sm: '1fr 1fr' }, gap: '24px', minWidth: { xs: 560, sm: 0 } }}>
-            {deals.map((deal) => (
-              <Card
-                key={deal.id}
-                sx={{
-                  bgcolor: 'var(--vm-bg-secondary)',
-                  border: '1px solid var(--vm-border-subtle)',
-                  borderRadius: 3,
-                  p: { xs: 2, sm: 3 },
-                  width: '100%',
-                  maxWidth: '100%',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {deal.title}
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label={deal.stage.replace('_', ' ')}
-                    sx={{
-                      bgcolor: `${getStageColor(deal.stage)}20`,
-                      color: getStageColor(deal.stage),
-                      fontSize: 10,
-                      fontWeight: 600,
-                      textTransform: 'capitalize',
-                      flexShrink: 0,
-                    }}
-                  />
-                </Box>
-
-                <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-primary-400)', mb: 2 }}>
-                  ${deal.value.toLocaleString()}
-                </Typography>
-
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                      Probability
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-primary)' }}>
-                      {deal.probability}%
-                    </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
+                    <Tooltip title="Edit"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => setContactForm(c)}><Edit3 size={13} /></IconButton></Tooltip>
+                    <Tooltip title="Delete"><IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteContact(c.id)}><Trash2 size={13} /></IconButton></Tooltip>
                   </Box>
                 </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Calendar size={14} color="var(--vm-text-muted)" />
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                    Close: {new Date(deal.expected_close_date).toLocaleDateString('en-GB')}
-                  </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 1, flexWrap: 'wrap' }}>
+                  {c.email && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Mail size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{c.email}</Typography></Box>}
+                  {c.phone && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Phone size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{c.phone}</Typography></Box>}
+                </Box>
+                {c.notes && <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.notes}</Typography>}
+                <Box sx={{ display: 'flex', gap: 0.75, mt: 1.5 }}>
+                  <GradientButton variant="outline" size="sm" sx={{ fontSize: 11, flex: 1, py: 0.5 }}
+                    onClick={() => setActivityForm({ open: true, type: 'call', contactId: c.id, description: '' })}>
+                    <PhoneCall size={12} style={{ marginRight: 4 }} /> Call
+                  </GradientButton>
+                  <GradientButton variant="outline" size="sm" sx={{ fontSize: 11, flex: 1, py: 0.5 }}
+                    onClick={() => setActivityForm({ open: true, type: 'email', contactId: c.id, description: '' })}>
+                    <Mail size={12} style={{ marginRight: 4 }} /> Email
+                  </GradientButton>
                 </Box>
               </Card>
             ))}
           </Box>
-        </Box>
+        )
       )}
 
-      {/* Activities Tab */}
-      {activeTab === 2 && (
-        <Card
-          sx={{
-            bgcolor: 'var(--vm-bg-secondary)',
-            border: '1px solid var(--vm-border-subtle)',
-            borderRadius: 3,
-            p: { xs: 2, sm: 3 },
-          }}
-        >
-          {activities.map((activity, idx) => (
-            <Box
-              key={activity.id}
-              sx={{
-                display: 'flex',
-                gap: { xs: 2, sm: 3 },
-                pb: 3,
-                mb: 3,
-                borderBottom: idx < activities.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none',
-              }}
-            >
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  bgcolor: 'var(--vm-bg-tertiary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                {activity.type === 'call' && <Phone size={18} color="var(--vm-primary-400)" />}
-                {activity.type === 'email' && <Mail size={18} color="var(--vm-primary-400)" />}
-                {activity.type === 'meeting' && <Users size={18} color="var(--vm-primary-400)" />}
-                {activity.type === 'note' && <Calendar size={18} color="var(--vm-primary-400)" />}
-              </Box>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-                    {activity.contact_name}
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label={activity.type}
-                    sx={{
-                      bgcolor: 'var(--vm-bg-tertiary)',
-                      color: 'var(--vm-text-muted)',
-                      fontSize: 10,
-                      textTransform: 'capitalize',
-                    }}
-                  />
-                </Box>
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 1 }}>
-                  {activity.description}
-                </Typography>
-                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>
-                  {new Date(activity.created_at).toLocaleString('en-GB')} by {activity.created_by}
-                </Typography>
-              </Box>
-            </Box>
-          ))}
-        </Card>
-      )}
-
-      {/* Add Contact Modal */}
-      <Dialog
-        open={addContactModalOpen}
-        onClose={() => !contactAdded && setAddContactModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: 'var(--vm-bg-secondary)',
-            color: 'var(--vm-text-primary)',
-            borderRadius: 3,
-          },
-        }}
-      >
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <User size={24} color="var(--vm-primary-400)" />
-              <Typography sx={{ fontSize: 18, fontWeight: 600 }}>
-                Add New Contact
-              </Typography>
-            </Box>
-            <Box
-              onClick={() => !contactAdded && setAddContactModalOpen(false)}
-              sx={{
-                cursor: contactAdded ? 'not-allowed' : 'pointer',
-                p: 1,
-                borderRadius: 1,
-                opacity: contactAdded ? 0.5 : 1,
-                '&:hover': !contactAdded ? { bgcolor: 'var(--vm-bg-tertiary)' } : undefined,
-              }}
-            >
-              <X size={20} color="var(--vm-text-muted)" />
-            </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {contactAdded ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '50%',
-                  bgcolor: 'var(--vm-primary-900)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mx: 'auto',
-                  mb: 2,
-                }}
-              >
-                <CheckCircle size={32} color="var(--vm-primary-400)" />
-              </Box>
-              <Typography sx={{ fontSize: 20, fontWeight: 600, mb: 1 }}>
-                Contact Added!
-              </Typography>
-              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
-                {newContact.name} has been added to your contacts.
-              </Typography>
-            </Box>
-          ) : (
-            <>
-              <Grid container spacing={2}>
-                <Grid size={12}>
-                  <TextField
-                    fullWidth
-                    label="Full Name"
-                    value={newContact.name}
-                    onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                    sx={{
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    type="email"
-                    value={newContact.email}
-                    onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                    sx={{
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    fullWidth
-                    label="Phone"
-                    value={newContact.phone}
-                    onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                    sx={{
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    fullWidth
-                    label="Company"
-                    value={newContact.company}
-                    onChange={(e) => setNewContact({ ...newContact, company: e.target.value })}
-                    sx={{
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                </Grid>
-                <Grid size={6}>
-                  <TextField
-                    fullWidth
-                    label="Job Title"
-                    value={newContact.job_title}
-                    onChange={(e) => setNewContact({ ...newContact, job_title: e.target.value })}
-                    sx={{
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                </Grid>
-                <Grid size={12}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Contact Type</InputLabel>
-                    <Select
-                      value={newContact.contact_type}
-                      label="Contact Type"
-                      onChange={(e) => setNewContact({ ...newContact, contact_type: e.target.value as Contact['contact_type'] })}
-                      sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
-                    >
-                      {contactTypes.map((type) => (
-                        <MenuItem key={type.value} value={type.value} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{type.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid size={12}>
-                  <TextField
-                    fullWidth
-                    label="Notes"
-                    multiline
-                    rows={3}
-                    value={newContact.notes}
-                    onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
-                    sx={{
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                </Grid>
-              </Grid>
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-                <GradientButton variant="outline" onClick={() => setAddContactModalOpen(false)}>
-                  Cancel
-                </GradientButton>
-                <GradientButton
-                  variant="primary"
-                  onClick={handleAddContact}
-                  disabled={!newContact.name || !newContact.email}
-                >
-                  Add Contact
-                </GradientButton>
-              </Box>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Action Modal (Call/Email) */}
-      <Dialog
-        open={actionModalOpen}
-        onClose={() => !actionSuccess && setActionModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: 'var(--vm-bg-secondary)',
-            color: 'var(--vm-text-primary)',
-            borderRadius: 3,
-          },
-        }}
-      >
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {actionType === 'call' ? (
-                <PhoneCall size={24} color="var(--vm-primary-400)" />
-              ) : (
-                <Mail size={24} color="var(--vm-primary-400)" />
-              )}
-              <Typography sx={{ fontSize: 18, fontWeight: 600 }}>
-                {actionType === 'call' ? 'Call' : 'Email'} {selectedContact?.name}
-              </Typography>
-            </Box>
-            <Box
-              onClick={() => !actionSuccess && setActionModalOpen(false)}
-              sx={{
-                cursor: actionSuccess ? 'not-allowed' : 'pointer',
-                p: 1,
-                borderRadius: 1,
-                opacity: actionSuccess ? 0.5 : 1,
-                '&:hover': !actionSuccess ? { bgcolor: 'var(--vm-bg-tertiary)' } : undefined,
-              }}
-            >
-              <X size={20} color="var(--vm-text-muted)" />
-            </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {actionSuccess ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '50%',
-                  bgcolor: 'var(--vm-primary-900)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mx: 'auto',
-                  mb: 2,
-                }}
-              >
-                <CheckCircle size={32} color="var(--vm-primary-400)" />
-              </Box>
-              <Typography sx={{ fontSize: 20, fontWeight: 600, mb: 1 }}>
-                {actionType === 'call' ? 'Call Logged!' : 'Email Sent!'}
-              </Typography>
-              <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
-                {actionType === 'call'
-                  ? `Call with ${selectedContact?.name} has been logged.`
-                  : `Email to ${selectedContact?.email} has been sent.`}
-              </Typography>
-            </Box>
-          ) : (
-            <>
-              <Card
-                sx={{
-                  p: 2,
-                  bgcolor: 'var(--vm-bg-tertiary)',
-                  mb: 3,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                }}
-              >
-                <Avatar src={selectedContact?.avatar} sx={{ width: 48, height: 48 }} />
-                <Box>
-                  <Typography sx={{ fontSize: 16, fontWeight: 600 }}>
-                    {selectedContact?.name}
-                  </Typography>
-                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-                    {actionType === 'call' ? selectedContact?.phone : selectedContact?.email}
-                  </Typography>
-                </Box>
-              </Card>
-
-              {actionType === 'call' ? (
-                <TextField
-                  fullWidth
-                  label="Call Notes"
-                  multiline
-                  rows={4}
-                  placeholder="Enter notes about the call..."
-                  value={callNotes}
-                  onChange={(e) => setCallNotes(e.target.value)}
-                  sx={{
-                    '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                    '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                  }}
-                />
-              ) : (
-                <>
-                  <TextField
-                    fullWidth
-                    label="Subject"
-                    placeholder="Enter email subject..."
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                    sx={{
-                      mb: 2,
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Message"
-                    multiline
-                    rows={6}
-                    placeholder="Enter your message..."
-                    value={emailBody}
-                    onChange={(e) => setEmailBody(e.target.value)}
-                    sx={{
-                      '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                      '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                    }}
-                  />
-                </>
-              )}
-
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-                <GradientButton variant="outline" onClick={() => setActionModalOpen(false)}>
-                  Cancel
-                </GradientButton>
-                <GradientButton
-                  variant="primary"
-                  onClick={handleSendAction}
-                  disabled={actionType === 'email' ? !emailSubject || !emailBody : false}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {actionType === 'call' ? (
-                      <>
-                        <PhoneCall size={16} />
-                        Log Call
-                      </>
-                    ) : (
-                      <>
-                        <Send size={16} />
-                        Send Email
-                      </>
-                    )}
+      {/* Deals Tab — Kanban Board */}
+      {tab === 1 && (
+        loading ? <Loading /> : deals.length === 0 ? <Empty icon={TrendingUp} text="No deals yet. Start by creating your first deal!" /> : (
+          <>
+            {/* Pipeline summary bar */}
+            <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, mb: 2.5, overflowX: 'auto', pb: 0.5 }}>
+              {DEAL_STAGES.map(s => {
+                const stageDeals = deals.filter(d => d.stage === s.value);
+                const stageValue = stageDeals.reduce((sum, d) => sum + d.value, 0);
+                return (
+                  <Box key={s.value} sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderRadius: 2, bgcolor: `${s.color}10`, border: `1px solid ${s.color}20`, whiteSpace: 'nowrap' }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.color }} />
+                    <Box>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: s.color }}>{s.label}</Typography>
+                      <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>{stageDeals.length} deals · {formatCurrency(stageValue)}</Typography>
+                    </Box>
                   </Box>
-                </GradientButton>
+                );
+              })}
+            </Box>
+
+            {/* Kanban columns */}
+            <Box sx={{
+              display: { xs: 'flex', md: 'grid' },
+              flexDirection: { xs: 'column', md: 'none' },
+              gridTemplateColumns: { md: `repeat(${DEAL_STAGES.length}, 1fr)` },
+              gap: 2,
+              overflowX: { md: 'auto' },
+              pb: 1,
+            }}>
+              {DEAL_STAGES.map(stage => {
+                const stageDeals = deals.filter(d => d.stage === stage.value);
+                const stageValue = stageDeals.reduce((sum, d) => sum + d.value, 0);
+                return (
+                  <Box key={stage.value} sx={{
+                    minWidth: { xs: '100%', md: 220 },
+                    bgcolor: 'rgba(255,255,255,.02)',
+                    borderRadius: 3,
+                    border: `1px solid ${stage.color}18`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxHeight: { xs: 'none', md: 520 },
+                  }}>
+                    {/* Column header */}
+                    <Box sx={{
+                      px: 1.5, py: 1.25, borderBottom: `1px solid ${stage.color}15`,
+                      display: 'flex', alignItems: 'center', gap: 1, bgcolor: `${stage.color}08`,
+                      borderTopLeftRadius: 11, borderTopRightRadius: 11,
+                    }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: stage.color, flexShrink: 0 }} />
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'var(--vm-text-primary)', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 }}>{stage.label}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography sx={{ fontSize: 11, fontWeight: 800, color: stage.color }}>{stageDeals.length}</Typography>
+                        <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>{formatCurrency(stageValue)}</Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Column body */}
+                    <Box sx={{
+                      p: 1, flex: 1, overflowY: 'auto',
+                      display: 'flex', flexDirection: 'column', gap: 1,
+                      minHeight: { xs: 'auto', md: 200 },
+                    }}>
+                      {stageDeals.length === 0 && (
+                        <Box sx={{ py: 3, textAlign: 'center' }}>
+                          <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Empty</Typography>
+                        </Box>
+                      )}
+                      {stageDeals.map(d => {
+                        const contact = contacts.find(c => c.id === d.contactId);
+                        const stageIdx = DEAL_STAGES.findIndex(s => s.value === d.stage);
+                        return (
+                          <Card key={d.id} sx={{
+                            p: 1.5, bgcolor: 'var(--vm-bg-secondary)', border: `1px solid ${stage.color}20`,
+                            borderRadius: 2.5, boxShadow: `0 1px 3px ${stage.color}10`,
+                            transition: 'all .15s ease',
+                            '&:hover': { borderColor: stage.color, boxShadow: `0 4px 12px ${stage.color}20`, transform: 'translateY(-1px)' },
+                          }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', lineHeight: 1.3 }}>{d.title}</Typography>
+                              <IconButton size="small" sx={{ color: '#ef444466', p: 0.25, ml: 0.5, flexShrink: 0 }} onClick={() => deleteDeal(d.id)}><Trash2 size={11} /></IconButton>
+                            </Box>
+
+                            <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-primary-400)', mb: 1 }}>{formatCurrency(d.value)}</Typography>
+
+                            {/* Probability bar */}
+                            <Box sx={{ mb: 1 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+                                <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>Probability</Typography>
+                                <Typography sx={{ fontSize: 9, fontWeight: 700, color: stage.color }}>{d.probability}%</Typography>
+                              </Box>
+                              <Box sx={{ height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
+                                <Box sx={{ height: '100%', borderRadius: 2, width: `${d.probability}%`, bgcolor: stage.color, transition: 'width .4s ease' }} />
+                              </Box>
+                            </Box>
+
+                            {/* Contact & date */}
+                            {contact && (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
+                                <Avatar sx={{ width: 20, height: 20, fontSize: 8, bgcolor: `${getContactColor(contact.contactType)}22`, color: getContactColor(contact.contactType), fontWeight: 700 }}>
+                                  {contact.name.charAt(0)}
+                                </Avatar>
+                                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{contact.name}</Typography>
+                              </Box>
+                            )}
+                            {d.expectedCloseDate && (
+                              <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Calendar size={10} /> {formatDate(d.expectedCloseDate)}
+                              </Typography>
+                            )}
+
+                            {/* Stage advancement */}
+                            <Box sx={{ mt: 1.25, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                              {stageIdx > 0 && (() => {
+                                const prev = DEAL_STAGES[stageIdx - 1];
+                                return (
+                                  <Chip size="small" label={`← ${prev.label}`} onClick={() => updateDealStage(d.id, prev.value)}
+                                    sx={{ fontSize: 8, bgcolor: `${prev.color}15`, color: prev.color, cursor: 'pointer', height: 18, '&:hover': { bgcolor: `${prev.color}30` } }} />
+                                );
+                              })()}
+                              {stageIdx < DEAL_STAGES.length - 1 && (() => {
+                                const next = DEAL_STAGES[stageIdx + 1];
+                                return (
+                                  <Chip size="small" label={`${next.label} →`} onClick={() => updateDealStage(d.id, next.value)}
+                                    sx={{ fontSize: 8, bgcolor: `${next.color}15`, color: next.color, cursor: 'pointer', height: 18, '&:hover': { bgcolor: `${next.color}30` } }} />
+                                );
+                              })()}
+                            </Box>
+                          </Card>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          </>
+        )
+      )}
+
+      {/* Activity Tab */}
+      {tab === 2 && (
+        loading ? <Loading /> : activities.length === 0 ? <Empty icon={Calendar} text="No activities yet" /> : (
+          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
+            {activities.map((a, idx) => {
+              const Icon = ACTIVITY_ICONS[a.type] || Calendar;
+              return (
+                <Box key={a.id} sx={{ display: 'flex', gap: 2, p: { xs: 1.5, sm: 2 }, borderBottom: idx < activities.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                  <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: 'var(--vm-bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={16} color="var(--vm-primary-400)" />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25, flexWrap: 'wrap' }}>
+                      <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                        {contacts.find(c => c.id === a.contactId)?.name || 'Unknown'}
+                      </Typography>
+                      <Chip label={a.type} size="small" sx={{ bgcolor: 'var(--vm-bg-tertiary)', color: 'var(--vm-text-muted)', fontSize: 9, height: 20 }} />
+                    </Box>
+                    <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 0.5 }}>{a.description}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{formatDate(a.createdAt)} by {a.createdBy}</Typography>
+                  </Box>
+                  <Tooltip title="Delete"><IconButton size="small" sx={{ color: '#ef444488', flexShrink: 0 }} onClick={() => deleteActivity(a.id)}><Trash2 size={13} /></IconButton></Tooltip>
+                </Box>
+              );
+            })}
+          </Card>
+        )
+      )}
+
+      {/* Tasks Tab */}
+      {tab === 3 && (
+        loading ? <Loading /> : tasks.length === 0 ? <Empty icon={ListChecks} text="No tasks yet" /> : (
+          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
+            {tasks.map((t, idx) => (
+              <Box key={t.id} sx={{ display: 'flex', alignItems: 'center', px: { xs: 1.5, sm: 2.5 }, py: 1.25, borderBottom: idx < tasks.length - 1 ? '1px solid var(--vm-border-subtle)' : 'none', gap: 1.5, '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                <Box sx={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${t.status === 'done' ? '#22c55e' : t.status === 'in_progress' ? '#f59e0b' : 'rgba(255,255,255,.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                  onClick={() => updateTaskStatus(t.id, t.status === 'done' ? 'pending' : 'done')}>
+                  {t.status === 'done' && <CheckCircle size={14} color="#22c55e" />}
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: t.status === 'done' ? 400 : 600, color: t.status === 'done' ? 'var(--vm-text-muted)' : 'var(--vm-text-primary)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</Typography>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.25 }}>
+                    {t.assignedTo && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}><Users size={11} style={{ marginRight: 2, verticalAlign: -1 }} />{t.assignedTo}</Typography>}
+                    {t.dueDate && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}><Calendar size={11} style={{ marginRight: 2, verticalAlign: -1 }} />{formatDate(t.dueDate)}</Typography>}
+                    <Chip label={t.status.replace('_', ' ')} size="small" sx={{ bgcolor: t.status === 'done' ? 'rgba(34,197,94,.12)' : t.status === 'in_progress' ? 'rgba(245,158,11,.12)' : 'rgba(148,163,184,.12)', color: t.status === 'done' ? '#22c55e' : t.status === 'in_progress' ? '#f59e0b' : '#94a3b8', fontSize: 9, height: 18 }} />
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
+                  <Tooltip title="Edit"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => setTaskForm(t)}><Edit3 size={13} /></IconButton></Tooltip>
+                  <Tooltip title="Delete"><IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteTask(t.id)}><Trash2 size={13} /></IconButton></Tooltip>
+                </Box>
               </Box>
-            </>
-          )}
+            ))}
+          </Card>
+        )
+      )}
+
+      {/* Contact Dialog */}
+      <Dialog open={!!contactForm} onClose={() => setContactForm(null)} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <UserPlus size={20} color="var(--vm-primary-400)" />
+          <Typography sx={{ fontWeight: 700 }}>{contactForm?.id ? 'Edit' : 'New'} Contact</Typography>
+          <IconButton size="small" onClick={() => setContactForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <TextField size="small" label="Full Name" value={contactForm?.name || ''} onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Email" value={contactForm?.email || ''} onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Phone" value={contactForm?.phone || ''} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Company" value={contactForm?.company || ''} onChange={e => setContactForm({ ...contactForm, company: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Job Title" value={contactForm?.jobTitle || ''} onChange={e => setContactForm({ ...contactForm, jobTitle: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <FormControl size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Type</InputLabel>
+              <Select value={contactForm?.contactType || 'lead'} label="Type" onChange={e => setContactForm({ ...contactForm, contactType: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {CONTACT_TYPES.map(t => <MenuItem key={t.value} value={t.value} sx={{ textTransform: 'capitalize' }}>{t.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField size="small" label="Source" value={contactForm?.source || ''} onChange={e => setContactForm({ ...contactForm, source: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Notes" multiline rows={3} value={contactForm?.notes || ''} onChange={e => setContactForm({ ...contactForm, notes: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          </Box>
         </DialogContent>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setContactForm(null)}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={saving || !contactForm?.name} onClick={saveContact}>
+            {saving ? <CircularProgress size={14} /> : contactForm?.id ? 'Update' : 'Create'}
+          </GradientButton>
+        </Box>
       </Dialog>
+
+      {/* Deal Dialog */}
+      <Dialog open={!!dealForm} onClose={() => setDealForm(null)} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <DollarSign size={20} color="var(--vm-primary-400)" />
+          <Typography sx={{ fontWeight: 700 }}>{dealForm?.id ? 'Edit' : 'New'} Deal</Typography>
+          <IconButton size="small" onClick={() => setDealForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <TextField size="small" label="Title" value={dealForm?.title || ''} onChange={e => setDealForm({ ...dealForm, title: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <FormControl size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Contact</InputLabel>
+              <Select value={dealForm?.contactId || ''} label="Contact" onChange={e => setDealForm({ ...dealForm, contactId: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {contacts.map(c => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField size="small" label="Value" type="number" value={dealForm?.value || ''} onChange={e => setDealForm({ ...dealForm, value: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <FormControl size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Stage</InputLabel>
+              <Select value={dealForm?.stage || 'prospecting'} label="Stage" onChange={e => setDealForm({ ...dealForm, stage: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {DEAL_STAGES.map(s => <MenuItem key={s.value} value={s.value} sx={{ textTransform: 'capitalize' }}>{s.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField size="small" label="Probability %" type="number" value={dealForm?.probability || 10} onChange={e => setDealForm({ ...dealForm, probability: parseInt(e.target.value) || 0 })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Expected Close" type="date" value={dealForm?.expectedCloseDate || ''} onChange={e => setDealForm({ ...dealForm, expectedCloseDate: e.target.value })}
+              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          </Box>
+        </DialogContent>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setDealForm(null)}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={saving || !dealForm?.title || !dealForm?.contactId} onClick={saveDeal}>
+            {saving ? <CircularProgress size={14} /> : dealForm?.id ? 'Update' : 'Create'}
+          </GradientButton>
+        </Box>
+      </Dialog>
+
+      {/* Activity Dialog */}
+      <Dialog open={activityForm.open} onClose={() => setActivityForm({ open: false, type: 'note', contactId: '', description: '' })} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {activityForm.type === 'call' ? <PhoneCall size={20} color="var(--vm-primary-400)" /> : <Mail size={20} color="var(--vm-primary-400)" />}
+          <Typography sx={{ fontWeight: 700, textTransform: 'capitalize' }}>Log {activityForm.type}</Typography>
+          <IconButton size="small" onClick={() => setActivityForm({ open: false, type: 'note', contactId: '', description: '' })} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2.5 }}>
+          {activityForm.contactId && contacts.find(c => c.id === activityForm.contactId) && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, p: 1.5, borderRadius: 2, bgcolor: 'var(--vm-bg-tertiary)' }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'var(--vm-primary-600)', fontSize: 12, fontWeight: 700 }}>
+                {contacts.find(c => c.id === activityForm.contactId)!.name.charAt(0)}
+              </Avatar>
+              <Box><Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)' }}>{contacts.find(c => c.id === activityForm.contactId)!.name}</Typography></Box>
+            </Box>
+          )}
+          <TextField fullWidth multiline rows={4} label="Description" value={activityForm.description} onChange={e => setActivityForm({ ...activityForm, description: e.target.value })}
+            sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+        </DialogContent>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setActivityForm({ open: false, type: 'note', contactId: '', description: '' })}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={saving || !activityForm.description} onClick={saveActivity}>
+            {saving ? <CircularProgress size={14} /> : 'Log Activity'}
+          </GradientButton>
+        </Box>
+      </Dialog>
+
+      {/* Task Dialog */}
+      <Dialog open={!!taskForm} onClose={() => setTaskForm(null)} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <ListChecks size={20} color="var(--vm-primary-400)" />
+          <Typography sx={{ fontWeight: 700 }}>{taskForm?.id ? 'Edit' : 'New'} Task</Typography>
+          <IconButton size="small" onClick={() => setTaskForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <TextField size="small" label="Title" value={taskForm?.title || ''} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Description" multiline rows={2} value={taskForm?.description || ''} onChange={e => setTaskForm({ ...taskForm, description: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <FormControl size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Status</InputLabel>
+              <Select value={taskForm?.status || 'pending'} label="Status" onChange={e => setTaskForm({ ...taskForm, status: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {['pending', 'in_progress', 'done'].map(s => <MenuItem key={s} value={s} sx={{ textTransform: 'capitalize' }}>{s.replace('_', ' ')}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField size="small" label="Assigned To" value={taskForm?.assignedTo || ''} onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Due Date" type="date" value={taskForm?.dueDate || ''} onChange={e => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          </Box>
+        </DialogContent>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setTaskForm(null)}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={saving || !taskForm?.title} onClick={saveTask}>
+            {saving ? <CircularProgress size={14} /> : taskForm?.id ? 'Update' : 'Create'}
+          </GradientButton>
+        </Box>
+      </Dialog>
+    </Box>
+  );
+}
+
+function Loading() {
+  return <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 6, justifyContent: 'center' }}><CircularProgress size={18} sx={{ color: 'var(--vm-primary-400)' }} /><Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 13 }}>Loading...</Typography></Box>;
+}
+
+function Empty({ icon: Icon, text }: { icon: typeof Users; text: string }) {
+  return (
+    <Box sx={{ textAlign: 'center', py: 6 }}>
+      <Icon size={36} color="var(--vm-text-muted)" />
+      <Typography sx={{ mt: 1, color: 'var(--vm-text-muted)', fontSize: 14 }}>{text}</Typography>
     </Box>
   );
 }

@@ -10,12 +10,14 @@ import (
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/banking"
 	"github.com/venturemate/vmbackend/internal/businesses"
+	"github.com/venturemate/vmbackend/internal/crm"
 	"github.com/venturemate/vmbackend/internal/db"
 	"github.com/venturemate/vmbackend/internal/domains"
 	"github.com/venturemate/vmbackend/internal/email"
 	"github.com/venturemate/vmbackend/internal/investors"
 	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/marketplace"
+	"github.com/venturemate/vmbackend/internal/metricool"
 	"github.com/venturemate/vmbackend/internal/notifications"
 	"github.com/venturemate/vmbackend/internal/oauth"
 	"github.com/venturemate/vmbackend/internal/rates"
@@ -23,6 +25,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/s3"
 	"github.com/venturemate/vmbackend/internal/scores"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
+	"github.com/venturemate/vmbackend/internal/support"
 	"github.com/venturemate/vmbackend/internal/users"
 	"github.com/venturemate/vmbackend/internal/websites"
 )
@@ -58,6 +61,10 @@ type Container struct {
 	InvoiceRepo         *invoices.Repository
 	RegistrationRepo    *registrations.Repository
 	MarketplaceRepo     *marketplace.Repository
+	SupportRepo         *support.Repository
+	SupportService      *support.Service
+	CrmRepo             *crm.Repository
+	MetricoolService    *metricool.Service
 }
 
 func NewContainer(ctx context.Context) (*Container, error) {
@@ -93,6 +100,10 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	invoiceRepo := invoices.NewRepository(dbPool)
 	registrationRepo := registrations.NewRepository(dbPool)
 	marketplaceRepo := marketplace.NewRepository(dbPool)
+	supportRepo := support.NewRepository(dbPool)
+	crmRepo := crm.NewRepository(dbPool)
+	metricoolRepo := metricool.NewRepository(dbPool)
+	metricoolSvc := metricool.NewService(metricoolRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
 	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
 	rateService := rates.NewService()
@@ -120,6 +131,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	claudeKey := os.Getenv("CLAUDE_API_KEY")
 	grokKey := os.Getenv("GROK_API_KEY")
 	aiManager := ai.NewProviderManagerFromEnv()
+	supportSvc := support.NewService(supportRepo, aiManager, emailSvc)
 
 	// 7. OAuth
 	oauthRepo := oauth.NewRepository(dbPool)
@@ -168,5 +180,9 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		BankAccountRepo:     bankAccountRepo,
 		InvoiceRepo:         invoiceRepo,
 		RegistrationRepo:    registrationRepo,
+		SupportRepo:         supportRepo,
+		SupportService:      supportSvc,
+		CrmRepo:             crmRepo,
+		MetricoolService:    metricoolSvc,
 	}, nil
 }

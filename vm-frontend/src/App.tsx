@@ -41,6 +41,8 @@ import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { AIProviderProvider } from './contexts/AIProviderContext';
+import { SupportChatProvider, useSupportChat } from './contexts/SupportChatContext';
+import { SupportChatFloating } from './components/support/SupportChatFloating';
 import type { ViewType } from './types/venturemate';
 import {
   TrendingUp,
@@ -254,12 +256,15 @@ function VentureMateApp() {
         <NotificationProvider>
         <ToastProvider>
         <CurrencyProvider>
+        <SupportChatProvider>
         <VentureMateLayout
           activeView={activeView}
           onViewChange={handleViewChange}
         >
           {renderContent()}
         </VentureMateLayout>
+        <SupportChatFloating />
+        </SupportChatProvider>
         </CurrencyProvider>
         </ToastProvider>
         </NotificationProvider>

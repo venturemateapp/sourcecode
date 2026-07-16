@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useToast } from '../shared/toast';
+
 import { BusinessSwitcher } from './BusinessSwitcher';
 import type { ViewType } from '../../types/venturemate';
 
@@ -78,7 +78,6 @@ export function Header({
 }: HeaderProps) {
   const { user, updateProfile, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, deleteAllRead } = useNotifications();
-  const toast = useToast();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
@@ -254,7 +253,7 @@ export function Header({
 
         <Tooltip title="Messages">
           <IconButton
-            onClick={() => toast.info('Coming Soon', { description: 'We\'re building something great here — stay tuned!' })}
+            onClick={() => onViewChange('messages')}
             sx={{ color: 'var(--vm-text-secondary)', p: { xs: 0.5, md: 0.75 } }}
           >
             <Badge
