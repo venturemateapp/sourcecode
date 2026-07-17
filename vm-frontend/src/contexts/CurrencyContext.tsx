@@ -29,6 +29,11 @@ const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 const defaultRates: CurrencyRate[] = [
   { code: 'USD', name: 'US Dollar', symbol: '$', rate: 1 },
   { code: 'EUR', name: 'Euro', symbol: '€', rate: 0.92 },
+  { code: 'GBP', name: 'British Pound', symbol: '£', rate: 0.79 },
+  { code: 'GHS', name: 'Ghanaian Cedi', symbol: '₵', rate: 15.50 },
+  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦', rate: 1550.00 },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh', rate: 145.00 },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R', rate: 18.20 },
 ];
 
 function findRate(rates: CurrencyRate[], code: string): CurrencyRate {

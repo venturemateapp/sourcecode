@@ -37,8 +37,9 @@ function getContactColor(type: string) {
   return CONTACT_TYPES.find(t => t.value === type)?.color || '#6b7280';
 }
 
-function formatCurrency(v: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+function formatCurrency(v: number, currency = 'USD') {
+  try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v); }
+  catch { return `${currency} ${v.toLocaleString()}`; }
 }
 
 function formatDate(s: string | null | undefined) {

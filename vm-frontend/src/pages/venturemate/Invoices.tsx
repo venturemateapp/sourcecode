@@ -138,7 +138,7 @@ export function InvoicesPage() {
               <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
               <Select value={form?.currency || 'USD'} label="Currency" onChange={e => setForm({ ...form, currency: e.target.value })}
                 sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                {['USD', 'EUR', 'GBP', 'NGN', 'KES', 'ZAR'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                {['USD', 'EUR', 'GBP', 'GHS', 'NGN', 'KES', 'ZAR'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
             </FormControl>
             <TextField size="small" label="Due Date" type="date" value={form?.dueDate || ''} onChange={e => setForm({ ...form, dueDate: e.target.value })}
