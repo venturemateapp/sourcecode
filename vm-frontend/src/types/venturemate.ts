@@ -532,6 +532,7 @@ export type ViewType =
   | 'email-settings'
   | 'calendar'
   | 'custom-objects'
+  | 'workflows'
   | 'dashboards';
 
 // Navigation

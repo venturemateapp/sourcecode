@@ -82,6 +82,7 @@ type Container struct {
 	CalendarSyncService  *crmcalendar.SyncService
 	CustomObjectsRepo    *crmobjects.Repository
 	WorkflowRepo         *crmworkflow.Repository
+	WorkflowEngine       *crmworkflow.Engine
 	FinancingRepo        *financing.Repository
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
@@ -134,6 +135,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	calendarSyncSvc := crmcalendar.NewSyncService(calendarRepo)
 	customObjectsRepo := crmobjects.NewRepository(dbPool)
 	workflowRepo := crmworkflow.NewRepository(dbPool)
+	workflowEngine := crmworkflow.NewEngine(workflowRepo, dbPool, emailSvc)
 	financingRepo := financing.NewRepository(dbPool)
 	expenditureRepo := expenditure.NewRepository(dbPool)
 	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
@@ -225,6 +227,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		CalendarSyncService:  calendarSyncSvc,
 		CustomObjectsRepo:    customObjectsRepo,
 		WorkflowRepo:         workflowRepo,
+		WorkflowEngine:       workflowEngine,
 		FinancingRepo:        financingRepo,
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,

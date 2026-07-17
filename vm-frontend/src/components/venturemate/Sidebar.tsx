@@ -113,6 +113,7 @@ const navSections: NavSection[] = [
       { label: 'Social Media', icon: 'Share2', view: 'social' },
       { label: 'Marketplace', icon: 'Store', view: 'marketplace' },
       { label: 'Custom Objects', icon: 'Grid3x3', view: 'custom-objects' },
+      { label: 'Workflows', icon: 'Workflow', view: 'workflows' },
     ],
   },
   {
