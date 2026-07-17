@@ -66,7 +66,7 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
 
 export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) {
   const { selectedBusiness } = useBusiness();
-  const [viewMode, setViewMode] = useState<'grid' | 'slide'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'slide'>('slide');
 
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its pitch deck with AI." />;
 
@@ -110,10 +110,16 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
           'Rewrite the funding ask so assumptions and use of funds are clear.',
         ]}
         emptyLabel="No approved pitch deck exists. Ask AI to create the first investor story."
-        renderCurrent={() => viewMode === 'grid' && hasDeck ? <DeckPreview deck={deck} primary={primary} dark={dark} /> : null}
+        renderCurrent={() => {
+          if (viewMode === 'slide' && hasDeck) return <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          if (hasDeck) return <DeckPreview deck={deck} primary={primary} dark={dark} />;
+          return null;
+        }}
         renderProposal={(change) => {
           const proposed = parseDeck(change);
-          return proposed ? <DeckPreview deck={proposed} primary={primary} dark={dark} proposed /> : <Typography color="error">The AI returned an invalid pitch-deck preview.</Typography>;
+          if (!proposed) return <Typography color="error">The AI returned an invalid pitch-deck preview.</Typography>;
+          if (viewMode === 'slide') return <SlideViewer slides={proposed.slides} title={proposed.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          return <DeckPreview deck={proposed} primary={primary} dark={dark} proposed />;
         }}
       />
     </Box>
