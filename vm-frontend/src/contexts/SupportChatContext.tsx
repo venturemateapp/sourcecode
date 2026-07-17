@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { graphqlRequest } from '../lib/api';
 import { useAuth } from './AuthContext';
 
@@ -6,14 +6,6 @@ interface SupportMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-}
-
-interface SupportSession {
-  id: string;
-  subject: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface SupportChatResult {
@@ -24,87 +16,101 @@ interface SupportChatResult {
   };
 }
 
+interface SupportSession {
+  id: string;
+  subject: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage: string;
+}
+
 interface SupportChatContextValue {
   open: boolean;
   setOpen: (v: boolean) => void;
   messages: SupportMessage[];
+  sessions: SupportSession[];
   sessionId: string | null;
   isEscalated: boolean;
   loading: boolean;
   sendMessage: (prompt: string) => Promise<void>;
   resetChat: () => void;
+  switchSession: (id: string) => Promise<void>;
   escalate: () => Promise<void>;
 }
 
 const SupportChatContext = createContext<SupportChatContextValue | undefined>(undefined);
 
-const SUPPORT_CHAT_MUTATION = `
-  mutation SupportChat($userId: ID!, $name: String!, $email: String!, $prompt: String!, $sessionId: String) {
-    supportChat(userId: $userId, name: $name, email: $email, prompt: $prompt, sessionId: $sessionId) {
-      message
-      sessionId
-      isEscalated
-    }
-  }
-`;
-
-const ESCALATE_MUTATION = `
-  mutation SupportEscalate($userId: ID!, $sessionId: ID!) {
-    supportEscalate(userId: $userId, sessionId: $sessionId)
-  }
-`;
-
 export function SupportChatProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [sessions, setSessions] = useState<SupportSession[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isEscalated, setIsEscalated] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
+
+  // Load existing sessions on mount
+  useEffect(() => {
+    if (!user?.id) return;
+    q<{ mySupportSessions: SupportSession[] }>('query Q($u:ID!){mySupportSessions(userId:$u){id subject status createdAt updatedAt}}', { u: user.id })
+      .then(d => setSessions(d.mySupportSessions)).catch(() => {});
+  }, [user?.id, q]);
+
+  // Load messages when switching to an existing session
+  const loadMessages = useCallback(async (sid: string) => {
+    try {
+      const d = await q<{ supportSessionMessages: Array<{ role: string; content: string }> }>(
+        'query Q($s:ID!){supportSessionMessages(sessionId:$s){role content createdAt}}', { s: sid });
+      setMessages(d.supportSessionMessages.map((m, i) => ({
+        id: `hist-${i}`, role: m.role as 'user' | 'assistant', content: m.content,
+      })));
+    } catch { /* ignore */ }
+  }, [q]);
+
+  const switchSession = useCallback(async (id: string) => {
+    setSessionId(id);
+    setIsEscalated(false);
+    await loadMessages(id);
+    const s = sessions.find(s => s.id === id);
+    if (s?.status === 'escalated' || s?.status === 'closed') setIsEscalated(true);
+  }, [sessions, loadMessages]);
+
   const sendMessage = useCallback(async (prompt: string) => {
     if (!user || loading) return;
 
-    const userMessage: SupportMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: prompt,
-    };
+    const userMessage: SupportMessage = { id: `user-${Date.now()}`, role: 'user', content: prompt };
     setMessages(prev => [...prev, userMessage]);
     setLoading(true);
 
     try {
-      const data = await graphqlRequest<SupportChatResult>(SUPPORT_CHAT_MUTATION, {
-        userId: user.id,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        prompt,
-        sessionId: sessionId || null,
+      const data = await q<SupportChatResult>('mutation M($u:ID!,$n:String!,$e:String!,$p:String!,$s:String){supportChat(userId:$u name:$n email:$e prompt:$p sessionId:$s){message sessionId isEscalated}}', {
+        u: user.id, n: `${user.firstName} ${user.lastName}`, e: user.email, p: prompt, s: sessionId || null,
       });
-
       const result = data.supportChat;
       setSessionId(result.sessionId);
-
       const botMessage: SupportMessage = {
-        id: `bot-${Date.now()}`,
-        role: 'assistant',
+        id: `bot-${Date.now()}`, role: 'assistant',
         content: result.isEscalated
           ? `${result.message}\n\n---\n*Your issue has been escalated to our support team. They will contact you at ${user.email} shortly.*`
           : result.message,
       };
       setMessages(prev => [...prev, botMessage]);
       setIsEscalated(result.isEscalated);
+
+      // Refresh sessions list
+      try {
+        const d = await q<{ mySupportSessions: SupportSession[] }>('query Q($u:ID!){mySupportSessions(userId:$u){id subject status createdAt updatedAt}}', { u: user.id });
+        setSessions(d.mySupportSessions);
+      } catch { /* ignore */ }
     } catch {
-      const errMsg: SupportMessage = {
-        id: `bot-${Date.now()}`,
-        role: 'assistant',
-        content: "I'm having trouble connecting right now. Please try again later or email ops@venturemate.net directly.",
-      };
-      setMessages(prev => [...prev, errMsg]);
+      setMessages(prev => [...prev, { id: `bot-${Date.now()}`, role: 'assistant', content: "I'm having trouble connecting right now. Please try again later or email ops@venturemate.net directly." }]);
     } finally {
       setLoading(false);
     }
-  }, [user, loading, sessionId]);
+  }, [user, loading, sessionId, q]);
 
   const resetChat = useCallback(() => {
     setMessages([]);
@@ -115,32 +121,17 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
   const escalate = useCallback(async () => {
     if (!user || !sessionId) return;
     try {
-      await graphqlRequest(ESCALATE_MUTATION, { userId: user.id, sessionId });
+      await q('mutation M($u:ID!,$s:ID!){supportEscalate(userId:$u sessionId:$s)}', { u: user.id, s: sessionId });
       setIsEscalated(true);
-      setMessages(prev => [...prev, {
-        id: `bot-${Date.now()}`,
-        role: 'assistant',
-        content: `Your request has been escalated. Our support team will contact you at ${user.email}.`,
-      }]);
-    } catch {
-      // ignore
-    }
-  }, [user, sessionId]);
+      setMessages(prev => [...prev, { id: `bot-${Date.now()}`, role: 'assistant', content: `Your request has been escalated. Our support team will contact you at ${user.email}.` }]);
+    } catch { /* ignore */ }
+  }, [user, sessionId, q]);
 
   return (
-    <SupportChatContext.Provider
-      value={{
-        open,
-        setOpen,
-        messages,
-        sessionId,
-        isEscalated,
-        loading,
-        sendMessage,
-        resetChat,
-        escalate,
-      }}
-    >
+    <SupportChatContext.Provider value={{
+      open, setOpen, messages, sessions, sessionId, isEscalated, loading,
+      sendMessage, resetChat, switchSession, escalate,
+    }}>
       {children}
     </SupportChatContext.Provider>
   );

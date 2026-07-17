@@ -8,7 +8,7 @@ import {
   CircularProgress,
   Button,
 } from '@mui/material';
-import { MessageCircle, X, Send, Phone, ArrowUpRight } from 'lucide-react';
+import { MessageCircle, X, Send, Phone, ArrowUpRight, History } from 'lucide-react';
 import { useSupportChat } from '../../contexts/SupportChatContext';
 
 const QUICK_ACTIONS = [
@@ -20,8 +20,8 @@ const QUICK_ACTIONS = [
 
 export function SupportChatFloating() {
   const {
-    open, setOpen, messages, loading,
-    sendMessage, resetChat, escalate, isEscalated, sessionId,
+    open, setOpen, messages, sessions, loading, sessionId, isEscalated,
+    sendMessage, resetChat, escalate, switchSession,
   } = useSupportChat();
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -95,6 +95,23 @@ export function SupportChatFloating() {
       </Box>
 
       <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5 }}>
+        {/* Previous sessions */}
+        {sessions.length > 0 && !sessionId && messages.length === 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.4)', mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <History size={11} /> Previous conversations
+            </Typography>
+            {sessions.map(s => (
+              <Box key={s.id} onClick={() => switchSession(s.id)}
+                sx={{ px: 1.5, py: 1, borderRadius: 1.5, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,.04)' }, mb: 0.25 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{s.subject}</Typography>
+                <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{new Date(s.createdAt).toLocaleDateString()} · {s.status}</Typography>
+              </Box>
+            ))}
+            <Box sx={{ borderTop: '1px solid rgba(255,255,255,.06)', my: 1.5 }} />
+          </Box>
+        )}
+
         {messages.length === 0 && (
           <Box sx={{ py: 2, textAlign: 'center' }}>
             <MessageCircle size={28} color="#f59e0b" />

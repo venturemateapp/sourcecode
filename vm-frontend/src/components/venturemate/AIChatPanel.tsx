@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, type ChangeEvent, type KeyboardEvent } from 'react';
 import {
   Alert,
   Avatar,
@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import type { ProposedChange } from './AICreationStudio';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 import { graphqlRequest, uploadFile } from '../../lib/api';
 import { AIResponseRenderer } from '../ai-response/AIResponseRenderer';
@@ -190,6 +191,7 @@ function CreativeProposalPreview({ proposal }: { proposal: PendingCreativePropos
 
 export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPanelProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
+  const { user } = useAuth();
   const [open, setOpen] = useState(mode === 'page');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -198,22 +200,75 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [pendingProposal, setPendingProposal] = useState<PendingCreativeProposal | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const fileStoreRef = useRef<Map<string, File>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
+
+  // Load or create session on mount + business/domain change
+  useEffect(() => {
+    if (!selectedBusiness?.id || !userId) return;
+    setHistoryLoaded(false);
+
+    const initSession = async () => {
+      try {
+        const sessions = await q<{ aiChatSessions: Array<{ id: string; title: string }> }>(
+          'query Q($u:ID!,$b:ID!,$d:String!){aiChatSessions(userId:$u businessId:$b domain:$d){id title}}',
+          { u: userId, b: selectedBusiness.id, d: domain }
+        );
+        if (sessions.aiChatSessions.length > 0) {
+          const sid = sessions.aiChatSessions[0].id;
+          setSessionId(sid);
+          const msgs = await q<{ aiChatMessages: Array<{ role: string; content: string }> }>(
+            'query Q($s:ID!,$l:Int){aiChatMessages(sessionId:$s limit:$l){role content}}',
+            { s: sid, l: 100 }
+          );
+          if (msgs.aiChatMessages.length > 0) {
+            setMessages(msgs.aiChatMessages.map((m, i) => ({
+              id: `hist-${i}`,
+              role: m.role as 'user' | 'assistant',
+              content: m.content,
+            })));
+          }
+        } else {
+          const created = await q<{ createAiChatSession: { id: string } }>(
+            'mutation M($u:ID!,$b:ID!,$d:String!){createAiChatSession(userId:$u businessId:$b domain:$d){id}}',
+            { u: userId, b: selectedBusiness.id, d: domain }
+          );
+          setSessionId(created.createAiChatSession.id);
+        }
+      } catch { /* ignore */ }
+      setHistoryLoaded(true);
+    };
+    initSession();
+
+    return () => { setSessionId(null); setMessages([]); setHistoryLoaded(false); };
+  }, [selectedBusiness?.id, domain, userId, q]);
+
+  // Save messages to DB after they change (debounced)
+  const lastSaveRef = useRef(0);
+  useEffect(() => {
+    if (!sessionId || messages.length === 0 || !historyLoaded) return;
+    const now = Date.now();
+    if (now - lastSaveRef.current < 500) return;
+    lastSaveRef.current = now;
+    const last = messages[messages.length - 1];
+    if (!last.id.startsWith('hist-') && !last.id.startsWith('saving-')) {
+      q('mutation M($s:ID!,$r:String!,$c:String!){saveAiChatMessage(sessionId:$s role:$r content:$c){id}}', {
+        s: sessionId, r: last.role, c: last.content,
+      }).catch(() => {});
+    }
+  }, [messages, sessionId, historyLoaded, q]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  useEffect(() => {
-    setMessages([]);
-    setError(null);
-    setPendingProposal(null);
-  }, [selectedBusiness?.id, domain]);
-
   const history = useMemo(
-    () => JSON.stringify(messages.slice(-16).map(message => ({ role: message.role, content: message.content }))),
+    () => JSON.stringify(messages.slice(-50).map(message => ({ role: message.role, content: message.content }))),
     [messages],
   );
 

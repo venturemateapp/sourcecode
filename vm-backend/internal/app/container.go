@@ -9,6 +9,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/banking"
+	"github.com/venturemate/vmbackend/internal/aichat"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/chat"
 	"github.com/venturemate/vmbackend/internal/crm"
@@ -72,6 +73,7 @@ type Container struct {
 	InvoicePdfGenerator  *invoicepdf.Generator
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
+	AiChatRepo          *aichat.Repository
 }
 
 func NewContainer(ctx context.Context) (*Container, error) {
@@ -113,6 +115,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	metricoolSvc := metricool.NewService(metricoolRepo)
 	chatRepo := chat.NewRepository(dbPool)
 	chatHub := chat.NewHub(chatRepo)
+	aiChatRepo := aichat.NewRepository(dbPool)
 	expenditureRepo := expenditure.NewRepository(dbPool)
 	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
@@ -199,5 +202,6 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		InvoicePdfGenerator:  invoicePdfGen,
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,
+		AiChatRepo:          aiChatRepo,
 	}, nil
 }
