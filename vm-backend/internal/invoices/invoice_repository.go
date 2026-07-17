@@ -19,13 +19,15 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 
 const listQuery = `SELECT id, user_id, business_id, invoice_number, customer_name, customer_email,
 	amount, currency, status, due_date, issue_date, paid_date, items::text, notes,
-	created_at, updated_at FROM invoices`
+	subtotal, tax_rate, tax_amount, discount, shipping_cost, customer_address, billing_address,
+	po_number, payment_terms, pdf_url, pdf_generated_at, created_at, updated_at FROM invoices`
 
 func scanInvoice(row pgx.Row) (*Invoice, error) {
 	var i Invoice
 	err := row.Scan(&i.ID, &i.UserID, &i.BusinessID, &i.InvoiceNumber, &i.CustomerName, &i.CustomerEmail,
 		&i.Amount, &i.Currency, &i.Status, &i.DueDate, &i.IssueDate, &i.PaidDate, &i.Items, &i.Notes,
-		&i.CreatedAt, &i.UpdatedAt)
+		&i.Subtotal, &i.TaxRate, &i.TaxAmount, &i.Discount, &i.ShippingCost, &i.CustomerAddress, &i.BillingAddress,
+		&i.PONumber, &i.PaymentTerms, &i.PdfURL, &i.PdfGeneratedAt, &i.CreatedAt, &i.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +83,16 @@ func (r *Repository) Create(ctx context.Context, inv *Invoice) error {
 		inv.Status = "draft"
 	}
 	query := `INSERT INTO invoices (id, user_id, business_id, invoice_number, customer_name, customer_email,
-		amount, currency, status, due_date, issue_date, paid_date, items, notes, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16)`
-	_, err := r.db.Exec(ctx, query, inv.ID, inv.UserID, inv.BusinessID, inv.InvoiceNumber, inv.CustomerName, inv.CustomerEmail,
+		amount, currency, status, due_date, issue_date, paid_date, items, notes,
+		subtotal, tax_rate, tax_amount, discount, shipping_cost, customer_address, billing_address,
+		po_number, payment_terms, pdf_url, pdf_generated_at, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,
+		$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)`
+	_, err := r.db.Exec(ctx, query,
+		inv.ID, inv.UserID, inv.BusinessID, inv.InvoiceNumber, inv.CustomerName, inv.CustomerEmail,
 		inv.Amount, inv.Currency, inv.Status, inv.DueDate, inv.IssueDate, inv.PaidDate, jsonOrArr(inv.Items), inv.Notes,
-		inv.CreatedAt, inv.UpdatedAt)
+		inv.Subtotal, inv.TaxRate, inv.TaxAmount, inv.Discount, inv.ShippingCost, inv.CustomerAddress, inv.BillingAddress,
+		inv.PONumber, inv.PaymentTerms, inv.PdfURL, inv.PdfGeneratedAt, inv.CreatedAt, inv.UpdatedAt)
 	return err
 }
 
@@ -93,18 +100,31 @@ func (r *Repository) Update(ctx context.Context, inv *Invoice) error {
 	inv.UpdatedAt = time.Now()
 	query := `UPDATE invoices SET invoice_number=$3, customer_name=$4, customer_email=$5,
 		amount=$6, currency=$7, status=$8, due_date=$9, issue_date=$10, paid_date=$11,
-		items=$12::jsonb, notes=$13, updated_at=$14 WHERE id=$1 AND user_id=$2`
-	_, err := r.db.Exec(ctx, query, inv.ID, inv.UserID, inv.InvoiceNumber, inv.CustomerName, inv.CustomerEmail,
-		inv.Amount, inv.Currency, inv.Status, inv.DueDate, inv.IssueDate, inv.PaidDate, jsonOrArr(inv.Items), inv.Notes, inv.UpdatedAt)
+		items=$12::jsonb, notes=$13,
+		subtotal=$14, tax_rate=$15, tax_amount=$16, discount=$17, shipping_cost=$18,
+		customer_address=$19, billing_address=$20, po_number=$21, payment_terms=$22,
+		updated_at=$23 WHERE id=$1 AND user_id=$2`
+	_, err := r.db.Exec(ctx, query,
+		inv.ID, inv.UserID, inv.InvoiceNumber, inv.CustomerName, inv.CustomerEmail,
+		inv.Amount, inv.Currency, inv.Status, inv.DueDate, inv.IssueDate, inv.PaidDate, jsonOrArr(inv.Items), inv.Notes,
+		inv.Subtotal, inv.TaxRate, inv.TaxAmount, inv.Discount, inv.ShippingCost,
+		inv.CustomerAddress, inv.BillingAddress, inv.PONumber, inv.PaymentTerms, inv.UpdatedAt)
 	return err
 }
 
 func (r *Repository) UpdateStatus(ctx context.Context, id, status string) error {
 	paidDate := interface{}(nil)
 	if status == "paid" {
-		paidDate = time.Now()
+		now := time.Now()
+		paidDate = &now
 	}
 	_, err := r.db.Exec(ctx, "UPDATE invoices SET status=$2, paid_date=$3, updated_at=NOW() WHERE id=$1", id, status, paidDate)
+	return err
+}
+
+func (r *Repository) UpdatePdfURL(ctx context.Context, id, pdfURL string) error {
+	now := time.Now()
+	_, err := r.db.Exec(ctx, "UPDATE invoices SET pdf_url=$2, pdf_generated_at=$3, updated_at=NOW() WHERE id=$1", id, pdfURL, now)
 	return err
 }
 

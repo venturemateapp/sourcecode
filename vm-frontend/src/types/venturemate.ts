@@ -516,6 +516,8 @@ export type ViewType =
   | 'financial-forecast'
   // Growth features from VM
   | 'crm'
+  | 'invoices'
+  | 'expenditure'
   | 'banking'
   | 'social'
   | 'marketplace'
@@ -604,6 +606,51 @@ export interface CrmTask {
   dueDate: string | null;
   status: string;
   assignedTo: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  userId: string;
+  businessId: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerEmail: string;
+  amount: number;
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  discount: number;
+  shippingCost: number;
+  currency: string;
+  status: string;
+  dueDate: string;
+  issueDate: string;
+  paidDate: string | null;
+  items: string;
+  notes: string;
+  customerAddress: string;
+  billingAddress: string;
+  poNumber: string;
+  paymentTerms: string;
+  pdfUrl: string;
+  pdfGeneratedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Expenditure {
+  id: string;
+  businessId: string;
+  category: string;
+  description: string;
+  amount: number;
+  currency: string;
+  expenseDate: string;
+  vendor: string;
+  receiptUrl: string;
+  notes: string;
   createdAt: string;
   updatedAt: string;
 }

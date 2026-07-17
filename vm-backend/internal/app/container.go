@@ -13,6 +13,8 @@ import (
 	"github.com/venturemate/vmbackend/internal/chat"
 	"github.com/venturemate/vmbackend/internal/crm"
 	"github.com/venturemate/vmbackend/internal/db"
+	"github.com/venturemate/vmbackend/internal/expenditure"
+	"github.com/venturemate/vmbackend/internal/invoicepdf"
 	"github.com/venturemate/vmbackend/internal/domains"
 	"github.com/venturemate/vmbackend/internal/email"
 	"github.com/venturemate/vmbackend/internal/investors"
@@ -64,8 +66,10 @@ type Container struct {
 	MarketplaceRepo     *marketplace.Repository
 	SupportRepo         *support.Repository
 	SupportService      *support.Service
-	CrmRepo             *crm.Repository
-	MetricoolService    *metricool.Service
+	CrmRepo              *crm.Repository
+	MetricoolService     *metricool.Service
+	ExpenditureRepo      *expenditure.Repository
+	InvoicePdfGenerator  *invoicepdf.Generator
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
 }
@@ -109,6 +113,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	metricoolSvc := metricool.NewService(metricoolRepo)
 	chatRepo := chat.NewRepository(dbPool)
 	chatHub := chat.NewHub(chatRepo)
+	expenditureRepo := expenditure.NewRepository(dbPool)
+	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
 	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
 	rateService := rates.NewService()
@@ -187,8 +193,10 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		RegistrationRepo:    registrationRepo,
 		SupportRepo:         supportRepo,
 		SupportService:      supportSvc,
-		CrmRepo:             crmRepo,
-		MetricoolService:    metricoolSvc,
+		CrmRepo:              crmRepo,
+		MetricoolService:     metricoolSvc,
+		ExpenditureRepo:      expenditureRepo,
+		InvoicePdfGenerator:  invoicePdfGen,
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,
 	}, nil

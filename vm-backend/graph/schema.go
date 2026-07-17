@@ -2,6 +2,7 @@ package graph
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/auth"
@@ -436,4 +437,16 @@ func init() {
 		Query:    rootQuery,
 		Mutation: rootMutation,
 	})
+}
+
+func jsonUnmarshal(s string, v interface{}) error {
+	return json.Unmarshal([]byte(s), v)
+}
+
+func timeParse(s string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		t, err = time.Parse("2006-01-02", s)
+	}
+	return t, err
 }

@@ -47,6 +47,7 @@ import {
   LogOut,
   Shield,
   X,
+  Receipt,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -64,6 +65,7 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; className?: s
   Heart,
   Presentation,
   FileText,
+  Receipt,
   Palette,
   Target,
   UserCircle,
@@ -90,6 +92,8 @@ const navSections: NavSection[] = [
     title: 'GROWTH',
     items: [
       { label: 'CRM', icon: 'Users', view: 'crm' },
+      { label: 'Invoices', icon: 'FileText', view: 'invoices' },
+      { label: 'Expenditure', icon: 'Receipt', view: 'expenditure' },
       { label: 'Banking', icon: 'Landmark', view: 'banking' },
       { label: 'Social Media', icon: 'Share2', view: 'social' },
       { label: 'Marketplace', icon: 'Store', view: 'marketplace' },
