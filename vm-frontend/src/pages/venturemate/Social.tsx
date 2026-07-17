@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Box, Typography, Card, Chip, Tabs, Tab, IconButton, CircularProgress, Button, TextField, Dialog, DialogTitle, DialogContent,
+  Box, Typography, Card, Chip, Tabs, Tab, CircularProgress, Button, TextField,
 } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  Users, TrendingUp, Heart, Calendar, Globe, X, MessageCircle, Share2, LogIn, RefreshCw,
+  Users, TrendingUp, Heart, Calendar, Globe, MessageCircle, Share2, LogIn, RefreshCw,
   BarChart3,
 } from 'lucide-react';
 import type { ViewType } from '../../types/venturemate';
@@ -201,31 +202,21 @@ export function SocialPage({ onViewChange }: { onViewChange?: (v: ViewType) => v
           </Button>
         </Card>
 
-        <Dialog open={showConnForm} onClose={() => setShowConnForm(false)} maxWidth="sm" fullWidth
-          PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-          <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <LogIn size={20} color="var(--vm-primary-400)" />
-            <Typography sx={{ fontWeight: 700 }}>Connect Metricool</Typography>
-            <IconButton size="small" onClick={() => setShowConnForm(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-          </DialogTitle>
-          <DialogContent sx={{ pt: 3.5 }}>
-            <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 2 }}>
-              Go to Metricool → Settings → API to find your User Token and User ID. Requires an Advanced plan.
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField size="small" label="Metricool User Token" value={connToken} onChange={e => setConnToken(e.target.value)}
-                sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-              <TextField size="small" label="Metricool User ID" value={connUserId} onChange={e => setConnUserId(e.target.value)}
-                sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            </Box>
-          </DialogContent>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-            <GradientButton variant="ghost" size="sm" onClick={() => setShowConnForm(false)}>Cancel</GradientButton>
+        <Modal open={showConnForm} onClose={() => setShowConnForm(false)} title="Connect Metricool" icon={<LogIn size={20} />}
+          actions={<><GradientButton variant="ghost" size="sm" onClick={() => setShowConnForm(false)}>Cancel</GradientButton>
             <GradientButton variant="primary" size="sm" disabled={connSaving || !connToken || !connUserId} onClick={saveConnection}>
               {connSaving ? <CircularProgress size={14} /> : 'Connect'}
-            </GradientButton>
+            </GradientButton></>}>
+          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 2 }}>
+            Go to Metricool → Settings → API to find your User Token and User ID. Requires an Advanced plan.
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField size="small" label="Metricool User Token" value={connToken} onChange={e => setConnToken(e.target.value)}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Metricool User ID" value={connUserId} onChange={e => setConnUserId(e.target.value)}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
           </Box>
-        </Dialog>
+        </Modal>
       </Box>
     );
   }

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Dialog, DialogTitle, DialogContent, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Calendar, Plus, Trash2, RefreshCw, X, Building2 } from 'lucide-react';
+import { Calendar, Plus, Trash2, RefreshCw, Building2 } from 'lucide-react';
 
 interface CalendarAccount {
   id: string; email: string; provider: string; caldavUrl: string; syncEnabled: boolean; lastSyncedAt: string | null;
@@ -165,43 +166,33 @@ export function CalendarPage() {
         </Box>
       )}
 
-      <Dialog open={showConnForm} onClose={() => setShowConnForm(false)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Calendar size={20} color="var(--vm-primary-400)" />
-          <Typography sx={{ fontWeight: 700 }}>Connect Calendar</Typography>
-          <IconButton size="small" onClick={() => setShowConnForm(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <FormControl size="small" fullWidth>
-              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Provider</InputLabel>
-              <Select value={connProvider} label="Provider" onChange={e => setConnProvider(e.target.value)}
-                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                <MenuItem value="caldav">Custom CalDAV</MenuItem>
-                <MenuItem value="icloud">iCloud</MenuItem>
-                <MenuItem value="fastmail">FastMail</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField size="small" label="Email" value={connEmail} onChange={e => setConnEmail(e.target.value)}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            {connProvider === 'caldav' && (
-              <TextField size="small" label="CalDAV URL" value={connUrl} onChange={e => setConnUrl(e.target.value)} placeholder="https://example.com/caldav/"
-                sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            )}
-            <TextField size="small" label="Username (or app password)" value={connUser} onChange={e => setConnUser(e.target.value)}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Password" type="password" value={connPass} onChange={e => setConnPass(e.target.value)}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          </Box>
-        </DialogContent>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setShowConnForm(false)}>Cancel</GradientButton>
+      <Modal open={showConnForm} onClose={() => setShowConnForm(false)} title="Connect Calendar" icon={<Calendar size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setShowConnForm(false)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={saving || !connEmail} onClick={saveConnection}>
             {saving ? <CircularProgress size={14} /> : 'Connect'}
-          </GradientButton>
+          </GradientButton></>}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Provider</InputLabel>
+            <Select value={connProvider} label="Provider" onChange={e => setConnProvider(e.target.value)}
+              sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+              <MenuItem value="caldav">Custom CalDAV</MenuItem>
+              <MenuItem value="icloud">iCloud</MenuItem>
+              <MenuItem value="fastmail">FastMail</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField size="small" label="Email" value={connEmail} onChange={e => setConnEmail(e.target.value)}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          {connProvider === 'caldav' && (
+            <TextField size="small" label="CalDAV URL" value={connUrl} onChange={e => setConnUrl(e.target.value)} placeholder="https://example.com/caldav/"
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          )}
+          <TextField size="small" label="Username (or app password)" value={connUser} onChange={e => setConnUser(e.target.value)}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Password" type="password" value={connPass} onChange={e => setConnPass(e.target.value)}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
-      </Dialog>
+      </Modal>
     </Box>
   );
 }

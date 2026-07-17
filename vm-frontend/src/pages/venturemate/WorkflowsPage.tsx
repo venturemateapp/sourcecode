@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Card, Chip, Dialog, DialogTitle, DialogContent, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, Card, Chip, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, X, Building2, Play, Zap } from 'lucide-react';
+import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Building2, Play, Zap } from 'lucide-react';
 
 interface WorkflowItem {
   id: string; name: string; description: string; isActive: boolean;
@@ -160,88 +161,78 @@ export function WorkflowsPage() {
         </Box>
       )}
 
-      <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="md" fullWidth PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Workflow size={20} color="var(--vm-primary-400)" /><Typography sx={{ fontWeight: 700 }}>New Automation Workflow</Typography>
-          <IconButton size="small" onClick={() => setShowForm(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TextField size="small" label="Workflow Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-              inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} multiline rows={2}
-              inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-
-            <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>1. When should this trigger?</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-              <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Trigger Type</InputLabel>
-                <Select value={form.triggerType} label="Trigger Type" onChange={e => setForm({ ...form, triggerType: e.target.value })}
-                  sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                  {TRIGGER_TYPES.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Target Object</InputLabel>
-                <Select value={form.targetObject} label="Target Object" onChange={e => setForm({ ...form, targetObject: e.target.value })}
-                  sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                  {OBJECT_TYPES.map(o => <MenuItem key={o} value={o}>{o.replace('crm_', '').replace('_', ' ')}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Box>
-
-            <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>2. What should it do?</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-              <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Action Type</InputLabel>
-                <Select value={form.actionType} label="Action Type" onChange={e => {
-                  let config = '{}';
-                  if (e.target.value === 'send_email') config = '{"to":"","subject":"","body":""}';
-                  if (e.target.value === 'webhook') config = '{"url":"","method":"POST","fields":{}}';
-                  if (e.target.value === 'update_record') config = '{"objectName":"crm_deals","recordId":"","fields":{}}';
-                  setForm({ ...form, actionType: e.target.value, actionConfig: config });
-                }}
-                  sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                  {ACTION_TYPES.map(a => <MenuItem key={a.value} value={a.value}>{a.label}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </Box>
-            {form.actionType === 'send_email' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <TextField size="small" label="Send To" value={(() => { try { return JSON.parse(form.actionConfig).to; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), to: e.target.value }) })}
-                  inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <TextField size="small" label="Subject" value={(() => { try { return JSON.parse(form.actionConfig).subject; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), subject: e.target.value }) })}
-                  inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <TextField size="small" label="Email Body" multiline rows={3} value={(() => { try { return JSON.parse(form.actionConfig).body; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), body: e.target.value }) })}
-                  inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-              </Box>
-            )}
-            {form.actionType === 'webhook' && (
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                <TextField size="small" label="Webhook URL" value={(() => { try { return JSON.parse(form.actionConfig).url; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), url: e.target.value }) })}
-                  sx={{ gridColumn: '1 / -1', input: { color: 'var(--vm-text-primary)' }, '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Method</InputLabel>
-                  <Select value={(() => { try { return JSON.parse(form.actionConfig).method; } catch { return 'POST'; } })()} label="Method" onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), method: e.target.value }) })}
-                    sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                    <MenuItem value="POST">POST</MenuItem><MenuItem value="GET">GET</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
-            {form.actionType === 'update_record' && (
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                <TextField size="small" label="Object Name" value={(() => { try { return JSON.parse(form.actionConfig).objectName; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), objectName: e.target.value }) })}
-                  inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <TextField size="small" label="Record ID (or use trigger)" value={(() => { try { return JSON.parse(form.actionConfig).recordId; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), recordId: e.target.value }) })}
-                  inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</GradientButton>
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="New Automation Workflow" icon={<Workflow size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={saving || !form.name || !form.actionType || !form.triggerType} onClick={save}>
             {saving ? <CircularProgress size={14} /> : 'Create Workflow'}
-          </GradientButton>
+          </GradientButton></>}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <TextField size="small" label="Workflow Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+            inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} multiline rows={2}
+            inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>1. When should this trigger?</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+            <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Trigger Type</InputLabel>
+              <Select value={form.triggerType} label="Trigger Type" onChange={e => setForm({ ...form, triggerType: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {TRIGGER_TYPES.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Target Object</InputLabel>
+              <Select value={form.targetObject} label="Target Object" onChange={e => setForm({ ...form, targetObject: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {OBJECT_TYPES.map(o => <MenuItem key={o} value={o}>{o.replace('crm_', '').replace('_', ' ')}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Box>
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>2. What should it do?</Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+            <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Action Type</InputLabel>
+              <Select value={form.actionType} label="Action Type" onChange={e => {
+                let config = '{}';
+                if (e.target.value === 'send_email') config = '{"to":"","subject":"","body":""}';
+                if (e.target.value === 'webhook') config = '{"url":"","method":"POST","fields":{}}';
+                if (e.target.value === 'update_record') config = '{"objectName":"crm_deals","recordId":"","fields":{}}';
+                setForm({ ...form, actionType: e.target.value, actionConfig: config });
+              }}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {ACTION_TYPES.map(a => <MenuItem key={a.value} value={a.value}>{a.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Box>
+          {form.actionType === 'send_email' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <TextField size="small" label="Send To" value={(() => { try { return JSON.parse(form.actionConfig).to; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), to: e.target.value }) })}
+                inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+              <TextField size="small" label="Subject" value={(() => { try { return JSON.parse(form.actionConfig).subject; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), subject: e.target.value }) })}
+                inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+              <TextField size="small" label="Email Body" multiline rows={3} value={(() => { try { return JSON.parse(form.actionConfig).body; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), body: e.target.value }) })}
+                inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            </Box>
+          )}
+          {form.actionType === 'webhook' && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+              <TextField size="small" label="Webhook URL" value={(() => { try { return JSON.parse(form.actionConfig).url; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), url: e.target.value }) })}
+                sx={{ gridColumn: '1 / -1', input: { color: 'var(--vm-text-primary)' }, '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+              <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Method</InputLabel>
+                <Select value={(() => { try { return JSON.parse(form.actionConfig).method; } catch { return 'POST'; } })()} label="Method" onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), method: e.target.value }) })}
+                  sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                  <MenuItem value="POST">POST</MenuItem><MenuItem value="GET">GET</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+          {form.actionType === 'update_record' && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+              <TextField size="small" label="Object Name" value={(() => { try { return JSON.parse(form.actionConfig).objectName; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), objectName: e.target.value }) })}
+                inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+              <TextField size="small" label="Record ID (or use trigger)" value={(() => { try { return JSON.parse(form.actionConfig).recordId; } catch { return ''; } })()} onChange={e => setForm({ ...form, actionConfig: JSON.stringify({ ...JSON.parse(form.actionConfig), recordId: e.target.value }) })}
+                inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            </Box>
+          )}
         </Box>
-      </Dialog>
+      </Modal>
     </Box>
   );
 }
