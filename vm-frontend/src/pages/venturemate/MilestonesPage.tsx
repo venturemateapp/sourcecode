@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
-  Box, Typography, Card, Chip, IconButton, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Button, Select, MenuItem,
+  Box, Typography, Card, Chip, IconButton, TextField, Button, Select, MenuItem,
   FormControl, InputLabel,
 } from '@mui/material';
 import { Plus, Edit2, Trash2, Target, Calendar, User, ArrowUp } from 'lucide-react';
@@ -9,6 +8,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import type { Milestone } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 const STATUS_OPTIONS: Milestone['status'][] = ['pending', 'in-progress', 'completed', 'overdue'];
@@ -221,114 +221,45 @@ export function MilestonesPage() {
       </Box>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 } }}>
-        <DialogTitle sx={{ color: 'var(--vm-text-primary)', fontSize: 20, fontWeight: 700 }}>
-          {editingId ? 'Edit Milestone' : 'Add Milestone'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1 }}>
-            <TextField
-              label="Title"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              fullWidth
-              sx={{
-                '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-              }}
-            />
-            <TextField
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              multiline
-              rows={3}
-              fullWidth
-              sx={{
-                '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-              }}
-            />
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  label="Status"
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                  sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
-                >
-                  {STATUS_OPTIONS.map(s => (
-                    <MenuItem key={s} value={s} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{s}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Priority</InputLabel>
-                <Select
-                  value={formData.priority}
-                  label="Priority"
-                  onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
-                  sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
-                >
-                  {PRIORITY_OPTIONS.map(p => (
-                    <MenuItem key={p} value={p} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{p}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl fullWidth size="small">
-                <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Category</InputLabel>
-                <Select
-                  value={formData.category}
-                  label="Category"
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
-                >
-                  {CATEGORY_OPTIONS.map(c => (
-                    <MenuItem key={c} value={c} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{c}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                label="Assignee"
-                value={formData.assignee}
-                onChange={(e) => setFormData(prev => ({ ...prev, assignee: e.target.value }))}
-                size="small"
-                sx={{
-                  '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                  '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                }}
-              />
-            </Box>
-            <DatePicker
-              label="Due Date"
-              value={formData.dueDate ? new Date(formData.dueDate) : null}
-              onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : '' })}
-              format="dd/MM/yyyy"
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  size: 'small',
-                  sx: {
-                    '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' },
-                    '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' },
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
-                  },
-                },
-              }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, pt: 0 }}>
-          <Button onClick={() => setDialogOpen(false)} sx={{ color: 'var(--vm-text-muted)' }}>Cancel</Button>
+      <Modal open={dialogOpen} onClose={() => setDialogOpen(false)} title={editingId ? 'Edit Milestone' : 'Add Milestone'} icon={<Target size={20} />}
+        actions={<><Button onClick={() => setDialogOpen(false)} sx={{ color: 'var(--vm-text-muted)' }}>Cancel</Button>
           <GradientButton variant="primary" size="sm" onClick={handleSave} disabled={!formData.title || !formData.dueDate}>
             {editingId ? 'Save Changes' : 'Add Milestone'}
-          </GradientButton>
-        </DialogActions>
-      </Dialog>
+          </GradientButton></>}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <TextField label="Title" value={formData.title} onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))} fullWidth
+            sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+          <TextField label="Description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} multiline rows={3} fullWidth
+            sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Status</InputLabel>
+              <Select value={formData.status} label="Status" onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                {STATUS_OPTIONS.map(s => (<MenuItem key={s} value={s} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{s}</MenuItem>))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Priority</InputLabel>
+              <Select value={formData.priority} label="Priority" onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
+                sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                {PRIORITY_OPTIONS.map(p => (<MenuItem key={p} value={p} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{p}</MenuItem>))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Category</InputLabel>
+              <Select value={formData.category} label="Category" onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}>
+                {CATEGORY_OPTIONS.map(c => (<MenuItem key={c} value={c} sx={{ color: 'var(--vm-text-primary)', textTransform: 'capitalize' }}>{c}</MenuItem>))}
+              </Select>
+            </FormControl>
+            <TextField label="Assignee" value={formData.assignee} onChange={(e) => setFormData(prev => ({ ...prev, assignee: e.target.value }))} size="small"
+              sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+          </Box>
+          <DatePicker label="Due Date" value={formData.dueDate ? new Date(formData.dueDate) : null} onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : '' })} format="dd/MM/yyyy"
+            slotProps={{ textField: { fullWidth: true, size: 'small', sx: { '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } } } }} />
+        </Box>
+      </Modal>
 
     </Box>
   );
