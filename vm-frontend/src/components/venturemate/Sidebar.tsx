@@ -50,6 +50,8 @@ import {
   Shield,
   Mail,
   X,
+  Grid3x3,
+  Workflow,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -75,6 +77,8 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; className?: s
   BarChart3,
   Calculator,
   Calendar,
+  Grid3x3,
+  Workflow,
   Settings,
   LogOut,
   Shield,
@@ -82,6 +86,12 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; className?: s
 };
 
 const navSections: NavSection[] = [
+  {
+    title: 'INSIGHTS',
+    items: [
+      { label: 'Dashboard', icon: 'BarChart3', view: 'dashboards' },
+    ],
+  },
   {
     title: 'CORE',
     items: [
@@ -102,6 +112,8 @@ const navSections: NavSection[] = [
       { label: 'Banking', icon: 'Landmark', view: 'banking' },
       { label: 'Social Media', icon: 'Share2', view: 'social' },
       { label: 'Marketplace', icon: 'Store', view: 'marketplace' },
+      { label: 'Custom Objects', icon: 'Grid3x3', view: 'custom-objects' },
+      { label: 'Workflows', icon: 'Workflow', view: 'workflows' },
     ],
   },
   {

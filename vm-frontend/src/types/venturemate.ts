@@ -530,7 +530,10 @@ export type ViewType =
   | 'billing'
   | 'settings'
   | 'email-settings'
-  | 'calendar';
+  | 'calendar'
+  | 'custom-objects'
+  | 'workflows'
+  | 'dashboards';
 
 // Navigation
 export interface NavSection {

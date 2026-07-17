@@ -73,6 +73,9 @@ const viewTitles: Record<ViewType, string> = {
   billing: 'Billing',
   settings: 'Settings',
   calendar: 'Calendar',
+  'custom-objects': 'Custom Objects',
+  workflows: 'Workflows',
+  dashboards: 'Dashboard',
   'email-settings': 'Email Sync',
 };
 

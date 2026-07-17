@@ -15,6 +15,8 @@ import (
 	"github.com/venturemate/vmbackend/internal/crmemail"
 	"github.com/venturemate/vmbackend/internal/crm"
 	"github.com/venturemate/vmbackend/internal/crmcalendar"
+	"github.com/venturemate/vmbackend/internal/crmobjects"
+	"github.com/venturemate/vmbackend/internal/crmworkflow"
 	"github.com/venturemate/vmbackend/internal/db"
 	"github.com/venturemate/vmbackend/internal/expenditure"
 	"github.com/venturemate/vmbackend/internal/invoicepdf"
@@ -77,6 +79,8 @@ type Container struct {
 	EmailSyncService     *crmemail.SyncService
 	CalendarRepo         *crmcalendar.Repository
 	CalendarSyncService  *crmcalendar.SyncService
+	CustomObjectsRepo    *crmobjects.Repository
+	WorkflowRepo         *crmworkflow.Repository
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
 	AiChatRepo          *aichat.Repository
@@ -126,6 +130,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	emailSyncSvc := crmemail.NewSyncService(emailSyncRepo)
 	calendarRepo := crmcalendar.NewRepository(dbPool)
 	calendarSyncSvc := crmcalendar.NewSyncService(calendarRepo)
+	customObjectsRepo := crmobjects.NewRepository(dbPool)
+	workflowRepo := crmworkflow.NewRepository(dbPool)
 	expenditureRepo := expenditure.NewRepository(dbPool)
 	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
@@ -214,6 +220,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		EmailSyncService:     emailSyncSvc,
 		CalendarRepo:         calendarRepo,
 		CalendarSyncService:  calendarSyncSvc,
+		CustomObjectsRepo:    customObjectsRepo,
+		WorkflowRepo:         workflowRepo,
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,
 		AiChatRepo:          aiChatRepo,
