@@ -17,7 +17,7 @@ const (
 	DefaultOllamaEndpoint = "https://llm.edspike.com/api/chat"
 	DefaultOllamaModel    = "qwen2.5:3b"
 
-	requestTimeout    = 90 * time.Second
+	requestTimeout    = 600 * time.Second
 	connectTimeout    = 10 * time.Second
 	keepAliveIdle     = 30 * time.Second
 	keepAliveInterval = 15 * time.Second
