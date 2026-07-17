@@ -457,7 +457,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                 }}
               />
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                Due: {new Date(action.deadline).toLocaleDateString('en-GB')}
+                Due: {action.deadline ? new Date(action.deadline).toLocaleDateString('en-GB') : '—'}
               </Typography>
             </Box>
           </Box>

@@ -6,7 +6,6 @@ import {
   Alert,
   Box,
   Chip,
-  CircularProgress,
   Divider,
   Typography,
 } from '@mui/material';
@@ -81,7 +80,8 @@ export function AIManagedModuleData({ domain }: AIManagedModuleDataProps) {
     }
   }, [data]);
 
-  if (!selectedBusiness || (!loading && !error && parsed === null)) return null;
+  // Don't render anything during loading or if no data exists
+  if (!selectedBusiness || loading || (!error && parsed === null)) return null;
 
   return (
     <Box sx={{ mt: 2.5 }}>
@@ -107,9 +107,8 @@ export function AIManagedModuleData({ domain }: AIManagedModuleDataProps) {
         </AccordionSummary>
         <Divider />
         <AccordionDetails>
-          {loading && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><CircularProgress size={16} /><Typography sx={{ fontSize: 12 }}>Loading AI-managed data…</Typography></Box>}
           {error && <Alert severity="warning">{error}</Alert>}
-          {!loading && !error && parsed !== null && <ValueView value={parsed} />}
+          {!error && parsed !== null && <ValueView value={parsed} />}
         </AccordionDetails>
       </Accordion>
     </Box>

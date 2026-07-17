@@ -252,22 +252,26 @@ export function CreditScorePage(_props: CreditScoreProps) {
     setEligibilityModalOpen(true);
   };
 
-  const checkEligibility = () => {
+  const checkEligibility = async () => {
+    if (!selectedBusiness) return;
     setCheckingEligibility(true);
-    setTimeout(() => {
-      setCheckingEligibility(false);
-      const isEligible = Math.random() > 0.3;
-      setEligibilityResult({
-        eligible: isEligible,
-        score: Math.floor(Math.random() * 100) + 650,
-        reasons: isEligible
-          ? ['Strong credit history', 'Consistent revenue', 'Low debt ratio']
-          : ['Insufficient business history', 'Revenue below threshold'],
-        preQualifiedAmount: isEligible
-          ? Math.floor(Math.random() * 200000) + 50000
-          : undefined,
-      });
-    }, 2000);
+    try {
+      const d = await graphqlRequest<{ businessScore: { scoreData: string } | null }>('query Q($b:ID!,$t:String!){businessScore(businessId:$b scoreType:$t){scoreData}}', { b: selectedBusiness.id, t: 'credit' });
+      if (d.businessScore?.scoreData) {
+        const data = JSON.parse(d.businessScore.scoreData);
+        const score = data.score || 50;
+        const isEligible = score >= 50;
+        setEligibilityResult({
+          eligible: isEligible,
+          score: Math.floor(score * 8) + 300,
+          reasons: isEligible
+            ? ['Strong credit history', 'Consistent revenue', 'Low debt ratio']
+            : ['Insufficient business history', 'Revenue below threshold'],
+          preQualifiedAmount: isEligible ? Math.floor(score * 5000) : undefined,
+        });
+      }
+    } catch { /* ignore */ }
+    setCheckingEligibility(false);
   };
 
   const handleSubmitApplication = () => {
@@ -276,7 +280,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
       setSubmitting(false);
       setSubmitSuccess(true);
       setApplyStep(3);
-    }, 2000);
+    }, 1500);
   };
 
   const applySteps = ['Loan Details', 'Documents', 'Review', 'Confirmation'];
@@ -370,7 +374,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                 <Box>
                   <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', mb: 1 }}>Grade</Typography>
                   <Typography sx={{ fontSize: 36, fontWeight: 800, color: getScoreColor(creditScore.score), lineHeight: 1 }}>{getScoreGrade(creditScore.score)}</Typography>
-                  <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.4)', mt: 0.5 }}>Last updated: {new Date(creditScore.calculated_at).toLocaleDateString()}</Typography>
+                  <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.4)', mt: 0.5 }}>Last updated: {creditScore.calculated_at ? new Date(creditScore.calculated_at).toLocaleDateString() : '—'}</Typography>
                 </Box>
               </Box>
 
@@ -585,7 +589,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                   />
                   {app.submitted_at && (
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                      {new Date(app.submitted_at).toLocaleDateString('en-GB')}
+                      {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString('en-GB') : '—'}
                     </Typography>
                   )}
                 </Box>
@@ -627,7 +631,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                   }}
                 >
                   <Typography sx={{ fontSize: 14, color: 'var(--vm-text-primary)' }}>
-                    {new Date(item.calculatedAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                    {item.calculatedAt ? new Date(item.calculatedAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : '—'}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <LinearProgress
