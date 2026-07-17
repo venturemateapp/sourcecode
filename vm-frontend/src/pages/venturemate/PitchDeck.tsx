@@ -1,6 +1,8 @@
-import { Box, Card, Chip, Typography } from '@mui/material';
-import { Building2, Presentation, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Box, Card, Chip, Typography, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Building2, Presentation, Sparkles, LayoutGrid, Monitor } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
+import { SlideViewer } from '../../components/venturemate/SlideViewer';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import type { PitchDeck as PitchDeckType, Slide, ViewType } from '../../types/venturemate';
@@ -62,9 +64,10 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) {
   const { selectedBusiness } = useBusiness();
+  const [viewMode, setViewMode] = useState<'grid' | 'slide'>('grid');
+
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its pitch deck with AI." />;
 
   const deck = selectedBusiness.pitchDeck;
@@ -73,13 +76,28 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
   const primary = brand?.primaryColor || '#10b981';
   const dark = brand?.darkColor || '#052e24';
 
+  const currentDeck = deck;
+
   return (
     <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
         <Presentation size={19} color="var(--vm-primary-400)" />
         <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
         <Chip icon={<Sparkles size={13} />} label="AI story · AI design · Your approval" size="small" color="success" variant="outlined" sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
+        {hasDeck && (
+          <ToggleButtonGroup size="small" value={viewMode} onChange={(_, v) => v && setViewMode(v)} exclusive sx={{ ml: 'auto', '& .MuiToggleButton-root': { color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' } } }}>
+            <ToggleButton value="grid"><LayoutGrid size={14} /></ToggleButton>
+            <ToggleButton value="slide"><Monitor size={14} /></ToggleButton>
+          </ToggleButtonGroup>
+        )}
       </Box>
+
+      {viewMode === 'slide' && hasDeck && (
+        <Card sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, mb: 2 }}>
+          <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} dark={dark} />
+        </Card>
+      )}
+
       <AICreationStudio
         domain="pitch-deck"
         title="AI Pitch Deck"
@@ -92,7 +110,7 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
           'Rewrite the funding ask so assumptions and use of funds are clear.',
         ]}
         emptyLabel="No approved pitch deck exists. Ask AI to create the first investor story."
-        renderCurrent={() => hasDeck ? <DeckPreview deck={deck} primary={primary} dark={dark} /> : null}
+        renderCurrent={() => viewMode === 'grid' && hasDeck ? <DeckPreview deck={deck} primary={primary} dark={dark} /> : null}
         renderProposal={(change) => {
           const proposed = parseDeck(change);
           return proposed ? <DeckPreview deck={proposed} primary={primary} dark={dark} proposed /> : <Typography color="error">The AI returned an invalid pitch-deck preview.</Typography>;
