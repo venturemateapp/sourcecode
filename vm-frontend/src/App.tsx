@@ -18,6 +18,7 @@ import { InvestorsPage } from './pages/venturemate/Investors';
 import { CoFoundersPage } from './pages/venturemate/CoFounders';
 import { AIAssistant } from './pages/venturemate/AIAssistant';
 import { CRMPage } from './pages/venturemate/CRM';
+import { CompaniesPage } from './pages/venturemate/Companies';
 import { InvoicesPage } from './pages/venturemate/Invoices';
 import { ExpenditurePage } from './pages/venturemate/Expenditure';
 import { BankingPage } from './pages/venturemate/Banking';
@@ -236,6 +237,8 @@ function VentureMateApp() {
         return <SettingsPage />;
       case 'crm':
         return <CRMPage />;
+      case 'companies':
+        return <CompaniesPage />;
       case 'invoices':
         return <InvoicesPage />;
       case 'expenditure':

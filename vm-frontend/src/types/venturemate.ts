@@ -516,6 +516,7 @@ export type ViewType =
   | 'financial-forecast'
   // Growth features from VM
   | 'crm'
+  | 'companies'
   | 'invoices'
   | 'expenditure'
   | 'banking'

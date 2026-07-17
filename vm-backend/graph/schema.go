@@ -443,6 +443,27 @@ func jsonUnmarshal(s string, v interface{}) error {
 	return json.Unmarshal([]byte(s), v)
 }
 
+func getStringArg(args map[string]interface{}, key string) string {
+	if v, ok := args[key].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func getIntArg(args map[string]interface{}, key string) int {
+	if v, ok := args[key].(int); ok {
+		return v
+	}
+	return 0
+}
+
+func getFloatArg(args map[string]interface{}, key string) float64 {
+	if v, ok := args[key].(float64); ok {
+		return v
+	}
+	return 0
+}
+
 func timeParse(s string) (time.Time, error) {
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {

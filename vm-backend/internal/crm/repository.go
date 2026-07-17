@@ -276,3 +276,76 @@ func (r *Repository) DeleteTask(ctx context.Context, id, businessID string) erro
 	_, err := r.db.Exec(ctx, `DELETE FROM crm_tasks WHERE id=$1 AND business_id=$2`, id, businessID)
 	return err
 }
+
+// Company CRUD ---------------------------------------------------------------
+
+const companyCols = `id, business_id, name, domain, industry, employee_count, revenue, website, phone, email,
+	address_street, address_city, address_state, address_zip, address_country, description, logo_url, created_at, updated_at`
+
+func scanCompany(row pgx.Row) (*Company, error) {
+	var c Company
+	err := row.Scan(&c.ID, &c.BusinessID, &c.Name, &c.Domain, &c.Industry, &c.EmployeeCount, &c.Revenue,
+		&c.Website, &c.Phone, &c.Email, &c.AddressStreet, &c.AddressCity, &c.AddressState,
+		&c.AddressZip, &c.AddressCountry, &c.Description, &c.LogoURL, &c.CreatedAt, &c.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
+}
+
+func (r *Repository) ListCompanies(ctx context.Context, businessID string) ([]Company, error) {
+	rows, err := r.db.Query(ctx, `SELECT `+companyCols+` FROM crm_companies WHERE business_id = $1 ORDER BY name ASC`, businessID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []Company
+	for rows.Next() {
+		c, err := scanCompany(rows)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, *c)
+	}
+	return list, nil
+}
+
+func (r *Repository) GetCompany(ctx context.Context, id string) (*Company, error) {
+	return scanCompany(r.db.QueryRow(ctx, `SELECT `+companyCols+` FROM crm_companies WHERE id = $1`, id))
+}
+
+func (r *Repository) CreateCompany(ctx context.Context, c *Company) error {
+	c.ID = uuid.New().String()
+	c.CreatedAt = time.Now()
+	c.UpdatedAt = time.Now()
+	_, err := r.db.Exec(ctx,
+		`INSERT INTO crm_companies (id, business_id, name, domain, industry, employee_count, revenue, website, phone, email,
+		 address_street, address_city, address_state, address_zip, address_country, description, logo_url, created_at, updated_at)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+		c.ID, c.BusinessID, c.Name, c.Domain, c.Industry, c.EmployeeCount, c.Revenue,
+		c.Website, c.Phone, c.Email, c.AddressStreet, c.AddressCity, c.AddressState,
+		c.AddressZip, c.AddressCountry, c.Description, c.LogoURL, c.CreatedAt, c.UpdatedAt)
+	return err
+}
+
+func (r *Repository) UpdateCompany(ctx context.Context, c *Company) error {
+	c.UpdatedAt = time.Now()
+	_, err := r.db.Exec(ctx,
+		`UPDATE crm_companies SET name=$3, domain=$4, industry=$5, employee_count=$6, revenue=$7, website=$8, phone=$9, email=$10,
+		 address_street=$11, address_city=$12, address_state=$13, address_zip=$14, address_country=$15, description=$16, logo_url=$17, updated_at=$18
+		 WHERE id=$1 AND business_id=$2`,
+		c.ID, c.BusinessID, c.Name, c.Domain, c.Industry, c.EmployeeCount, c.Revenue,
+		c.Website, c.Phone, c.Email, c.AddressStreet, c.AddressCity, c.AddressState,
+		c.AddressZip, c.AddressCountry, c.Description, c.LogoURL, c.UpdatedAt)
+	return err
+}
+
+func (r *Repository) DeleteCompany(ctx context.Context, id, businessID string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM crm_companies WHERE id=$1 AND business_id=$2`, id, businessID)
+	return err
+}
+
+func (r *Repository) UpdateContactCompany(ctx context.Context, contactID string, companyID *string) error {
+	_, err := r.db.Exec(ctx, `UPDATE crm_contacts SET company_id = $1 WHERE id = $2`, companyID, contactID)
+	return err
+}

@@ -225,9 +225,4 @@ func init() {
 	})
 }
 
-func getFloatArg(args map[string]interface{}, key string) float64 {
-	if v, ok := args[key].(float64); ok {
-		return v
-	}
-	return 0
-}
+

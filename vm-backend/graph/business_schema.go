@@ -253,11 +253,4 @@ func parseDatePtr(s string) *time.Time {
 	return &t
 }
 
-func getStringArg(args map[string]interface{}, key string) string {
-	if v, ok := args[key]; ok && v != nil {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	return ""
-}
+
