@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, useMediaQuery, useTheme, Tooltip } from '@mui/material';
-import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
@@ -22,6 +22,7 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; des
   { key: 'banking', icon: Landmark, label: 'Banking', desc: 'Bank accounts' },
   { key: 'registrations', icon: FileText, label: 'Registrations', desc: 'Business registrations' },
   { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
+  { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
 ];
 
 interface DashboardData {
@@ -169,6 +170,13 @@ export function AdminDashboard() {
     try { const d = await graphqlRequest<{ adminInvoices: string }>('query { adminInvoices }'); setAdminInvoices(JSON.parse(d.adminInvoices)); } catch { /* ignore */ }
   }, []);
 
+  const [financingOffers, setFinancingOffers] = useState<Array<{ id: string; lenderName: string; productType: string; minAmount: number; maxAmount: number; minRate: number; maxRate: number; termMonths: number; requirements: string; isActive: boolean }>>([]);
+  const [financingForm, setFinancingForm] = useState<{ id?: string; lenderName: string; productType: string; minAmount: number; maxAmount: number; minRate: number; maxRate: number; termMonths: number; requirements: string }>({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' });
+
+  const loadFinancingOffers = useCallback(async () => {
+    try { const d = await graphqlRequest<{ adminFinancingOffers: typeof financingOffers }>('query { adminFinancingOffers { id lenderName productType minAmount maxAmount minRate maxRate termMonths requirements isActive } }'); setFinancingOffers(d.adminFinancingOffers); } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => { if (view === 'dashboard') loadData(); }, [view, loadData]);
   useEffect(() => { if (view === 'users') loadUsers(); }, [view, loadUsers]);
   useEffect(() => { if (view === 'businesses') loadBiz(); }, [view, loadBiz]);
@@ -180,6 +188,7 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'banking') loadBankAccounts(); }, [view, loadBankAccounts]);
   useEffect(() => { if (view === 'registrations') loadRegistrations(); }, [view, loadRegistrations]);
   useEffect(() => { if (view === 'invoices') loadAdminInvoices(); }, [view, loadAdminInvoices]);
+  useEffect(() => { if (view === 'financing') loadFinancingOffers(); }, [view, loadFinancingOffers]);
 
   const exec = async (mutation: string, vars: Record<string, unknown>) => {
     setBusy(true); try { await graphqlRequest(mutation, vars); } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
@@ -862,6 +871,106 @@ export function AdminDashboard() {
     </Card>
   );
 
+  const renderFinancing = () => (
+    <>
+      <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)', mb: 2 }}>
+        <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+          <DollarSign size={16} color="#f59e0b" />
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Financing Offers <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({financingOffers.length})</Typography></Typography>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 100000, minRate: 5, maxRate: 15, termMonths: 12, requirements: '[]' })}>Add Offer</GradientButton>
+        </Box>
+        {financingOffers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No financing offers yet.</Typography>}
+        <Box sx={{ overflow: 'auto' }}>
+          <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+            <Box component="thead">
+              <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                {['Lender', 'Type', 'Amount Range', 'Rate', 'Term', 'Status', 'Actions'].map(h => (
+                  <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
+                ))}
+              </Box>
+            </Box>
+            <Box component="tbody">
+              {financingOffers.map(o => (
+                <Box key={o.id} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                  <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                    <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{o.lenderName}</Typography>
+                  </Box>
+                  <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                    <Chip label={o.productType.replace('_', ' ')} size="small" sx={{ bgcolor: o.productType === 'loan' ? 'rgba(59,130,246,.12)' : 'rgba(139,92,246,.12)', color: o.productType === 'loan' ? '#3b82f6' : '#8b5cf6', fontSize: 10, fontWeight: 600, textTransform: 'capitalize' }} />
+                  </Box>
+                  <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                    <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12 }}>${o.minAmount?.toLocaleString()} — ${o.maxAmount?.toLocaleString()}</Typography>
+                  </Box>
+                  <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                    <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12 }}>{o.minRate}% — {o.maxRate}%</Typography>
+                  </Box>
+                  <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                    <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12 }}>{o.termMonths} months</Typography>
+                  </Box>
+                  <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                    <StatusBadge status={o.isActive ? 'active' : 'inactive'} />
+                  </Box>
+                  <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Edit">
+                        <IconButton size="small" sx={{ color: '#f59e0b' }} onClick={() => setFinancingForm({ id: o.id, lenderName: o.lenderName, productType: o.productType, minAmount: o.minAmount, maxAmount: o.maxAmount, minRate: o.minRate, maxRate: o.maxRate, termMonths: o.termMonths, requirements: o.requirements })}>
+                          <FileText size={14} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this offer?')) exec(`mutation { adminDeleteFinancingOffer(id:"${o.id}") }`, {}).then(loadFinancingOffers); }}>
+                          <Trash2 size={14} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      </Card>
+      <Dialog open={!!financingForm.lenderName && !financingForm.lenderName.startsWith('__init')} onClose={() => setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' })}
+        maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3 } }}>
+        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{financingForm.id ? 'Edit' : 'New'} Financing Offer</DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <TextField size="small" label="Lender Name" value={financingForm.lenderName} onChange={e => setFinancingForm({ ...financingForm, lenderName: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField select size="small" label="Product Type" value={financingForm.productType} onChange={e => setFinancingForm({ ...financingForm, productType: e.target.value })}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} SelectProps={{ native: true }}>
+              {['loan', 'line_of_credit', 'term_loan'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+            </TextField>
+            <TextField size="small" label="Min Amount" type="number" value={financingForm.minAmount} onChange={e => setFinancingForm({ ...financingForm, minAmount: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Max Amount" type="number" value={financingForm.maxAmount} onChange={e => setFinancingForm({ ...financingForm, maxAmount: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Min Rate %" type="number" value={financingForm.minRate} onChange={e => setFinancingForm({ ...financingForm, minRate: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Max Rate %" type="number" value={financingForm.maxRate} onChange={e => setFinancingForm({ ...financingForm, maxRate: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Term (months)" type="number" value={financingForm.termMonths} onChange={e => setFinancingForm({ ...financingForm, termMonths: parseInt(e.target.value as string) || 12 })}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Requirements (JSON array)" value={financingForm.requirements} onChange={e => setFinancingForm({ ...financingForm, requirements: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' })}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={busy || !financingForm.lenderName} onClick={async () => {
+            if (financingForm.id) {
+              await exec(`mutation { adminUpdateFinancingOffer(id:"${financingForm.id}",lenderName:"${financingForm.lenderName.replace(/"/g,'\\"')}",productType:"${financingForm.productType}",minAmount:${financingForm.minAmount},maxAmount:${financingForm.maxAmount},minRate:${financingForm.minRate},maxRate:${financingForm.maxRate},termMonths:${financingForm.termMonths},requirements:"${financingForm.requirements.replace(/"/g,'\\"')}",isActive:true) }`, {});
+            } else {
+              await exec(`mutation { adminCreateFinancingOffer(lenderName:"${financingForm.lenderName.replace(/"/g,'\\"')}",productType:"${financingForm.productType}",minAmount:${financingForm.minAmount},maxAmount:${financingForm.maxAmount},minRate:${financingForm.minRate},maxRate:${financingForm.maxRate},termMonths:${financingForm.termMonths},requirements:"${financingForm.requirements.replace(/"/g,'\\"')}") }`, {});
+            }
+            setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' });
+            loadFinancingOffers();
+          }}>{busy ? <CircularProgress size={14} /> : financingForm.id ? 'Update' : 'Create'}</GradientButton>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+
   const renderSupport = () => (
     <Box sx={{ display: 'flex', gap: 2, height: { xs: 'auto', md: 'calc(100vh - 180px)' }, flexDirection: { xs: 'column', md: 'row' } }}>
       <Card sx={{ width: { xs: '100%', md: 340 }, flexShrink: 0, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', backdropFilter: 'blur(12px)', maxHeight: { xs: 300, md: 'none' } }}>
@@ -930,6 +1039,7 @@ export function AdminDashboard() {
       case 'banking': return renderBanking();
       case 'registrations': return renderRegistrations();
       case 'invoices': return renderAdminInvoices();
+      case 'financing': return renderFinancing();
       default: return null;
     }
   };
@@ -939,7 +1049,7 @@ export function AdminDashboard() {
   const titles: Record<AdminView, string> = {
     dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans',
     investors: 'Investors', providers: 'Providers', bookings: 'Bookings',
-    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking', registrations: 'Registrations', invoices: 'Invoices',
+    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking', registrations: 'Registrations', invoices: 'Invoices', financing: 'Financing',
   };
   const subtitles: Record<AdminView, string> = {
     dashboard: 'Platform performance at a glance',
@@ -955,6 +1065,7 @@ export function AdminDashboard() {
     banking: 'User-submitted bank accounts for approval',
     registrations: 'Business registration submissions from users',
     invoices: 'All invoices across all businesses',
+    financing: 'Financing offers shown to users',
   };
 
   return (

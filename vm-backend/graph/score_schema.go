@@ -1,6 +1,9 @@
 package graph
 
 import (
+	"encoding/json"
+	"time"
+
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/scores"
 )
@@ -66,21 +69,50 @@ func init() {
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil {
-				return []scores.FinancingOffer{}, nil
+				return []interface{}{}, nil
 			}
 			businessID := p.Args["businessId"].(string)
-			score, err := AppContainer.ScoreRepo.GetByBusinessAndType(p.Context, businessID, "credit")
-			if err != nil {
-				return []scores.FinancingOffer{}, nil
-			}
+
+			// Get score for pre-qualification
 			scoreVal := 50
-			if score != nil {
+			score, err := AppContainer.ScoreRepo.GetByBusinessAndType(p.Context, businessID, "credit")
+			if err == nil && score != nil {
 				var data scores.CreditScoreData
 				if err := jsonUnmarshal(score.ScoreData, &data); err == nil {
 					scoreVal = data.Score
 				}
 			}
-			return AppContainer.ScoreEngine.GetOffers(scoreVal), nil
+
+			// Get offers from DB (admin-managed)
+			if AppContainer.FinancingRepo == nil {
+				return []interface{}{}, nil
+			}
+			offers, err := AppContainer.FinancingRepo.ListActive(p.Context)
+			if err != nil {
+				return nil, err
+			}
+			result := make([]interface{}, len(offers))
+			for i, o := range offers {
+				var reqs []string
+				json.Unmarshal([]byte(o.Requirements), &reqs)
+				if reqs == nil {
+					reqs = []string{}
+				}
+				result[i] = map[string]interface{}{
+					"id":           o.ID,
+					"lenderName":   o.LenderName,
+					"productType":  o.ProductType,
+					"minAmount":    o.MinAmount,
+					"maxAmount":    o.MaxAmount,
+					"minRate":      o.MinRate,
+					"maxRate":      o.MaxRate,
+					"termMonths":   o.TermMonths,
+					"requirements": reqs,
+					"preQualified": scoreVal >= 50,
+					"expiresAt":    time.Now().Add(30 * 24 * time.Hour).Format(time.RFC3339),
+				}
+			}
+			return result, nil
 		},
 	})
 
