@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, Typography, Card, TextField, IconButton, Chip, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, TextField, IconButton, Chip } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -164,7 +165,7 @@ export function MessagesPage() {
           <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: wsConnected ? '#22c55e' : '#ef4444' }} />
         </Box>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
-          {loading ? <Box sx={{ p: 2, textAlign: 'center' }}><CircularProgress size={16} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : conversations.length === 0 ? (
+          {loading ? <CardSkeleton count={5} type='list-item' /> : conversations.length === 0 ? (
             <Typography sx={{ p: 2, textAlign: 'center', fontSize: 12, color: 'var(--vm-text-muted)' }}>No conversations yet</Typography>
           ) : conversations.map(cv => (
             <Box key={cv.id} onClick={() => { setActiveConv(cv.id); loadMessages(cv.id); }}
