@@ -129,7 +129,7 @@ export function CustomObjectsPage() {
           <Grid3x3 size={20} color="var(--vm-primary-400)" /><Typography sx={{ fontWeight: 700 }}>New Custom Object</Typography>
           <IconButton size="small" onClick={() => setObjForm(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box component="form" onSubmit={createObject} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField size="small" name="singular" label="Singular Name (e.g. project)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" name="plural" label="Plural Name (e.g. projects)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
@@ -149,7 +149,7 @@ export function CustomObjectsPage() {
           <Grid3x3 size={20} color="var(--vm-primary-400)" /><Typography sx={{ fontWeight: 700 }}>Add Field</Typography>
           <IconButton size="small" onClick={() => setFieldForm({ open: false, objectId: '' })} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box component="form" onSubmit={createField} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField size="small" name="name" label="Field Name (e.g. due_date)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" name="label" label="Display Label" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />

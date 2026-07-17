@@ -129,7 +129,7 @@ export function CompaniesPage() {
           <Typography sx={{ fontWeight: 700 }}>{form?.id ? 'Edit' : 'Add'} Company</Typography>
           <IconButton size="small" onClick={() => setForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Company Name" value={form?.name || ''} onChange={e => setForm({ ...form, name: e.target.value })}
               sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />

@@ -667,7 +667,7 @@ export function SettingsPage() {
             <Box onClick={() => !addingPayment && setPaymentModalOpen(false)} sx={{ cursor: addingPayment ? 'not-allowed' : 'pointer', p: 1, borderRadius: 1, opacity: addingPayment ? 0.5 : 1, '&:hover': !addingPayment ? { bgcolor: 'var(--vm-bg-tertiary)' } : undefined }}><X size={20} color="var(--vm-text-muted)" /></Box>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Grid container spacing={3}>
             <Grid size={12}>
               <TextField fullWidth label="Cardholder Name" value={newPaymentMethod.cardholderName} onChange={(e) => setNewPaymentMethod({ ...newPaymentMethod, cardholderName: e.target.value })} sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />

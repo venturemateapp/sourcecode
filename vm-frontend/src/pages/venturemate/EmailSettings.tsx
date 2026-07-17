@@ -157,7 +157,7 @@ export function EmailSettingsPage() {
           <Typography sx={{ fontWeight: 700 }}>Add Email Account</Typography>
           <IconButton size="small" onClick={() => setForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <FormControl size="small" fullWidth>
               <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Provider</InputLabel>

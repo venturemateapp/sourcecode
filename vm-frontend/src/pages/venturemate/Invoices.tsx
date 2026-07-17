@@ -126,7 +126,7 @@ export function InvoicesPage() {
           <Typography sx={{ fontWeight: 700 }}>New Invoice</Typography>
           <IconButton size="small" onClick={() => setForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Invoice #" value={form?.invoiceNumber || ''} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />

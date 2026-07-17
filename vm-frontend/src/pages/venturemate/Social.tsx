@@ -208,7 +208,7 @@ export function SocialPage({ onViewChange }: { onViewChange?: (v: ViewType) => v
             <Typography sx={{ fontWeight: 700 }}>Connect Metricool</Typography>
             <IconButton size="small" onClick={() => setShowConnForm(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
           </DialogTitle>
-          <DialogContent sx={{ pt: 2.5 }}>
+          <DialogContent sx={{ pt: 3.5 }}>
             <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 2 }}>
               Go to Metricool → Settings → API to find your User Token and User ID. Requires an Advanced plan.
             </Typography>

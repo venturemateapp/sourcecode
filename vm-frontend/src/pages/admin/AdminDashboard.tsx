@@ -522,7 +522,7 @@ export function AdminDashboard() {
       <Dialog open={!!invForm.name} onClose={() => setInvForm({...invForm, name: ''})} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             {['name','location','industries','thesis'].map(f => (
               <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
@@ -619,7 +619,7 @@ export function AdminDashboard() {
       <Dialog open={!!provForm.name} onClose={() => setProvForm({...provForm, name: ''})} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>New Provider</DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Name" value={provForm.name} onChange={e => setProvForm({...provForm, name: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
@@ -933,7 +933,7 @@ export function AdminDashboard() {
       <Dialog open={!!financingForm.lenderName && !financingForm.lenderName.startsWith('__init')} onClose={() => setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' })}
         maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3 } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{financingForm.id ? 'Edit' : 'New'} Financing Offer</DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Lender Name" value={financingForm.lenderName} onChange={e => setFinancingForm({ ...financingForm, lenderName: e.target.value })}
               sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />

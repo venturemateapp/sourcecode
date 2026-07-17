@@ -698,7 +698,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Stepper
             activeStep={applyStep}
             sx={{
@@ -977,7 +977,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
             </IconButton>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           {!eligibilityResult ? (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Box

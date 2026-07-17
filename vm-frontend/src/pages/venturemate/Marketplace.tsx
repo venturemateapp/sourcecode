@@ -232,7 +232,7 @@ export function MarketplacePage() {
           <Typography sx={{ fontWeight: 700 }}>Book {bookingProvider?.name}</Typography>
           <IconButton size="small" onClick={() => setBookingProvider(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           {bookingProvider && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5, p: 1.5, borderRadius: 2, bgcolor: 'var(--vm-bg-tertiary)' }}>
               <Avatar src={bookingProvider.picture || ''} sx={{ width: 40, height: 40 }}>{bookingProvider.name.charAt(0)}</Avatar>

@@ -95,7 +95,7 @@ export function WorkflowsPage() {
           <Workflow size={20} color="var(--vm-primary-400)" /><Typography sx={{ fontWeight: 700 }}>New Workflow</Typography>
           <IconButton size="small" onClick={() => setShowForm(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 2.5 }}>
+        <DialogContent sx={{ pt: 3.5 }}>
           <Box component="form" onSubmit={createWorkflow} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField size="small" name="name" label="Workflow Name" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" name="description" label="Description" multiline rows={2} inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
