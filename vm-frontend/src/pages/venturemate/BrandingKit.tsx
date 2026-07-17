@@ -20,27 +20,54 @@ function parseBrand(change: ProposedChange): BrandKitWithConcept | null {
   try { return JSON.parse(change.newValue) as BrandKitWithConcept; } catch { return null; }
 }
 
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // WCAG relative luminance
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 160;
+}
+
+function adaptColor(match: string, attr: string, onDark: boolean): string {
+  const color = match.replace(`${attr}="`, '').replace('"', '');
+  if (!/^#[0-9A-Fa-f]{6}$/.test(color)) return match;
+  const light = isLightColor(color);
+  if (onDark) {
+    // On dark bg: dark colors → white, light colors stay
+    return light ? match : `${attr}="rgba(255,255,255,.85)"`;
+  } else {
+    // On light bg: light colors → dark, dark colors stay
+    return light ? `${attr}="rgba(0,0,0,.75)"` : match;
+  }
+}
+
 function renderSvg(svg: string, options?: { dark?: boolean; size?: number }) {
   try {
     let cleaned = svg.startsWith('data:') ? atob(svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : svg;
-    // Adapt colors for dark/light backgrounds
-    if (options?.dark) {
-      // Replace common dark fills with white/light equivalents
-      cleaned = cleaned.replace(/(fill="(?:none|transparent)")/gi, '$1');
-      cleaned = cleaned.replace(/fill="#[0-9A-Fa-f]{3,6}"/gi, (match) => {
-        const color = match.replace('fill="', '').replace('"', '');
-        // Keep light colors, replace dark colors with white
-        const isDark = parseInt(color.slice(1, 3), 16) < 100 && parseInt(color.slice(3, 5), 16) < 100 && parseInt(color.slice(5, 7), 16) < 100;
-        return isDark ? 'fill="rgba(255,255,255,.85)"' : match;
-      });
-      cleaned = cleaned.replace(/stroke="#[0-9A-Fa-f]{3,6}"/gi, (match) => {
-        const color = match.replace('stroke="', '').replace('"', '');
-        const isDark = parseInt(color.slice(1, 3), 16) < 100 && parseInt(color.slice(3, 5), 16) < 100 && parseInt(color.slice(5, 7), 16) < 100;
-        return isDark ? 'stroke="rgba(255,255,255,.85)"' : match;
-      });
-      // Replace text fill for readability
-      cleaned = cleaned.replace(/<text[^>]*fill="#[0-9A-Fa-f]{3,6}"/gi, (match) => match.replace(/fill="#[0-9A-Fa-f]{3,6}"/i, 'fill="rgba(255,255,255,.9)"'));
-    }
+    const onDark = options?.dark === true;
+
+    // Preserve none/transparent fills
+    cleaned = cleaned.replace(/(fill=")(?:none|transparent)(")/gi, '___KEEP_FILL___$1$2___END_KEEP___');
+
+    // Adapt fill colors
+    cleaned = cleaned.replace(/fill="#[0-9A-Fa-f]{6}"/gi, (m) => adaptColor(m, 'fill', onDark));
+
+    // Adapt stroke colors
+    cleaned = cleaned.replace(/stroke="#[0-9A-Fa-f]{6}"/gi, (m) => adaptColor(m, 'stroke', onDark));
+
+    // Adapt text fill for readability
+    cleaned = cleaned.replace(/<text[^>]*fill="#[0-9A-Fa-f]{6}"/gi, (m) => {
+      const color = m.match(/fill="#([0-9A-Fa-f]{6})"/i);
+      if (!color) return m;
+      const light = isLightColor('#' + color[1]);
+      if (onDark) return light ? m : m.replace(/fill="#[0-9A-Fa-f]{6}"/i, 'fill="rgba(255,255,255,.9)"');
+      else return light ? m.replace(/fill="#[0-9A-Fa-f]{6}"/i, 'fill="rgba(0,0,0,.8)"') : m;
+    });
+
+    // Restore none/transparent fills
+    cleaned = cleaned.replace(/___KEEP_FILL___fill="(?:none|transparent)"___END_KEEP___/g, 'fill="none"');
+
     const sz = options?.size || 100;
     return <Box sx={{ display: 'flex', '& svg': { width: sz, height: sz, maxWidth: sz, maxHeight: sz } }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
   } catch { return null; }
