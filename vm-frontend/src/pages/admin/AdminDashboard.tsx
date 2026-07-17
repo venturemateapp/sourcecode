@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, useMediaQuery, useTheme, Tooltip } from '@mui/material';
-import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle, Search, X, Filter, ChevronDown, MoreHorizontal, Phone, Clock, CheckCheck } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle, Search, X, Filter, ChevronDown, MoreHorizontal, Phone, Clock, CheckCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
@@ -19,6 +19,7 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; des
   { key: 'submissions', icon: Mail, label: 'Leads', desc: 'Contact inquiries' },
   { key: 'broadcast', icon: Bell, label: 'Broadcast', desc: 'Push notifications' },
   { key: 'support', icon: MessageCircle, label: 'Support', desc: 'Chat sessions' },
+  { key: 'banking', icon: Landmark, label: 'Banking', desc: 'Bank accounts' },
 ];
 
 interface DashboardData {
@@ -105,6 +106,7 @@ export function AdminDashboard() {
   const [supportSessions, setSupportSessions] = useState<Array<{ id: string; userId: string; subject: string; status: string; createdByName: string; createdByEmail: string; summary: string; createdAt: string; updatedAt: string }>>([]);
   const [supportMessages, setSupportMessages] = useState<Array<{ id: string; sessionId: string; role: string; content: string; createdAt: string }>>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [bankAccounts, setBankAccounts] = useState<Array<{ id: string; userId: string; businessId: string; bankName: string; accountType: string; accountNumber: string; accountName: string; currency: string; status: string; createdAt: string }>>([]);
 
   useEffect(() => {
     if (!user?.isAdmin) { navigate('/vm', { replace: true }); }
@@ -151,6 +153,10 @@ export function AdminDashboard() {
     try { const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string }> }>('query { investors { id name type location } }'); setInvestors(d.investors); } catch { /* ignore */ }
   }, []);
 
+  const loadBankAccounts = useCallback(async () => {
+    try { const d = await graphqlRequest<{ allBankAccounts: typeof bankAccounts }>('query { allBankAccounts { id userId businessId bankName accountType accountNumber accountName currency status createdAt } }'); setBankAccounts(d.allBankAccounts); } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => { if (view === 'dashboard') loadData(); }, [view, loadData]);
   useEffect(() => { if (view === 'users') loadUsers(); }, [view, loadUsers]);
   useEffect(() => { if (view === 'businesses') loadBiz(); }, [view, loadBiz]);
@@ -159,6 +165,7 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'providers') loadProviders(); }, [view, loadProviders]);
   useEffect(() => { if (view === 'bookings') loadBookings(); }, [view, loadBookings]);
   useEffect(() => { if (view === 'support') { loadSupport(); setSelectedSession(null); setSupportMessages([]); } }, [view, loadSupport]);
+  useEffect(() => { if (view === 'banking') loadBankAccounts(); }, [view, loadBankAccounts]);
 
   const exec = async (mutation: string, vars: Record<string, unknown>) => {
     setBusy(true); try { await graphqlRequest(mutation, vars); } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
@@ -665,6 +672,69 @@ export function AdminDashboard() {
     </Card>
   );
 
+  const renderBanking = () => (
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Landmark size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Bank Accounts <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({bankAccounts.length})</Typography></Typography>
+      </Box>
+      {bankAccounts.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No bank accounts submitted yet.</Typography>}
+      <Box sx={{ overflow: 'auto' }}>
+        <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+          <Box component="thead">
+            <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+              {['Account Name', 'Bank', 'Type', 'Number', 'Currency', 'Status', 'Actions'].map(h => (
+                <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {bankAccounts.map(a => (
+              <Box key={a.id} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{a.accountName}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{a.bankName}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12, textTransform: 'capitalize' }}>{a.accountType}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>••••{a.accountNumber.slice(-4)}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{a.currency}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <StatusBadge status={a.status} />
+                </Box>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  {a.status === 'pending' ? (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Approve">
+                        <IconButton size="small" sx={{ color: '#34d399' }} onClick={() => exec(`mutation { approveBankAccount(id:"${a.id}") { id status } }`, {}).then(loadBankAccounts)}>
+                          <CheckCircle size={16} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Reject">
+                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => exec(`mutation { rejectBankAccount(id:"${a.id}") { id status } }`, {}).then(loadBankAccounts)}>
+                          <XCircle size={16} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  ) : (
+                    <Typography sx={{ color: 'rgba(255,255,255,.2)', fontSize: 11 }}>—</Typography>
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </Card>
+  );
+
   const renderSupport = () => (
     <Box sx={{ display: 'flex', gap: 2, height: { xs: 'auto', md: 'calc(100vh - 180px)' }, flexDirection: { xs: 'column', md: 'row' } }}>
       <Card sx={{ width: { xs: '100%', md: 340 }, flexShrink: 0, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', backdropFilter: 'blur(12px)', maxHeight: { xs: 300, md: 'none' } }}>
@@ -730,6 +800,7 @@ export function AdminDashboard() {
       case 'submissions': return renderLeads();
       case 'broadcast': return renderBroadcast();
       case 'support': return renderSupport();
+      case 'banking': return renderBanking();
       default: return null;
     }
   };
@@ -739,7 +810,7 @@ export function AdminDashboard() {
   const titles: Record<AdminView, string> = {
     dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans',
     investors: 'Investors', providers: 'Providers', bookings: 'Bookings',
-    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support',
+    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking',
   };
   const subtitles: Record<AdminView, string> = {
     dashboard: 'Platform performance at a glance',
@@ -752,6 +823,7 @@ export function AdminDashboard() {
     submissions: 'Contact form inquiries',
     broadcast: 'Send push notifications to all users',
     support: 'AI support chat sessions and escalations',
+    banking: 'User-submitted bank accounts for approval',
   };
 
   return (
