@@ -94,7 +94,7 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
 
       {viewMode === 'slide' && hasDeck && (
         <Card sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, mb: 2 }}>
-          <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} dark={dark} />
+          <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />
         </Card>
       )}
 
