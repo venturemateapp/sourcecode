@@ -73,6 +73,32 @@ func (e *Engine) Execute(ctx context.Context, workflowID string, triggerData map
 	return nil
 }
 
+func (e *Engine) MatchAndExecute(ctx context.Context, businessID, triggerType, targetObject string, data map[string]interface{}) {
+	workflows, err := e.repo.List(ctx, businessID)
+	if err != nil {
+		return
+	}
+	for _, w := range workflows {
+		if !w.IsActive {
+			continue
+		}
+		t, err := e.repo.GetTriggerByWorkflow(ctx, w.ID)
+		if err != nil {
+			continue
+		}
+		if t.TriggerType != triggerType || t.TargetObject != targetObject {
+			continue
+		}
+		go func(wfID string) {
+			execCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if err := e.Execute(execCtx, wfID, data); err != nil {
+				log.Printf("Workflow %s auto-execution failed: %v", wfID, err)
+			}
+		}(w.ID)
+	}
+}
+
 func (e *Engine) executeAction(ctx context.Context, action Action, triggerData map[string]interface{}) error {
 	var cfg ActionConfig
 	if err := json.Unmarshal([]byte(action.ActionConfig), &cfg); err != nil {

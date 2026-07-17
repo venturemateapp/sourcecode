@@ -226,6 +226,9 @@ func init() {
 			if err := AppContainer.CrmRepo.CreateContact(p.Context, c); err != nil {
 				return nil, err
 			}
+			if AppContainer.WorkflowEngine != nil {
+				AppContainer.WorkflowEngine.MatchAndExecute(p.Context, c.BusinessID, "record_created", "crm_contacts", map[string]interface{}{"contactId": c.ID, "name": c.Name, "email": c.Email, "contactType": c.ContactType})
+			}
 			return map[string]interface{}{
 				"id": c.ID, "businessId": c.BusinessID, "name": c.Name, "email": c.Email,
 				"phone": c.Phone, "company": c.Company, "jobTitle": c.JobTitle,
@@ -343,6 +346,9 @@ func init() {
 			if err := AppContainer.CrmRepo.CreateDeal(p.Context, d); err != nil {
 				return nil, err
 			}
+			if AppContainer.WorkflowEngine != nil {
+				AppContainer.WorkflowEngine.MatchAndExecute(p.Context, d.BusinessID, "record_created", "crm_deals", map[string]interface{}{"dealId": d.ID, "title": d.Title, "value": d.Value, "stage": d.Stage})
+			}
 			return map[string]interface{}{
 				"id": d.ID, "businessId": d.BusinessID, "contactId": d.ContactID,
 				"title": d.Title, "value": d.Value, "currency": d.Currency,
@@ -392,6 +398,9 @@ func init() {
 			}
 			if err := AppContainer.CrmRepo.UpdateDeal(p.Context, d); err != nil {
 				return nil, err
+			}
+			if AppContainer.WorkflowEngine != nil && existing.Stage != d.Stage {
+				AppContainer.WorkflowEngine.MatchAndExecute(p.Context, d.BusinessID, "deal_stage_changed", "crm_deals", map[string]interface{}{"dealId": d.ID, "title": d.Title, "value": d.Value, "oldStage": existing.Stage, "newStage": d.Stage})
 			}
 			return map[string]interface{}{
 				"id": d.ID, "businessId": d.BusinessID, "contactId": d.ContactID,
