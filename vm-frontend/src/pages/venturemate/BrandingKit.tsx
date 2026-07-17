@@ -264,8 +264,6 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedTypoIdx, setSelectedTypoIdx] = useState(0);
   const [selectedLogoIdx, setSelectedLogoIdx] = useState(0);
-  const [wizardLoading, setWizardLoading] = useState(false);
-  const [wizardError, setWizardError] = useState<string | null>(null);
 
   const handleGenerateGuide = useCallback(async () => {
     if (!selectedBusiness) return;

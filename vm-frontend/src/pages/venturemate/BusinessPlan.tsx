@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Box, Card, Chip, Typography, ToggleButtonGroup, ToggleButton, Button, IconButton } from '@mui/material';
-import { BookOpen, Building2, FileText, Sparkles, LayoutGrid, Monitor, ChevronDown, ChevronUp, Download, TrendingUp, Users, DollarSign, Target, CheckCircle, Lightbulb } from 'lucide-react';
+import { Box, Card, Chip, Typography, ToggleButtonGroup, ToggleButton, IconButton } from '@mui/material';
+import { BookOpen, Building2, FileText, Sparkles, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, CheckCircle, Lightbulb } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { PlanViewer } from '../../components/venturemate/PlanViewer';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
