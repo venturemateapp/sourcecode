@@ -1,3 +1,4 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, TextField, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
@@ -90,7 +91,7 @@ export function CustomObjectsPage() {
         <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setObjForm(true)}>New Object</GradientButton>
       </Box>
 
-      {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress size={20} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : objects.length === 0 ? (
+      {loading ? <CardSkeleton count={4} type='card' /> : objects.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><Grid3x3 size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No custom objects yet. Create your first one!</Typography></Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>

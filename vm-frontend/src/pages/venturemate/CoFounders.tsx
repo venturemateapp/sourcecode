@@ -1,5 +1,6 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab } from '@mui/material';
 import {
   Search, MapPin, MessageSquare, UserPlus, Briefcase,
 } from 'lucide-react';
@@ -92,7 +93,7 @@ export function CoFoundersPage({ onViewChange }: { onViewChange: (view: ViewType
         <Tab label={`Connected (${matched.length})`} />
       </Tabs>
 
-      {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress size={20} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : profiles.length === 0 ? (
+      {loading ? <CardSkeleton count={4} type='card' /> : profiles.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><UserPlus size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No profiles available yet</Typography></Box>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2,1fr)', lg: 'repeat(3,1fr)' }, gap: 2 }}>

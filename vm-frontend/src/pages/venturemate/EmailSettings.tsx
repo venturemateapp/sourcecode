@@ -1,3 +1,4 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
@@ -111,7 +112,7 @@ export function EmailSettingsPage() {
         <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setForm({ email: '', provider: 'gmail', imapPort: 993, smtpPort: 587 })}>Add Email Account</GradientButton>
       </Box>
 
-      {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress size={20} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : accounts.length === 0 ? (
+      {loading ? <CardSkeleton count={4} type='card' /> : accounts.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}>
           <Mail size={36} />
           <Typography sx={{ mt: 1, fontSize: 14 }}>No email accounts connected</Typography>

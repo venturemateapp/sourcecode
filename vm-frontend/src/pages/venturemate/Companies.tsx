@@ -1,3 +1,4 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
@@ -93,7 +94,7 @@ export function CompaniesPage() {
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2,1fr)', lg: 'repeat(3,1fr)' }, gap: 2 }}>
-        {loading ? <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 6 }}><CircularProgress size={20} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : companies.length === 0 ? (
+        {loading ? <CardSkeleton count={6} type='card' /> : companies.length === 0 ? (
           <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><Building2 size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No accounts yet</Typography></Box>
         ) : companies.map(c => (
           <Card key={c.id} sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 2 }}>

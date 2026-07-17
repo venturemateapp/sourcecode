@@ -1,3 +1,4 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
@@ -136,7 +137,7 @@ export function CalendarPage() {
       )}
 
       {/* Week grid */}
-      {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress size={24} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : (
+      {loading ? <CardSkeleton count={4} type='card' /> : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(7, 1fr)' }, gap: { xs: 1, sm: 1.5 } }}>
           {days.map((day, idx) => {
             const dayEvents = getEventsForDay(day);

@@ -1,5 +1,6 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Card, CircularProgress } from '@mui/material';
+import { Box, Typography, Card } from '@mui/material';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { BarChart3, TrendingUp, Users, DollarSign, Activity, Building2, Calendar, CheckCircle, FileText } from 'lucide-react';
@@ -52,7 +53,7 @@ export function DashboardsPage() {
         <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>Real-time insights from your CRM data</Typography>
       </Box>
 
-      {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress size={24} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : data ? (
+      {loading ? <CardSkeleton count={4} type='card' /> : data ? (
         <>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: { xs: 1.5, sm: 2 }, mb: 3 }}>
             {[

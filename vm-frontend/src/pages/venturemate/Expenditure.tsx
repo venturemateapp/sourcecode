@@ -1,3 +1,4 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
@@ -114,7 +115,7 @@ export function ExpenditurePage() {
         </Card>
       </Box>
 
-      {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress size={20} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : items.length === 0 ? (
+      {loading ? <CardSkeleton count={4} type='card' /> : items.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><Receipt size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No expenses recorded yet</Typography></Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

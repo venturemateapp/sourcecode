@@ -1,3 +1,4 @@
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
@@ -110,7 +111,7 @@ export function WorkflowsPage() {
         <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setShowForm(true)}>New Workflow</GradientButton>
       </Box>
 
-      {loading ? <Box sx={{ textAlign: 'center', py: 6 }}><CircularProgress size={20} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : workflows.length === 0 ? (
+      {loading ? <CardSkeleton count={4} type='card' /> : workflows.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><Workflow size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No workflows yet. Create automation rules with triggers and actions!</Typography></Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
