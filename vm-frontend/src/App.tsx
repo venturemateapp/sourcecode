@@ -19,6 +19,7 @@ import { CoFoundersPage } from './pages/venturemate/CoFounders';
 import { AIAssistant } from './pages/venturemate/AIAssistant';
 import { CRMPage } from './pages/venturemate/CRM';
 import { CompaniesPage } from './pages/venturemate/Companies';
+import { EmailSettingsPage } from './pages/venturemate/EmailSettings';
 import { InvoicesPage } from './pages/venturemate/Invoices';
 import { ExpenditurePage } from './pages/venturemate/Expenditure';
 import { BankingPage } from './pages/venturemate/Banking';
@@ -235,6 +236,8 @@ function VentureMateApp() {
         return <BillingPage />;
       case 'settings':
         return <SettingsPage />;
+      case 'email-settings':
+        return <EmailSettingsPage />;
       case 'crm':
         return <CRMPage />;
       case 'companies':

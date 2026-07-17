@@ -55,6 +55,7 @@ const viewTitles: Record<ViewType, string> = {
   profile: 'Profile',
   billing: 'Billing',
   settings: 'Settings',
+  'email-settings': 'Email Sync',
 };
 
 export function BusinessPickerModal({

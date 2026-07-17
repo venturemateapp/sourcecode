@@ -528,7 +528,8 @@ export type ViewType =
   | 'account'
   | 'profile'
   | 'billing'
-  | 'settings';
+  | 'settings'
+  | 'email-settings';
 
 // Navigation
 export interface NavSection {

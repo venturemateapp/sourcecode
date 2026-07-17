@@ -37,6 +37,7 @@ import {
   Heart,
   Presentation,
   FileText,
+  Receipt,
   Palette,
   Target,
   UserCircle,
@@ -46,8 +47,8 @@ import {
   Settings,
   LogOut,
   Shield,
+  Mail,
   X,
-  Receipt,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -75,6 +76,7 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; className?: s
   Settings,
   LogOut,
   Shield,
+  Mail,
 };
 
 const navSections: NavSection[] = [
@@ -130,6 +132,7 @@ const navSections: NavSection[] = [
     title: 'ACCOUNT',
     items: [
       { label: 'Settings', icon: 'Settings', view: 'settings' },
+      { label: 'Email Sync', icon: 'Mail', view: 'email-settings' },
     ],
   },
 ];

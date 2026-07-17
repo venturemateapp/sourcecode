@@ -12,6 +12,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/aichat"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/chat"
+	"github.com/venturemate/vmbackend/internal/crmemail"
 	"github.com/venturemate/vmbackend/internal/crm"
 	"github.com/venturemate/vmbackend/internal/db"
 	"github.com/venturemate/vmbackend/internal/expenditure"
@@ -71,6 +72,8 @@ type Container struct {
 	MetricoolService     *metricool.Service
 	ExpenditureRepo      *expenditure.Repository
 	InvoicePdfGenerator  *invoicepdf.Generator
+	EmailSyncRepo        *crmemail.Repository
+	EmailSyncService     *crmemail.SyncService
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
 	AiChatRepo          *aichat.Repository
@@ -116,6 +119,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	chatRepo := chat.NewRepository(dbPool)
 	chatHub := chat.NewHub(chatRepo)
 	aiChatRepo := aichat.NewRepository(dbPool)
+	emailSyncRepo := crmemail.NewRepository(dbPool)
+	emailSyncSvc := crmemail.NewSyncService(emailSyncRepo)
 	expenditureRepo := expenditure.NewRepository(dbPool)
 	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
@@ -200,6 +205,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		MetricoolService:     metricoolSvc,
 		ExpenditureRepo:      expenditureRepo,
 		InvoicePdfGenerator:  invoicePdfGen,
+		EmailSyncRepo:        emailSyncRepo,
+		EmailSyncService:     emailSyncSvc,
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,
 		AiChatRepo:          aiChatRepo,
