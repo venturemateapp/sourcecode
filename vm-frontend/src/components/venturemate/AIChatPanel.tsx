@@ -364,13 +364,20 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
         });
         const response = data.proposeAgentAction;
         const proposal = response.proposals?.[0];
-        if (!proposal) throw new Error('AI did not return a reviewable creative proposal.');
-        setPendingProposal({ domain: creativeDomain, change: proposal });
-        setMessages(current => [...current, {
-          id: `${Date.now()}-assistant`,
-          role: 'assistant',
-          content: response.message || 'I prepared a version for your review. Tell me what to adjust, ask for another option, or approve it.',
-        }]);
+        if (!proposal) {
+          setMessages(current => [...current, {
+            id: `${Date.now()}-assistant`,
+            role: 'assistant',
+            content: response.message || 'I can help with that. Could you describe what you\'d like to change more specifically?',
+          }]);
+        } else {
+          setPendingProposal({ domain: creativeDomain, change: proposal });
+          setMessages(current => [...current, {
+            id: `${Date.now()}-assistant`,
+            role: 'assistant',
+            content: response.message || 'I prepared a version for your review. Tell me what to adjust, ask for another option, or approve it.',
+          }]);
+        }
       } else {
         const data = await graphqlRequest<AgentResponse>(EXECUTE_AGENT_MUTATION, {
           userId,
