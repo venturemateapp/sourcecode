@@ -322,10 +322,10 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
         {website && <Chip label={`Draft v${website.draftRevision}`} size="small" variant="outlined" />}
         {website?.status === 'published' && <Chip label={`Live v${website.publishedRevision}`} size="small" color="success" />}
         {savedDraft && (
-          <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => setCodeTab('preview')} startIcon={<Eye size={13} />} sx={{ textTransform: 'none', ml: 'auto' }}>Preview</Button>
+          <Button size="small" variant={codeTab === 'preview' ? 'contained' : 'outlined'} onClick={() => setCodeTab('preview')} startIcon={<Eye size={13} />} sx={{ textTransform: 'none', ml: 'auto', fontSize: 11 }}>Preview</Button>
         )}
         {savedDraft && (
-          <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => { handleGenerateCode(savedDraft); }} startIcon={codeLoading ? <CircularProgress size={13} /> : <Code2 size={13} />} disabled={codeLoading} sx={{ textTransform: 'none' }}>Code</Button>
+          <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => { if (codeTab === 'code') setCodeTab('preview'); else { setCodeTab('code'); handleGenerateCode(savedDraft); } }} startIcon={codeLoading ? <CircularProgress size={13} /> : <Code2 size={13} />} disabled={codeLoading} sx={{ textTransform: 'none', fontSize: 11 }}>Code</Button>
         )}
       </Box>
 

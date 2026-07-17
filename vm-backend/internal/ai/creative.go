@@ -141,8 +141,10 @@ func creativeDomain(domain string) string {
 		return "business-plan"
 	case "pitch-deck", "pitchdeck", "deck":
 		return "pitch-deck"
-	case "website", "website-builder", "site":
+	case "website", "website-builder", "site", "landing-page", "landing":
 		return "website"
+	case "web-app", "webapp", "appgen", "application", "app":
+		return "webapp"
 	case "mockup", "mockups", "mock-up", "mock-ups", "brand-mockup":
 		return "mockups"
 	default:
@@ -152,7 +154,7 @@ func creativeDomain(domain string) string {
 
 func isCreativeDomain(domain string) bool {
 	switch creativeDomain(domain) {
-	case "branding", "business-plan", "pitch-deck", "website", "mockups":
+	case "branding", "business-plan", "pitch-deck", "website", "webapp", "mockups":
 		return true
 	default:
 		return false
@@ -199,6 +201,11 @@ func creativeBusinessContextJSON(biz *businesses.Business, domain string) []byte
 		context["existingWebsiteConfig"] = creativeContextValue(biz.WebsiteConfig, 850)
 		context["team"] = creativeContextValue(biz.Team, 500)
 		context["metrics"] = creativeContextValue(biz.Metrics, 400)
+	case "webapp":
+		context["brandKit"] = creativeContextValue(biz.BrandKit, 1000)
+		context["businessPlan"] = creativeContextValue(biz.BusinessPlan, 800)
+		context["websiteConfig"] = creativeContextValue(biz.WebsiteConfig, 600)
+		context["team"] = creativeContextValue(biz.Team, 400)
 	case "mockups":
 		context["brandKit"] = creativeContextValue(biz.BrandKit, 2000)
 		context["website"] = biz.Website
@@ -250,19 +257,32 @@ func defaultCreativeChange(domain string, biz *businesses.Business) ProposedChan
 		field, current, summary = "pitchDeck", biz.PitchDeck, "Generate or revise the complete pitch deck"
 	case "website":
 		field, current, summary = "websiteDraft", biz.WebsiteConfig, "Generate or revise the private website draft"
+	case "webapp":
+		field, current, summary = "websiteDraft", biz.WebsiteConfig, "Generate or revise a full web application"
 	case "mockups":
 		field, current, summary = "brandKit", biz.BrandKit, "Generate brand mockup visualizations"
 	}
 	return ProposedChange{ID: "1", Type: "update", Field: field, Summary: summary, CurrentValue: current, NewValue: "{}"}
 }
 
-func creativeProposalGuidance(domain string) string {
+func 	creativeProposalGuidance(domain string) string {
 	switch creativeDomain(domain) {
 	case "branding":
 		return fmt.Sprintf(`
 This is an AI-first branding workflow. Return exactly one change with field "brandKit" for generation or revision.
 
 %s
+
+COLOUR PALETTE GENERATION (%s):
+%s
+
+TYPOGRAPHY GENERATION (%s):
+%s
+
+LOGO SYSTEM — Generate EXACTLY 3 logo concepts, one of each type:
+TYPE A (ICON + WORDMARK) — %s
+TYPE B (WORDMARK ONLY) — %s
+TYPE C (MONOGRAM) — %s
 
 The newValue must be a COMPLETE JSON object with:
 {
@@ -286,47 +306,54 @@ The newValue must be a COMPLETE JSON object with:
 - COLOR QUALITY: Every color in the palette must be distinct and harmonious. Primary color should be versatile (works on white AND dark backgrounds). Secondary complements primary. Accent provides pop. Include hex values that are valid (#RRGGBB format).
 - VALID XML: Every opening tag must have a closing tag. No unescaped ampersands in text content (use &amp;). SVG must parse without errors.
 - Preserve any existing brand values the user did not ask to change
-- Never ask the user to upload a logo`, brandingDesignRules)
+- Never ask the user to upload a logo`,
+			brandingDesignRules,
+			"specialist", colorsGenerationPrompt,
+			"specialist", typographyGenerationPrompt,
+			logoIconTypePrompt,
+			logoNameTypePrompt,
+			logoInitialTypePrompt)
 	case "business-plan":
 		return `
 This is an AI-first business-plan workflow. Return exactly one change with field "businessPlan" for generation or revision.
 
-You are a world-class business strategist. Produce a complete, investor-ready business plan with ALL 9 sections below. Each section must be written as detailed prose (2-5 paragraphs per section) with data, insights, and strategic thinking.
+You are a world-class business strategist. Produce a complete, investor-ready business plan with ALL 10 sections below. Each section must be written as detailed prose (2-5 paragraphs per section) with data, insights, and strategic thinking.
 
-BUSINESS PLAN STRUCTURE:
+SECTION 1 — COVER PAGE
+Specialist instruction: ` + bpCoverPrompt + `
 
-1. COVER PAGE
-- Company name, tagline, date, version, "CONFIDENTIAL" notice
+SECTION 2 — EXECUTIVE SUMMARY
+Specialist instruction: ` + bpExecutiveSummaryPrompt + `
 
-2. EXECUTIVE SUMMARY (brief overview of the entire plan)
-- The problem, solution, target market, business model, financial highlights, funding ask
-- 1 paragraph summary
+SECTION 3 — COMPANY SUMMARY
+Specialist instruction: ` + bpCompanySummaryPrompt + `
 
-3. COMPANY SUMMARY
-- Mission, Vision, Company Story, Business Structure, Leadership, Core Values, Culture
-- Adapt tone to industry (Startup/Professional/Creative/Retail/Healthcare/Finance)
+SECTION 4 — MARKET OPPORTUNITY
+Specialist instruction: ` + bpOpportunityPrompt + `
 
-4. MARKET OPPORTUNITY
-- Problem Statement, Market Context, Why Now, TAM/SAM/SOM, Competitive Landscape, Unique Value Proposition, Market Entry Strategy
+SECTION 5 — TARGET AUDIENCE
+Specialist instruction: ` + bpTargetAudiencePrompt + `
 
-5. TARGET AUDIENCE
-- 2-3 Customer Personas with demographics, Pain Points, Motivations, Market Segmentation, Customer Journey, Acquisition Channels
+SECTION 6 — PRODUCTS & SERVICES
+Specialist instruction: ` + bpProductsServicesPrompt + `
 
-6. PRODUCTS & SERVICES
-- Core Offerings, Key Features, Customer Benefits, Competitive Advantages, Development Roadmap, Pricing Strategy, Delivery/Support model
+SECTION 7 — MARKETING & SALES
+Specialist instruction: ` + bpMarketingSalesPrompt + `
 
-7. MARKETING & SALES
-- Marketing Strategy, Acquisition Channels, Sales Process, Customer Retention, KPIs, Budget Allocation, Implementation Timeline
+SECTION 8 — FINANCIAL PLAN
+Specialist instruction: ` + bpFinancialPlanPrompt + `
 
-8. FINANCIAL PLAN
-- Revenue Model, 3-year Projections (Year 1-3), Cost Structure, Break-even Analysis, Funding Requirements, Financial Risks
-- Label all projections as "Projection — estimate". Never invent precise figures without basis.
+SECTION 9 — GOAL PLANNING
+Specialist instruction: ` + bpGoalPlanningPrompt + `
 
-9. GOAL PLANNING
-- Strategic SMART Objectives, Key Milestones, Implementation Timeline, Resource Allocation, Risk Assessment, Success Metrics, Contingency Planning
+SECTION 10 — APPENDIX
+Specialist instruction: ` + bpAppendixPrompt + `
 
-10. APPENDIX
-- Financial Assumptions, Market Research Sources, Team Profiles, Product Details
+GLOBAL RULES:
+- Each section must have complete, detailed prose (2-5 paragraphs), not outlines or bullet lists
+- Financial projections must be labelled "Projection — estimate". Never invent precise figures without basis.
+- Use the provided business profile context for specifics
+- Tone: confident, data-driven, investor-ready
 
 The newValue must be a COMPLETE JSON object:
 {
@@ -336,44 +363,64 @@ The newValue must be a COMPLETE JSON object:
     {"id":"cover","title":"Cover Page","content":"...","order":0},
     {"id":"executive-summary","title":"Executive Summary","content":"...","order":1},
     {"id":"company-summary","title":"Company Summary","content":"...","order":2},
-    {"id":"market-opportunity","title":"Market Opportunity","content":"detailed analysis with TAM/SAM/SOM","order":3},
-    {"id":"target-audience","title":"Target Audience","content":"personas with demographics and psychographics","order":4},
-    {"id":"products-services","title":"Products & Services","content":"offerings with features and benefits","order":5},
-    {"id":"marketing-sales","title":"Marketing & Sales","content":"go-to-market strategy with channels and KPIs","order":6},
-    {"id":"financial-plan","title":"Financial Plan","content":"3-year projections and break-even analysis","order":7},
-    {"id":"goal-planning","title":"Goal Planning","content":"SMART objectives and milestones","order":8},
-    {"id":"appendix","title":"Appendix","content":"supporting details and assumptions","order":9}
+    {"id":"market-opportunity","title":"Market Opportunity","content":"...","order":3},
+    {"id":"target-audience","title":"Target Audience","content":"...","order":4},
+    {"id":"products-services","title":"Products & Services","content":"...","order":5},
+    {"id":"marketing-sales","title":"Marketing & Sales","content":"...","order":6},
+    {"id":"financial-plan","title":"Financial Plan","content":"...","order":7},
+    {"id":"goal-planning","title":"Goal Planning","content":"...","order":8},
+    {"id":"appendix","title":"Appendix","content":"...","order":9}
   ],
   "version":"1.0",
   "exportFormats":["pdf","docx","md"]
 }
 - Use business profile, metrics, financials, milestones, team, and prior plan
-- Label financial projections clearly as "Projection — estimate"
-- Each section content must be COMPLETE prose (2-5 paragraphs), not outlines or bullet lists alone`
+- Each section must be complete, detailed, and specific to the business
+- Do NOT use placeholders or generic filler text`
 	case "pitch-deck":
 		return `
 This is an AI-first pitch-deck workflow. Return exactly one change with field "pitchDeck" for generation or revision.
 
-You are pitching to investors. Produce a complete, compelling investor pitch deck with ALL 11 slides below. Each slide must have: a clear title, 2-4 bullet points, and 1-2 paragraphs of narrative content. Tone: confident, concise, data-driven.
+` + pdSharedPrompt + `
 
-PITCH DECK STRUCTURE:
+SLIDE 1 — COVER
+Specialist instruction: ` + pdCoverPrompt + `
 
-1. COVER — Company name, 1-line positioning statement, "PITCH DECK" label, date, "Confidential"
-2. PROBLEM — 3 pain points with real context, 1 bold statistic. "Why this matters now"
-3. SOLUTION — Your value proposition, 3 key capability points. "How we solve it"
-4. MARKET — TAM/SAM/SOM with numbers, growth trend, market context. "The opportunity size"
-5. PRODUCT — How it works: 3-5 step breakdown. "What we built"
-6. BUSINESS MODEL — Revenue streams, pricing model, unit economics (ARPU/LTV/CAC). "How we make money"
-7. TRACTION — Key metrics, milestones achieved, roadmap ahead. "Our progress"
-8. COMPETITION — Competitive landscape, unfair advantage, differentiators. "Why we win"
-9. TEAM — Key members with names, roles, credibility highlights. "The people"
-10. FINANCIALS — 3-year outlook (Year 1-3), revenue/cost projections, key assumptions
-11. ASK — Funding target, use of funds (3 buckets), closing statement, contact
+SLIDE 2 — PROBLEM
+Specialist instruction: ` + pdProblemPrompt + `
 
-Design guidelines:
-- Every slide must tell a story. Lead with the insight, then support with data.
-- Content should be concise but complete (2-4 bullets + 1-2 paragraph narrative per slide)
-- Numbers should be specific, realistic, and labeled as projections where applicable
+SLIDE 3 — SOLUTION
+Specialist instruction: ` + pdSolutionPrompt + `
+
+SLIDE 4 — MARKET
+Specialist instruction: ` + pdMarketPrompt + `
+
+SLIDE 5 — PRODUCT
+Specialist instruction: ` + pdProductPrompt + `
+
+SLIDE 6 — BUSINESS MODEL
+Specialist instruction: ` + pdBusinessModelPrompt + `
+
+SLIDE 7 — TRACTION
+Specialist instruction: ` + pdTractionPrompt + `
+
+SLIDE 8 — COMPETITION
+Specialist instruction: ` + pdCompetitionPrompt + `
+
+SLIDE 9 — TEAM
+Specialist instruction: ` + pdTeamPrompt + `
+
+SLIDE 10 — FINANCIALS
+Specialist instruction: ` + pdFinancialsPrompt + `
+
+SLIDE 11 — ASK
+Specialist instruction: ` + pdAskPrompt + `
+
+GLOBAL RULES:
+- Build the story from the approved business profile and business plan
+- Do not invent traction, revenue, valuation, customer counts, or funding figures without basis — label projections
+- Every slide type must have real, complete content — no placeholders or "..."
+- Each slide must tell a story. Lead with the insight, then support with data.
 
 The newValue must be a COMPLETE JSON object:
 {
@@ -393,10 +440,7 @@ The newValue must be a COMPLETE JSON object:
     {"id":"ask","type":"ask","title":"The Ask","content":"funding request paragraph","bullets":["Use bucket 1: $X","Use bucket 2: $Y","Use bucket 3: $Z"],"order":10,"layout":"center"}
   ],
   "exportFormats":["pdf","pptx"]
-}
-- Build the story from the approved business profile and business plan
-- Do not invent traction, revenue, valuation, customer counts, or funding figures without basis — label projections
-- Every slide type must have real, complete content — no placeholders or "..."`
+}`
 	case "mockups":
 		return `
 This is an AI-only mockup generation workflow. Return exactly one change with field "brandKit" whenever the user asks to generate brand mockups.
@@ -417,36 +461,26 @@ Generate 3 SVG mockups showing the brand identity on different physical items su
 		return `
 This is an AI-first website builder. Return exactly one change with field "websiteDraft" for generation or revision.
 
-WEBSITE DESIGN PRINCIPLES:
-- Responsive: mobile-first, works on all screen sizes
-- Accessible: WCAG AA contrast, semantic HTML, ARIA labels
-- Fast: minimal dependencies, optimized images, lazy loading
-- On-brand: use the approved brand kit colors, fonts, and logo
-- Conversion-focused: clear CTAs, trust signals, social proof
-- Complete: every page fully fleshed out, no placeholders
+` + websiteDesignPrinciples + `
 
-PAGE STRUCTURE (recommend pages based on business type):
-- Tech/SaaS: Home, Features, Pricing, About, Blog, Contact
-- Retail/E-commerce: Home, Shop, About, FAQ, Contact
-- Service/Consulting: Home, Services, About, Case Studies, Contact
-- Restaurant/Food: Home, Menu, About, Gallery, Contact, Reservations
-- Portfolio/Creative: Home, Work, About, Services, Contact
-- Minimum viable: Home, About, Services, Contact
+PAGE STRUCTURE GUIDE (choose based on industry):
+` + wsHomePagePrompt + `
 
-SECTION TYPES AND PROPS FORMATS:
-- hero: {"headline":"...","subheadline":"...","ctaPrimary":"...","secondaryCta":"...","logo":"..."}
-- features: {"title":"...","subtitle":"...","features":[{"icon":"Zap|Shield|TrendingUp|Briefcase|Layers|BarChart3","title":"...","description":"..."}]}
-- carousel: {"title":"...","subtitle":"...","autoplay":true,"interval":5000,"items":[{"title":"...","description":"...","image":"...","cta":"...","href":"..."}]}
-- testimonials: {"title":"...","subtitle":"...","testimonials":[{"quote":"...","author":"...","role":"..."}]}
-- pricing: {"title":"...","subtitle":"...","items":[{"name":"Starter|Growth|Enterprise","description":"...","price":"...","features":["..."],"cta":"...","href":"..."}]}
-- team: {"title":"...","subtitle":"...","items":[{"name":"...","role":"...","bio":"...","image":""}]}
-- stats: {"title":"...","stats":[{"value":"...","label":"..."}]}
-- contact: {"title":"...","subtitle":"...","showCompany":true,"showPhone":false}
-- cta: {"headline":"...","subheadline":"...","cta":"...","href":"..."}
-- about: {"title":"...","content":"..."}
-- faq: {"title":"...","items":[{"question":"...","answer":"..."}]}
-- image: {"src":"...","alt":"...","caption":"..."}
-- video: {"url":"...","title":"...","description":"..."}
+SPECIALIST SECTION AGENTS — Build the home page sections using:
+HERO SECTION: ` + wsHeroSectionPrompt + `
+FEATURES SECTION: ` + wsFeaturesSectionPrompt + `
+TESTIMONIALS SECTION: ` + wsTestimonialsSectionPrompt + `
+PRICING SECTION: ` + wsPricingSectionPrompt + `
+ABOUT SECTION: ` + wsAboutSectionPrompt + `
+TEAM SECTION: ` + wsTeamSectionPrompt + `
+STATS SECTION: ` + wsStatsSectionPrompt + `
+CONTACT SECTION: ` + wsContactSectionPrompt + `
+CTA SECTION: ` + wsCtaSectionPrompt + `
+FAQ SECTION: ` + wsFaqSectionPrompt + `
+CAROUSEL SECTION: ` + wsCarouselSectionPrompt + `
+
+For sub-pages (About, Services, FAQ, Contact, etc.):
+` + wsStandardPagePrompt + `
 
 DEVELOPMENT CONFIG (include to enable code generation):
 "developmentConfig": {
@@ -464,9 +498,44 @@ The newValue must be a COMPLETE JSON object:
   "navigation":{"items":[{"label":"Home","href":"/"}],"style":"horizontal","position":"top"},
   "footer":{"showLogo":true,"showSocial":true,"customText":"..."}
 }
-- Use brand kit colors, fonts, and logo automatically
-- Create 4-5 pages minimum with real content in every section
-- The proposal only updates the PRIVATE DRAFT; publishing requires later confirmation`
+ - Use brand kit colors, fonts, and logo automatically
+ - Create 4-5 pages minimum with real content in every section
+ - The proposal only updates the PRIVATE DRAFT; publishing requires later confirmation`
+	case "webapp":
+		return `
+This is an AI-first web application generator. Return exactly one change with field "websiteDraft" for generation, or "aiGenerated" for code revision.
+
+` + codegenDesignPrinciples + `
+
+PROJECT SETUP — ` + cgProjectSetupPrompt + `
+
+LAYOUT COMPONENTS — ` + cgLayoutComponentPrompt + `
+
+HOME PAGE — ` + cgHomePagePrompt + `
+
+SUB PAGES — ` + cgSubPagePrompt + `
+
+DEPLOYMENT CONFIG — ` + cgDeploymentConfigPrompt + `
+
+STANDALONE HTML — ` + cgStandaloneHtmlPrompt + `
+
+The newValue must be a COMPLETE JSON object:
+{
+  "type": "react-vite" or "standalone-html",
+  "files": [
+    {"path": "src/App.tsx", "content": "..."},
+    {"path": "src/pages/Home.tsx", "content": "..."}
+  ],
+  "routes": ["/", "/about", "/services"],
+  "developmentConfig": {
+    "stack": "react-vite-tailwind",
+    "features": {"seo": true, "contactForm": true, "analytics": true}
+  }
+}
+- Use brand kit for all colors, fonts, and logo
+- Every file must be complete — no TODOs, no placeholders
+- TypeScript strict mode, proper error boundaries
+- Responsive design on every page`
 	default:
 		return ""
 	}
@@ -511,6 +580,17 @@ func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, dom
 			change.NewValue = normalized
 		case "website":
 			change.Field = "websiteDraft"
+			normalized, err := normalizeWebsiteDraftProposal(change.NewValue, biz)
+			if err != nil {
+				return err
+			}
+			change.NewValue = normalized
+		case "webapp":
+			if strings.Contains(strings.ToLower(change.Summary), "code") || strings.Contains(strings.ToLower(change.Summary), "generate") {
+				change.Field = "aiGenerated"
+			} else {
+				change.Field = "websiteDraft"
+			}
 			normalized, err := normalizeWebsiteDraftProposal(change.NewValue, biz)
 			if err != nil {
 				return err

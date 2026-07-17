@@ -73,6 +73,62 @@ export interface BrandKit {
   socialBanners: SocialBanner[];
 }
 
+export interface LogoOption {
+  svg: string;
+  name: string;
+  concept: string;
+  type: 'icon' | 'name' | 'initial';
+  colors: string[];
+  fonts: string[];
+  variations?: LogoVariations;
+}
+
+export interface LogoVariations {
+  lightBackground?: string;
+  darkBackground?: string;
+  monochrome?: string;
+}
+
+export interface ColorPalette {
+  name: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    text: string;
+  };
+  rationale: string;
+}
+
+export interface TypographyPair {
+  name: string;
+  primaryFont: string;
+  secondaryFont: string;
+  rationale: string;
+}
+
+export interface BrandingFull extends BrandKit {
+  logos?: LogoOption[];
+  selectedLogo?: number;
+  colors?: ColorPalette[];
+  selectedColors?: number;
+  typography?: TypographyPair[];
+  selectedTypography?: number;
+  logoName?: string;
+  logoConcept?: string;
+  logoColors?: string[];
+  mockups?: BrandMockup[];
+}
+
+export interface BrandMockup {
+  supportType: string;
+  supportName: string;
+  svg: string;
+  title: string;
+  description: string;
+}
+
 export interface SocialBanner {
   id: string;
   platform: 'linkedin' | 'twitter' | 'facebook' | 'instagram';
