@@ -363,7 +363,7 @@ export function RegisterBusinessModal({ open, onClose, businesses, onRegistratio
         Register Your Business
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 3, pb: 4 }}>
+      <DialogContent sx={{ pt: 3.5, pb: 4 }}>
         <Stepper activeStep={activeStep} sx={{
           mb: 4,
           '& .MuiStepLabel-label': { color: '#64748b', fontSize: 12 },

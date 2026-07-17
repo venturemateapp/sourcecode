@@ -139,7 +139,7 @@ export function CoFoundersPage({ onViewChange }: { onViewChange: (view: ViewType
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.title}</Typography>
               </Box>
             </DialogTitle>
-            <DialogContent sx={{ pt: 2.5 }}>
+            <DialogContent sx={{ pt: 3.5 }}>
               <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 1.5 }}>{selectedProfile.bio}</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
                 {selectedProfile.skills.map(s => <Chip key={s} label={s} size="small" sx={{ bgcolor: 'rgba(16,185,129,.1)', color: '#34d399', fontSize: 10 }} />)}

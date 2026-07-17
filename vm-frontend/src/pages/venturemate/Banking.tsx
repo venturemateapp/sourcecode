@@ -362,7 +362,7 @@ export function BankingPage(_props: BankingProps) {
                 </Box>
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1 }}>{account.accountName} • {account.accountNumber}</Typography>
                 {account.status === 'pending' && isAdmin && (
-                  <Box sx={{ display: 'flex', gap: 1, mt: 2, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
+                  <Box sx={{ display: 'flex', gap: 1, mt: 3, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
                     <GradientButton variant="primary" size="sm" onClick={() => handleApprove(account.id)}>
                       <CheckCircle size={14} style={{ marginRight: 4 }} /> Approve
                     </GradientButton>
