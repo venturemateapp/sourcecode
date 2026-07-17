@@ -99,29 +99,48 @@ export function MessagesPage() {
   }, [user, activeConv, loadConvos]);
 
   const sendMessage = async () => {
-    if (!input.trim() || !activeConv || !window.__ws) return;
+    if (!input.trim() || !activeConv || !user) return;
     setSending(true);
-    const payload = JSON.stringify({
-      type: 'new_message',
-      conversationId: activeConv,
-      content: input,
-      senderName: `${user?.firstName} ${user?.lastName}`,
-    });
-    window.__ws.send(payload);
+    if (window.__ws) {
+      window.__ws.send(JSON.stringify({
+        type: 'new_message',
+        conversationId: activeConv,
+        content: input,
+        senderName: `${user.firstName} ${user.lastName}`,
+      }));
+    } else {
+      // Fallback: use supportChat mutation
+      try {
+        const d = await q<{ supportChat: { message: string } }>('mutation M($u:ID!,$n:String!,$e:String!,$p:String!,$s:String){supportChat(userId:$u name:$n email:$e prompt:$p sessionId:$s){message}}', {
+          u: user.id, n: `${user.firstName} ${user.lastName}`, e: user.email, p: input, s: activeConv,
+        });
+        setMessages(prev => [...prev, { id: `ws-${Date.now()}`, conversationId: activeConv, senderId: user.id, content: input, createdAt: new Date().toISOString() }]);
+        setMessages(prev => [...prev, { id: `ws-${Date.now()}`, conversationId: activeConv, senderId: '', content: d.supportChat.message, createdAt: new Date().toISOString() }]);
+      } catch { /* ignore */ }
+    }
     setInput('');
     setSending(false);
   };
 
   const startConversation = async () => {
-    if (!newSubject.trim() || !window.__ws || !user) return;
-    const payload = JSON.stringify({
-      type: 'new_conversation',
-      subject: newSubject,
-      content: newMsg,
-      senderName: `${user.firstName} ${user.lastName}`,
-      businessId: selectedBusiness?.id || '',
-    });
-    window.__ws.send(payload);
+    if (!newSubject.trim() || !user) return;
+    if (window.__ws) {
+      const payload = JSON.stringify({
+        type: 'new_conversation',
+        subject: newSubject,
+        content: newMsg,
+        senderName: `${user.firstName} ${user.lastName}`,
+        businessId: selectedBusiness?.id || '',
+      });
+      window.__ws.send(payload);
+    } else {
+      // Fallback: use supportChat mutation
+      try {
+        await q('mutation M($u:ID!,$n:String!,$e:String!,$p:String!){supportChat(userId:$u name:$n email:$e prompt:$p){sessionId message}}', {
+          u: user.id, n: `${user.firstName} ${user.lastName}`, e: user.email, p: `${newSubject}: ${newMsg}`,
+        });
+      } catch { /* ignore */ }
+    }
     setShowNew(false);
     setNewSubject('');
     setNewMsg('');
@@ -193,10 +212,10 @@ export function MessagesPage() {
             <Box sx={{ display: 'flex', gap: 1, p: 1.5, borderTop: '1px solid var(--vm-border-subtle)' }}>
               <TextField fullWidth size="small" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                placeholder={wsConnected ? 'Type a message...' : 'Connecting...'}
-                disabled={!wsConnected || sending}
+                placeholder={'Type a message...'}
+                disabled={sending}
                 sx={{ input: { color: 'var(--vm-text-primary)', fontSize: 13 }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-              <IconButton onClick={sendMessage} disabled={!wsConnected || sending || !input.trim()}
+              <IconButton onClick={sendMessage} disabled={sending || !input.trim()}
                 sx={{ bgcolor: 'var(--vm-primary-600)', color: '#fff', '&:hover': { bgcolor: 'var(--vm-primary-500)' }, '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,.05)' } }}>
                 <Send size={16} />
               </IconButton>
@@ -218,7 +237,7 @@ export function MessagesPage() {
               sx={{ mb: 2, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
               <GradientButton variant="ghost" size="sm" onClick={() => setShowNew(false)}>Cancel</GradientButton>
-              <GradientButton variant="primary" size="sm" disabled={!newSubject.trim() || !wsConnected} onClick={startConversation}>Send</GradientButton>
+              <GradientButton variant="primary" size="sm" disabled={!newSubject.trim()} onClick={startConversation}>Send</GradientButton>
             </Box>
           </Card>
         </Box>

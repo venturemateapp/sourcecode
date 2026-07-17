@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import { MessageCircle, X, Send, Phone, ArrowUpRight, History } from 'lucide-react';
 import { useSupportChat } from '../../contexts/SupportChatContext';
+import { AIResponseRenderer } from '../ai-response/AIResponseRenderer';
 
 const QUICK_ACTIONS = [
   'How do I create a business?',
@@ -166,7 +167,7 @@ export function SupportChatFloating() {
                 overflowWrap: 'anywhere',
               }}
             >
-              {msg.content}
+              {msg.role === 'assistant' ? <AIResponseRenderer text={msg.content} /> : msg.content}
             </Box>
           </Box>
         ))}

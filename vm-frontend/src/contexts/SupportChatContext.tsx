@@ -119,9 +119,20 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const escalate = useCallback(async () => {
-    if (!user || !sessionId) return;
+    if (!user) return;
+    let sid = sessionId;
+    // If no session exists, send a message first to create one
+    if (!sid) {
+      try {
+        const d = await q<{ supportChat: { sessionId: string } }>('mutation M($u:ID!,$n:String!,$e:String!,$p:String!){supportChat(userId:$u name:$n email:$e prompt:$p){sessionId}}', {
+          u: user.id, n: `${user.firstName} ${user.lastName}`, e: user.email, p: 'I need to speak with a human support agent.',
+        });
+        sid = d.supportChat.sessionId;
+        setSessionId(sid);
+      } catch { return; }
+    }
     try {
-      await q('mutation M($u:ID!,$s:ID!){supportEscalate(userId:$u sessionId:$s)}', { u: user.id, s: sessionId });
+      await q('mutation M($u:ID!,$s:ID!){supportEscalate(userId:$u sessionId:$s)}', { u: user.id, s: sid });
       setIsEscalated(true);
       setMessages(prev => [...prev, { id: `bot-${Date.now()}`, role: 'assistant', content: `Your request has been escalated. Our support team will contact you at ${user.email}.` }]);
     } catch { /* ignore */ }
