@@ -281,6 +281,8 @@ The newValue must be a COMPLETE JSON object with:
 - Generate EXACTLY 3 color palettes with different moods
 - Generate EXACTLY 3 typography pairs with distinct personalities
 - Every SVG must be a valid standalone <svg> element with viewBox="0 0 128 128"
+- SVG REQUIREMENTS: Use brand colors as fills/strokes in the SVG. Logo must use the brand palette colors (primary, secondary, accent). Apply colors through fill="..." and stroke="..." attributes. Use gradients only where specified. Ensure SVG renders correctly on both light and dark backgrounds.
+- COLOR QUALITY: Every color in the palette must be distinct and harmonious. Primary color should be versatile (works on white AND dark backgrounds). Secondary complements primary. Accent provides pop. Include hex values that are valid (#RRGGBB format).
 - Preserve any existing brand values the user did not ask to change
 - Never ask the user to upload a logo`, brandingDesignRules)
 	case "business-plan":
