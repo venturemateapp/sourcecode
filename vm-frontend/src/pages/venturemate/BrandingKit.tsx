@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import { Box, Button, Card, Chip, CircularProgress, Typography, IconButton } from '@mui/material';
-import { BookOpen, Building2, Palette, Sparkles, Type, Eye, ChevronLeft, ChevronRight, Check, X, RefreshCw, Download, Wand2, Layers, TrendingUp } from 'lucide-react';
+import { BookOpen, Building2, Palette, Sparkles, Type, Eye, ChevronLeft, ChevronRight, Check, X, Wand2 } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
-import type { BrandKit, BrandingFull, LogoOption, ColorPalette, TypographyPair, LogoVariations, ViewType } from '../../types/venturemate';
+import type { BrandKit, BrandingFull, LogoOption, ColorPalette, TypographyPair, ViewType } from '../../types/venturemate';
 
 interface BrandingKitProps { onViewChange?: (_view: ViewType) => void; }
 
@@ -73,8 +73,8 @@ function FontPreview({ name, label }: { name: string; label: string }) {
 }
 
 // ─── Step 1: Pick Color Palette ───
-function ColorPickerStep({ palettes, selected, onSelect, businessName, primary }: {
-  palettes: ColorPalette[]; selected: number; onSelect: (i: number) => void; businessName: string; primary: string;
+function ColorPickerStep({ palettes, selected, onSelect }: {
+  palettes: ColorPalette[]; selected: number; onSelect: (i: number) => void;
 }) {
   return (
     <Box>
@@ -168,7 +168,7 @@ function LogoPickerStep({ logos, selected, onSelect }: {
 }
 
 // ─── Step 4: Logo Variations ───
-function VariationsDisplay({ logo, darkColor, primary }: { logo: LogoOption; darkColor: string; primary: string }) {
+function VariationsDisplay({ logo, darkColor }: { logo: LogoOption; darkColor: string }) {
   const items: { label: string; svg: string; bg: string; dark: boolean }[] = [
     { label: 'Light BG', svg: logo.variations?.lightBackground || logo.svg, bg: '#ffffff', dark: false },
     { label: 'Dark BG', svg: logo.variations?.darkBackground || logo.svg, bg: darkColor || '#0f172a', dark: true },
@@ -410,7 +410,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
 
           {logos.length > 0 && step === 'variations' && (
             <Card sx={{ p: 2.5, mb: 2, borderRadius: 3, border: '1px solid var(--vm-border-subtle)' }}>
-              <VariationsDisplay logo={logos[selectedLogoIdx]} darkColor={fullBrand.darkColor} primary={fullBrand.primaryColor} />
+              <VariationsDisplay logo={logos[selectedLogoIdx]} darkColor={fullBrand.darkColor} />
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
                 <Button variant="text" startIcon={<ChevronLeft size={16} />} onClick={() => setStep('logos')}>Back</Button>
                 <Button variant="contained" color="success" endIcon={<Check size={16} />} onClick={() => setStep('complete')}>Complete Brand Identity</Button>
