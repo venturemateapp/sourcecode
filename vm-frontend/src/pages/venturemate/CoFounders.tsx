@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab, Dialog, DialogTitle, DialogContent, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab, CircularProgress } from '@mui/material';
 import {
   Search, MapPin, MessageSquare, UserPlus, Briefcase,
 } from 'lucide-react';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import type { ViewType } from '../../types/venturemate';
 
@@ -128,38 +129,29 @@ export function CoFoundersPage({ onViewChange }: { onViewChange: (view: ViewType
         </Box>
       )}
 
-      <Dialog open={!!selectedProfile} onClose={() => setSelectedProfile(null)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
+      <Modal open={!!selectedProfile} onClose={() => setSelectedProfile(null)} title={selectedProfile?.name || 'Profile'} icon={<UserPlus size={20} />}>
         {selectedProfile && (
           <>
-            <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar sx={{ width: 40, height: 40, bgcolor: 'var(--vm-primary-600)', fontSize: 16 }}>{selectedProfile.name.charAt(0)}</Avatar>
-              <Box>
-                <Typography sx={{ fontWeight: 700, color: 'var(--vm-text-primary)' }}>{selectedProfile.name}</Typography>
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.title}</Typography>
-              </Box>
-            </DialogTitle>
-            <DialogContent sx={{ pt: 3.5 }}>
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 1.5 }}>{selectedProfile.bio}</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
-                {selectedProfile.skills.map(s => <Chip key={s} label={s} size="small" sx={{ bgcolor: 'rgba(16,185,129,.1)', color: '#34d399', fontSize: 10 }} />)}
-              </Box>
-              <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.location}</Typography></Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Briefcase size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.experience}</Typography></Box>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                {selectedProfile.status !== 'matched' && (
-                  <GradientButton variant="primary" size="sm" startIcon={<UserPlus size={14} />} onClick={() => handleConnect(selectedProfile.id)}>Connect</GradientButton>
-                )}
-                <GradientButton variant="outline" size="sm" startIcon={<MessageSquare size={14} />} onClick={() => { setSelectedProfile(null); onViewChange?.('messages'); }}>
-                  Message
-                </GradientButton>
-              </Box>
-            </DialogContent>
+            <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>{selectedProfile.title}</Typography>
+            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 1.5 }}>{selectedProfile.bio}</Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
+              {selectedProfile.skills.map(s => <Chip key={s} label={s} size="small" sx={{ bgcolor: 'rgba(16,185,129,.1)', color: '#34d399', fontSize: 10 }} />)}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.location}</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Briefcase size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.experience}</Typography></Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+              {selectedProfile.status !== 'matched' && (
+                <GradientButton variant="primary" size="sm" startIcon={<UserPlus size={14} />} onClick={() => handleConnect(selectedProfile.id)}>Connect</GradientButton>
+              )}
+              <GradientButton variant="outline" size="sm" startIcon={<MessageSquare size={14} />} onClick={() => { setSelectedProfile(null); onViewChange?.('messages'); }}>
+                Message
+              </GradientButton>
+            </Box>
           </>
         )}
-      </Dialog>
+      </Modal>
     </Box>
   );
 }

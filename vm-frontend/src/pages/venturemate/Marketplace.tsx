@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  Box, Typography, Card, Tabs, Tab, Chip, Avatar, Dialog, DialogTitle, DialogContent,
-  TextField, CircularProgress, IconButton,
-} from '@mui/material';
+import { Box, Typography, Card, Tabs, Tab, Chip, Avatar, TextField, CircularProgress } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import {
-  Calendar, CheckCircle, Briefcase, X, Clock, Building2,
+  Calendar, CheckCircle, Briefcase, Clock, Building2,
 } from 'lucide-react';
 
 interface ServiceProvider {
@@ -225,53 +223,42 @@ export function MarketplacePage() {
         )
       )}
 
-      {/* Booking Dialog */}
-      <Dialog open={!!bookingProvider && !bookingDone} onClose={() => setBookingProvider(null)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Calendar size={20} color="var(--vm-primary-400)" />
-          <Typography sx={{ fontWeight: 700 }}>Book {bookingProvider?.name}</Typography>
-          <IconButton size="small" onClick={() => setBookingProvider(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          {bookingProvider && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5, p: 1.5, borderRadius: 2, bgcolor: 'var(--vm-bg-tertiary)' }}>
-              <Avatar src={bookingProvider.picture || ''} sx={{ width: 40, height: 40 }}>{bookingProvider.name.charAt(0)}</Avatar>
-              <Box>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{bookingProvider.name}</Typography>
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{bookingProvider.title} · {formatCurrency(bookingProvider.rateHourly)}/hr</Typography>
-              </Box>
-            </Box>
-          )}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField size="small" label="Project Title" value={bookingTitle} onChange={e => setBookingTitle(e.target.value)}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Description" multiline rows={3} value={bookingDesc} onChange={e => setBookingDesc(e.target.value)}
-              sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          </Box>
-        </DialogContent>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setBookingProvider(null)}>Cancel</GradientButton>
+      <Modal open={!!bookingProvider && !bookingDone} onClose={() => setBookingProvider(null)} title={`Book ${bookingProvider?.name || ''}`} icon={<Calendar size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setBookingProvider(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={bookingSaving || !bookingTitle} onClick={createBooking}>
             {bookingSaving ? <CircularProgress size={14} /> : 'Submit Booking'}
+          </GradientButton></>}>
+        {bookingProvider && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5, p: 1.5, borderRadius: 2, bgcolor: 'var(--vm-bg-tertiary)' }}>
+            <Avatar src={bookingProvider.picture || ''} sx={{ width: 40, height: 40 }}>{bookingProvider.name.charAt(0)}</Avatar>
+            <Box>
+              <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{bookingProvider.name}</Typography>
+              <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{bookingProvider.title} · {formatCurrency(bookingProvider.rateHourly)}/hr</Typography>
+            </Box>
+          </Box>
+        )}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField size="small" label="Project Title" value={bookingTitle} onChange={e => setBookingTitle(e.target.value)}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Description" multiline rows={3} value={bookingDesc} onChange={e => setBookingDesc(e.target.value)}
+            sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+        </Box>
+      </Modal>
+
+      <Modal open={bookingDone} onClose={() => { setBookingDone(false); setBookingProvider(null); }} title="" maxWidth="sm">
+        <Box sx={{ textAlign: 'center', py: 2 }}>
+          <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
+            <CheckCircle size={32} color="#10b981" />
+          </Box>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.5 }}>Booking Submitted!</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', mb: 2.5, px: 2 }}>
+            Your request has been sent to {bookingProvider?.name}. They will respond shortly.
+          </Typography>
+          <GradientButton variant="primary" size="sm" onClick={() => { setBookingDone(false); setBookingProvider(null); setTab(1); }}>
+            View My Bookings
           </GradientButton>
         </Box>
-      </Dialog>
-
-      {/* Success Dialog */}
-      <Dialog open={bookingDone} onClose={() => { setBookingDone(false); setBookingProvider(null); }} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)', textAlign: 'center', py: 4 } }}>
-        <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
-          <CheckCircle size={32} color="#10b981" />
-        </Box>
-        <Typography sx={{ fontSize: 20, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.5 }}>Booking Submitted!</Typography>
-        <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', mb: 2.5, px: 2 }}>
-          Your request has been sent to {bookingProvider?.name}. They will respond shortly.
-        </Typography>
-        <GradientButton variant="primary" size="sm" onClick={() => { setBookingDone(false); setBookingProvider(null); setTab(1); }}>
-          View My Bookings
-        </GradientButton>
-      </Dialog>
+      </Modal>
     </Box>
   );
 }
