@@ -4,6 +4,7 @@ import { Box, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent
 import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
+import { CardSkeleton } from '../../components/shared/Skeleton';
 import { graphqlRequest } from '../../lib/api';
 
 type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing';
@@ -286,12 +287,7 @@ export function AdminDashboard() {
   );
 
   const renderDashboard = () => {
-    if (loading) return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 8, justifyContent: 'center' }}>
-        <CircularProgress size={18} sx={{ color: '#f59e0b' }} />
-        <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 13 }}>Loading dashboard...</Typography>
-      </Box>
-    );
+    if (loading) return <CardSkeleton count={4} type="stat" />;
     if (!data) return <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 8 }}>No data available</Typography>;
     const activePercent = data.totalUsers ? Math.round((data.activeUsers / data.totalUsers) * 100) : 0;
     return (
@@ -599,7 +595,7 @@ export function AdminDashboard() {
           <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />}
             onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, skills: '' })}>Add Provider</GradientButton>
         </Box>
-        {loadProv && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 3, justifyContent: 'center' }}><CircularProgress size={16} sx={{ color: '#f59e0b' }} /><Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 13 }}>Loading...</Typography></Box>}
+        {loadProv && <CardSkeleton count={4} type="table-row" />}
         {!loadProv && providers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No providers yet.</Typography>}
         {providers.map(p => (
           <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
