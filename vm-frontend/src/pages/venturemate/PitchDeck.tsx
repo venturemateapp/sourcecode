@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Box, Card, Chip, Typography, ToggleButtonGroup, ToggleButton, IconButton } from '@mui/material';
-import { Building2, Presentation, Sparkles, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, Lightbulb, Shield, Menu, Star } from 'lucide-react';
+import { Box, Chip, Typography, ToggleButtonGroup, ToggleButton, IconButton } from '@mui/material';
+import { Presentation, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, Lightbulb, Shield, Menu, Star } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { SlideViewer } from '../../components/venturemate/SlideViewer';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
@@ -24,7 +24,7 @@ const SLIDE_COLORS: Record<string, string> = {
   competition: '#f97316', team: '#3b82f6', financials: '#ec4899', ask: '#14b8a6',
 };
 
-function SlideCard({ slide, index, primary, dark }: { slide: Slide; index: number; primary: string; dark: string }) {
+function SlideCard({ slide, primary, dark }: { slide: Slide; primary: string; dark: string }) {
   const [expanded, setExpanded] = useState(false);
   const Icon = SLIDE_ICONS[slide.type] || Presentation;
   const color = SLIDE_COLORS[slide.type] || primary;
@@ -74,7 +74,7 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
         <Chip label={proposed ? 'Review' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
       </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {slides.map((slide, index) => <SlideCard key={slide.id || index} slide={slide} index={index} primary={primary} dark={dark} />)}
+        {slides.map((slide, index) => <SlideCard key={slide.id || index} slide={slide} primary={primary} dark={dark} />)}
       </Box>
     </Box>
   );

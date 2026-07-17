@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Box, Card, Chip, Typography, ToggleButtonGroup, ToggleButton, IconButton } from '@mui/material';
-import { BookOpen, Building2, FileText, Sparkles, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, CheckCircle, Lightbulb } from 'lucide-react';
+import { BookOpen, Building2, FileText, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, CheckCircle, Lightbulb } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { PlanViewer } from '../../components/venturemate/PlanViewer';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { PageHeader, GlassCard, AnimatedButton } from '../../components/shared';
+import { PageHeader, GlassCard } from '../../components/shared';
 import type { BusinessPlan as BusinessPlanType, PlanSection } from '../../types/venturemate';
 
 function parsePlan(change: ProposedChange): BusinessPlanType | null {
@@ -24,7 +24,7 @@ const SECTION_COLORS: Record<string, string> = {
   'marketing-sales': '#06b6d4', 'financial-plan': '#ef4444', 'goal-planning': '#22c55e', appendix: '#64748b',
 };
 
-function SectionCard({ section, index, accent }: { section: PlanSection; index: number; accent: string }) {
+function SectionCard({ section, accent }: { section: PlanSection; accent: string }) {
   const [expanded, setExpanded] = useState(true);
   const sectionId = section.id || '';
   const Icon = SECTION_ICONS[sectionId] || FileText;
@@ -87,7 +87,7 @@ function PlanPreview({ plan, primary, proposed = false }: { plan: BusinessPlanTy
       </GlassCard>
       <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
         {sections.map((section, index) => (
-          <SectionCard key={section.id || `${section.title}-${index}`} section={section} index={index} accent={accent} />
+          <SectionCard key={section.id || `${section.title}-${index}`} section={section} accent={accent} />
         ))}
         {!sections.length && <Typography sx={{ color: 'var(--vm-text-muted)', py: 4, textAlign: 'center' }}>No sections yet.</Typography>}
       </Box>

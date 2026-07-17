@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Box, Button, Card, Chip, CircularProgress, Typography, IconButton } from '@mui/material';
-import { BookOpen, Building2, Palette, Sparkles, Type, Eye, ChevronLeft, ChevronRight, Check, X, Wand2 } from 'lucide-react';
+import { Box, Button, Chip, CircularProgress, Typography, IconButton } from '@mui/material';
+import { BookOpen, Palette, Sparkles, Type, Eye, Check, X, ChevronRight, ChevronLeft, Wand2 } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';

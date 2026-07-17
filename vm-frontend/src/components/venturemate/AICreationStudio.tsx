@@ -1,6 +1,6 @@
-import { useState, type ChangeEvent, type ReactNode, useRef, useEffect } from 'react';
+import { useState, type ReactNode, useRef, useEffect } from 'react';
 import { Alert, Box, Card, Chip, TextField, Typography } from '@mui/material';
-import { Bot, Check, Send, Sparkles, X, MessageSquare, Wand2 } from 'lucide-react';
+import { Bot, Check, Send, Sparkles, X, MessageSquare } from 'lucide-react';
 import { GenerationProgress } from './GenerationProgress';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
@@ -65,7 +65,7 @@ function humanize(value: string) {
 let msgCounter = 0;
 
 export function AICreationStudio({
-  domain, title, description, placeholder, starterPrompts,
+  domain, title: _title, description: _description, placeholder, starterPrompts,
   emptyLabel = 'No approved version yet. Ask AI to create the first one.',
   renderCurrent, renderProposal, onApproved,
 }: AICreationStudioProps) {
@@ -219,7 +219,7 @@ export function AICreationStudio({
             <Box sx={{ minHeight: 120 }}>
               {renderCurrent() || (
                 <Box sx={{ py: 4, textAlign: 'center' }}>
-                  <Wand2 size={32} style={{ opacity: .3, margin: '0 auto 12px', display: 'block' }} />
+                  <Sparkles size={32} style={{ opacity: .3, margin: '0 auto 12px', display: 'block' }} />
                   <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 13 }}>{emptyLabel}</Typography>
                 </Box>
               )}

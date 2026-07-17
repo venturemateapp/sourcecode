@@ -51,7 +51,7 @@ export function VentureMateLayout({
         <Sidebar
           onClose={isMobile ? () => setMobileOpen(false) : undefined}
           activeView={activeView}
-          onViewChange={onViewChange}
+          onNavigate={onViewChange}
         />
       </Drawer>
 

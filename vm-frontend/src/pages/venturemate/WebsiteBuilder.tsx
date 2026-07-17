@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Button, Card, Chip, CircularProgress, Link, Typography } from '@mui/material';
-import { Building2, Code2, ExternalLink, Eye, FileCode, GitBranch, Globe2, MonitorSmartphone, Sparkles, Terminal, UploadCloud, XCircle } from 'lucide-react';
+import { Code2, ExternalLink, Eye, FileCode, GitBranch, Globe2, MonitorSmartphone, Terminal, UploadCloud, XCircle } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
-import { PageHeader, GlassCard, AnimatedButton } from '../../components/shared';
+import { PageHeader } from '../../components/shared';
 import type { ViewType } from '../../types/venturemate';
 
 interface WebsiteRecord {

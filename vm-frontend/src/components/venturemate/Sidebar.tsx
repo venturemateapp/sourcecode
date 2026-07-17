@@ -1,18 +1,16 @@
-import { useState, useMemo } from 'react';
-import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Badge, IconButton } from '@mui/material';
-import { Person } from '@mui/icons-material';
+import { useState } from 'react';
+import { Box, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, IconButton } from '@mui/material';
 import type { ViewType, NavSection } from '../../types/venturemate';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { useBusiness } from '../../contexts/BusinessContext';
 import { PlanSelector } from '../subscription/PlanSelector';
 import { useNavigate } from 'react-router-dom';
 
 import {
   LayoutDashboard, Building2, ChevronDown, ChevronRight, Bot, FolderOpen, Globe, Users,
   Landmark, Share2, Store, TrendingUp, CreditCard, Heart, Presentation, FileText, Receipt,
-  Palette, Target, UserCircle, Lightbulb, BarChart3, Calculator, Calendar, Settings,
-  LogOut, Shield, Mail, X, Grid3x3, Workflow, Sparkles, Zap,
+  Palette, Target, UserCircle, Lightbulb, BarChart3, Calculator, Calendar,
+  LogOut, X, Grid3x3, Workflow, Sparkles, Zap,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -68,8 +66,8 @@ const NAV_SECTIONS: NavSection[] = [
   ]},
 ];
 
-function NavItem({ item, depth, activeView, onNavigate, collapsed }: {
-  item: NavSection['items'][0]; depth: number; activeView: ViewType; onNavigate: (view: ViewType) => void; collapsed: boolean;
+function NavItem({ item, activeView, onNavigate, collapsed }: {
+  item: NavSection['items'][0]; activeView: ViewType; onNavigate: (view: ViewType) => void; collapsed: boolean;
 }) {
   const Icon = iconMap[item.icon] || LayoutDashboard;
   const isActive = activeView === item.view;
@@ -107,7 +105,7 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
 }) {
   const { user, logout } = useAuth();
   const { planName, isFree } = useSubscription();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const navigate = useNavigate();
@@ -189,7 +187,7 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
                 </ListItemButton>
               )}
               {isExpanded && section.items.map(item => (
-                <NavItem key={item.view} item={item} depth={0} activeView={activeView} onNavigate={onNavigate} collapsed={collapsed} />
+                <NavItem key={item.view} item={item} activeView={activeView} onNavigate={onNavigate} collapsed={collapsed} />
               ))}
             </Box>
           );
@@ -223,7 +221,7 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
         )}
       </Box>
 
-      {showPlanSelector && <PlanSelector open={showPlanSelector} onClose={() => setShowPlanSelector(false)} />}
+      {showPlanSelector && <PlanSelector open={showPlanSelector} onClose={() => setShowPlanSelector(false)} userId={user?.id || ''} currentPlanName={planName} />}
     </Box>
   );
 }

@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, IconButton, Avatar, Badge, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Tooltip, Button } from '@mui/material';
-import { Person, CameraAlt, Settings as SettingsIcon, Logout } from '@mui/icons-material';
-import { Menu as MenuIcon, Bell, BellRing, Search, MessageSquare, X, Check, Trash2 } from 'lucide-react';
+import { Box, Typography, IconButton, Avatar, Badge, Menu, MenuItem, ListItemText, Divider, Tooltip, Button } from '@mui/material';
+import { Person, Settings as SettingsIcon, Logout } from '@mui/icons-material';
+import { Menu as MenuIcon, Bell, BellRing, Search, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { BusinessSwitcher } from './BusinessSwitcher';
@@ -29,7 +29,7 @@ const viewTitles: Record<ViewType, string> = {
 };
 
 export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, deleteAllRead } = useNotifications();
   const navigate = useNavigate();
 
@@ -37,7 +37,8 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
-  const [showNotifDot, setShowNotifDot] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_showNotifDot, _setShowNotifDot] = useState(true);
 
   const initials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() : 'VM';
   const userName = user ? `${user.firstName} ${user.lastName}`.trim() : 'User';

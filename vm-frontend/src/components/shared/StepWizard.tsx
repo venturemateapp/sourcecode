@@ -10,7 +10,7 @@ interface StepWizardProps {
   steps: Step[];
   currentStep: number;
   onStepClick?: (index: number) => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onBack?: () => void;
   onNext?: () => void;
   showNav?: boolean;
