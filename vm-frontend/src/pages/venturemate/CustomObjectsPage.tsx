@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Card, Chip, Dialog, DialogTitle, DialogContent, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, Card, Chip, TextField, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Grid3x3, Plus, X, Building2, FileText } from 'lucide-react';
+import { Grid3x3, Plus, Building2, FileText } from 'lucide-react';
 
 interface CustomObject { id: string; nameSingular: string; namePlural: string; labelSingular: string; labelPlural: string; icon: string; description: string; }
 interface CustomField { id: string; objectId: string; name: string; label: string; fieldType: string; isRequired: boolean; defaultValue: string; options: string; sortOrder: number; }
@@ -49,14 +50,13 @@ export function CustomObjectsPage() {
     loadFields(objId);
   };
 
-  const createObject = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const createObject = async () => {
     if (!bizId) return;
-    const data = new FormData(e.currentTarget);
+    const el = (n: string) => (document.querySelector(`[name="${n}"]`) as HTMLInputElement)?.value || '';
     setSaving(true);
     try {
       await q('mutation M($b:ID!,$s:String!,$p:String!,$l:String!,$u:String!,$i:String,$d:String){createCustomObject(businessId:$b nameSingular:$s namePlural:$p labelSingular:$l labelPlural:$u icon:$i description:$d){id}}', {
-        b: bizId, s: data.get('singular'), p: data.get('plural'), l: data.get('labelSingular'), u: data.get('labelPlural'), i: data.get('icon') || 'FileText', d: data.get('description') || '',
+        b: bizId, s: el('singular'), p: el('plural'), l: el('labelSingular'), u: el('labelPlural'), i: el('icon') || 'FileText', d: el('description') || '',
       });
       setObjForm(false);
       load();
@@ -64,13 +64,12 @@ export function CustomObjectsPage() {
     setSaving(false);
   };
 
-  const createField = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
+  const createField = async () => {
+    const el = (n: string) => (document.querySelector(`[name="${n}"]`) as HTMLInputElement)?.value || '';
     setSaving(true);
     try {
       await q('mutation M($o:ID!,$n:String!,$l:String!,$t:String!,$r:Boolean,$p:String,$s:Int){createCustomField(objectId:$o name:$n label:$l fieldType:$t isRequired:$r options:$p sortOrder:$s){id}}', {
-        o: fieldForm.objectId, n: data.get('name'), l: data.get('label'), t: data.get('fieldType') || 'text', r: data.get('required') === 'true', p: data.get('options') || '', s: parseInt(data.get('sortOrder') as string) || 0,
+        o: fieldForm.objectId, n: el('name'), l: el('label'), t: el('fieldType') || 'text', r: el('required') === 'true', p: el('options') || '', s: parseInt(el('sortOrder')) || 0,
       });
       setFieldForm({ open: false, objectId: '' });
       setFields(prev => ({ ...prev, [fieldForm.objectId]: [] }));
@@ -124,54 +123,38 @@ export function CustomObjectsPage() {
         </Box>
       )}
 
-      <Dialog open={objForm} onClose={() => setObjForm(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Grid3x3 size={20} color="var(--vm-primary-400)" /><Typography sx={{ fontWeight: 700 }}>New Custom Object</Typography>
-          <IconButton size="small" onClick={() => setObjForm(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          <Box component="form" onSubmit={createObject} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField size="small" name="singular" label="Singular Name (e.g. project)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" name="plural" label="Plural Name (e.g. projects)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" name="labelSingular" label="Label (Singular)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" name="labelPlural" label="Label (Plural)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" name="description" label="Description" inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
-              <GradientButton variant="ghost" size="sm" type="button" onClick={() => setObjForm(false)}>Cancel</GradientButton>
-              <GradientButton variant="primary" size="sm" type="submit" disabled={saving}>{saving ? <CircularProgress size={14} /> : 'Create'}</GradientButton>
-            </Box>
-          </Box>
-        </DialogContent>
-      </Dialog>
+      <Modal open={objForm} onClose={() => setObjForm(false)} title="New Custom Object" icon={<Grid3x3 size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setObjForm(false)}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={saving} onClick={() => createObject()}>{saving ? <CircularProgress size={14} /> : 'Create'}</GradientButton></>}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField size="small" name="singular" label="Singular Name (e.g. project)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" name="plural" label="Plural Name (e.g. projects)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" name="labelSingular" label="Label (Singular)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" name="labelPlural" label="Label (Plural)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" name="description" label="Description" inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+        </Box>
+      </Modal>
 
-      <Dialog open={fieldForm.open} onClose={() => setFieldForm({ open: false, objectId: '' })} maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Grid3x3 size={20} color="var(--vm-primary-400)" /><Typography sx={{ fontWeight: 700 }}>Add Field</Typography>
-          <IconButton size="small" onClick={() => setFieldForm({ open: false, objectId: '' })} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          <Box component="form" onSubmit={createField} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField size="small" name="name" label="Field Name (e.g. due_date)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" name="label" label="Display Label" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Type</InputLabel>
-              <Select name="fieldType" defaultValue="text" label="Type" sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                {FIELD_TYPES.map(t => <MenuItem key={t} value={t} sx={{ textTransform: 'capitalize' }}>{t.replace('_', ' ')}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Required</InputLabel>
-              <Select name="required" defaultValue="false" label="Required" sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                <MenuItem value="false">No</MenuItem><MenuItem value="true">Yes</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField size="small" name="options" label="Options (JSON array for select types)" inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" name="sortOrder" label="Sort Order" type="number" defaultValue={0} inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }}>
-              <GradientButton variant="ghost" size="sm" type="button" onClick={() => setFieldForm({ open: false, objectId: '' })}>Cancel</GradientButton>
-              <GradientButton variant="primary" size="sm" type="submit" disabled={saving}>{saving ? <CircularProgress size={14} /> : 'Add'}</GradientButton>
-            </Box>
-          </Box>
-        </DialogContent>
-      </Dialog>
+      <Modal open={fieldForm.open} onClose={() => setFieldForm({ open: false, objectId: '' })} title="Add Field" icon={<Grid3x3 size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setFieldForm({ open: false, objectId: '' })}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={saving} onClick={() => createField()}>{saving ? <CircularProgress size={14} /> : 'Add'}</GradientButton></>}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField size="small" name="name" label="Field Name (e.g. due_date)" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" name="label" label="Display Label" required inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Type</InputLabel>
+            <Select name="fieldType" defaultValue="text" label="Type" sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+              {FIELD_TYPES.map(t => <MenuItem key={t} value={t} sx={{ textTransform: 'capitalize' }}>{t.replace('_', ' ')}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl size="small" fullWidth><InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Required</InputLabel>
+            <Select name="required" defaultValue="false" label="Required" sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+              <MenuItem value="false">No</MenuItem><MenuItem value="true">Yes</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField size="small" name="options" label="Options (JSON array for select types)" inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" name="sortOrder" label="Sort Order" type="number" defaultValue={0} inputProps={{ style: { color: 'var(--vm-text-primary)' } }} sx={{ '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+        </Box>
+      </Modal>
     </Box>
   );
 }
