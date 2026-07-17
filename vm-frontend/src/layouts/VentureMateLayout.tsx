@@ -68,21 +68,11 @@ export function VentureMateLayout({
         }}
       >
         {/* Fixed Header */}
-        <Box 
-          sx={{ 
-            flexShrink: 0,
-            bgcolor: 'rgba(10, 10, 15, 0.7)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            minHeight: { xs: 52, md: 'var(--vm-header-height)' },
-          }}
-        >
-          <Header
-            onMenuClick={toggleSidebar}
-            activeView={activeView}
-            onViewChange={onViewChange}
-          />
-        </Box>
+        <Header
+          onMenuClick={toggleSidebar}
+          activeView={activeView}
+          onViewChange={onViewChange}
+        />
 
         {/* Scrollable Main Content */}
         <Box

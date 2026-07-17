@@ -5,6 +5,7 @@ import { AICreationStudio, type ProposedChange } from '../../components/venturem
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
+import { PageHeader, GlassCard, AnimatedButton } from '../../components/shared';
 import type { ViewType } from '../../types/venturemate';
 
 interface WebsiteRecord {
@@ -315,19 +316,24 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
 
   return (
     <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap', maxWidth: '100%' }}>
-        <MonitorSmartphone size={19} color="var(--vm-primary-400)" />
-        <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
-        <Chip icon={<Sparkles size={13} />} label="No-code means conversation only" size="small" color="success" variant="outlined" />
-        {website && <Chip label={`Draft v${website.draftRevision}`} size="small" variant="outlined" />}
-        {website?.status === 'published' && <Chip label={`Live v${website.publishedRevision}`} size="small" color="success" />}
-        {savedDraft && (
-          <Button size="small" variant={codeTab === 'preview' ? 'contained' : 'outlined'} onClick={() => setCodeTab('preview')} startIcon={<Eye size={13} />} sx={{ textTransform: 'none', ml: 'auto', fontSize: 11 }}>Preview</Button>
-        )}
-        {savedDraft && (
-          <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => { if (codeTab === 'code') setCodeTab('preview'); else { setCodeTab('code'); handleGenerateCode(savedDraft); } }} startIcon={codeLoading ? <CircularProgress size={13} /> : <Code2 size={13} />} disabled={codeLoading} sx={{ textTransform: 'none', fontSize: 11 }}>Code</Button>
-        )}
-      </Box>
+      <PageHeader
+        icon={<MonitorSmartphone size={18} />}
+        title="Website Builder"
+        subtitle="AI builds, you approve — no code required"
+        businessName={selectedBusiness.name}
+        chips={
+          <>
+            {website && <Chip label={`Draft v${website.draftRevision}`} size="small" variant="outlined" />}
+            {website?.status === 'published' && <Chip label={`Live v${website.publishedRevision}`} size="small" color="success" />}
+            {savedDraft && (
+              <Button size="small" variant={codeTab === 'preview' ? 'contained' : 'outlined'} onClick={() => setCodeTab('preview')} startIcon={<Eye size={13} />} sx={{ textTransform: 'none', fontSize: 11 }}>Preview</Button>
+            )}
+            {savedDraft && (
+              <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => { if (codeTab === 'code') setCodeTab('preview'); else { setCodeTab('code'); handleGenerateCode(savedDraft); } }} startIcon={codeLoading ? <CircularProgress size={13} /> : <Code2 size={13} />} disabled={codeLoading} sx={{ textTransform: 'none', fontSize: 11 }}>Code</Button>
+            )}
+          </>
+        }
+      />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {loading && !website && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><CircularProgress size={18} /><Typography sx={{ color: 'var(--vm-text-muted)' }}>Loading website…</Typography></Box>}

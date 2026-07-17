@@ -5,6 +5,7 @@ import { AICreationStudio, type ProposedChange } from '../../components/venturem
 import { PlanViewer } from '../../components/venturemate/PlanViewer';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { PageHeader, GlassCard, AnimatedButton } from '../../components/shared';
 import type { BusinessPlan as BusinessPlanType, PlanSection } from '../../types/venturemate';
 
 function parsePlan(change: ProposedChange): BusinessPlanType | null {
@@ -31,16 +32,16 @@ function SectionCard({ section, index, accent }: { section: PlanSection; index: 
 
   return (
     <Card sx={{
-      bgcolor: 'var(--vm-bg-tertiary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5, overflow: 'hidden',
+      bgcolor: 'rgba(255,255,255,.02)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5, overflow: 'hidden',
       borderLeft: `3px solid ${sectionColor}`,
+      transition: 'all .2s', '&:hover': { borderColor: `${sectionColor}40` },
     }}>
       <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
-        <Box sx={{ flexShrink: 0, width: 32, height: 32, borderRadius: 1.5, display: 'grid', placeItems: 'center', bgcolor: `${sectionColor}20`, color: sectionColor }}>
-          <Icon size={16} />
+        <Box sx={{ flexShrink: 0, width: 30, height: 30, borderRadius: 1.5, display: 'grid', placeItems: 'center', bgcolor: `${sectionColor}20`, color: sectionColor }}>
+          <Icon size={15} />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 14, fontWeight: 800 }}>{section.title}</Typography>
-          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10 }}>Section {index + 1}</Typography>
         </Box>
         <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }}>
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -50,7 +51,7 @@ function SectionCard({ section, index, accent }: { section: PlanSection; index: 
         <Box sx={{ px: 2, pb: 2 }}>
           <Box sx={{ height: 1, bgcolor: 'var(--vm-border-subtle)', mb: 1.5 }} />
           <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13, lineHeight: 1.85, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{section.content}</Typography>
-          {section.subsections && section.subsections.map((sub, si) => (
+          {section.subsections?.map((sub, si) => (
             <Box key={si} sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: `1px solid ${sectionColor}15` }}>
               <Typography sx={{ color: sectionColor, fontSize: 12, fontWeight: 700, mb: 0.5 }}>{sub.title}</Typography>
               <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 12, lineHeight: 1.7 }}>{sub.content}</Typography>
@@ -67,13 +68,13 @@ function PlanPreview({ plan, primary, proposed = false }: { plan: BusinessPlanTy
   const accent = primary || '#10b981';
   return (
     <Box>
-      <Box sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 2.5, bgcolor: 'var(--vm-bg-tertiary)', border: proposed ? `1px solid ${accent}40` : '1px solid var(--vm-border-subtle)' }}>
+      <GlassCard sx={{ p: { xs: 2, sm: 2.5 }, border: proposed ? `1px solid ${accent}40` : '1px solid var(--vm-border-subtle)' }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
           <Box>
             <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 20, sm: 26 }, fontWeight: 900 }}>{plan.title || 'Business Plan'}</Typography>
-            <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.5 }}>Version {plan.version || '1.0'} · {sections.length} sections</Typography>
+            <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.5 }}>v{plan.version || '1.0'} · {sections.length} sections</Typography>
           </Box>
-          <Chip icon={<FileText size={14} />} label={proposed ? 'Awaiting approval' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
+          <Chip icon={<FileText size={14} />} label={proposed ? 'Review' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
         </Box>
         {plan.executiveSummary && (
           <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: `${accent}08`, border: `1px solid ${accent}15` }}>
@@ -83,12 +84,12 @@ function PlanPreview({ plan, primary, proposed = false }: { plan: BusinessPlanTy
             <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13, lineHeight: 1.75, mt: 0.75, whiteSpace: 'pre-wrap' }}>{plan.executiveSummary}</Typography>
           </Box>
         )}
-      </Box>
-      <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+      </GlassCard>
+      <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
         {sections.map((section, index) => (
           <SectionCard key={section.id || `${section.title}-${index}`} section={section} index={index} accent={accent} />
         ))}
-        {sections.length === 0 && <Typography sx={{ color: 'var(--vm-text-muted)', py: 4, textAlign: 'center' }}>This version has no sections yet.</Typography>}
+        {!sections.length && <Typography sx={{ color: 'var(--vm-text-muted)', py: 4, textAlign: 'center' }}>No sections yet.</Typography>}
       </Box>
     </Box>
   );
@@ -106,25 +107,22 @@ export function BusinessPlan() {
 
   return (
     <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-        <BookOpen size={19} color="var(--vm-primary-400)" />
-        <Chip icon={<Building2 size={14} />} label={selectedBusiness.name} size="small" />
-        <Chip icon={<Sparkles size={13} />} label="AI writes · You approve" size="small" color="success" variant="outlined" />
-        {hasPlan && (
-          <>
-            <ToggleButtonGroup size="small" value={viewMode} onChange={(_, v) => v && setViewMode(v)} exclusive sx={{ ml: 'auto', '& .MuiToggleButton-root': { color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' } } }}>
-              <ToggleButton value="grid"><LayoutGrid size={14} /></ToggleButton>
-              <ToggleButton value="slide"><Monitor size={14} /></ToggleButton>
-            </ToggleButtonGroup>
-          </>
-        )}
-      </Box>
+      <PageHeader
+        icon={<BookOpen size={18} />}
+        title="Business Plan"
+        subtitle="AI-generated investor-ready plan with 10 specialised sections"
+        businessName={selectedBusiness.name}
+        actions={hasPlan ? (
+          <ToggleButtonGroup size="small" value={viewMode} onChange={(_, v) => v && setViewMode(v)} exclusive sx={{ '& .MuiToggleButton-root': { color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' } } }}>
+            <ToggleButton value="grid"><LayoutGrid size={14} /></ToggleButton>
+            <ToggleButton value="slide"><Monitor size={14} /></ToggleButton>
+          </ToggleButtonGroup>
+        ) : undefined}
+      />
 
       <AICreationStudio
-        domain="business-plan"
-        title="AI Business Plan"
-        description="The plan is generated from the approved business profile, brand, team, milestones, metrics, and financial records. Each section is written by a specialised AI agent."
-        placeholder="Example: Generate a complete investor-ready business plan from my business details."
+        domain="business-plan" title="" description=""
+        placeholder="Generate a complete investor-ready business plan from my business details."
         starterPrompts={[
           'Generate a complete business plan from everything known about my business.',
           'Rewrite the executive summary to be clearer and more convincing.',

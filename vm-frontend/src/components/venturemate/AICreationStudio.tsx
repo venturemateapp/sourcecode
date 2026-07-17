@@ -1,18 +1,10 @@
-import { useState, type ChangeEvent, type ReactNode } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  Chip,
-  CircularProgress,
-  TextField,
-  Typography,
-} from '@mui/material';
-import { Bot, Check, RefreshCw, Send, Sparkles, X } from 'lucide-react';
+import { useState, type ChangeEvent, type ReactNode, useRef, useEffect } from 'react';
+import { Alert, Box, Card, Chip, TextField, Typography } from '@mui/material';
+import { Bot, Check, Send, Sparkles, X, MessageSquare, Wand2 } from 'lucide-react';
 import { GenerationProgress } from './GenerationProgress';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
+import { AnimatedButton } from '../shared/AnimatedButton';
 
 export interface ProposedChange {
   id: string;
@@ -25,22 +17,17 @@ export interface ProposedChange {
 }
 
 interface ProposalResponse {
-  proposeAgentAction: {
-    message: string;
-    proposals: ProposedChange[];
-  };
+  proposeAgentAction: { message: string; proposals: ProposedChange[]; };
 }
 
 interface ApplyResponse {
-  applyAgentProposal: {
-    success: boolean;
-    message: string;
-  };
+  applyAgentProposal: { success: boolean; message: string; };
 }
 
 interface StudioMessage {
   role: 'user' | 'assistant';
   content: string;
+  id: string;
 }
 
 interface AICreationStudioProps {
@@ -58,8 +45,7 @@ interface AICreationStudioProps {
 const PROPOSE_MUTATION = `
   mutation ProposeAgentAction($userId: ID!, $businessId: ID!, $prompt: String!, $domain: String) {
     proposeAgentAction(userId: $userId, businessId: $businessId, prompt: $prompt, domain: $domain) {
-      message
-      proposals { id type field domain summary currentValue newValue }
+      message proposals { id type field domain summary currentValue newValue }
     }
   }
 `;
@@ -67,26 +53,21 @@ const PROPOSE_MUTATION = `
 const APPLY_MUTATION = `
   mutation ApplyAgentProposal($userId: ID!, $businessId: ID!, $changes: String!) {
     applyAgentProposal(userId: $userId, businessId: $businessId, changes: $changes) {
-      success
-      message
+      success message
     }
   }
 `;
 
 function humanize(value: string) {
-  return value.replace(/-/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+  return value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
+let msgCounter = 0;
+
 export function AICreationStudio({
-  domain,
-  title,
-  description,
-  placeholder,
-  starterPrompts,
+  domain, title, description, placeholder, starterPrompts,
   emptyLabel = 'No approved version yet. Ask AI to create the first one.',
-  renderCurrent,
-  renderProposal,
-  onApproved,
+  renderCurrent, renderProposal, onApproved,
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
   const [prompt, setPrompt] = useState('');
@@ -98,6 +79,16 @@ export function AICreationStudio({
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (!proposal && !loading) chatInputRef.current?.focus();
+  }, [proposal, loading]);
 
   const requestProposal = async (instruction: string) => {
     if (!selectedBusiness || !userId || !instruction.trim() || loading) return;
@@ -107,19 +98,18 @@ export function AICreationStudio({
     const contextualPrompt = proposal
       ? `${instruction.trim()}\n\nRevise the pending AI proposal below. Preserve everything I did not ask to change.\nPending proposal field: ${proposal.field}\nPending proposal JSON:\n${proposal.newValue}`
       : instruction.trim();
-    setMessages(current => [...current, { role: 'user', content: instruction.trim() }]);
+    const userMsg: StudioMessage = { role: 'user', content: instruction.trim(), id: `m-${++msgCounter}` };
+    setMessages(current => [...current, userMsg]);
     try {
       const data = await graphqlRequest<ProposalResponse>(PROPOSE_MUTATION, {
-        userId,
-        businessId: selectedBusiness.id,
-        prompt: contextualPrompt,
-        domain,
+        userId, businessId: selectedBusiness.id, prompt: contextualPrompt, domain,
       });
       const result = data.proposeAgentAction;
       const nextProposal = result.proposals?.[0] ?? null;
       setProposal(nextProposal);
       setProposalMessage(result.message || (nextProposal ? 'A new version is ready for review.' : 'No changes were proposed.'));
-      setMessages(current => [...current, { role: 'assistant', content: result.message || 'I prepared a version for review.' }]);
+      const assistantMsg: StudioMessage = { role: 'assistant', content: result.message || 'I prepared a version for review.', id: `m-${++msgCounter}` };
+      setMessages(current => [...current, assistantMsg]);
       setPrompt('');
       setRevision('');
       if (!nextProposal && !result.message) setError('AI did not return a reviewable change. Describe the result you want more specifically.');
@@ -136,22 +126,16 @@ export function AICreationStudio({
     setError(null);
     try {
       const data = await graphqlRequest<ApplyResponse>(APPLY_MUTATION, {
-        userId,
-        businessId: selectedBusiness.id,
-        changes: JSON.stringify([proposal]),
+        userId, businessId: selectedBusiness.id, changes: JSON.stringify([proposal]),
       });
-      if (!data.applyAgentProposal.success) {
-        throw new Error(data.applyAgentProposal.message || 'Approval failed.');
-      }
+      if (!data.applyAgentProposal.success) throw new Error(data.applyAgentProposal.message || 'Approval failed.');
       setSuccess(data.applyAgentProposal.message || 'The approved version is now saved.');
-      setMessages(current => [...current, { role: 'assistant', content: 'Approved. I saved this version to the business.' }]);
+      setMessages(current => [...current, { role: 'assistant', content: 'Approved. I saved this version to the business.', id: `m-${++msgCounter}` }]);
       setProposal(null);
       setProposalMessage('');
       await refreshBusiness();
       await onApproved?.();
-      window.dispatchEvent(new CustomEvent('venturemate:ai-data-changed', {
-        detail: { businessId: selectedBusiness.id, domain },
-      }));
+      window.dispatchEvent(new CustomEvent('venturemate:ai-data-changed', { detail: { businessId: selectedBusiness.id, domain } }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not approve the proposal.');
     } finally {
@@ -159,150 +143,171 @@ export function AICreationStudio({
     }
   };
 
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.25fr) minmax(360px, .75fr)' }, gap: 2.5 }}>
-      <Box sx={{ minWidth: 0 }}>
-        <Box sx={{ mb: 2 }}>
-          <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 21, md: 28 }, fontWeight: 900 }}>
-            {title}
-          </Typography>
-          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 13, mt: 0.5, maxWidth: 760 }}>
-            {description}
-          </Typography>
-        </Box>
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void requestProposal(prompt); }
+  };
 
+  return (
+    <Box sx={{ display: 'flex', gap: 2.5, flexDirection: { xs: 'column', lg: 'row' } }}>
+      {/* Main content area */}
+      <Box sx={{ flex: 1, minWidth: 0 }}>
         {proposal ? (
-          <Card sx={{ p: { xs: 1.5, md: 2.5 }, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-primary-600)', borderRadius: 3 }}>
+          <Card sx={{
+            p: { xs: 1.5, md: 2.5 },
+            bgcolor: 'var(--vm-bg-secondary)',
+            border: '1px solid var(--vm-primary-600)',
+            borderRadius: 3,
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': { content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: 2, bgcolor: 'var(--vm-primary-500)' },
+          }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Sparkles size={18} color="var(--vm-primary-400)" />
-                  <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900 }}>AI proposal — not saved yet</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'var(--vm-primary-700)' }}>
+                  <Sparkles size={16} />
                 </Box>
-                <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 12 }}>{proposal.summary || proposalMessage}</Typography>
+                <Box>
+                  <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900, fontSize: 14 }}>AI Proposal</Typography>
+                  <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11 }}>{proposal.summary || proposalMessage}</Typography>
+                </Box>
               </Box>
+              <Chip label="Not saved" size="small" color="warning" variant="outlined" sx={{ fontSize: 10 }} />
             </Box>
 
             {renderProposal(proposal)}
 
-            <Box sx={{ mt: 2.5, p: 1.5, bgcolor: 'var(--vm-bg-tertiary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
-              <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 12, fontWeight: 800, mb: 1 }}>
-                Tell AI what to change in this version
+            <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(255,255,255,.02)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+              <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 12, fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <MessageSquare size={13} /> Revise this proposal
               </Typography>
               <TextField
-                fullWidth
-                multiline
-                minRows={2}
-                maxRows={5}
+                fullWidth multiline minRows={2} maxRows={5}
                 value={revision}
-                onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setRevision(event.target.value)}
-                placeholder="Example: Keep the layout, make the headline shorter, use a warmer green, and remove the pricing section."
+                onChange={(e: any) => setRevision(e.target.value)}
+                placeholder="Tell AI what to change — e.g., 'Make the headline shorter, use a warmer green'"
+                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'rgba(0,0,0,.2)' } }}
               />
               <Box sx={{ mt: 1.25, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={15} /> : <Send size={15} />}
-                  disabled={!revision.trim() || loading || applying}
-                  onClick={() => void requestProposal(revision)}
-                >
-                  Update proposal
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<RefreshCw size={15} />}
-                  disabled={loading || applying}
-                  onClick={() => void requestProposal(`Create a distinctly different alternative for this ${humanize(domain)}. Keep it relevant to my approved business details.`)}
-                >
-                  Show another
-                </Button>
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={applying ? <CircularProgress size={15} /> : <Check size={16} />}
-                  disabled={loading || applying}
-                  onClick={() => void approveProposal()}
-                >
+                <AnimatedButton variant="primary" size="sm" icon={<Send size={14} />} disabled={!revision.trim() || loading || applying} onClick={() => void requestProposal(revision)} loading={loading}>
+                  Update
+                </AnimatedButton>
+                <AnimatedButton variant="secondary" size="sm" icon={<Sparkles size={14} />} disabled={loading || applying} onClick={() => void requestProposal(`Create a distinctly different alternative for this ${humanize(domain)}. Keep it relevant to my approved business details.`)}>
+                  Another option
+                </AnimatedButton>
+                <AnimatedButton variant="success" size="sm" icon={<Check size={14} />} disabled={loading || applying} onClick={() => void approveProposal()} loading={applying}>
                   Approve this version
-                </Button>
-                <Button
-                  variant="text"
-                  startIcon={<X size={15} />}
-                  disabled={applying}
-                  onClick={() => { setProposal(null); setProposalMessage(''); setRevision(''); }}
-                >
+                </AnimatedButton>
+                <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); setRevision(''); }}>
                   Discard
-                </Button>
+                </AnimatedButton>
               </Box>
             </Box>
           </Card>
         ) : (
-          <Card sx={{ p: { xs: 1.5, md: 2.5 }, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <Check size={18} color="var(--vm-primary-400)" />
-              <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900 }}>Current approved version</Typography>
+          <Card sx={{
+            p: { xs: 1.5, md: 2.5 },
+            bgcolor: 'var(--vm-bg-secondary)',
+            border: '1px solid var(--vm-border-subtle)',
+            borderRadius: 3,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#22c55e20' }}>
+                <Check size={16} color="#22c55e" />
+              </Box>
+              <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900, fontSize: 14 }}>Current Approved Version</Typography>
             </Box>
-            <Box sx={{ minHeight: 150 }}>
-              {renderCurrent() || <Typography sx={{ color: 'var(--vm-text-muted)' }}>{emptyLabel}</Typography>}
+            <Box sx={{ minHeight: 120 }}>
+              {renderCurrent() || (
+                <Box sx={{ py: 4, textAlign: 'center' }}>
+                  <Wand2 size={32} style={{ opacity: .3, margin: '0 auto 12px', display: 'block' }} />
+                  <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 13 }}>{emptyLabel}</Typography>
+                </Box>
+              )}
             </Box>
           </Card>
         )}
       </Box>
 
-      <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden', alignSelf: 'start', position: { lg: 'sticky' }, top: { lg: 84 } }}>
+      {/* Chat panel */}
+      <Card sx={{
+        width: { xs: '100%', lg: 380 },
+        flexShrink: 0,
+        bgcolor: 'var(--vm-bg-secondary)',
+        border: '1px solid var(--vm-border-subtle)',
+        borderRadius: 3,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: { lg: 600 },
+        position: { lg: 'sticky' },
+        top: { lg: 84 },
+      }}>
+        {/* Header */}
         <Box sx={{ p: 1.75, borderBottom: '1px solid var(--vm-border-subtle)', bgcolor: 'var(--vm-bg-tertiary)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Box sx={{ width: 38, height: 38, borderRadius: 2, display: 'grid', placeItems: 'center', bgcolor: 'var(--vm-primary-700)' }}>
+            <Box sx={{ width: 36, height: 36, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'var(--vm-primary-700)' }}>
               <Bot size={20} />
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 14, fontWeight: 900 }}>Create with VentureMate AI</Typography>
-              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11 }}>Describe it. Review it. Approve it.</Typography>
+              <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 14, fontWeight: 900 }}>AI Studio</Typography>
+              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10 }}>Describe · Review · Approve</Typography>
             </Box>
           </Box>
           {loading && selectedBusiness && <GenerationProgress businessId={selectedBusiness.id} />}
         </Box>
 
-        <Box sx={{ p: 1.75 }}>
-          {messages.length > 0 && (
-            <Box sx={{ maxHeight: 190, overflowY: 'auto', mb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-              {messages.slice(-6).map((message, index) => (
-                <Box key={`${message.role}-${index}`} sx={{ alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%', px: 1.25, py: 0.85, borderRadius: 2, bgcolor: message.role === 'user' ? 'var(--vm-primary-700)' : 'var(--vm-bg-tertiary)', border: '1px solid var(--vm-border-subtle)' }}>
-                  <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 12, whiteSpace: 'pre-wrap' }}>{message.content}</Typography>
-                </Box>
-              ))}
-            </Box>
-          )}
+        {/* Messages */}
+        {messages.length > 0 && (
+          <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {messages.slice(-8).map((msg) => (
+              <Box key={msg.id} sx={{
+                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                maxWidth: '92%',
+                px: 1.5, py: 1,
+                borderRadius: 2,
+                bgcolor: msg.role === 'user' ? 'var(--vm-primary-700)' : 'rgba(255,255,255,.04)',
+                border: msg.role === 'user' ? 'none' : '1px solid var(--vm-border-subtle)',
+              }}>
+                <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 12, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{msg.content}</Typography>
+              </Box>
+            ))}
+            <div ref={messagesEndRef} />
+          </Box>
+        )}
 
-          {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 1.25 }}>{error}</Alert>}
-          {success && <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 1.25 }}>{success}</Alert>}
+        {/* Input area */}
+        <Box sx={{ p: 1.75, borderTop: messages.length > 0 ? '1px solid var(--vm-border-subtle)' : 'none' }}>
+          {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 1.25, py: 0.5, fontSize: 12 }}>{error}</Alert>}
+          {success && <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 1.25, py: 0.5, fontSize: 12 }}>{success}</Alert>}
 
           <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 12, fontWeight: 800, mb: 0.75 }}>
             What should AI create or change?
           </Typography>
           <TextField
-            fullWidth
-            multiline
-            minRows={4}
-            maxRows={8}
+            fullWidth multiline minRows={3} maxRows={6}
             value={prompt}
-            onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPrompt(event.target.value)}
+            onChange={(e: any) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
+            inputRef={chatInputRef}
+            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'rgba(0,0,0,.2)' } }}
           />
-          <Button
-            fullWidth
-            variant="contained"
-            sx={{ mt: 1.25 }}
-            startIcon={loading ? <CircularProgress size={16} /> : <Sparkles size={17} />}
+          <AnimatedButton
+            fullWidth variant="primary" size="md"
+            icon={<Sparkles size={16} />}
             disabled={!prompt.trim() || loading || applying}
             onClick={() => void requestProposal(prompt)}
+            loading={loading}
+            sx={{ mt: 1.25 }}
           >
-            {proposal ? 'Revise with AI' : 'Generate proposal'}
-          </Button>
+            {proposal ? 'Revise with AI' : 'Generate with AI'}
+          </AnimatedButton>
 
-          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 1.75, mb: 0.75 }}>Try saying:</Typography>
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, mt: 1.5, mb: 0.75 }}>Try asking:</Typography>
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {starterPrompts.map(item => (
-              <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)} sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
+              <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)}
+                sx={{ fontSize: 10, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,.08)' }, maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.25, lineHeight: 1.4 } }} />
             ))}
           </Box>
         </Box>
