@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Card, Chip, Dialog, DialogTitle, DialogContent, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, Card, Chip, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Mail, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Building2, X } from 'lucide-react';
+import { Mail, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Building2 } from 'lucide-react';
 
 interface EmailAccount {
   id: string;
@@ -150,43 +151,33 @@ export function EmailSettingsPage() {
         </Box>
       )}
 
-      <Dialog open={!!form} onClose={() => setForm(null)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Mail size={20} color="var(--vm-primary-400)" />
-          <Typography sx={{ fontWeight: 700 }}>Add Email Account</Typography>
-          <IconButton size="small" onClick={() => setForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <FormControl size="small" fullWidth>
-              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Provider</InputLabel>
-              <Select value={form?.provider || 'gmail'} label="Provider" onChange={e => handleProviderChange(e.target.value)}
-                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                {PROVIDERS.map(p => <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <TextField size="small" label="Email Address" value={form?.email || ''} onChange={e => setForm({ ...form, email: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="IMAP Password / App Password" type="password" value={form?.imapPassword || ''} onChange={e => setForm({ ...form, imapPassword: e.target.value, imapUsername: form?.imapUsername || form?.email || '' })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            {form?.provider === 'imap' && (
-              <>
-                <TextField size="small" label="IMAP Host" value={form?.imapHost || ''} onChange={e => setForm({ ...form, imapHost: e.target.value })}
-                  sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <TextField size="small" label="SMTP Host" value={form?.smtpHost || ''} onChange={e => setForm({ ...form, smtpHost: e.target.value })}
-                  sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-              </>
-            )}
-          </Box>
-        </DialogContent>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
+      <Modal open={!!form} onClose={() => setForm(null)} title="Add Email Account" icon={<Mail size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={saving || !form?.email} onClick={save}>
             {saving ? <CircularProgress size={14} /> : 'Connect'}
-          </GradientButton>
+          </GradientButton></>}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Provider</InputLabel>
+            <Select value={form?.provider || 'gmail'} label="Provider" onChange={e => handleProviderChange(e.target.value)}
+              sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+              {PROVIDERS.map(p => <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <TextField size="small" label="Email Address" value={form?.email || ''} onChange={e => setForm({ ...form, email: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="IMAP Password / App Password" type="password" value={form?.imapPassword || ''} onChange={e => setForm({ ...form, imapPassword: e.target.value, imapUsername: form?.imapUsername || form?.email || '' })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          {form?.provider === 'imap' && (
+            <>
+              <TextField size="small" label="IMAP Host" value={form?.imapHost || ''} onChange={e => setForm({ ...form, imapHost: e.target.value })}
+                sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+              <TextField size="small" label="SMTP Host" value={form?.smtpHost || ''} onChange={e => setForm({ ...form, smtpHost: e.target.value })}
+                sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            </>
+          )}
         </Box>
-      </Dialog>
+      </Modal>
     </Box>
   );
 }
