@@ -85,15 +85,15 @@ export function CompaniesPage() {
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 0 } }}>
         <Box>
-          <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Companies</Typography>
-          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{companies.length} companies</Typography>
+          <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Accounts</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{companies.length} accounts</Typography>
         </Box>
-        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setForm({ name: '', industry: '' })}>Add Company</GradientButton>
+        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setForm({ name: '', industry: '' })}>Add Account</GradientButton>
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2,1fr)', lg: 'repeat(3,1fr)' }, gap: 2 }}>
         {loading ? <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 6 }}><CircularProgress size={20} sx={{ color: 'var(--vm-primary-400)' }} /></Box> : companies.length === 0 ? (
-          <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><Building2 size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No companies yet</Typography></Box>
+          <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><Building2 size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No accounts yet</Typography></Box>
         ) : companies.map(c => (
           <Card key={c.id} sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
@@ -126,7 +126,7 @@ export function CompaniesPage() {
         PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
         <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Building2 size={20} color="var(--vm-primary-400)" />
-          <Typography sx={{ fontWeight: 700 }}>{form?.id ? 'Edit' : 'Add'} Company</Typography>
+          <Typography sx={{ fontWeight: 700 }}>{form?.id ? 'Edit' : 'Add'} Account</Typography>
           <IconButton size="small" onClick={() => setForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ pt: 3.5 }}>

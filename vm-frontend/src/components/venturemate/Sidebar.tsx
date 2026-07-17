@@ -106,7 +106,7 @@ const navSections: NavSection[] = [
     title: 'GROWTH',
     items: [
       { label: 'CRM', icon: 'Users', view: 'crm' },
-      { label: 'Companies', icon: 'Building2', view: 'companies' },
+      { label: 'Accounts', icon: 'Building2', view: 'companies' },
       { label: 'Invoices', icon: 'FileText', view: 'invoices' },
       { label: 'Expenditure', icon: 'Receipt', view: 'expenditure' },
       { label: 'Banking', icon: 'Landmark', view: 'banking' },
