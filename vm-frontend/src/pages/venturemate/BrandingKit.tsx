@@ -20,10 +20,29 @@ function parseBrand(change: ProposedChange): BrandKitWithConcept | null {
   try { return JSON.parse(change.newValue) as BrandKitWithConcept; } catch { return null; }
 }
 
-function renderSvg(svg: string) {
+function renderSvg(svg: string, options?: { dark?: boolean; size?: number }) {
   try {
-    const cleaned = svg.startsWith('data:') ? atob(svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : svg;
-    return <Box sx={{ display: 'flex', '& svg': { width: '100%', height: '100%', maxWidth: 100, maxHeight: 100 } }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
+    let cleaned = svg.startsWith('data:') ? atob(svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : svg;
+    // Adapt colors for dark/light backgrounds
+    if (options?.dark) {
+      // Replace common dark fills with white/light equivalents
+      cleaned = cleaned.replace(/(fill="(?:none|transparent)")/gi, '$1');
+      cleaned = cleaned.replace(/fill="#[0-9A-Fa-f]{3,6}"/gi, (match) => {
+        const color = match.replace('fill="', '').replace('"', '');
+        // Keep light colors, replace dark colors with white
+        const isDark = parseInt(color.slice(1, 3), 16) < 100 && parseInt(color.slice(3, 5), 16) < 100 && parseInt(color.slice(5, 7), 16) < 100;
+        return isDark ? 'fill="rgba(255,255,255,.85)"' : match;
+      });
+      cleaned = cleaned.replace(/stroke="#[0-9A-Fa-f]{3,6}"/gi, (match) => {
+        const color = match.replace('stroke="', '').replace('"', '');
+        const isDark = parseInt(color.slice(1, 3), 16) < 100 && parseInt(color.slice(3, 5), 16) < 100 && parseInt(color.slice(5, 7), 16) < 100;
+        return isDark ? 'stroke="rgba(255,255,255,.85)"' : match;
+      });
+      // Replace text fill for readability
+      cleaned = cleaned.replace(/<text[^>]*fill="#[0-9A-Fa-f]{3,6}"/gi, (match) => match.replace(/fill="#[0-9A-Fa-f]{3,6}"/i, 'fill="rgba(255,255,255,.9)"'));
+    }
+    const sz = options?.size || 100;
+    return <Box sx={{ display: 'flex', '& svg': { width: sz, height: sz, maxWidth: sz, maxHeight: sz } }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
   } catch { return null; }
 }
 
@@ -72,9 +91,9 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandK
         <Box sx={{ position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, borderRadius: '50%', background: `radial-gradient(circle, ${primaryColor}40, transparent 70%)` }} />
         <Box sx={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '120px 1fr' }, gap: 2.5, alignItems: 'center' }}>
           <Box sx={{ width: { xs: 96, sm: 120 }, height: { xs: 96, sm: 120 }, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,.08)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: { xs: 'auto', sm: 0 }, border: '1px solid rgba(255,255,255,.1)' }}>
-            {brand.logo ? (
-              brand.logo.includes('<svg') || brand.logo.startsWith('data:') ? renderSvg(brand.logo) : <Box component="img" src={brand.logo} sx={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain' }} />
-            ) : <Sparkles size={36} color="rgba(255,255,255,.3)" />}
+          {brand.logo ? (
+            brand.logo.includes('<svg') || brand.logo.startsWith('data:') ? renderSvg(brand.logo, { dark: true, size: 80 }) : <Box component="img" src={brand.logo} sx={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain' }} />
+          ) : <Sparkles size={36} color="rgba(255,255,255,.3)" />}
           </Box>
           <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
             <Typography sx={{ color: 'white', fontFamily: brand.fontHeading, fontSize: { xs: 22, sm: 30 }, fontWeight: 900, lineHeight: 1.1 }}>{businessName}</Typography>
@@ -122,13 +141,13 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandK
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)' }, gap: 1 }}>
             {[
-              { label: 'Light', bg: '#ffffff' },
-              { label: 'Dark', bg: darkColor },
-              { label: 'Gradient', bg: gradient },
-            ].map(({ label, bg }) => (
+              { label: 'Light', bg: '#ffffff', dark: false },
+              { label: 'Dark', bg: darkColor, dark: true },
+              { label: 'Gradient', bg: gradient, dark: true },
+            ].map(({ label, bg, dark }) => (
               <Box key={label} sx={{ p: 2, borderRadius: 2, bgcolor: bg, border: '1px solid rgba(255,255,255,.08)', textAlign: 'center', minHeight: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                {renderSvg(brand.logo)}
-                <Typography sx={{ fontSize: 9, color: label === 'Dark' || label === 'Gradient' ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', mt: 0.75 }}>{label}</Typography>
+                {renderSvg(brand.logo, { dark, size: 64 })}
+                <Typography sx={{ fontSize: 9, color: dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', mt: 0.75 }}>{label}</Typography>
               </Box>
             ))}
           </Box>
