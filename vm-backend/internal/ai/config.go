@@ -28,7 +28,7 @@ type ProviderManager struct {
 }
 
 func NewProviderManagerFromEnv() *ProviderManager {
-	active := normalizeProviderName(envOr("AI_PROVIDER", "openrouter"))
+	active := normalizeProviderName(envOr("AI_PROVIDER", "deepseek"))
 	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "openrouter,gemini,openai,claude,grok,deepseek"))
 	if len(fallback) == 0 {
 		fallback = []string{"openrouter"}
@@ -71,7 +71,7 @@ func NewProviderManagerFromEnv() *ProviderManager {
 			},
 			"deepseek": {
 				Name:     "deepseek",
-				APIKey:   strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
+				APIKey:   "sk-2e04220785624582af70cf0c92bd7c98",
 				Endpoint: envOr("DEEPSEEK_ENDPOINT", "https://api.deepseek.com/v1/chat/completions"),
 				Model:    envOr("DEEPSEEK_MODEL", "deepseek-chat"),
 			},
