@@ -122,9 +122,9 @@ export function AICreationStudio({
       setMessages(current => [...current, { role: 'assistant', content: result.message || 'I prepared a version for review.' }]);
       setPrompt('');
       setRevision('');
-      if (!nextProposal) setError('AI did not return a reviewable change. Describe the result you want more specifically.');
+      if (!nextProposal && !result.message) setError('AI did not return a reviewable change. Describe the result you want more specifically.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI generation failed.');
+      setError(err instanceof Error ? err.message : 'AI generation failed. Please try rephrasing your request.');
     } finally {
       setLoading(false);
     }
