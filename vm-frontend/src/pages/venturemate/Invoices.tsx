@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Card, Chip, Dialog, DialogTitle, DialogContent, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, Card, Chip, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -119,43 +120,33 @@ export function InvoicesPage() {
         </Box>
       )}
 
-      <Dialog open={!!form} onClose={() => setForm(null)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <FileText size={20} color="var(--vm-primary-400)" />
-          <Typography sx={{ fontWeight: 700 }}>New Invoice</Typography>
-          <IconButton size="small" onClick={() => setForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            <TextField size="small" label="Invoice #" value={form?.invoiceNumber || ''} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Customer Name" value={form?.customerName || ''} onChange={e => setForm({ ...form, customerName: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Amount" type="number" value={form?.amount || ''} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <FormControl size="small">
-              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
-              <Select value={form?.currency || 'USD'} label="Currency" onChange={e => setForm({ ...form, currency: e.target.value })}
-                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                {['USD', 'EUR', 'GBP', 'GHS', 'NGN', 'KES', 'ZAR'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <TextField size="small" label="Due Date" type="date" value={form?.dueDate || ''} onChange={e => setForm({ ...form, dueDate: e.target.value })}
-              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="PO Number" value={form?.poNumber || ''} onChange={e => setForm({ ...form, poNumber: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Notes" multiline rows={2} value={form?.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
-              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          </Box>
-        </DialogContent>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
+      <Modal open={!!form} onClose={() => setForm(null)} title="New Invoice" icon={<FileText size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={saving || !form?.customerName || !form?.invoiceNumber} onClick={save}>
             {saving ? <CircularProgress size={14} /> : 'Create Invoice'}
-          </GradientButton>
+          </GradientButton></>}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+          <TextField size="small" label="Invoice #" value={form?.invoiceNumber || ''} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Customer Name" value={form?.customerName || ''} onChange={e => setForm({ ...form, customerName: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Amount" type="number" value={form?.amount || ''} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <FormControl size="small">
+            <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
+            <Select value={form?.currency || 'USD'} label="Currency" onChange={e => setForm({ ...form, currency: e.target.value })}
+              sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+              {['USD', 'EUR', 'GBP', 'GHS', 'NGN', 'KES', 'ZAR'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <TextField size="small" label="Due Date" type="date" value={form?.dueDate || ''} onChange={e => setForm({ ...form, dueDate: e.target.value })}
+            InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="PO Number" value={form?.poNumber || ''} onChange={e => setForm({ ...form, poNumber: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Notes" multiline rows={2} value={form?.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
+            sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
-      </Dialog>
+      </Modal>
     </Box>
   );
 }

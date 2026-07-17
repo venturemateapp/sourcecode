@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Card, Chip, Dialog, DialogTitle, DialogContent, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, Card, Chip, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
+import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Building2, Plus, Trash2, Edit3, X, Globe, Users, DollarSign, MapPin } from 'lucide-react';
+import { Building2, Plus, Trash2, Edit3, Globe, Users, DollarSign, MapPin } from 'lucide-react';
 
 interface Company {
   id: string;
@@ -122,51 +123,41 @@ export function CompaniesPage() {
         ))}
       </Box>
 
-      <Dialog open={!!form} onClose={() => setForm(null)} maxWidth="sm" fullWidth
-        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
-        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Building2 size={20} color="var(--vm-primary-400)" />
-          <Typography sx={{ fontWeight: 700 }}>{form?.id ? 'Edit' : 'Add'} Account</Typography>
-          <IconButton size="small" onClick={() => setForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            <TextField size="small" label="Company Name" value={form?.name || ''} onChange={e => setForm({ ...form, name: e.target.value })}
-              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Domain" value={form?.domain || ''} onChange={e => setForm({ ...form, domain: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <FormControl size="small">
-              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Industry</InputLabel>
-              <Select value={form?.industry || ''} label="Industry" onChange={e => setForm({ ...form, industry: e.target.value })}
-                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-                {INDUSTRIES.map(i => <MenuItem key={i} value={i}>{i}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <TextField size="small" label="Employees" type="number" value={form?.employeeCount || ''} onChange={e => setForm({ ...form, employeeCount: parseInt(e.target.value) || 0 })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Revenue" type="number" value={form?.revenue || ''} onChange={e => setForm({ ...form, revenue: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Website" value={form?.website || ''} onChange={e => setForm({ ...form, website: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Phone" value={form?.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Email" value={form?.email || ''} onChange={e => setForm({ ...form, email: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="City" value={form?.addressCity || ''} onChange={e => setForm({ ...form, addressCity: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Country" value={form?.addressCountry || ''} onChange={e => setForm({ ...form, addressCountry: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Description" multiline rows={2} value={form?.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
-              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          </Box>
-        </DialogContent>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
+      <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? 'Edit Account' : 'Add Account'} icon={<Building2 size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={saving || !form?.name} onClick={save}>
             {saving ? <CircularProgress size={14} /> : form?.id ? 'Update' : 'Create'}
-          </GradientButton>
+          </GradientButton></>}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+          <TextField size="small" label="Company Name" value={form?.name || ''} onChange={e => setForm({ ...form, name: e.target.value })}
+            sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Domain" value={form?.domain || ''} onChange={e => setForm({ ...form, domain: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <FormControl size="small">
+            <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Industry</InputLabel>
+            <Select value={form?.industry || ''} label="Industry" onChange={e => setForm({ ...form, industry: e.target.value })}
+              sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+              {INDUSTRIES.map(i => <MenuItem key={i} value={i}>{i}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <TextField size="small" label="Employees" type="number" value={form?.employeeCount || ''} onChange={e => setForm({ ...form, employeeCount: parseInt(e.target.value) || 0 })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Revenue" type="number" value={form?.revenue || ''} onChange={e => setForm({ ...form, revenue: parseFloat(e.target.value) || 0 })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Website" value={form?.website || ''} onChange={e => setForm({ ...form, website: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Phone" value={form?.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Email" value={form?.email || ''} onChange={e => setForm({ ...form, email: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="City" value={form?.addressCity || ''} onChange={e => setForm({ ...form, addressCity: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Country" value={form?.addressCountry || ''} onChange={e => setForm({ ...form, addressCountry: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <TextField size="small" label="Description" multiline rows={2} value={form?.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
+            sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
-      </Dialog>
+      </Modal>
     </Box>
   );
 }
