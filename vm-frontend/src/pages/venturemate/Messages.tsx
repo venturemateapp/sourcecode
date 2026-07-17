@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Box, Typography, Card, TextField, IconButton, Avatar, Chip, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, TextField, IconButton, Chip, CircularProgress } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Send, MessageCircle, X, Plus, User, Shield } from 'lucide-react';
-import type { ViewType } from '../../types/venturemate';
+import { Send, MessageCircle, Plus, User } from 'lucide-react';
 import { API_CONFIG } from '../../lib/constants';
 
 interface Conversation {
@@ -31,7 +30,7 @@ interface ChatMessage {
 
 declare global { interface Window { __ws?: WebSocket } }
 
-export function MessagesPage({ onViewChange }: { onViewChange?: (v: ViewType) => void }) {
+export function MessagesPage() {
   const { user } = useAuth();
   const { selectedBusiness } = useBusiness();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -128,8 +127,6 @@ export function MessagesPage({ onViewChange }: { onViewChange?: (v: ViewType) =>
     setNewMsg('');
     setTimeout(loadConvos, 500);
   };
-
-  const ws = window.__ws;
 
   return (
     <Box sx={{ display: 'flex', gap: 2, height: { xs: 'auto', md: 'calc(100vh - 160px)' }, flexDirection: { xs: 'column', md: 'row' }, p: { xs: 1, sm: 2 } }}>

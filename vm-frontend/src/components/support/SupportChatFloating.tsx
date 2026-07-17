@@ -21,7 +21,7 @@ const QUICK_ACTIONS = [
 export function SupportChatFloating() {
   const {
     open, setOpen, messages, sessions, loading, sessionId, isEscalated,
-    sendMessage, resetChat, escalate, switchSession,
+    sendMessage, escalate, switchSession,
   } = useSupportChat();
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);

@@ -25,8 +25,6 @@ import {
 } from 'lucide-react';
 import type { ProposedChange } from './AICreationStudio';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { useAuth } from '../../contexts/AuthContext';
-
 import { graphqlRequest, uploadFile } from '../../lib/api';
 import { AIResponseRenderer } from '../ai-response/AIResponseRenderer';
 
@@ -191,7 +189,6 @@ function CreativeProposalPreview({ proposal }: { proposal: PendingCreativePropos
 
 export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPanelProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
-  const { user } = useAuth();
   const [open, setOpen] = useState(mode === 'page');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');

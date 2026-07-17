@@ -54,8 +54,7 @@ function formatDate(s: string) {
   return new Date(s).toLocaleDateString('en-GB');
 }
 
-export function MarketplacePage({ onViewChange }: { onViewChange?: (v: ViewType) => void }) {
-  const { user } = useAuth();
+export function MarketplacePage() {
   const [tab, setTab] = useState(0);
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -87,7 +86,7 @@ export function MarketplacePage({ onViewChange }: { onViewChange?: (v: ViewType)
   useEffect(() => { load(); }, [load]);
 
   const createBooking = async () => {
-    if (!user || !bookingProvider || !bookingTitle) return;
+    if (!bookingProvider || !bookingTitle) return;
     setBookingSaving(true);
     try {
       await q('mutation M($p:ID!,$t:String!,$d:String){createBooking(providerId:$p projectTitle:$t description:$d){id}}', {

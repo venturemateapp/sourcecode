@@ -43,6 +43,8 @@ const viewTitles: Record<ViewType, string> = {
   'market-research': 'Market Research',
   'financial-forecast': 'Financial Forecast',
   crm: 'CRM',
+  invoices: 'Invoices',
+  expenditure: 'Expenditure',
   banking: 'Banking',
   social: 'Social Media',
   marketplace: 'Marketplace',

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Box, Typography, Card, Tabs, Tab, Chip, Avatar, Dialog, DialogTitle, DialogContent,
-  TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Tooltip, Button, CircularProgress,
+  TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Tooltip, CircularProgress,
 } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';

@@ -230,7 +230,6 @@ export function SocialPage({ onViewChange }: { onViewChange?: (v: ViewType) => v
     );
   }
 
-  const activeBrand = brands.find(b => b.id === activeBrandId);
   const meta = PLATFORM_META[selectedNetwork] || { label: selectedNetwork, color: 'var(--vm-text-primary)' };
 
   return (

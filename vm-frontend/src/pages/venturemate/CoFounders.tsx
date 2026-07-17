@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab, Dialog, DialogTitle, DialogContent, CircularProgress } from '@mui/material';
 import {
-  Search, MapPin, Check, X, Clock, MessageSquare, Code, UserPlus, Briefcase, Globe, Star,
+  Search, MapPin, MessageSquare, UserPlus, Briefcase,
 } from 'lucide-react';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
-import { useAuth } from '../../contexts/AuthContext';
 import type { ViewType } from '../../types/venturemate';
 
 interface Investor {
@@ -28,11 +27,9 @@ interface CofounderProfile {
 }
 
 export function CoFoundersPage({ onViewChange }: { onViewChange: (view: ViewType) => void }) {
-  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [profiles, setProfiles] = useState<CofounderProfile[]>([]);
-  const [investors, setInvestors] = useState<Investor[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<CofounderProfile | null>(null);
 
@@ -42,9 +39,7 @@ export function CoFoundersPage({ onViewChange }: { onViewChange: (view: ViewType
     const load = async () => {
       try {
         const d = await q<{ investors: Investor[] }>('query { investors { id name type location } }');
-        setInvestors(d.investors);
-
-        const mapped: CofounderProfile[] = d.investors.map((inv, i) => ({
+        const mapped: CofounderProfile[] = d.investors.map((inv) => ({
           id: inv.id,
           name: inv.name,
           title: inv.type === 'vc' ? 'Venture Capital' : inv.type === 'angel' ? 'Angel Investor' : inv.type === 'accelerator' ? 'Accelerator Partner' : 'Investment Partner',

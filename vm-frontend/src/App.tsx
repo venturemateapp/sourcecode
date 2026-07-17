@@ -43,7 +43,7 @@ import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { AIProviderProvider } from './contexts/AIProviderContext';
-import { SupportChatProvider, useSupportChat } from './contexts/SupportChatContext';
+import { SupportChatProvider } from './contexts/SupportChatContext';
 import { SupportChatFloating } from './components/support/SupportChatFloating';
 import type { ViewType } from './types/venturemate';
 import {
@@ -235,7 +235,7 @@ function VentureMateApp() {
       case 'settings':
         return <SettingsPage />;
       case 'crm':
-        return <CRMPage onViewChange={handleViewChange} />;
+        return <CRMPage />;
       case 'invoices':
         return <InvoicesPage />;
       case 'expenditure':
@@ -245,7 +245,7 @@ function VentureMateApp() {
       case 'social':
         return <SocialPage />;
       case 'marketplace':
-        return <MarketplacePage onViewChange={handleViewChange} />;
+        return <MarketplacePage />;
       case 'credit-score':
         return <CreditScorePage onViewChange={handleViewChange} />;
       case 'health-score':

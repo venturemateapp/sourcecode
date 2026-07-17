@@ -1,14 +1,13 @@
-import React from "react";
 import {
   Box, Typography, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Avatar,
 } from "@mui/material";
-import { Sparkles, Check, X } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { parseAIResponse } from "./types";
 
-interface Props { text: string; onConfirm?: (action: string) => void; onCancel?: () => void; }
+interface Props { text: string; }
 
-export function AIResponseRenderer({ text, onConfirm, onCancel }: Props) {
+export function AIResponseRenderer({ text }: Props) {
   const parsed = parseAIResponse(text);
 
   if (!parsed) return <PlainText text={text} />;
