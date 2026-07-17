@@ -45,6 +45,14 @@ func scanInvoices(rows pgx.Rows) ([]Invoice, error) {
 	return list, nil
 }
 
+func (r *Repository) ListAll(ctx context.Context) ([]Invoice, error) {
+	rows, err := r.db.Query(ctx, listQuery+" ORDER BY created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	return scanInvoices(rows)
+}
+
 func (r *Repository) ListByBusiness(ctx context.Context, businessID string) ([]Invoice, error) {
 	rows, err := r.db.Query(ctx, listQuery+" WHERE business_id = $1 ORDER BY created_at DESC", businessID)
 	if err != nil {

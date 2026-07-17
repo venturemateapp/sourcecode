@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, useMediaQuery, useTheme, Tooltip } from '@mui/material';
-import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle, Search, X, Filter, ChevronDown, MoreHorizontal, Phone, Clock, CheckCheck } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, XCircle, CheckCircle, Search, X, Filter, ChevronDown, MoreHorizontal, Phone, Clock, CheckCheck, FileText, Receipt } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
@@ -20,6 +20,8 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; des
   { key: 'broadcast', icon: Bell, label: 'Broadcast', desc: 'Push notifications' },
   { key: 'support', icon: MessageCircle, label: 'Support', desc: 'Chat sessions' },
   { key: 'banking', icon: Landmark, label: 'Banking', desc: 'Bank accounts' },
+  { key: 'registrations', icon: FileText, label: 'Registrations', desc: 'Business registrations' },
+  { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
 ];
 
 interface DashboardData {
@@ -107,6 +109,8 @@ export function AdminDashboard() {
   const [supportMessages, setSupportMessages] = useState<Array<{ id: string; sessionId: string; role: string; content: string; createdAt: string }>>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [bankAccounts, setBankAccounts] = useState<Array<{ id: string; userId: string; businessId: string; bankName: string; accountType: string; accountNumber: string; accountName: string; currency: string; status: string; createdAt: string }>>([]);
+  const [registrations, setRegistrations] = useState<Array<{ id: string; businessId: string; userId: string; registrationType: string; status: string; legalName: string; ownerName: string; ownerEmail: string; ownerPhone: string; addressCity: string; addressCountry: string; adminNotes: string; createdAt: string }>>([]);
+  const [adminInvoices, setAdminInvoices] = useState<Array<{ id: string; userId: string; businessId: string; invoiceNumber: string; customerName: string; amount: number; currency: string; status: string; dueDate: string; createdAt: string }>>([]);
 
   useEffect(() => {
     if (!user?.isAdmin) { navigate('/vm', { replace: true }); }
@@ -157,6 +161,14 @@ export function AdminDashboard() {
     try { const d = await graphqlRequest<{ allBankAccounts: typeof bankAccounts }>('query { allBankAccounts { id userId businessId bankName accountType accountNumber accountName currency status createdAt } }'); setBankAccounts(d.allBankAccounts); } catch { /* ignore */ }
   }, []);
 
+  const loadRegistrations = useCallback(async () => {
+    try { const d = await graphqlRequest<{ adminRegistrations: typeof registrations }>('query { adminRegistrations { id businessId userId registrationType status legalName ownerName ownerEmail ownerPhone addressCity addressCountry adminNotes createdAt } }'); setRegistrations(d.adminRegistrations); } catch { /* ignore */ }
+  }, []);
+
+  const loadAdminInvoices = useCallback(async () => {
+    try { const d = await graphqlRequest<{ adminInvoices: string }>('query { adminInvoices }'); setAdminInvoices(JSON.parse(d.adminInvoices)); } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => { if (view === 'dashboard') loadData(); }, [view, loadData]);
   useEffect(() => { if (view === 'users') loadUsers(); }, [view, loadUsers]);
   useEffect(() => { if (view === 'businesses') loadBiz(); }, [view, loadBiz]);
@@ -166,6 +178,8 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'bookings') loadBookings(); }, [view, loadBookings]);
   useEffect(() => { if (view === 'support') { loadSupport(); setSelectedSession(null); setSupportMessages([]); } }, [view, loadSupport]);
   useEffect(() => { if (view === 'banking') loadBankAccounts(); }, [view, loadBankAccounts]);
+  useEffect(() => { if (view === 'registrations') loadRegistrations(); }, [view, loadRegistrations]);
+  useEffect(() => { if (view === 'invoices') loadAdminInvoices(); }, [view, loadAdminInvoices]);
 
   const exec = async (mutation: string, vars: Record<string, unknown>) => {
     setBusy(true); try { await graphqlRequest(mutation, vars); } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
@@ -735,6 +749,119 @@ export function AdminDashboard() {
     </Card>
   );
 
+  const renderRegistrations = () => (
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <FileText size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Business Registrations <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({registrations.length})</Typography></Typography>
+      </Box>
+      {registrations.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No registrations submitted yet.</Typography>}
+      <Box sx={{ overflow: 'auto' }}>
+        <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+          <Box component="thead">
+            <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+              {['Legal Name', 'Type', 'Owner', 'Email', 'Location', 'Status', 'Actions'].map(h => (
+                <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {registrations.map(r => (
+              <Box key={r.id} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{r.legalName}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Chip label={r.registrationType} size="small" sx={{ bgcolor: 'rgba(139,92,246,.12)', color: '#a78bfa', fontSize: 10, fontWeight: 600 }} />
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12 }}>{r.ownerName}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>{r.ownerEmail}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>{r.addressCity}, {r.addressCountry}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <StatusBadge status={r.status} />
+                </Box>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  {r.status === 'pending' ? (
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Approve">
+                        <IconButton size="small" sx={{ color: '#34d399' }} onClick={async () => { await exec(`mutation { adminApproveRegistration(id:"${r.id}") { id status } }`, {}); loadRegistrations(); }}>
+                          <CheckCircle size={16} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Reject">
+                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={async () => { await exec(`mutation { adminRejectRegistration(id:"${r.id}") { id status } }`, {}); loadRegistrations(); }}>
+                          <XCircle size={16} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  ) : (
+                    <Typography sx={{ color: 'rgba(255,255,255,.2)', fontSize: 11 }}>—</Typography>
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </Card>
+  );
+
+  const renderAdminInvoices = () => (
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Receipt size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Invoices <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({adminInvoices.length})</Typography></Typography>
+      </Box>
+      {adminInvoices.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No invoices yet.</Typography>}
+      <Box sx={{ overflow: 'auto' }}>
+        <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+          <Box component="thead">
+            <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+              {['Invoice #', 'Customer', 'Amount', 'Due Date', 'Status', 'Actions'].map(h => (
+                <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {adminInvoices.map(inv => (
+              <Box key={inv.id} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.invoiceNumber}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12 }}>{inv.customerName}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'var(--vm-primary-400)', fontSize: 13, fontWeight: 700 }}>{inv.currency} {inv.amount?.toLocaleString()}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('en-GB') : '—'}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  <StatusBadge status={inv.status} />
+                </Box>
+                <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                  <Box sx={{ display: 'flex', gap: 0.25 }}>
+                    {['paid', 'sent', 'overdue', 'cancelled'].filter(s => s !== inv.status).slice(0, 2).map(s => (
+                      <Chip key={s} size="small" label={s} onClick={async () => { await exec(`mutation { adminUpdateInvoiceStatus(id:"${inv.id}",status:"${s}") }`, {}); loadAdminInvoices(); }}
+                        sx={{ fontSize: 9, bgcolor: s === 'paid' ? 'rgba(52,211,153,.15)' : s === 'cancelled' ? 'rgba(239,68,68,.15)' : 'rgba(255,255,255,.06)', color: s === 'paid' ? '#34d399' : s === 'cancelled' ? '#ef4444' : 'rgba(255,255,255,.5)', cursor: 'pointer', height: 20 }} />
+                    ))}
+                  </Box>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </Card>
+  );
+
   const renderSupport = () => (
     <Box sx={{ display: 'flex', gap: 2, height: { xs: 'auto', md: 'calc(100vh - 180px)' }, flexDirection: { xs: 'column', md: 'row' } }}>
       <Card sx={{ width: { xs: '100%', md: 340 }, flexShrink: 0, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', backdropFilter: 'blur(12px)', maxHeight: { xs: 300, md: 'none' } }}>
@@ -801,6 +928,8 @@ export function AdminDashboard() {
       case 'broadcast': return renderBroadcast();
       case 'support': return renderSupport();
       case 'banking': return renderBanking();
+      case 'registrations': return renderRegistrations();
+      case 'invoices': return renderAdminInvoices();
       default: return null;
     }
   };
@@ -810,7 +939,7 @@ export function AdminDashboard() {
   const titles: Record<AdminView, string> = {
     dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans',
     investors: 'Investors', providers: 'Providers', bookings: 'Bookings',
-    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking',
+    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking', registrations: 'Registrations', invoices: 'Invoices',
   };
   const subtitles: Record<AdminView, string> = {
     dashboard: 'Platform performance at a glance',
@@ -824,6 +953,8 @@ export function AdminDashboard() {
     broadcast: 'Send push notifications to all users',
     support: 'AI support chat sessions and escalations',
     banking: 'User-submitted bank accounts for approval',
+    registrations: 'Business registration submissions from users',
+    invoices: 'All invoices across all businesses',
   };
 
   return (
