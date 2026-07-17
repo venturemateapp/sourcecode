@@ -356,27 +356,24 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
         const creativePrompt = pendingProposal
           ? `${prompt}\n\nRevise the pending ${creativeDomain} proposal below. Preserve everything I did not ask to change.\nPending proposal JSON:\n${pendingProposal.change.newValue}`
           : prompt;
-        const data = await graphqlRequest<ProposalResponse>(PROPOSE_MUTATION, {
-          userId,
-          businessId: selectedBusiness.id,
-          prompt: creativePrompt,
-          domain: creativeDomain,
-        });
-        const response = data.proposeAgentAction;
-        const proposal = response.proposals?.[0];
-        if (!proposal) {
-          setMessages(current => [...current, {
-            id: `${Date.now()}-assistant`,
-            role: 'assistant',
-            content: response.message || 'I can help with that. Could you describe what you\'d like to change more specifically?',
-          }]);
-        } else {
-          setPendingProposal({ domain: creativeDomain, change: proposal });
-          setMessages(current => [...current, {
-            id: `${Date.now()}-assistant`,
-            role: 'assistant',
-            content: response.message || 'I prepared a version for your review. Tell me what to adjust, ask for another option, or approve it.',
-          }]);
+        try {
+          const data = await graphqlRequest<ProposalResponse>(PROPOSE_MUTATION, {
+            userId, businessId: selectedBusiness.id, prompt: creativePrompt, domain: creativeDomain,
+          });
+          const response = data.proposeAgentAction;
+          const proposal = response.proposals?.[0];
+          if (!proposal) {
+            setMessages(current => [...current, { id: `${Date.now()}-assistant`, role: 'assistant', content: response.message || 'I can help with that.' }]);
+          } else {
+            setPendingProposal({ domain: creativeDomain, change: proposal });
+            setMessages(current => [...current, { id: `${Date.now()}-assistant`, role: 'assistant', content: response.message || 'I prepared a version for your review.' }]);
+          }
+        } catch {
+          // Fall back to regular AI query if propose fails
+          const data = await graphqlRequest<AgentResponse>(EXECUTE_AGENT_MUTATION, { userId, businessId: selectedBusiness.id, prompt, domain, history });
+          const response = data.executeAgentQuery;
+          setMessages(current => [...current, { id: `${Date.now()}-assistant`, role: 'assistant', content: response.message, operations: response.operations || [] }]);
+          if ((response.operations || []).some(o => o.success)) { await refreshBusiness(); window.dispatchEvent(new CustomEvent('venturemate:ai-data-changed', { detail: { businessId: selectedBusiness.id, domain } })); }
         }
       } else {
         const data = await graphqlRequest<AgentResponse>(EXECUTE_AGENT_MUTATION, {
