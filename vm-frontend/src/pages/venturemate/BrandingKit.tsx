@@ -381,7 +381,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
           {/* After brand kit exists, show step-by-step picker */}
           {(hasApprovedBrand || proposedBrand) && palettes.length > 0 && step === 'colors' && (
             <Card sx={{ p: 2.5, mb: 2, borderRadius: 3, border: '1px solid var(--vm-border-subtle)' }}>
-              <ColorPickerStep palettes={palettes} selected={selectedColorIdx} onSelect={setSelectedColorIdx} businessName={selectedBusiness.name} primary={fullBrand.primaryColor} />
+              <ColorPickerStep palettes={palettes} selected={selectedColorIdx} onSelect={setSelectedColorIdx} />
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="contained" endIcon={<ChevronRight size={16} />} onClick={advanceStep}>Next: Typography</Button>
               </Box>
