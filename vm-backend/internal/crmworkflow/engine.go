@@ -13,6 +13,33 @@ import (
 	"github.com/venturemate/vmbackend/internal/email"
 )
 
+type Trigger struct {
+	ID           string `json:"id"`
+	WorkflowID   string `json:"workflowId"`
+	TriggerType  string `json:"triggerType"`
+	TargetObject string `json:"targetObject"`
+	Conditions   string `json:"conditions"`
+}
+
+type Action struct {
+	ID           string `json:"id"`
+	WorkflowID   string `json:"workflowId"`
+	ActionType   string `json:"actionType"`
+	ActionConfig string `json:"actionConfig"`
+	SortOrder    int    `json:"sortOrder"`
+}
+
+type ActionConfig struct {
+	To       string                 `json:"to,omitempty"`
+	Subject  string                 `json:"subject,omitempty"`
+	Body     string                 `json:"body,omitempty"`
+	ObjectName string               `json:"objectName,omitempty"`
+	Fields   map[string]interface{} `json:"fields,omitempty"`
+	RecordID string                 `json:"recordId,omitempty"`
+	URL      string                 `json:"url,omitempty"`
+	Method   string                 `json:"method,omitempty"`
+}
+
 type Engine struct {
 	repo      *Repository
 	db        *pgxpool.Pool
