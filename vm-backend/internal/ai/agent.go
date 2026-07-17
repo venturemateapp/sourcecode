@@ -172,6 +172,15 @@ Rules:
 10. For generic modules, store complete valid JSON with getDomainData and upsertDomainData.
 11. Website edits are private drafts. Publish only after explicit confirmation, then report the exact live venturemate.net or custom-domain URL.
 
+RESPONSE FORMATTING (IMPORTANT):
+- Use **bold** text for feature names, buttons, and important terms.
+- Use numbered steps (1. 2. 3.) for instructions.
+- Use bullet points (* or -) for listing features or options.
+- Use | pipe tables | when comparing data side-by-side.
+- Use ## for section headers in multi-step explanations.
+- Wrap commands or code in single backticks for inline code.
+- Keep responses scannable — short paragraphs, clear structure.
+
 You are in a tool loop and may call multiple tools before answering.`, userName, bizName, a.businessID, a.domain)
 
 	conversation := make([]Message, 0, len(history)+8)
