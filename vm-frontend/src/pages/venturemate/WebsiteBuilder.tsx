@@ -97,88 +97,323 @@ function text(content: Record<string, unknown> | undefined, ...keys: string[]) {
   return '';
 }
 
+function renderFeatures(content: Record<string, unknown>, primary: string) {
+  const features = (Array.isArray(content.features) ? content.features : []) as Array<Record<string, unknown>>;
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: { xs: 1, sm: 1.5 }, mt: 1.5 }}>
+      {features.slice(0, 6).map((f, i) => (
+        <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', transition: 'all .2s', '&:hover': { bgcolor: 'rgba(255,255,255,.06)', transform: 'translateY(-2px)' } }}>
+          {String(f.icon || '') && <Box sx={{ width: 32, height: 32, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${primary}20`, mb: 1, fontSize: 16 }}>✦</Box>}
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: { xs: 13, sm: 14 } }}>{String(f.title || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: { xs: 11, sm: 12 }, mt: 0.5, lineHeight: 1.6 }}>{String(f.description || '')}</Typography>
+        </Box>
+      ))}
+      {!features.length && <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>{String(content.subtitle || '')}</Typography>}
+    </Box>
+  );
+}
+
+function renderTestimonials(content: Record<string, unknown>, primary: string) {
+  const items = (Array.isArray(content.testimonials) ? content.testimonials : []) as Array<Record<string, unknown>>;
+  if (!items.length) return null;
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: { xs: 1, sm: 1.5 } }}>
+      {items.slice(0, 6).map((t, i) => (
+        <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
+          <Box sx={{ color: primary, fontSize: 18, lineHeight: 1, mb: 0.5 }}>“</Box>
+          <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 11, sm: 12 }, lineHeight: 1.7, fontStyle: 'italic' }}>{String(t.quote || t.content || '')}</Typography>
+          <Box sx={{ mt: 1.5, borderTop: '1px solid rgba(255,255,255,.06)', pt: 1 }}>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12 }}>{String(t.author || t.name || '')}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>{String(t.role || '')}</Typography>
+          </Box>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function renderPricing(content: Record<string, unknown>, primary: string) {
+  const items = (Array.isArray(content.items) ? content.items : []) as Array<Record<string, unknown>>;
+  if (!items.length) return null;
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: { xs: 1, sm: 1.5 }, mt: 1.5 }}>
+      {items.slice(0, 6).map((p, i) => (
+        <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: i === 1 ? `${primary}10` : 'rgba(255,255,255,.03)', border: i === 1 ? `1px solid ${primary}40` : '1px solid rgba(255,255,255,.06)', position: 'relative' }}>
+          {i === 1 && <Box sx={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', px: 1.5, py: 0.25, bgcolor: primary, color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '0 0 6px 6px', textTransform: 'uppercase' }}>Popular</Box>}
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 15 }}>{String(p.name || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 11, mt: 0.25 }}>{String(p.description || '')}</Typography>
+          <Typography sx={{ color: 'white', fontSize: { xs: 22, sm: 28 }, fontWeight: 900, mt: 1 }}>{String(p.price || '')}</Typography>
+          {Array.isArray(p.features) && (
+            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {p.features.slice(0, 5).map((f: any, fi: number) => (
+                <Typography key={fi} sx={{ color: 'rgba(255,255,255,.7)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box component="span" sx={{ color: '#22c55e' }}>✓</Box> {String(f)}
+                </Typography>
+              ))}
+            </Box>
+          )}
+          <Box sx={{ mt: 1.5, px: 2, py: 0.75, borderRadius: 1.5, bgcolor: primary, color: '#fff', fontWeight: 700, fontSize: 11, textAlign: 'center', cursor: 'default', display: String(p.cta || '') ? 'block' : 'none' }}>{String(p.cta || '')}</Box>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function renderTeam(content: Record<string, unknown>, primary: string) {
+  const items = (Array.isArray(content.items) ? content.items : []) as Array<Record<string, unknown>>;
+  if (!items.length) return null;
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: { xs: 1, sm: 1.5 } }}>
+      {items.slice(0, 6).map((t, i) => (
+        <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', textAlign: 'center' }}>
+          <Box sx={{ width: 48, height: 48, borderRadius: '50%', bgcolor: `${primary}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 1, color: primary, fontSize: 16, fontWeight: 700 }}>
+            {String(String(t.name || '?')[0] || '?').toUpperCase()}
+          </Box>
+          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13 }}>{String(t.name || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>{String(t.role || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: 11, mt: 0.5, lineHeight: 1.5 }}>{String(t.bio || '')}</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function renderFAQ(content: Record<string, unknown>) {
+  const items = (Array.isArray(content.items) ? content.items : []) as Array<Record<string, unknown>>;
+  if (!items.length) return null;
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+      {items.slice(0, 8).map((f, i) => (
+        <Box key={i} sx={{ p: { xs: 1.25, sm: 1.5 }, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)' }}>
+          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13 }}>{String(f.question || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, mt: 0.5, lineHeight: 1.6 }}>{String(f.answer || '')}</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function renderStats(content: Record<string, unknown>, primary: string) {
+  const stats = (Array.isArray(content.stats) ? content.stats : []) as Array<Record<string, unknown>>;
+  if (!stats.length) return null;
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: { xs: 1, sm: 1.5 }, mt: 1.5 }}>
+      {stats.slice(0, 8).map((s, i) => (
+        <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', textAlign: 'center' }}>
+          <Typography sx={{ color: primary, fontSize: { xs: 22, sm: 30 }, fontWeight: 900 }}>{String(s.value || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 11, mt: 0.25 }}>{String(s.label || '')}</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function renderCarousel(content: Record<string, unknown>, primary: string) {
+  const items = (Array.isArray(content.items) ? content.items : (Array.isArray(content.slides) ? content.slides : [])) as Array<Record<string, unknown>>;
+  if (!items.length) return null;
+  return (
+    <Box sx={{ mt: 1.5, display: 'flex', gap: 1.25, overflowX: 'auto', pb: 1, scrollSnapType: 'x mandatory', '&::-webkit-scrollbar': { height: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: `${primary}40`, borderRadius: 2 } }}>
+      {items.slice(0, 8).map((item, i) => (
+        <Box key={i} sx={{ minWidth: { xs: '80%', sm: 320 }, scrollSnapAlign: 'start', p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
+          {item.image !== undefined && <Box component="img" src={String(item.image)} alt="" sx={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: 1, mb: 1 }} />}
+          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{String(item.title || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, mt: 0.5, lineHeight: 1.6 }}>{String(item.description || item.content || '')}</Typography>
+          <Typography sx={{ color: primary, fontSize: 11, fontWeight: 700, mt: 0.75, cursor: 'default', display: item.cta !== undefined ? 'block' : 'none' }}>{String(item.cta || '')} →</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function SectionLabel({ label, color }: { label: string; color: string }) {
+  return (
+    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.35, borderRadius: 1, bgcolor: `${color}15`, mb: 1.5 }}>
+      <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: color }} />
+      <Typography sx={{ color, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</Typography>
+    </Box>
+  );
+}
+
 function SitePreview({ draft, businessName, tagline, logo, proposed = false }: { draft: WebsiteDraft; businessName: string; tagline: string; logo?: string; proposed?: boolean }) {
   const styles = draft.globalStyles || {};
-  const primary = styles.primaryColor || '#10b981';
-  const secondary = styles.secondaryColor || '#059669';
-  const dark = styles.darkColor || '#052e24';
+  const primary = styles.primaryColor || '#0ea5e9';
+  const dark = styles.darkColor || '#0f172a';
+  const fontBody = styles.fontBody || 'Inter';
   const page = draft.pages?.find(item => item.isHome || item.slug === '/') || draft.pages?.[0];
-  const sections = (page?.sections || []).filter(section => section.visible !== false);
+  const sections = (page?.sections || []).filter(s => s.visible !== false);
 
   return (
-    <Box sx={{ border: proposed ? '1px solid var(--vm-primary-500)' : '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden', bgcolor: '#07130f' }}>
-      <Box sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25, display: 'flex', alignItems: 'center', gap: 1.25, bgcolor: dark, borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-        {logo ? <Box component="img" src={logo} alt="Business logo" sx={{ width: 34, height: 34, objectFit: 'contain', borderRadius: 1 }} /> : <Globe2 size={24} color={primary} />}
-        <Typography sx={{ color: 'white', fontWeight: 900, flex: 1 }}>{businessName}</Typography>
-        <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 1.5 }}>
-          {(draft.navigation?.items || []).slice(0, 5).map(item => <Typography key={`${item.label}-${item.href}`} sx={{ color: 'rgba(255,255,255,.72)', fontSize: 11 }}>{item.label}</Typography>)}
+    <Box sx={{
+      border: proposed ? '1px solid var(--vm-primary-500)' : '1px solid var(--vm-border-subtle)',
+      borderRadius: 3, overflow: 'hidden',
+      fontFamily: `'${fontBody}', sans-serif`,
+    }}>
+      {/* Navigation */}
+      <Box sx={{
+        px: { xs: 2, sm: 4 }, py: { xs: 1.5, sm: 2 },
+        display: 'flex', alignItems: 'center', gap: 2,
+        bgcolor: dark,
+        borderBottom: '1px solid rgba(255,255,255,.06)',
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {logo ? <Box component="img" src={logo} sx={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 0.5 }} /> : <Box sx={{ width: 28, height: 28, borderRadius: 0.5, bgcolor: primary }} />}
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14 }}>{businessName}</Typography>
+        </Box>
+        <Box sx={{ flex: 1 }} />
+        <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 2 }}>
+          {(draft.navigation?.items || []).slice(0, 5).map(item => (
+            <Typography key={`${item.label}-${item.href}`} sx={{ color: 'rgba(255,255,255,.65)', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', cursor: 'default', '&:hover': { color: primary } }}>{item.label}</Typography>
+          ))}
         </Box>
       </Box>
 
+      {/* Sections */}
       {sections.length === 0 ? (
         <Box sx={{ minHeight: 360, display: 'grid', placeItems: 'center', p: 3, background: `radial-gradient(circle at 75% 20%, ${primary}55, transparent 30%), linear-gradient(135deg, ${dark}, #07130f)` }}>
           <Box sx={{ textAlign: 'center', maxWidth: 650 }}>
             <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42 }, fontWeight: 950 }}>{tagline || businessName}</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.7)', mt: 1 }}>AI will generate the full page structure and content here.</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.7)', mt: 1 }}>AI generates the full page structure here.</Typography>
           </Box>
         </Box>
       ) : sections.map((section, index) => {
         const content = section.props || section.content || {};
-        const heading = text(content, 'headline', 'title', 'heading') || `${section.type || 'Website'} section`;
+        const heading = text(content, 'headline', 'title', 'heading');
         const body = text(content, 'subheadline', 'body', 'description', 'text');
-        const isHero = section.type === 'hero';
-        if (isHero) {
-          return (
-            <Box key={section.id || index} sx={{ minHeight: 360, p: { xs: 3, sm: 6 }, display: 'grid', placeItems: 'center', textAlign: 'center', background: `radial-gradient(circle at 75% 20%, ${primary}66, transparent 32%), linear-gradient(135deg, ${dark}, #07130f)` }}>
-              <Box sx={{ maxWidth: 760 }}>
-                {logo && <Box component="img" src={logo} alt="" sx={{ width: 84, height: 84, objectFit: 'contain', mb: 2 }} />}
-                <Typography sx={{ color: 'white', fontSize: { xs: 30, sm: 48 }, fontWeight: 950, lineHeight: 1.05 }}>{heading}</Typography>
-                {body && <Typography sx={{ color: 'rgba(255,255,255,.75)', fontSize: { xs: 13, sm: 16 }, lineHeight: 1.7, mt: 1.5 }}>{body}</Typography>}
-                <Box sx={{ mt: 2.5, display: 'inline-flex', px: 2.25, py: 1.1, borderRadius: 999, bgcolor: primary, color: 'white', fontWeight: 900, fontSize: 12 }}>{text(content, 'primaryCta', 'buttonText', 'cta') || 'Learn More'}</Box>
-              </Box>
-            </Box>
-          );
-        }
-        if (section.type === 'carousel') {
-          const items = (Array.isArray(content.items) ? content.items : Array.isArray(content.slides) ? content.slides : []) as Array<Record<string, unknown>>;
-          return (
-            <Box key={section.id || index} sx={{ p: { xs: 2.5, sm: 4 }, bgcolor: '#081710', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-              <Typography sx={{ color: secondary, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 900 }}>Carousel</Typography>
-              <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 27 }, fontWeight: 900, mt: 0.5 }}>{heading}</Typography>
-              {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: 13, lineHeight: 1.75, mt: 1 }}>{body}</Typography>}
-              <Box sx={{ mt: 2, display: 'grid', gridAutoFlow: 'column', gridAutoColumns: { xs: '84%', sm: '44%' }, gap: 1.25, overflowX: 'auto', scrollSnapType: 'x mandatory', pb: 1 }}>
-                {items.map((item, itemIndex) => (
-                  <Card key={itemIndex} sx={{ overflow: 'hidden', scrollSnapAlign: 'start', bgcolor: 'rgba(255,255,255,.045)', border: '1px solid rgba(255,255,255,.09)', borderRadius: 2.5 }}>
-                    {typeof item.image === 'string' && item.image && <Box component="img" src={item.image} alt="" sx={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover' }} />}
-                    <Box sx={{ p: 1.75 }}>
-                      <Typography sx={{ color: 'white', fontWeight: 900, fontSize: 14 }}>{typeof item.title === 'string' ? item.title : `Slide ${itemIndex + 1}`}</Typography>
-                      <Typography sx={{ color: 'rgba(255,255,255,.68)', fontSize: 12, lineHeight: 1.65, mt: 0.75 }}>{typeof item.description === 'string' ? item.description : typeof item.content === 'string' ? item.content : ''}</Typography>
+        const isAlt = index % 2 === 1;
+        const bg = isAlt ? `${dark}88` : '#07130f';
+        const renderChildren = () => {
+          switch (section.type) {
+            case 'hero':
+              return (
+                <Box sx={{
+                  minHeight: { xs: 320, sm: 420 }, p: { xs: 3, sm: 6 },
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                  background: `radial-gradient(ellipse at 50% 30%, ${primary}30, transparent 60%), radial-gradient(circle at 80% 80%, ${primary}15, transparent 40%), linear-gradient(135deg, ${dark}, #07130f)`,
+                  position: 'relative', overflow: 'hidden',
+                  '&::before': { content: '""', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,.03), transparent 50%)', pointerEvents: 'none' },
+                }}>
+                  <Box sx={{ maxWidth: 720, position: 'relative', zIndex: 1 }}>
+                    {logo && <Box component="img" src={logo} alt="" sx={{ width: { xs: 56, sm: 72 }, height: { xs: 56, sm: 72 }, objectFit: 'contain', mb: { xs: 1.5, sm: 2.5 }, mx: 'auto', display: 'block' }} />}
+                    <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42, md: 52 }, fontWeight: 950, lineHeight: 1.05, letterSpacing: '-.02em' }}>{heading || businessName}</Typography>
+                    {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 14, sm: 17 }, lineHeight: 1.7, mt: { xs: 1.5, sm: 2 }, maxWidth: 580, mx: 'auto' }}>{body}</Typography>}
+                    <Box sx={{ mt: { xs: 2, sm: 3 }, display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 0.75, sm: 1 }, borderRadius: 999, bgcolor: primary, color: '#fff', fontWeight: 800, fontSize: { xs: 12, sm: 13 } }}>{text(content, 'primaryCta', 'cta') || 'Get Started'}</Box>
+                      {text(content, 'secondaryCta') && <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 0.75, sm: 1 }, borderRadius: 999, border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.7)', fontWeight: 600, fontSize: { xs: 12, sm: 13 } }}>{text(content, 'secondaryCta')}</Box>}
                     </Box>
-                  </Card>
-                ))}
-              </Box>
-            </Box>
-          );
-        }
+                  </Box>
+                </Box>
+              );
+            case 'features':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="Features" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, maxWidth: 600 }}>{body}</Typography>}
+                  {renderFeatures(content, primary)}
+                </Box>
+              );
+            case 'testimonials':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="Testimonials" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {renderTestimonials(content, primary)}
+                </Box>
+              );
+            case 'pricing':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="Pricing" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {renderPricing(content, primary)}
+                </Box>
+              );
+            case 'team':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="Team" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {renderTeam(content, primary)}
+                </Box>
+              );
+            case 'stats':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="Stats" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, textAlign: 'center' }}>{heading}</Typography>}
+                  {renderStats(content, primary)}
+                </Box>
+              );
+            case 'faq':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="FAQ" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {renderFAQ(content)}
+                </Box>
+              );
+            case 'carousel':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="Highlights" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {renderCarousel(content, primary)}
+                </Box>
+              );
+            case 'contact':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="Contact" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Box sx={{ px: 2.5, py: 0.75, borderRadius: 999, bgcolor: primary, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'default' }}>Send Message</Box>
+                  </Box>
+                </Box>
+              );
+            case 'cta':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 5 }, textAlign: 'center', background: `linear-gradient(135deg, ${dark}, ${primary}22)` }}>
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 22, sm: 34 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 14, mt: 1, maxWidth: 520, mx: 'auto' }}>{body}</Typography>}
+                  <Box sx={{ mt: 2, display: 'inline-flex', px: 3, py: 1, borderRadius: 999, bgcolor: primary, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'default' }}>{text(content, 'cta') || 'Get Started'}</Box>
+                </Box>
+              );
+            case 'about':
+            case 'about-us':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  <SectionLabel label="About" color={primary} />
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  <Typography sx={{ color: 'rgba(255,255,255,.65)', fontSize: { xs: 13, sm: 14 }, mt: 1.5, lineHeight: 1.8, maxWidth: 720 }}>{content.content ? String(content.content) : body}</Typography>
+                </Box>
+              );
+            default:
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+                  {section.type && <SectionLabel label={section.type} color={primary} />}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.65)', fontSize: 13, lineHeight: 1.7, mt: 1 }}>{body}</Typography>}
+                </Box>
+              );
+          }
+        };
         return (
-          <Box key={section.id || index} sx={{ p: { xs: 2.5, sm: 4 }, bgcolor: index % 2 ? '#0b2118' : '#081710', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-            <Typography sx={{ color: secondary, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.12em', fontWeight: 900 }}>{section.type}</Typography>
-            <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 27 }, fontWeight: 900, mt: 0.5 }}>{heading}</Typography>
-            {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: 13, lineHeight: 1.75, mt: 1, maxWidth: 820 }}>{body}</Typography>}
-            {Array.isArray(content.items) && (
-              <Box sx={{ mt: 1.5, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1 }}>
-                {(content.items as unknown[]).slice(0, 6).map((item, itemIndex) => (
-                  <Card key={itemIndex} sx={{ p: 1.5, bgcolor: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: 'white' }}>
-                    <Typography sx={{ color: 'white', fontSize: 12 }}>{typeof item === 'string' ? item : JSON.stringify(item)}</Typography>
-                  </Card>
-                ))}
-              </Box>
-            )}
+          <Box key={section.id || index} sx={{ bgcolor: bg }}>
+            {renderChildren()}
           </Box>
         );
       })}
-      <Box sx={{ p: 2, textAlign: 'center', bgcolor: dark, color: 'rgba(255,255,255,.55)', fontSize: 11 }}>
-        {typeof draft.footer?.customText === 'string' ? draft.footer.customText : `© ${new Date().getFullYear()} ${businessName}`}
+
+      {/* Footer */}
+      <Box sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center', bgcolor: dark, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+        <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>
+          {typeof draft.footer?.customText === 'string' ? draft.footer.customText : `© ${new Date().getFullYear()} ${businessName}`}
+        </Typography>
       </Box>
     </Box>
   );
