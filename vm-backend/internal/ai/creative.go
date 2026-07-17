@@ -281,8 +281,10 @@ The newValue must be a COMPLETE JSON object with:
 - Generate EXACTLY 3 color palettes with different moods
 - Generate EXACTLY 3 typography pairs with distinct personalities
 - Every SVG must be a valid standalone <svg> element with viewBox="0 0 128 128"
-- SVG REQUIREMENTS: Use brand colors as fills/strokes in the SVG. Logo must use the brand palette colors (primary, secondary, accent). Apply colors through fill="..." and stroke="..." attributes. Use gradients only where specified. Ensure SVG renders correctly on both light and dark backgrounds.
+- SVG CONTRAST (CRITICAL): Logos MUST be visible on BOTH white and black backgrounds. Never use colors that disappear on dark backgrounds. Text in SVG must use a color with at least 4.5:1 contrast ratio against any background. Avoid pure black (#000000) or pure white (#FFFFFF) for primary text — use near-black (#1a1a1a) or near-white (#f0f0f0) instead. Logo mark must be recognizable in both light and dark contexts.
+- SVG COLOR RULES: Use brand palette colors (primary, secondary, accent) as fill="..." and stroke="..." attributes. Every fill color must be tested mentally against both white and dark backgrounds. If a color is very light (like #B3D4E0), ensure there's a dark outline or dark secondary element so the logo works on white backgrounds. If a color is very dark (like #0A1628), ensure there's a light accent element so the logo works on dark backgrounds.
 - COLOR QUALITY: Every color in the palette must be distinct and harmonious. Primary color should be versatile (works on white AND dark backgrounds). Secondary complements primary. Accent provides pop. Include hex values that are valid (#RRGGBB format).
+- VALID XML: Every opening tag must have a closing tag. No unescaped ampersands in text content (use &amp;). SVG must parse without errors.
 - Preserve any existing brand values the user did not ask to change
 - Never ask the user to upload a logo`, brandingDesignRules)
 	case "business-plan":
