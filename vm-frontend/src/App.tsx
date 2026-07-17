@@ -20,6 +20,7 @@ import { AIAssistant } from './pages/venturemate/AIAssistant';
 import { CRMPage } from './pages/venturemate/CRM';
 import { CompaniesPage } from './pages/venturemate/Companies';
 import { EmailSettingsPage } from './pages/venturemate/EmailSettings';
+import { CalendarPage } from './pages/venturemate/CalendarPage';
 import { InvoicesPage } from './pages/venturemate/Invoices';
 import { ExpenditurePage } from './pages/venturemate/Expenditure';
 import { BankingPage } from './pages/venturemate/Banking';
@@ -238,6 +239,8 @@ function VentureMateApp() {
         return <SettingsPage />;
       case 'email-settings':
         return <EmailSettingsPage />;
+      case 'calendar':
+        return <CalendarPage />;
       case 'crm':
         return <CRMPage />;
       case 'companies':

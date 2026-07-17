@@ -44,6 +44,7 @@ import {
   Lightbulb,
   BarChart3,
   Calculator,
+  Calendar,
   Settings,
   LogOut,
   Shield,
@@ -73,6 +74,7 @@ const iconMap: Record<string, React.ComponentType<{ size?: number; className?: s
   Lightbulb,
   BarChart3,
   Calculator,
+  Calendar,
   Settings,
   LogOut,
   Shield,
@@ -132,6 +134,7 @@ const navSections: NavSection[] = [
     title: 'ACCOUNT',
     items: [
       { label: 'Settings', icon: 'Settings', view: 'settings' },
+      { label: 'Calendar', icon: 'Calendar', view: 'calendar' },
       { label: 'Email Sync', icon: 'Mail', view: 'email-settings' },
     ],
   },

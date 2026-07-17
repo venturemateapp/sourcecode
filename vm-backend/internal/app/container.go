@@ -14,6 +14,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/chat"
 	"github.com/venturemate/vmbackend/internal/crmemail"
 	"github.com/venturemate/vmbackend/internal/crm"
+	"github.com/venturemate/vmbackend/internal/crmcalendar"
 	"github.com/venturemate/vmbackend/internal/db"
 	"github.com/venturemate/vmbackend/internal/expenditure"
 	"github.com/venturemate/vmbackend/internal/invoicepdf"
@@ -74,6 +75,8 @@ type Container struct {
 	InvoicePdfGenerator  *invoicepdf.Generator
 	EmailSyncRepo        *crmemail.Repository
 	EmailSyncService     *crmemail.SyncService
+	CalendarRepo         *crmcalendar.Repository
+	CalendarSyncService  *crmcalendar.SyncService
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
 	AiChatRepo          *aichat.Repository
@@ -121,6 +124,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	aiChatRepo := aichat.NewRepository(dbPool)
 	emailSyncRepo := crmemail.NewRepository(dbPool)
 	emailSyncSvc := crmemail.NewSyncService(emailSyncRepo)
+	calendarRepo := crmcalendar.NewRepository(dbPool)
+	calendarSyncSvc := crmcalendar.NewSyncService(calendarRepo)
 	expenditureRepo := expenditure.NewRepository(dbPool)
 	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
@@ -207,6 +212,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		InvoicePdfGenerator:  invoicePdfGen,
 		EmailSyncRepo:        emailSyncRepo,
 		EmailSyncService:     emailSyncSvc,
+		CalendarRepo:         calendarRepo,
+		CalendarSyncService:  calendarSyncSvc,
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,
 		AiChatRepo:          aiChatRepo,

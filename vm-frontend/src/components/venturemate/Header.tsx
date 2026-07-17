@@ -72,6 +72,7 @@ const viewTitles: Record<ViewType, string> = {
   profile: 'Profile',
   billing: 'Billing',
   settings: 'Settings',
+  calendar: 'Calendar',
   'email-settings': 'Email Sync',
 };
 
