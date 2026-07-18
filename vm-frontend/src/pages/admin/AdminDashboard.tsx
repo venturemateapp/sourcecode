@@ -529,6 +529,7 @@ export function AdminDashboard() {
     </Card>
   );
 
+  const [activeModal, setActiveModal] = useState<string | null>(null);
   const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
 
   const renderInvestors = () => (
@@ -537,7 +538,7 @@ export function AdminDashboard() {
         <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
           <Globe size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({investors.length})</Typography></Typography>
-          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: 'Invests in...' })}>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('investor'); setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: 'Invests in...' }); }}>
             Add Investor
           </GradientButton>
         </Box>
@@ -559,7 +560,7 @@ export function AdminDashboard() {
           </Box>
         ))}
       </Card>
-      <Dialog open={!!invForm.name} onClose={() => setInvForm({...invForm, name: ''})} maxWidth="sm" fullWidth
+      <Dialog open={activeModal === 'investor'} onClose={() => setActiveModal(null)} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
         <DialogContent sx={{ pt: 3.5 }}>
@@ -575,10 +576,10 @@ export function AdminDashboard() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' })}>Cancel</GradientButton>
+          <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={busy} onClick={async () => {
             await exec(`mutation { adminUpsertInvestor(id:"${invForm.id || crypto.randomUUID()}",name:"${invForm.name.replace(/"/g,'\\"')}",type:"${invForm.type}",location:"${invForm.location.replace(/"/g,'\\"')}",focusIndustries:"${JSON.stringify(invForm.industries.split(',').map(s=>s.trim()))}",thesis:"${invForm.thesis.replace(/"/g,'\\"')}") }`, {});
-            setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
+            setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
           }}>Save</GradientButton>
         </DialogActions>
       </Dialog>
@@ -637,7 +638,7 @@ export function AdminDashboard() {
           <Briefcase size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Providers <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({providers.length})</Typography></Typography>
           <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />}
-            onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, skills: '' })}>Add Provider</GradientButton>
+            onClick={() => { setActiveModal('provider'); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, skills: '' }); }}>Add Provider</GradientButton>
         </Box>
         {loadProv && <CardSkeleton count={4} type="table-row" />}
         {!loadProv && providers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No providers yet.</Typography>}
@@ -656,7 +657,7 @@ export function AdminDashboard() {
           </Box>
         ))}
       </Card>
-      <Dialog open={!!provForm.name} onClose={() => setProvForm({...provForm, name: ''})} maxWidth="sm" fullWidth
+      <Dialog open={activeModal === 'provider'} onClose={() => setActiveModal(null)} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>New Provider</DialogTitle>
         <DialogContent sx={{ pt: 3.5 }}>
@@ -689,10 +690,10 @@ export function AdminDashboard() {
             sx={{ mt: 2, textarea: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' })}>Cancel</GradientButton>
+          <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={busy || !provForm.name} onClick={async () => {
             await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim()))}") { id } }`, {});
-            setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+            setActiveModal(null); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
           }}>Save</GradientButton>
         </DialogActions>
       </Dialog>
@@ -917,7 +918,7 @@ export function AdminDashboard() {
         <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
           <DollarSign size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Financing Offers <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({financingOffers.length})</Typography></Typography>
-          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 100000, minRate: 5, maxRate: 15, termMonths: 12, requirements: '[]' })}>Add Offer</GradientButton>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('financing'); setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 100000, minRate: 5, maxRate: 15, termMonths: 12, requirements: '[]' }); }}>Add Offer</GradientButton>
         </Box>
         {financingOffers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No financing offers yet.</Typography>}
         <Box sx={{ overflow: 'auto' }}>
@@ -953,7 +954,7 @@ export function AdminDashboard() {
                   <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
                       <Tooltip title="Edit">
-                        <IconButton size="small" sx={{ color: '#f59e0b' }} onClick={() => setFinancingForm({ id: o.id, lenderName: o.lenderName, productType: o.productType, minAmount: o.minAmount, maxAmount: o.maxAmount, minRate: o.minRate, maxRate: o.maxRate, termMonths: o.termMonths, requirements: o.requirements })}>
+                        <IconButton size="small" sx={{ color: '#f59e0b' }} onClick={() => { setActiveModal('financing'); setFinancingForm({ id: o.id, lenderName: o.lenderName, productType: o.productType, minAmount: o.minAmount, maxAmount: o.maxAmount, minRate: o.minRate, maxRate: o.maxRate, termMonths: o.termMonths, requirements: o.requirements }); }}>
                           <FileText size={14} />
                         </IconButton>
                       </Tooltip>
@@ -970,7 +971,7 @@ export function AdminDashboard() {
           </Box>
         </Box>
       </Card>
-      <Dialog open={!!financingForm.lenderName && !financingForm.lenderName.startsWith('__init')} onClose={() => setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' })}
+      <Dialog open={activeModal === 'financing'} onClose={() => setActiveModal(null)}
         maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3 } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{financingForm.id ? 'Edit' : 'New'} Financing Offer</DialogTitle>
         <DialogContent sx={{ pt: 3.5 }}>
@@ -996,14 +997,14 @@ export function AdminDashboard() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' })}>Cancel</GradientButton>
+          <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={busy || !financingForm.lenderName} onClick={async () => {
             if (financingForm.id) {
               await exec(`mutation { adminUpdateFinancingOffer(id:"${financingForm.id}",lenderName:"${financingForm.lenderName.replace(/"/g,'\\"')}",productType:"${financingForm.productType}",minAmount:${financingForm.minAmount},maxAmount:${financingForm.maxAmount},minRate:${financingForm.minRate},maxRate:${financingForm.maxRate},termMonths:${financingForm.termMonths},requirements:"${financingForm.requirements.replace(/"/g,'\\"')}",isActive:true) }`, {});
             } else {
               await exec(`mutation { adminCreateFinancingOffer(lenderName:"${financingForm.lenderName.replace(/"/g,'\\"')}",productType:"${financingForm.productType}",minAmount:${financingForm.minAmount},maxAmount:${financingForm.maxAmount},minRate:${financingForm.minRate},maxRate:${financingForm.maxRate},termMonths:${financingForm.termMonths},requirements:"${financingForm.requirements.replace(/"/g,'\\"')}") }`, {});
             }
-            setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' });
+            setActiveModal(null); setFinancingForm({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' });
             loadFinancingOffers();
           }}>{busy ? <CircularProgress size={14} /> : financingForm.id ? 'Update' : 'Create'}</GradientButton>
         </DialogActions>
