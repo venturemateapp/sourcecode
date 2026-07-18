@@ -227,6 +227,7 @@ export interface Document {
   name: string;
   type: 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'image' | 'other';
   size: string;
+  sizeBytes: number;
   url: string;
   category: 'legal' | 'financial' | 'marketing' | 'product' | 'hr' | 'other';
   uploadedBy: string;

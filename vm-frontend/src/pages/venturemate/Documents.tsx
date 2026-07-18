@@ -160,13 +160,17 @@ export function DocumentsPage(_props: DocumentsProps) {
   const stats = useMemo(() => {
     if (!selectedBusiness) return null;
     const docs = selectedBusiness.documents || [];
-    const totalSize = docs.reduce((acc, doc) => {
-      const size = parseFloat(doc.size);
-      return acc + (isNaN(size) ? 0 : size);
+    const totalBytes = docs.reduce((acc, doc) => {
+      return acc + ((doc as any).sizeBytes || 0);
     }, 0);
+    const totalSize = totalBytes >= 1073741824
+      ? `${(totalBytes / 1073741824).toFixed(1)} GB`
+      : totalBytes >= 1048576
+        ? `${(totalBytes / 1048576).toFixed(1)} MB`
+        : `${(totalBytes / 1024).toFixed(1)} KB`;
     return {
       totalDocuments: docs.length,
-      totalSize: `${totalSize.toFixed(1)} MB`,
+      totalSize,
       byCategory: documentCategories.map(cat => ({
         category: cat.id,
         count: docs.filter(d => d.category === cat.id).length,
