@@ -14,7 +14,6 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import type { ViewType } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { useCurrency } from '../../contexts/CurrencyContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 
 interface DashboardProps {
@@ -24,7 +23,6 @@ interface DashboardProps {
 export function Dashboard({ onViewChange }: DashboardProps) {
    const { user } = useAuth();
    const { businesses, selectedBusiness: activeBusiness } = useBusiness();
-   const { format } = useCurrency();
    const { usage, subscription } = useSubscription();
    const b = activeBusiness;
 
@@ -318,30 +316,30 @@ const statsCards = b ? [
 
 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: '16px', mb: 3 }}>
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
-                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>MRR</Typography>
+                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Team</Typography>
 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
-                    {format(activeBusiness.financials?.revenue?.currentMRR ?? 0)}
+                    {activeBusiness.team?.length ?? 0}
                   </Typography>
                </div>
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
-                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Users</Typography>
+                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Milestones</Typography>
 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
-                     {activeBusiness.metrics?.totalUsers ?? 0}
-                   </Typography>
-                </div>
-                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Retention</Typography>
+                    {activeBusiness.milestones?.length ?? 0}
+                  </Typography>
+               </div>
+               <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
+                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Documents</Typography>
 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
-                     {activeBusiness.metrics?.retentionRate ?? 0}%
-                   </Typography>
-                </div>
-                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Runway</Typography>
+                    {activeBusiness.documents?.length ?? 0}
+                  </Typography>
+               </div>
+               <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
+                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Slides</Typography>
 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
-                     {activeBusiness.financials?.runway ?? 0} mo
-                   </Typography>
-                </div>
-              </Box>
+                    {activeBusiness.pitchDeck?.slides?.length ?? 0}
+                  </Typography>
+               </div>
+             </Box>
 
             <Box sx={{ display: 'flex', gap: 2 }}>
 <Box
