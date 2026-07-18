@@ -210,7 +210,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const token = getToken()
   const jwt = token ? decodeToken(token) : null
-  const planName = jwt?.subscription_plan || 'free'
+  const jwtPlanName = jwt?.subscription_plan || 'free'
+  const planName = subscription?.plan?.name || jwtPlanName
   const isFree = planName === 'free'
   const isStarter = planName === 'starter'
   const isGrowth = planName === 'growth'
