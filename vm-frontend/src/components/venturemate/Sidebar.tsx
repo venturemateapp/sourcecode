@@ -52,7 +52,6 @@ const NAV_SECTIONS: NavSection[] = [
   { title: 'AI TOOLS', items: [
   ]},
   { title: 'ACCOUNT', items: [
-    { label: 'Profile', icon: 'UserCircle', view: 'profile' as ViewType },
     { label: 'Billing', icon: 'CreditCard', view: 'billing' as ViewType },
     { label: 'Settings', icon: 'Settings', view: 'settings' as ViewType },
     { label: 'Email Settings', icon: 'Mail', view: 'email-settings' as ViewType },

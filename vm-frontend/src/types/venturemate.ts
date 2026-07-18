@@ -582,7 +582,6 @@ export type ViewType =
   | 'credit-score'
   | 'health-score'
   | 'account'
-  | 'profile'
   | 'billing'
   | 'settings'
   | 'email-settings'

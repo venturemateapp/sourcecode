@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, IconButton, Avatar, Badge, Menu, MenuItem, ListItemText, Divider, Tooltip, Button } from '@mui/material';
-import { Person, Settings as SettingsIcon, Logout } from '@mui/icons-material';
+import { Person, Logout } from '@mui/icons-material';
 import { Menu as MenuIcon, Bell, BellRing, Search, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -23,7 +23,7 @@ const viewTitles: Record<ViewType, string> = {
   'ai-tools': 'AI Tools', 'generate-idea': 'Generate Idea', 'market-research': 'Market Research',
   'financial-forecast': 'Financial Forecast', crm: 'CRM', companies: 'Companies', invoices: 'Invoices',
   expenditure: 'Expenses', banking: 'Banking', social: 'Social', marketplace: 'Marketplace',
-  'credit-score': 'Credit Score', 'health-score': 'Health Score', account: 'Account', profile: 'Profile',
+  'credit-score': 'Credit Score', 'health-score': 'Health Score', account: 'Account',
   billing: 'Billing', settings: 'Settings', 'email-settings': 'Email Settings', calendar: 'Calendar',
   'custom-objects': 'Custom Objects', workflows: 'Workflows', dashboards: 'Dashboards',
 };
@@ -169,12 +169,8 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }} anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         slotProps={{ paper: { sx: { bgcolor: '#0a1a14', border: '1px solid rgba(255,255,255,.08)', borderRadius: 2.5, minWidth: 200, mt: 1 }}}}
       >
-        <MenuItem onClick={() => { setUserMenuAnchor(null); navigate('/vm/profile'); }} sx={{ gap: 1.5, py: 1 }}>
-          <Person fontSize="small" sx={{ color: 'rgba(255,255,255,.5)' }} />
-          <ListItemText primary="Profile" primaryTypographyProps={{ fontSize: 12, fontWeight: 600 }} />
-        </MenuItem>
         <MenuItem onClick={() => { setUserMenuAnchor(null); navigate('/vm/settings'); }} sx={{ gap: 1.5, py: 1 }}>
-          <SettingsIcon fontSize="small" sx={{ color: 'rgba(255,255,255,.5)' }} />
+          <Person fontSize="small" sx={{ color: 'rgba(255,255,255,.5)' }} />
           <ListItemText primary="Settings" primaryTypographyProps={{ fontSize: 12, fontWeight: 600 }} />
         </MenuItem>
         <Divider sx={{ borderColor: 'rgba(255,255,255,.06)' }} />

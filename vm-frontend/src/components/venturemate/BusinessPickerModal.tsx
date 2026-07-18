@@ -52,7 +52,6 @@ const viewTitles: Record<ViewType, string> = {
   'credit-score': 'Credit Score',
   'health-score': 'Health Score',
   account: 'Account',
-  profile: 'Profile',
   billing: 'Billing',
   settings: 'Settings',
   calendar: 'Calendar',

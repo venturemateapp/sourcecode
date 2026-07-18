@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Box, Typography, Card, TextField, Button, Avatar, CircularProgress } from '@mui/material';
+import { Box, Typography, Card } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { VentureMateLayout } from './layouts/VentureMateLayout';
@@ -51,16 +51,10 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 import { AIProviderProvider } from './contexts/AIProviderContext';
 import { SupportChatProvider } from './contexts/SupportChatContext';
 import { SupportChatFloating } from './components/support/SupportChatFloating';
-import { useAuth } from './contexts/AuthContext';
 import type { ViewType } from './types/venturemate';
 import {
   TrendingUp,
   Lightbulb,
-  Mail,
-  MapPin,
-  Globe,
-  ExternalLink,
-  Save,
 } from 'lucide-react';
 
 // Placeholder component for pages under development
@@ -165,111 +159,6 @@ function BusinessOverview() {
 
 
 
-// Profile Page
-function ProfilePage() {
-  const { user, updateProfile, loading } = useAuth();
-  const [firstName, setFirstName] = useState('');
-  const [surname, setSurname] = useState('');
-  const [bio, setBio] = useState('');
-  const [city, setCity] = useState('');
-  const [linkedIn, setLinkedIn] = useState('');
-  const [twitter, setTwitter] = useState('');
-  const [website, setWebsite] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setFirstName(user.firstName || '');
-      setSurname(user.lastName || '');
-      setBio(user.bio || '');
-      setCity(user.location || '');
-      setLinkedIn(user.linkedIn || '');
-      setTwitter(user.twitter || '');
-      setWebsite(user.website || '');
-    }
-  }, [user]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    try {
-      await updateProfile({ firstName, lastName: surname, bio, location: city, linkedIn, twitter, website });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch { /* ignore */ }
-    setSaving(false);
-  };
-
-  if (!user) {
-    return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  return (
-    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, maxWidth: 680, mx: 'auto' }}>
-      <Typography sx={{ fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 3 }}>
-        Profile
-      </Typography>
-
-      <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, md: 4 }, mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 4 }}>
-          <Avatar src={user.avatar} sx={{ width: 72, height: 72, bgcolor: 'var(--vm-primary-600)', fontSize: 28 }}>
-            {user.firstName?.[0]}{user.lastName?.[0]}
-          </Avatar>
-          <Box>
-            <Typography sx={{ fontSize: 18, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-              {user.firstName} {user.lastName}
-            </Typography>
-            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-              <Mail size={13} /> {user.email}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            <TextField label="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} size="small" fullWidth
-              sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-tertiary)' } }} />
-            <TextField label="Last Name" value={surname} onChange={e => setSurname(e.target.value)} size="small" fullWidth
-              sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-tertiary)' } }} />
-          </Box>
-          <TextField label="Bio" value={bio} onChange={e => setBio(e.target.value)} size="small" fullWidth multiline rows={2}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-tertiary)' } }} />
-          <TextField label="Location" value={city} onChange={e => setCity(e.target.value)} size="small" fullWidth
-            InputProps={{ startAdornment: <MapPin size={14} style={{ marginRight: 8, opacity: 0.5 }} /> }}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-tertiary)' } }} />
-          <TextField label="LinkedIn URL" value={linkedIn} onChange={e => setLinkedIn(e.target.value)} size="small" fullWidth
-            InputProps={{ startAdornment: <ExternalLink size={14} style={{ marginRight: 8, opacity: 0.5 }} /> }}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-tertiary)' } }} />
-          <TextField label="Twitter / X URL" value={twitter} onChange={e => setTwitter(e.target.value)} size="small" fullWidth
-            InputProps={{ startAdornment: <ExternalLink size={14} style={{ marginRight: 8, opacity: 0.5 }} /> }}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-tertiary)' } }} />
-          <TextField label="Website" value={website} onChange={e => setWebsite(e.target.value)} size="small" fullWidth
-            InputProps={{ startAdornment: <Globe size={14} style={{ marginRight: 8, opacity: 0.5 }} /> }}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'var(--vm-bg-tertiary)' } }} />
-        </Box>
-
-        <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button variant="contained" onClick={handleSave} disabled={saving || loading}
-            sx={{ bgcolor: 'var(--vm-primary-600)', '&:hover': { bgcolor: 'var(--vm-primary-500)' }, textTransform: 'none', fontWeight: 700, px: 4 }}>
-            {saving ? <CircularProgress size={16} sx={{ mr: 1 }} /> : <Save size={16} style={{ marginRight: 8 }} />}
-            Save Changes
-          </Button>
-          {saved && (
-            <Typography sx={{ fontSize: 13, color: '#22c55e', fontWeight: 600 }}>
-              Profile saved successfully
-            </Typography>
-          )}
-        </Box>
-      </Card>
-    </Box>
-  );
-}
-
 
 
 function VentureMateApp() {
@@ -314,8 +203,6 @@ function VentureMateApp() {
         return <CoFoundersPage onViewChange={handleViewChange} />;
       case 'messages':
         return <MessagesPage />;
-      case 'profile':
-        return <ProfilePage />;
       case 'business-plan':
         return <BusinessPlan />;
       case 'branding-kit':
