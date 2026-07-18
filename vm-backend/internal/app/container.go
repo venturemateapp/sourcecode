@@ -30,6 +30,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/notifications"
 	"github.com/venturemate/vmbackend/internal/oauth"
 	"github.com/venturemate/vmbackend/internal/rates"
+	"github.com/venturemate/vmbackend/internal/recraft"
 	"github.com/venturemate/vmbackend/internal/registrations"
 	"github.com/venturemate/vmbackend/internal/s3"
 	"github.com/venturemate/vmbackend/internal/scores"
@@ -61,6 +62,7 @@ type Container struct {
 	ScoreEngine         *scores.Engine
 	HealthEngine        *scores.HealthEngine
 	RateService         *rates.Service
+	RecraftClient       *recraft.Client
 	GeminiAPIKey        string
 	OpenAIAPIKey        string
 	ClaudeAPIKey        string
@@ -149,6 +151,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
 	currencyAPIKey := os.Getenv("CURRENCY_API_KEY")
 	rateService := rates.NewService(currencyAPIKey)
+	recraftClient := recraft.NewClient()
 
 	notificationSvc := notifications.NewService(notificationRepo, emailSvc)
 
@@ -213,6 +216,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		ScoreEngine:         scoreEngine,
 		HealthEngine:        healthEngine,
 		RateService:         rateService,
+		RecraftClient:       recraftClient,
 		JWTSecret:           jwtSecret,
 		GeminiAPIKey:        geminiKey,
 		OpenAIAPIKey:        openAIKey,

@@ -20,10 +20,11 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
-        env:
+          env:
           VM_GITHUB_TOKEN: ${{ secrets.VM_GITHUB_TOKEN }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           CURRENCY_API_KEY: ${{ secrets.CURRENCY_API_KEY }}
+          RECRAFT_API_KEY: ${{ secrets.RECRAFT_API_KEY }}
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
@@ -39,6 +40,7 @@ jobs:
             DEEPSEEK_API_KEY,DEEPSEEK_ENDPOINT,DEEPSEEK_MODEL,
             OPENROUTER_API_KEY,OPENROUTER_ENDPOINT,OPENROUTER_MODEL,
             CURRENCY_API_KEY,
+            RECRAFT_API_KEY,
             AI_PROVIDER,AI_ALLOW_PROVIDER_OVERRIDE,AI_FALLBACK_PROVIDERS,
             EMAIL_FROM_NAME,EMAIL_LOGO_URL,
             PUBLIC_SITE_BASE_DOMAIN,PUBLIC_SITE_CNAME_TARGET,
@@ -121,6 +123,7 @@ jobs:
             write_if_set VM_GITHUB_TOKEN
             write_if_set NETLIFY_AUTH_TOKEN
             write_if_set CURRENCY_API_KEY
+            write_if_set RECRAFT_API_KEY
 
             apply_default PORT "8080"
             apply_default DB_HOST "localhost"
