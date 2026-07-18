@@ -388,6 +388,32 @@ export function AdminDashboard() {
             ))}
           </Card>
         </Box>
+
+        {/* Plan Detail Cards */}
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 15, mb: 1.5, mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CreditCard size={16} color="#f59e0b" /> Plan Breakdown
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', lg: 'repeat(4,1fr)' }, gap: { xs: 1.5, sm: 2 }, mb: 3 }}>
+          {data.plansBreakdown.map(p => {
+            const planColors: Record<string, string> = { free: '#6b7280', starter: '#10b981', growth: '#3b82f6', scale: '#8b5cf6' };
+            const color = planColors[p.planName.toLowerCase()] || '#6b7280';
+            const total = data.plansBreakdown.reduce((a, b) => a + b.count, 0);
+            const pct = total ? Math.round((p.count / total) * 100) : 0;
+            return (
+              <Card key={p.planName} sx={{ p: 2.5, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, backdropFilter: 'blur(12px)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: color }} />
+                  <Typography sx={{ color: '#fff', fontSize: 14, fontWeight: 700, textTransform: 'capitalize', flex: 1 }}>{p.planName}</Typography>
+                  <Typography sx={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>{p.count}</Typography>
+                </Box>
+                <Box sx={{ height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,.05)', overflow: 'hidden', mb: 1 }}>
+                  <Box sx={{ height: '100%', borderRadius: 2, width: `${pct}%`, bgcolor: color, transition: 'width .6s ease' }} />
+                </Box>
+                <Chip size="small" label={`${pct}% of users`} sx={{ bgcolor: `${color}18`, color, fontSize: 9, fontWeight: 600 }} />
+              </Card>
+            );
+          })}
+        </Box>
       </>
     );
   };
