@@ -157,7 +157,7 @@ func (s *Service) AdminReply(ctx context.Context, sessionID, content string) (*M
 
 	session, err := s.repo.GetSession(ctx, sessionID)
 	if err == nil && session != nil && s.notif != nil {
-	url := fmt.Sprintf("/vm/messages?conv=%s", sessionID)
+	url := fmt.Sprintf("/vm?chat=%s", sessionID)
 	_, _ = s.notif.Notify(ctx, notifications.NotifyInput{
 		UserID:      session.UserID,
 		Type:        "support_reply",
