@@ -180,9 +180,9 @@ export function MilestonesPage() {
             </Typography>
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-              <Chip size="small" label={milestone.status} sx={{ bgcolor: `${getStatusColor(milestone.status)}20`, color: getStatusColor(milestone.status), fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
-              <Chip size="small" label={milestone.priority} sx={{ bgcolor: `${getPriorityColor(milestone.priority)}20`, color: getPriorityColor(milestone.priority), fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
-              <Chip size="small" label={milestone.category} sx={{ bgcolor: 'var(--vm-bg-tertiary)', color: 'var(--vm-text-secondary)', fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
+              <Chip size="small" label={milestone.status} sx={{ bgcolor: `${getStatusColor(milestone.status)}20`, color: getStatusColor(milestone.status), fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 } }} />
+              <Chip size="small" label={milestone.priority} sx={{ bgcolor: `${getPriorityColor(milestone.priority)}20`, color: getPriorityColor(milestone.priority), fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 } }} />
+              <Chip size="small" label={milestone.category} sx={{ bgcolor: 'var(--vm-bg-tertiary)', color: 'var(--vm-text-secondary)', fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 } }} />
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>

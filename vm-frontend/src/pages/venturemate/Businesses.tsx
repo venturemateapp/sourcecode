@@ -247,7 +247,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                     color: stageColors[business.stage],
                     fontWeight: 600,
                     fontSize: 10,
-                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                     maxWidth: '100%',
                   }}
                 />
@@ -259,7 +259,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                     color: business.status === 'active' ? '#4ade80' : 'var(--vm-text-muted)',
                     fontWeight: 600,
                     fontSize: 10,
-                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                     maxWidth: '100%',
                   }}
                 />
@@ -272,7 +272,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                       color: registrations[business.id].status === 'approved' ? '#60a5fa' : registrations[business.id].status === 'pending' ? '#f59e0b' : '#ef4444',
                       fontWeight: 600,
                       fontSize: 10,
-                      '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                      '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                       maxWidth: '100%',
                     }}
                   />

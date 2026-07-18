@@ -120,7 +120,7 @@ const statsCards = b ? [
                     color: stat.change.startsWith('+') || !isNaN(Number(stat.change[0])) ? '#4ade80' : 'var(--vm-text-secondary)',
                     fontSize: 11,
                     fontWeight: 600,
-                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                   }}
                 />
               </Box>

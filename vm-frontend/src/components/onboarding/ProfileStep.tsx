@@ -90,7 +90,7 @@ export function ProfileStep({ data, updateData }: ProfileStepProps) {
                   border: '1px solid',
                   borderColor: selected ? 'rgba(52, 211, 153, 0.4)' : 'rgba(255,255,255,0.1)',
                   maxWidth: '100%',
-                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                  '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                   '&:hover': {
                     bgcolor: selected ? 'rgba(52, 211, 153, 0.25)' : 'rgba(255,255,255,0.1)',
                   },

@@ -521,7 +521,7 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 0.75, maxWidth: '100%', alignItems: 'flex-start' }}>
               {QUICK_ACTIONS.map(action => (
-                <Chip key={action} size="small" label={action} onClick={() => setInput(action)} sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
+                <Chip key={action} size="small" label={action} onClick={() => setInput(action)} sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
               ))}
             </Box>
           </Box>
@@ -549,7 +549,7 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
               {message.attachments && message.attachments.length > 0 && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1, maxWidth: '100%' }}>
                   {message.attachments.map(file => (
-                    <Chip key={file.id} size="small" icon={file.type === 'image' ? <ImageIcon size={13} /> : <FileIcon size={13} />} label={file.name} sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
+                    <Chip key={file.id} size="small" icon={file.type === 'image' ? <ImageIcon size={13} /> : <FileIcon size={13} />} label={file.name} sx={{ maxWidth: '100%', minWidth: 0, flexShrink: 1, height: 'auto', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, wordBreak: 'break-word', py: 0.5, lineHeight: 1.4 } }} />
                   ))}
                 </Box>
               )}

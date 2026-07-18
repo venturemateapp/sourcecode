@@ -63,7 +63,7 @@ export function BusinessStep({ data, updateData, industries }: BusinessStepProps
                 border: '1px solid',
                 borderColor: isSelected ? 'var(--vm-primary-500)' : 'var(--vm-border-primary)',
                 maxWidth: '100%',
-                '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                 cursor: 'pointer',
                 '&:hover': {
                   bgcolor: isSelected ? 'var(--vm-primary-500)' : 'var(--vm-bg-hover)',

@@ -318,7 +318,7 @@ export function TeamPage() {
                     bgcolor: 'var(--vm-bg-tertiary)',
                     color: 'var(--vm-text-secondary)',
                     fontSize: 11,
-                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                     maxWidth: '100%',
                   }}
                 />
@@ -332,7 +332,7 @@ export function TeamPage() {
                     bgcolor: 'var(--vm-bg-tertiary)',
                     color: 'var(--vm-text-muted)',
                     fontSize: 11,
-                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                   }}
                 />
               )}

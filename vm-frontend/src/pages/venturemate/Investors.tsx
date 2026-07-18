@@ -286,7 +286,7 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
                     color: 'var(--vm-text-secondary)',
                     fontSize: 10,
                     maxWidth: '100%',
-                    '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                    '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                   }}
                 />
               ))}

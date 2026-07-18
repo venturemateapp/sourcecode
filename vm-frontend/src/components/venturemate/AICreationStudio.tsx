@@ -307,7 +307,7 @@ export function AICreationStudio({
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {starterPrompts.map(item => (
               <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)}
-                sx={{ fontSize: 10, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,.08)' }, maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.25, lineHeight: 1.4 } }} />
+                sx={{ fontSize: 10, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,.08)' }, maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.25, lineHeight: 1.4 } }} />
             ))}
           </Box>
         </Box>

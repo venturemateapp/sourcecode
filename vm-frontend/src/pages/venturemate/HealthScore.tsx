@@ -354,7 +354,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                   fontSize: 10,
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5, overflowWrap: 'anywhere' },
+                  '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5, overflowWrap: 'anywhere' },
                 }}
               />
               <Chip
@@ -366,7 +366,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                   fontSize: 10,
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5, overflowWrap: 'anywhere' },
+                  '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5, overflowWrap: 'anywhere' },
                 }}
               />
             </Box>

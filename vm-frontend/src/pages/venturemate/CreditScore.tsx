@@ -512,7 +512,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                         color: 'var(--vm-text-muted)',
                         fontSize: 10,
                         maxWidth: '100%',
-                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                        '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                       }}
                     />
                   ))}

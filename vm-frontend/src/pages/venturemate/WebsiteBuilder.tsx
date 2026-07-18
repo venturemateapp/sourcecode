@@ -583,7 +583,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center' }}>
-              {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5, overflowWrap: 'anywhere' } }} />}
+              {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5, overflowWrap: 'anywhere' } }} />}
               {website.hasUnpublishedChanges && <Chip label="Unpublished changes" size="small" color="warning" />}
               {website.publicUrl && (
                 <Link href={website.publicUrl} target="_blank" rel="noreferrer" underline="none">

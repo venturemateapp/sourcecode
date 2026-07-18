@@ -223,7 +223,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                 color: selectedBusiness?.brandKit.primaryColor,
                 fontWeight: 600,
                 maxWidth: '100%',
-                '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
               }}
             />
           </Box>
@@ -455,7 +455,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                       fontSize: 10,
                       fontWeight: 600,
                       textTransform: 'capitalize',
-                      '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                      '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                     }}
                   />
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>{doc.size}</Typography>
@@ -529,7 +529,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                         fontWeight: 600,
                         textTransform: 'capitalize',
                         height: 20,
-                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                        '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                       }}
                     />
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>{doc.size}</Typography>
@@ -792,7 +792,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                       color: category?.color,
                       fontSize: 10,
                       textTransform: 'capitalize',
-                      '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                      '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
                     }}
                   />
                 </Card>
