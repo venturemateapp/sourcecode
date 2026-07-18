@@ -53,11 +53,19 @@ type ToolCall struct {
 	Args map[string]interface{} `json:"args"`
 }
 
+type TokenUsage struct {
+	InputTokens  int `json:"inputTokens"`
+	OutputTokens int `json:"outputTokens"`
+	TotalTokens  int `json:"totalTokens"`
+}
+
 type ProviderResponse struct {
-	Content   string     `json:"content"`
-	ToolCalls []ToolCall `json:"toolCalls,omitempty"`
-	Provider  string     `json:"provider,omitempty"`
-	Model     string     `json:"model,omitempty"`
+	Content      string       `json:"content"`
+	ToolCalls    []ToolCall   `json:"toolCalls,omitempty"`
+	Provider     string       `json:"provider,omitempty"`
+	Model        string       `json:"model,omitempty"`
+	TokenUsage   *TokenUsage  `json:"tokenUsage,omitempty"`
+	DurationMs   int64        `json:"durationMs,omitempty"`
 }
 
 type Provider interface {
@@ -260,9 +268,12 @@ type ollamaRequest struct {
 type ollamaResponse struct {
 	Message ollamaMessage `json:"message"`
 	Error   string        `json:"error,omitempty"`
+	PromptEvalCount int `json:"prompt_eval_count,omitempty"`
+	EvalCount       int `json:"eval_count,omitempty"`
 }
 
 func (p *ollamaProvider) Chat(ctx context.Context, systemPrompt string, messages []Message, tools []ToolDef) (*ProviderResponse, error) {
+	start := time.Now()
 	outputTokens := responseTokenLimit(ctx)
 	trimmed := trimMessages(systemPrompt, messages, outputTokens)
 	outMessages := make([]ollamaMessage, 0, len(trimmed)+1)
@@ -322,7 +333,14 @@ func (p *ollamaProvider) Chat(ctx context.Context, systemPrompt string, messages
 		return nil, errors.New(decoded.Error)
 	}
 
-	result := &ProviderResponse{Content: decoded.Message.Content, Provider: p.Name(), Model: p.Model()}
+	result := &ProviderResponse{Content: decoded.Message.Content, Provider: p.Name(), Model: p.Model(), DurationMs: time.Since(start).Milliseconds()}
+	if decoded.PromptEvalCount > 0 || decoded.EvalCount > 0 {
+		result.TokenUsage = &TokenUsage{
+			InputTokens:  decoded.PromptEvalCount,
+			OutputTokens: decoded.EvalCount,
+			TotalTokens:  decoded.PromptEvalCount + decoded.EvalCount,
+		}
+	}
 	for i, tc := range decoded.Message.ToolCalls {
 		result.ToolCalls = append(result.ToolCalls, ToolCall{
 			ID: fmt.Sprintf("ollama_call_%d_%d", time.Now().UnixNano(), i), Name: tc.Function.Name, Args: tc.Function.Arguments,
@@ -392,14 +410,22 @@ type openAIRequest struct {
 	MaxTokens   int             `json:"max_tokens,omitempty"`
 }
 
+type openAIUsage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
 type openAIResponse struct {
 	Choices []struct {
 		Message openAIMessage `json:"message"`
 	} `json:"choices"`
-	Error interface{} `json:"error,omitempty"`
+	Usage *openAIUsage `json:"usage,omitempty"`
+	Error interface{}  `json:"error,omitempty"`
 }
 
 func (p *openAICompatibleProvider) Chat(ctx context.Context, systemPrompt string, messages []Message, tools []ToolDef) (*ProviderResponse, error) {
+	start := time.Now()
 	if err := p.Health(ctx); err != nil {
 		return nil, err
 	}
@@ -451,7 +477,14 @@ func (p *openAICompatibleProvider) Chat(ctx context.Context, systemPrompt string
 	if len(decoded.Choices) == 0 {
 		return nil, fmt.Errorf("%s returned no choices", p.name)
 	}
-	result := &ProviderResponse{Content: decoded.Choices[0].Message.Content, Provider: p.Name(), Model: p.Model()}
+	result := &ProviderResponse{Content: decoded.Choices[0].Message.Content, Provider: p.Name(), Model: p.Model(), DurationMs: time.Since(start).Milliseconds()}
+	if decoded.Usage != nil {
+		result.TokenUsage = &TokenUsage{
+			InputTokens:  decoded.Usage.PromptTokens,
+			OutputTokens: decoded.Usage.CompletionTokens,
+			TotalTokens:  decoded.Usage.TotalTokens,
+		}
+	}
 	for _, tc := range decoded.Choices[0].Message.ToolCalls {
 		args := map[string]interface{}{}
 		if strings.TrimSpace(tc.Function.Arguments) != "" {
@@ -519,14 +552,22 @@ type geminiRequest struct {
 	Tools             []geminiTool           `json:"tools,omitempty"`
 	GenerationConfig  map[string]interface{} `json:"generationConfig,omitempty"`
 }
+type geminiUsageMetadata struct {
+	PromptTokenCount     int `json:"promptTokenCount"`
+	CandidatesTokenCount int `json:"candidatesTokenCount"`
+	TotalTokenCount      int `json:"totalTokenCount"`
+}
+
 type geminiResponse struct {
-	Candidates []struct {
+	Candidates    []struct {
 		Content geminiContent `json:"content"`
 	} `json:"candidates"`
-	Error interface{} `json:"error,omitempty"`
+	UsageMetadata *geminiUsageMetadata `json:"usageMetadata,omitempty"`
+	Error         interface{}          `json:"error,omitempty"`
 }
 
 func (p *geminiProvider) Chat(ctx context.Context, systemPrompt string, messages []Message, tools []ToolDef) (*ProviderResponse, error) {
+	start := time.Now()
 	if err := p.Health(ctx); err != nil {
 		return nil, err
 	}
@@ -594,7 +635,14 @@ func (p *geminiProvider) Chat(ctx context.Context, systemPrompt string, messages
 	if len(decoded.Candidates) == 0 {
 		return nil, errors.New("gemini returned no candidates")
 	}
-	result := &ProviderResponse{Provider: p.Name(), Model: p.Model()}
+	result := &ProviderResponse{Provider: p.Name(), Model: p.Model(), DurationMs: time.Since(start).Milliseconds()}
+	if decoded.UsageMetadata != nil {
+		result.TokenUsage = &TokenUsage{
+			InputTokens:  decoded.UsageMetadata.PromptTokenCount,
+			OutputTokens: decoded.UsageMetadata.CandidatesTokenCount,
+			TotalTokens:  decoded.UsageMetadata.TotalTokenCount,
+		}
+	}
 	for i, part := range decoded.Candidates[0].Content.Parts {
 		if part.Text != "" {
 			if result.Content != "" {
@@ -661,11 +709,18 @@ type claudeRequest struct {
 	Messages  []claudeMessage `json:"messages"`
 	Tools     []claudeTool    `json:"tools,omitempty"`
 }
+type claudeUsage struct {
+	InputTokens  int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+}
+
 type claudeResponse struct {
-	Content []claudeBlock `json:"content"`
+	Content     []claudeBlock `json:"content"`
+	Usage       *claudeUsage  `json:"usage,omitempty"`
 }
 
 func (p *claudeProvider) Chat(ctx context.Context, systemPrompt string, messages []Message, tools []ToolDef) (*ProviderResponse, error) {
+	start := time.Now()
 	if err := p.Health(ctx); err != nil {
 		return nil, err
 	}
@@ -714,7 +769,14 @@ func (p *claudeProvider) Chat(ctx context.Context, systemPrompt string, messages
 	if err := json.Unmarshal(respBody, &decoded); err != nil {
 		return nil, fmt.Errorf("claude response parse failed: %w", err)
 	}
-	result := &ProviderResponse{Provider: p.Name(), Model: p.Model()}
+	result := &ProviderResponse{Provider: p.Name(), Model: p.Model(), DurationMs: time.Since(start).Milliseconds()}
+	if decoded.Usage != nil {
+		result.TokenUsage = &TokenUsage{
+			InputTokens:  decoded.Usage.InputTokens,
+			OutputTokens: decoded.Usage.OutputTokens,
+			TotalTokens:  decoded.Usage.InputTokens + decoded.Usage.OutputTokens,
+		}
+	}
 	for _, block := range decoded.Content {
 		switch block.Type {
 		case "text":

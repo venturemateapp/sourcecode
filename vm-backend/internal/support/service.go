@@ -96,7 +96,7 @@ func (s *Service) Chat(ctx context.Context, userID, name, emailAddr, prompt, ses
 		aiReply = "I'm not sure how to handle that. Let me connect you with a human support agent who can help."
 	}
 
-	_, _ = s.repo.AddMessage(ctx, session.ID, "assistant", aiReply)
+	_, _ = s.repo.AddMessage(ctx, session.ID, "assistant", aiReply, WithProviderResponse(resp))
 
 	isEscalated := needsEscalation(prompt, aiReply)
 	if isEscalated {

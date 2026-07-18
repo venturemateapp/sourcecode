@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, useMediaQuery, useTheme, Tooltip } from '@mui/material';
-import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send, Brain } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { graphqlRequest } from '../../lib/api';
+import { AdminAiUsage } from './AdminAiUsage';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
@@ -24,6 +25,7 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; des
   { key: 'registrations', icon: FileText, label: 'Registrations', desc: 'Business registrations' },
   { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
   { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
+  { key: 'ai-usage', icon: Brain, label: 'AI Usage', desc: 'Token usage & interactions' },
 ];
 
 interface DashboardData {
@@ -1036,6 +1038,7 @@ export function AdminDashboard() {
       case 'registrations': return renderRegistrations();
       case 'invoices': return renderAdminInvoices();
       case 'financing': return renderFinancing();
+      case 'ai-usage': return <AdminAiUsage />;
       default: return null;
     }
   };
@@ -1045,7 +1048,8 @@ export function AdminDashboard() {
   const titles: Record<AdminView, string> = {
     dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans',
     investors: 'Investors', providers: 'Providers', bookings: 'Bookings',
-    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking', registrations: 'Registrations', invoices: 'Invoices', financing: 'Financing',
+    submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking', registrations: 'Registrations', invoices: 'Invoices',     financing: 'Financing',
+    'ai-usage': 'AI Usage',
   };
   const subtitles: Record<AdminView, string> = {
     dashboard: 'Platform performance at a glance',
@@ -1062,6 +1066,7 @@ export function AdminDashboard() {
     registrations: 'Business registration submissions from users',
     invoices: 'All invoices across all businesses',
     financing: 'Financing offers shown to users',
+    'ai-usage': 'AI token usage and provider interactions',
   };
 
   return (

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Box, Chip, Typography, ToggleButtonGroup, ToggleButton, IconButton } from '@mui/material';
-import { Presentation, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, Lightbulb, Shield, Menu, Star } from 'lucide-react';
+import { Presentation, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, Lightbulb, Shield, Menu, Star, Sparkles } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { SlideViewer } from '../../components/venturemate/SlideViewer';
+import { ModernPitchDeck } from '../../components/venturemate/ModernPitchDeck';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { PageHeader, GlassCard } from '../../components/shared';
@@ -83,6 +84,7 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
 export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) {
   const { selectedBusiness } = useBusiness();
   const [viewMode, setViewMode] = useState<'grid' | 'slide'>('slide');
+  const [designMode, setDesignMode] = useState<'classic' | 'premium'>('premium');
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its pitch deck with AI." />;
 
   const deck = selectedBusiness.pitchDeck;
@@ -109,7 +111,21 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
 
       {viewMode === 'slide' && hasDeck && (
         <GlassCard sx={{ p: { xs: 1.5, sm: 2 }, mb: 2 }}>
-          <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <ToggleButtonGroup size="small" value={designMode} onChange={(_, v) => v && setDesignMode(v)} exclusive sx={{ ml: 'auto' }}>
+              <ToggleButton value="classic" sx={{ color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' }, fontSize: 11, gap: 0.5 }}>
+                <Monitor size={13} /> Classic
+              </ToggleButton>
+              <ToggleButton value="premium" sx={{ color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: '#8b5cf6', bgcolor: 'rgba(139,92,246,.1)' }, fontSize: 11, gap: 0.5 }}>
+                <Sparkles size={13} /> Premium
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+          {designMode === 'premium' ? (
+            <ModernPitchDeck slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} accentColor={primary} />
+          ) : (
+            <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />
+          )}
         </GlassCard>
       )}
 
@@ -124,14 +140,24 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
         ]}
         emptyLabel="No approved pitch deck exists. Ask AI to create the first investor story."
         renderCurrent={() => {
-          if (viewMode === 'slide' && hasDeck) return <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          if (viewMode === 'slide' && hasDeck) {
+            if (designMode === 'premium') {
+              return <ModernPitchDeck slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} accentColor={primary} />;
+            }
+            return <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          }
           if (hasDeck) return <DeckPreview deck={deck} primary={primary} dark={dark} />;
           return null;
         }}
         renderProposal={(change: ProposedChange) => {
           const proposed = parseDeck(change);
           if (!proposed) return <Typography color="error">Invalid preview.</Typography>;
-          if (viewMode === 'slide') return <SlideViewer slides={proposed.slides} title={proposed.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          if (viewMode === 'slide') {
+            if (designMode === 'premium') {
+              return <ModernPitchDeck slides={proposed.slides} title={proposed.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} accentColor={primary} />;
+            }
+            return <SlideViewer slides={proposed.slides} title={proposed.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          }
           return <DeckPreview deck={proposed} primary={primary} dark={dark} proposed />;
         }}
       />

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/venturemate/vmbackend/internal/ai"
 )
 
 type Session struct {
@@ -18,11 +19,17 @@ type Session struct {
 }
 
 type Message struct {
-	ID        string    `json:"id"`
-	SessionID string    `json:"sessionId"`
-	Role      string    `json:"role"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID          string    `json:"id"`
+	SessionID   string    `json:"sessionId"`
+	Role        string    `json:"role"`
+	Content     string    `json:"content"`
+	CreatedAt   time.Time `json:"createdAt"`
+	InputTokens int      `json:"inputTokens"`
+	OutputTokens int     `json:"outputTokens"`
+	TotalTokens int      `json:"totalTokens"`
+	Model      string    `json:"model"`
+	Provider   string    `json:"provider"`
+	DurationMs int64     `json:"durationMs"`
 }
 
 type Repository struct {
@@ -81,14 +88,25 @@ func (r *Repository) ListSessions(ctx context.Context, userID, businessID, domai
 	return list, nil
 }
 
-func (r *Repository) AddMessage(ctx context.Context, sessionID, role, content string) (*Message, error) {
+func (r *Repository) AddMessage(ctx context.Context, sessionID, role, content string, opts ...AddMessageOption) (*Message, error) {
+	cfg := addMessageConfig{
+		inputTokens:  0,
+		outputTokens: 0,
+		model:        "",
+		provider:     "",
+		durationMs:   0,
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	totalTokens := cfg.inputTokens + cfg.outputTokens
 	var m Message
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO ai_chat_messages (session_id, role, content)
-		 VALUES ($1, $2, $3)
-		 RETURNING id, session_id, role, content, created_at`,
-		sessionID, role, content,
-	).Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &m.CreatedAt)
+		`INSERT INTO ai_chat_messages (session_id, role, content, input_tokens, output_tokens, total_tokens, model, provider, duration_ms)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		 RETURNING id, session_id, role, content, input_tokens, output_tokens, total_tokens, model, provider, duration_ms, created_at`,
+		sessionID, role, content, cfg.inputTokens, cfg.outputTokens, totalTokens, cfg.model, cfg.provider, cfg.durationMs,
+	).Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &m.InputTokens, &m.OutputTokens, &m.TotalTokens, &m.Model, &m.Provider, &m.DurationMs, &m.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -96,12 +114,47 @@ func (r *Repository) AddMessage(ctx context.Context, sessionID, role, content st
 	return &m, nil
 }
 
+type addMessageConfig struct {
+	inputTokens  int
+	outputTokens int
+	model        string
+	provider     string
+	durationMs   int64
+}
+
+type AddMessageOption func(*addMessageConfig)
+
+func WithTokenUsage(inputTokens, outputTokens int, model, provider string, durationMs int64) AddMessageOption {
+	return func(c *addMessageConfig) {
+		c.inputTokens = inputTokens
+		c.outputTokens = outputTokens
+		c.model = model
+		c.provider = provider
+		c.durationMs = durationMs
+	}
+}
+
+func WithProviderResponse(resp *ai.ProviderResponse) AddMessageOption {
+	return func(c *addMessageConfig) {
+		if resp == nil {
+			return
+		}
+		if resp.TokenUsage != nil {
+			c.inputTokens = resp.TokenUsage.InputTokens
+			c.outputTokens = resp.TokenUsage.OutputTokens
+		}
+		c.model = resp.Model
+		c.provider = resp.Provider
+		c.durationMs = resp.DurationMs
+	}
+}
+
 func (r *Repository) GetMessages(ctx context.Context, sessionID string, limit int) ([]Message, error) {
 	if limit <= 0 {
 		limit = 100
 	}
 	rows, err := r.db.Query(ctx,
-		`SELECT id, session_id, role, content, created_at
+		`SELECT id, session_id, role, content, input_tokens, output_tokens, total_tokens, model, provider, duration_ms, created_at
 		 FROM ai_chat_messages WHERE session_id = $1
 		 ORDER BY created_at DESC LIMIT $2`, sessionID, limit)
 	if err != nil {
@@ -111,7 +164,7 @@ func (r *Repository) GetMessages(ctx context.Context, sessionID string, limit in
 	var list []Message
 	for rows.Next() {
 		var m Message
-		if err := rows.Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.SessionID, &m.Role, &m.Content, &m.InputTokens, &m.OutputTokens, &m.TotalTokens, &m.Model, &m.Provider, &m.DurationMs, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		list = append(list, m)
