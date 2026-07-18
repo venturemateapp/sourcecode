@@ -2,6 +2,16 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { graphqlRequest } from '../lib/api'
 import { decodeToken, getToken } from '../lib/auth'
 
+export interface PlanLimits {
+  aiTokensMonthly: number
+  maxBusinesses: number
+  maxTeamMembers: number
+  maxPitchDecks: number
+  maxBusinessPlans: number
+  storageGb: number
+  isAdvanced: boolean
+}
+
 export interface PlanFeature {
   text: string
   included: boolean
@@ -15,6 +25,7 @@ export interface Plan {
   priceMonthly: number
   priceYearly: number
   features: PlanFeature[]
+  limits: PlanLimits
   sortOrder: number
 }
 
@@ -28,18 +39,40 @@ export interface Subscription {
   cancelAtPeriodEnd: boolean
 }
 
+export interface UsageLog {
+  aiTokensUsed: number
+  storageBytes: number
+  billingPeriod: string
+}
+
+export interface AddonPurchase {
+  id: string
+  addonType: string
+  label: string
+  price: number
+  quantity: number
+  purchasedAt: string
+  expiresAt: string | null
+}
+
 type SubscriptionContextValue = {
   subscription: Subscription | null
   plans: Plan[]
+  usage: UsageLog | null
+  addons: AddonPurchase[]
   loading: boolean
   fetchPlans: () => Promise<void>
   fetchMySubscription: (userId: string) => Promise<void>
+  fetchMyUsage: (userId: string) => Promise<void>
+  fetchMyAddons: (userId: string) => Promise<void>
   changePlan: (userId: string, planName: string) => Promise<boolean>
   cancelSubscription: (userId: string) => Promise<boolean>
+  purchaseAddon: (userId: string, addonType: string, label: string, price: number, quantity: number) => Promise<boolean>
   planName: string
   isFree: boolean
-  isPro: boolean
-  isProPlus: boolean
+  isStarter: boolean
+  isGrowth: boolean
+  isScale: boolean
 }
 
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined)
@@ -56,6 +89,15 @@ const PLANS_QUERY = `
       features {
         text
         included
+      }
+      limits {
+        aiTokensMonthly
+        maxBusinesses
+        maxTeamMembers
+        maxPitchDecks
+        maxBusinessPlans
+        storageGb
+        isAdvanced
       }
       sortOrder
     }
@@ -78,12 +120,45 @@ const MY_SUBSCRIPTION_QUERY = `
           text
           included
         }
+        limits {
+          aiTokensMonthly
+          maxBusinesses
+          maxTeamMembers
+          maxPitchDecks
+          maxBusinessPlans
+          storageGb
+          isAdvanced
+        }
         sortOrder
       }
       status
       currentPeriodStart
       currentPeriodEnd
       cancelAtPeriodEnd
+    }
+  }
+`
+
+const MY_USAGE_QUERY = `
+  query MyUsage($userId: ID!) {
+    myUsage(userId: $userId) {
+      aiTokensUsed
+      storageBytes
+      billingPeriod
+    }
+  }
+`
+
+const MY_ADDONS_QUERY = `
+  query MyAddons($userId: ID!) {
+    myAddons(userId: $userId) {
+      id
+      addonType
+      label
+      price
+      quantity
+      purchasedAt
+      expiresAt
     }
   }
 `
@@ -107,6 +182,18 @@ const CANCEL_SUBSCRIPTION_MUTATION = `
   }
 `
 
+const PURCHASE_ADDON_MUTATION = `
+  mutation PurchaseAddon($userId: ID!, $addonType: String!, $label: String!, $price: Float!, $quantity: Int!) {
+    purchaseAddon(userId: $userId, addonType: $addonType, label: $label, price: $price, quantity: $quantity) {
+      id
+      addonType
+      label
+      price
+      quantity
+    }
+  }
+`
+
 function getUserIdFromToken(): string | null {
   const token = getToken()
   if (!token) return null
@@ -117,14 +204,17 @@ function getUserIdFromToken(): string | null {
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [plans, setPlans] = useState<Plan[]>([])
+  const [usage, setUsage] = useState<UsageLog | null>(null)
+  const [addons, setAddons] = useState<AddonPurchase[]>([])
   const [loading, setLoading] = useState(false)
 
   const token = getToken()
   const jwt = token ? decodeToken(token) : null
   const planName = jwt?.subscription_plan || 'free'
   const isFree = planName === 'free'
-  const isPro = planName === 'pro'
-  const isProPlus = planName === 'pro_plus'
+  const isStarter = planName === 'starter'
+  const isGrowth = planName === 'growth'
+  const isScale = planName === 'scale'
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -144,6 +234,24 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       console.error('Failed to fetch subscription:', err)
     } finally {
       setLoading(false)
+    }
+  }, [])
+
+  const fetchMyUsage = useCallback(async (userId: string) => {
+    try {
+      const data = await graphqlRequest<{ myUsage: UsageLog }>(MY_USAGE_QUERY, { userId })
+      setUsage(data.myUsage)
+    } catch (err) {
+      console.error('Failed to fetch usage:', err)
+    }
+  }, [])
+
+  const fetchMyAddons = useCallback(async (userId: string) => {
+    try {
+      const data = await graphqlRequest<{ myAddons: AddonPurchase[] }>(MY_ADDONS_QUERY, { userId })
+      setAddons(data.myAddons)
+    } catch (err) {
+      console.error('Failed to fetch addons:', err)
     }
   }, [])
 
@@ -175,29 +283,51 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchMySubscription])
 
-  // Fetch plans and user subscription on mount
+  const purchaseAddon = useCallback(async (userId: string, addonType: string, label: string, price: number, quantity: number): Promise<boolean> => {
+    setLoading(true)
+    try {
+      await graphqlRequest(PURCHASE_ADDON_MUTATION, { userId, addonType, label, price, quantity })
+      await fetchMyAddons(userId)
+      return true
+    } catch (err) {
+      console.error('Failed to purchase addon:', err)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchMyAddons])
+
+  // Fetch plans, subscription, usage, and addons on mount
   useEffect(() => {
     fetchPlans()
     const userId = getUserIdFromToken()
     if (userId) {
       fetchMySubscription(userId)
+      fetchMyUsage(userId)
+      fetchMyAddons(userId)
     }
-  }, [fetchPlans, fetchMySubscription])
+  }, [fetchPlans, fetchMySubscription, fetchMyUsage, fetchMyAddons])
 
   return (
     <SubscriptionContext.Provider
       value={{
         subscription,
         plans,
+        usage,
+        addons,
         loading,
         fetchPlans,
         fetchMySubscription,
+        fetchMyUsage,
+        fetchMyAddons,
         changePlan,
         cancelSubscription,
+        purchaseAddon,
         planName,
         isFree,
-        isPro,
-        isProPlus,
+        isStarter,
+        isGrowth,
+        isScale,
       }}
     >
       {children}

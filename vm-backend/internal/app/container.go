@@ -48,6 +48,9 @@ type Container struct {
 	GoogleAuth          *auth.GoogleOAuth
 	JWTSecret           string
 	SubscriptionRepo    *subscriptions.Repository
+	UsageRepo           *subscriptions.UsageRepository
+	AddonRepo           *subscriptions.AddonRepository
+	PlanEnforcer        *subscriptions.Enforcer
 	BusinessRepo        *businesses.Repository
 	WebsiteRepo         *websites.Repository
 	DomainRepo          *domains.Repository
@@ -112,6 +115,9 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	userRepo := users.NewRepository(dbPool)
 	otpRepo := auth.NewOTPRepository(dbPool)
 	subRepo := subscriptions.NewRepository(dbPool)
+	usageRepo := subscriptions.NewUsageRepository(dbPool)
+	addonRepo := subscriptions.NewAddonRepository(dbPool)
+	enforcer := subscriptions.NewEnforcer(subRepo, usageRepo)
 	bizRepo := businesses.NewRepository(dbPool)
 	webRepo := websites.NewRepository(dbPool)
 	domainRepo := domains.NewRepository(dbPool)
@@ -193,6 +199,9 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		MarketplaceRepo:     marketplaceRepo,
 		OTPRepo:             otpRepo,
 		SubscriptionRepo:    subRepo,
+		UsageRepo:           usageRepo,
+		AddonRepo:           addonRepo,
+		PlanEnforcer:        enforcer,
 		BusinessRepo:        bizRepo,
 		WebsiteRepo:         webRepo,
 		DomainRepo:          domainRepo,

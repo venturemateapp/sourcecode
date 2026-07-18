@@ -1,12 +1,25 @@
 import { CardSkeleton } from '../../components/shared/Skeleton';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, Typography, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Calendar, Plus, Trash2, RefreshCw, Building2 } from 'lucide-react';
+import { Calendar, Plus, Trash2, RefreshCw, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addMonths,
+  subMonths,
+  isSameMonth,
+  isSameDay,
+  isToday,
+  eachDayOfInterval,
+} from 'date-fns';
 
 interface CalendarAccount {
   id: string; email: string; provider: string; caldavUrl: string; syncEnabled: boolean; lastSyncedAt: string | null;
@@ -31,8 +44,24 @@ export function CalendarPage() {
   const [connPass, setConnPass] = useState('');
   const [connProvider, setConnProvider] = useState('caldav');
   const [saving, setSaving] = useState(false);
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // --- Month navigation ---
+  const nextMonth = () => setCurrentMonth(prev => addMonths(prev, 1));
+  const prevMonth = () => setCurrentMonth(prev => subMonths(prev, 1));
+  const goToToday = () => setCurrentMonth(new Date());
+
+  // --- Build the calendar grid days (42 cells: 6 weeks × 7 days) ---
+  const calendarDays = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const calStart = startOfWeek(monthStart);
+    const calEnd = endOfWeek(monthEnd);
+    return eachDayOfInterval({ start: calStart, end: calEnd });
+  }, [currentMonth]);
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
@@ -40,10 +69,8 @@ export function CalendarPage() {
     if (!bizId) return;
     setLoading(true);
     try {
-      const now = new Date();
-      const from = new Date(now.getTime() + weekOffset * 7 * 86400000);
-      from.setDate(from.getDate() - from.getDay());
-      const to = new Date(from.getTime() + 7 * 86400000);
+      const from = startOfMonth(currentMonth);
+      const to = endOfMonth(currentMonth);
 
       const [acctData, evData] = await Promise.all([
         q<{ calendarAccounts: CalendarAccount[] }>('query Q($b:ID!){calendarAccounts(businessId:$b){id email provider caldavUrl syncEnabled lastSyncedAt}}', { b: bizId }),
@@ -53,7 +80,7 @@ export function CalendarPage() {
       setEvents(evData.calendarEvents);
     } catch { /* ignore */ }
     setLoading(false);
-  }, [bizId, q, weekOffset]);
+  }, [bizId, q, currentMonth]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
@@ -88,34 +115,32 @@ export function CalendarPage() {
     setTimeout(() => { setSyncingId(null); loadAll(); }, 3000);
   };
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const now = new Date();
-  const weekStart = new Date(now.getTime() + weekOffset * 7 * 86400000);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-
   const getEventsForDay = (day: Date) => events.filter(e => {
     const ed = new Date(e.startTime);
-    return ed.getDate() === day.getDate() && ed.getMonth() === day.getMonth() && ed.getFullYear() === day.getFullYear();
+    return isSameDay(ed, day);
   });
 
   if (!bizId) return <Box sx={{ p: 4, textAlign: 'center', color: 'var(--vm-text-muted)' }}><Building2 size={40} /><Typography sx={{ mt: 1 }}>Select a business</Typography></Box>;
 
+  const eventCount = events.length;
+  const monthLabel = format(currentMonth, 'MMMM yyyy');
+
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+      {/* Header */}
       <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 0 } }}>
         <Box>
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Calendar</Typography>
-          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{accounts.length} calendars · {events.length} events this week</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{accounts.length} calendars · {eventCount} events this month</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setWeekOffset(w => w - 1)}>← Prev</GradientButton>
-          <GradientButton variant="ghost" size="sm" onClick={() => setWeekOffset(0)}>Today</GradientButton>
-          <GradientButton variant="ghost" size="sm" onClick={() => setWeekOffset(w => w + 1)}>Next →</GradientButton>
+          <GradientButton variant="ghost" size="sm" onClick={prevMonth}>
+            <ChevronLeft size={16} />
+          </GradientButton>
+          <GradientButton variant="ghost" size="sm" onClick={goToToday}>Today</GradientButton>
+          <GradientButton variant="ghost" size="sm" onClick={nextMonth}>
+            <ChevronRight size={16} />
+          </GradientButton>
           <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setShowConnForm(true)}>Connect</GradientButton>
         </Box>
       </Box>
@@ -136,34 +161,115 @@ export function CalendarPage() {
         </Box>
       )}
 
-      {/* Week grid */}
+      {/* Month / Year label */}
+      <Typography sx={{ fontSize: { xs: 18, sm: 22 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1.5 }}>
+        {monthLabel}
+      </Typography>
+
+      {/* Calendar grid */}
       {loading ? <CardSkeleton count={4} type='card' /> : (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(7, 1fr)' }, gap: { xs: 1, sm: 1.5 } }}>
-          {days.map((day, idx) => {
-            const dayEvents = getEventsForDay(day);
-            const isToday = day.toDateString() === new Date().toDateString();
-            return (
-              <Box key={idx} sx={{
-                bgcolor: isToday ? 'rgba(16,185,129,.06)' : 'var(--vm-bg-secondary)',
-                border: isToday ? '1px solid rgba(16,185,129,.3)' : '1px solid var(--vm-border-subtle)',
-                borderRadius: 2.5, p: { xs: 1, sm: 1.25 }, minHeight: { xs: 80, sm: 140 },
-              }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 700, color: isToday ? '#10b981' : 'var(--vm-text-primary)', mb: 0.5 }}>
-                  {weekDays[day.getDay()]} {day.getDate()}
+        <Box>
+          {/* Day-of-week header row */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 }, mb: 0.5 }}>
+            {dayHeaders.map(d => (
+              <Box key={d} sx={{ textAlign: 'center', py: 0.75 }}>
+                <Typography sx={{ fontSize: { xs: 11, sm: 12 }, fontWeight: 700, color: 'var(--vm-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {d}
                 </Typography>
-                {dayEvents.map(ev => (
-                  <Box key={ev.id} sx={{ mb: 0.5, p: 0.5, borderRadius: 1, bgcolor: 'rgba(16,185,129,.1)', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(16,185,129,.18)' } }}>
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: 'var(--vm-text-primary)', lineHeight: 1.3 }}>{ev.title}</Typography>
-                    {!ev.isAllDay && (
-                      <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>
-                        {new Date(ev.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      </Typography>
-                    )}
-                  </Box>
-                ))}
               </Box>
-            );
-          })}
+            ))}
+          </Box>
+
+          {/* Day cells */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 } }}>
+            {calendarDays.map((day, idx) => {
+              const dayEvents = getEventsForDay(day);
+              const inMonth = isSameMonth(day, currentMonth);
+              const today = isToday(day);
+              const dayNum = day.getDate();
+
+              return (
+                <Box
+                  key={idx}
+                  sx={{
+                    bgcolor: today ? 'rgba(16,185,129,.06)' : 'var(--vm-bg-secondary)',
+                    border: today
+                      ? '1px solid rgba(16,185,129,.3)'
+                      : '1px solid var(--vm-border-subtle)',
+                    borderRadius: 2.5,
+                    p: { xs: 0.5, sm: 1 },
+                    minHeight: { xs: 60, sm: 80, md: 100 },
+                    opacity: inMonth ? 1 : 0.35,
+                    transition: 'opacity 0.15s',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  {/* Day number */}
+                  <Typography
+                    sx={{
+                      fontSize: { xs: 12, sm: 13, md: 14 },
+                      fontWeight: today ? 800 : 600,
+                      color: today ? '#10b981' : inMonth ? 'var(--vm-text-primary)' : 'var(--vm-text-muted)',
+                      lineHeight: 1.2,
+                      mb: 0.25,
+                    }}
+                  >
+                    {dayNum}
+                  </Typography>
+
+                  {/* Event dots (up to 3 visible, then +N more) */}
+                  {dayEvents.length > 0 && (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25, mt: 'auto', pt: 0.25 }}>
+                      {dayEvents.slice(0, 3).map(ev => (
+                        <Box
+                          key={ev.id}
+                          title={ev.title}
+                          sx={{
+                            width: { xs: 5, sm: 6 },
+                            height: { xs: 5, sm: 6 },
+                            borderRadius: '50%',
+                            bgcolor: ev.isAllDay ? '#10b981' : '#3b82f6',
+                            flexShrink: 0,
+                          }}
+                        />
+                      ))}
+                      {dayEvents.length > 3 && (
+                        <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', lineHeight: '6px' }}>
+                          +{dayEvents.length - 3}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Show first event title on larger screens */}
+                  {dayEvents.length > 0 && (
+                    <Box sx={{ display: { xs: 'none', md: 'block' }, mt: 'auto' }}>
+                      <Typography
+                        sx={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: 'var(--vm-text-primary)',
+                          lineHeight: 1.3,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '100%',
+                        }}
+                      >
+                        {dayEvents[0].title}
+                      </Typography>
+                      {!dayEvents[0].isAllDay && (
+                        <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', lineHeight: 1.2 }}>
+                          {new Date(dayEvents[0].startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
         </Box>
       )}
 

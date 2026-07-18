@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, useMediaQuery, useTheme, Tooltip } from '@mui/material';
-import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send, Brain } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, CreditCard, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send, Brain } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { graphqlRequest } from '../../lib/api';
 import { AdminAiUsage } from './AdminAiUsage';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage' | 'plan-usage';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
@@ -26,6 +26,7 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; des
   { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
   { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
   { key: 'ai-usage', icon: Brain, label: 'AI Usage', desc: 'Token usage & interactions' },
+  { key: 'plan-usage', icon: CreditCard, label: 'Plan Usage', desc: 'Subscriber plan utilization' },
 ];
 
 interface DashboardData {
@@ -36,6 +37,12 @@ interface DashboardData {
 
 interface UserRow { id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; createdAt: string; }
 interface BizRow { id: string; name: string; industry: string; status: string; ownerName: string; ownerEmail: string; }
+interface AdminUserPlan {
+  userId: string; firstName: string; surname: string; email: string;
+  planName: string; planDisplayName: string; status: string;
+  aiTokensUsed: number; storageBytes: number;
+  storageLimit: number; aiTokenLimit: number;
+}
 
 function StatCard({ icon: Icon, label, value, color, subtitle }: { icon: typeof Users; label: string; value: string | number; color: string; subtitle?: string }) {
   return (
@@ -175,9 +182,25 @@ export function AdminDashboard() {
 
   const [financingOffers, setFinancingOffers] = useState<Array<{ id: string; lenderName: string; productType: string; minAmount: number; maxAmount: number; minRate: number; maxRate: number; termMonths: number; requirements: string; isActive: boolean }>>([]);
   const [financingForm, setFinancingForm] = useState<{ id?: string; lenderName: string; productType: string; minAmount: number; maxAmount: number; minRate: number; maxRate: number; termMonths: number; requirements: string }>({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' });
+  const [planUsageData, setPlanUsageData] = useState<AdminUserPlan[]>([]);
+  const [planUsageFilter, setPlanUsageFilter] = useState('');
+  const [planUsageLoading, setPlanUsageLoading] = useState(false);
 
   const loadFinancingOffers = useCallback(async () => {
     try { const d = await graphqlRequest<{ adminFinancingOffers: typeof financingOffers }>('query { adminFinancingOffers { id lenderName productType minAmount maxAmount minRate maxRate termMonths requirements isActive } }'); setFinancingOffers(d.adminFinancingOffers); } catch { /* ignore */ }
+  }, []);
+
+  const loadPlanUsage = useCallback(async () => {
+    setPlanUsageLoading(true);
+    try {
+      const d = await graphqlRequest<{ adminUserPlans: AdminUserPlan[] }>(`query AdminUserPlans {
+        adminUserPlans {
+          userId firstName surname email planName planDisplayName status aiTokensUsed storageBytes storageLimit aiTokenLimit
+        }
+      }`);
+      setPlanUsageData(d.adminUserPlans);
+    } catch { /* ignore */ }
+    finally { setPlanUsageLoading(false); }
   }, []);
 
   useEffect(() => { if (view === 'dashboard') loadData(); }, [view, loadData]);
@@ -192,6 +215,7 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'registrations') loadRegistrations(); }, [view, loadRegistrations]);
   useEffect(() => { if (view === 'invoices') loadAdminInvoices(); }, [view, loadAdminInvoices]);
   useEffect(() => { if (view === 'financing') loadFinancingOffers(); }, [view, loadFinancingOffers]);
+  useEffect(() => { if (view === 'plan-usage') loadPlanUsage(); }, [view, loadPlanUsage]);
 
   const exec = async (mutation: string, vars: Record<string, unknown>) => {
     setBusy(true); try { await graphqlRequest(mutation, vars); } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
@@ -969,6 +993,148 @@ export function AdminDashboard() {
     </>
   );
 
+  function formatBytes(bytes: number): string {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    const val = bytes / Math.pow(1024, i);
+    return `${val < 10 ? val.toFixed(1) : Math.round(val)} ${units[i]}`;
+  }
+
+  function formatTokens(tokens: number): string {
+    if (!tokens || tokens === 0) return '0';
+    if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
+    if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(1)}K`;
+    return tokens.toLocaleString();
+  }
+
+  const planColorMap: Record<string, string> = {
+    free: '#94a3b8',
+    starter: '#22c55e',
+    growth: '#3b82f6',
+    scale: '#8b5cf6',
+  };
+
+  const renderPlanUsage = () => {
+    const filtered = planUsageData.filter(p => {
+      if (!planUsageFilter) return true;
+      const q = planUsageFilter.toLowerCase();
+      return (
+        p.firstName.toLowerCase().includes(q) ||
+        p.surname.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        p.planName.toLowerCase().includes(q) ||
+        p.planDisplayName.toLowerCase().includes(q)
+      );
+    });
+
+    return (
+      <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+        <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+          <CreditCard size={16} color="#f59e0b" />
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>
+            Plan Usage <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({filtered.length})</Typography>
+          </Typography>
+          <TextField
+            size="small"
+            placeholder="Search by name, email, or plan..."
+            value={planUsageFilter}
+            onChange={e => setPlanUsageFilter(e.target.value)}
+            sx={{
+              minWidth: { xs: '100%', sm: 260 },
+              input: { color: '#fff', fontSize: 13 },
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' },
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' },
+              '& .MuiInputBase-root': { bgcolor: 'rgba(255,255,255,.04)', borderRadius: 2 },
+            }}
+          />
+        </Box>
+        {planUsageLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress size={24} sx={{ color: '#f59e0b' }} />
+          </Box>
+        ) : filtered.length === 0 ? (
+          <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 6, fontSize: 13 }}>
+            {planUsageFilter ? 'No results match your search.' : 'No plan usage data available.'}
+          </Typography>
+        ) : (
+          <Box sx={{ overflow: 'auto' }}>
+            <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+              <Box component="thead">
+                <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                  {['Name', 'Email', 'Plan', 'Status', 'AI Tokens', 'Storage', 'Usage'].map(h => (
+                    <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
+                  ))}
+                </Box>
+              </Box>
+              <Box component="tbody">
+                {filtered.map(p => {
+                  const tokenPct = p.aiTokenLimit > 0 ? Math.min(100, Math.round((p.aiTokensUsed / p.aiTokenLimit) * 100)) : 0;
+                  const storagePct = p.storageLimit > 0 ? Math.min(100, Math.round((p.storageBytes / p.storageLimit) * 100)) : 0;
+                  const planColor = planColorMap[p.planName.toLowerCase()] || '#94a3b8';
+                  return (
+                    <Box key={p.userId} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
+                      <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
+                        <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{p.firstName} {p.surname}</Typography>
+                      </Box>
+                      <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                        <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{p.email}</Typography>
+                      </Box>
+                      <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                        <Chip
+                          label={p.planDisplayName || p.planName}
+                          size="small"
+                          sx={{
+                            bgcolor: `${planColor}18`,
+                            color: planColor,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            textTransform: 'capitalize',
+                          }}
+                        />
+                      </Box>
+                      <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                        <StatusBadge status={p.status} />
+                      </Box>
+                      <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                        <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: 12 }}>
+                          {formatTokens(p.aiTokensUsed)} / {formatTokens(p.aiTokenLimit)}
+                        </Typography>
+                      </Box>
+                      <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                        <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: 12 }}>
+                          {formatBytes(p.storageBytes)} / {formatBytes(p.storageLimit)}
+                        </Typography>
+                      </Box>
+                      <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25, minWidth: 180 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography sx={{ color: 'rgba(255,255,255,.45)', fontSize: 9.5, fontWeight: 600, minWidth: 32 }}>Tokens</Typography>
+                            <Box sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
+                              <Box sx={{ height: '100%', borderRadius: 3, width: `${tokenPct}%`, bgcolor: tokenPct > 80 ? '#ef4444' : tokenPct > 50 ? '#f59e0b' : '#3b82f6', transition: 'width .4s ease' }} />
+                            </Box>
+                            <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 9.5, minWidth: 36, textAlign: 'right' }}>{tokenPct}%</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography sx={{ color: 'rgba(255,255,255,.45)', fontSize: 9.5, fontWeight: 600, minWidth: 32 }}>Storage</Typography>
+                            <Box sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
+                              <Box sx={{ height: '100%', borderRadius: 3, width: `${storagePct}%`, bgcolor: storagePct > 80 ? '#ef4444' : storagePct > 50 ? '#f59e0b' : '#22c55e', transition: 'width .4s ease' }} />
+                            </Box>
+                            <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 9.5, minWidth: 36, textAlign: 'right' }}>{storagePct}%</Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          </Box>
+        )}
+      </Card>
+    );
+  };
+
   const renderSupport = () => (
     <Box sx={{ display: 'flex', gap: 2, height: { xs: 'auto', md: 'calc(100vh - 180px)' }, flexDirection: { xs: 'column', md: 'row' } }}>
       <Card sx={{ width: { xs: '100%', md: 340 }, flexShrink: 0, bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', backdropFilter: 'blur(12px)', maxHeight: { xs: 300, md: 'none' } }}>
@@ -1039,6 +1205,7 @@ export function AdminDashboard() {
       case 'invoices': return renderAdminInvoices();
       case 'financing': return renderFinancing();
       case 'ai-usage': return <AdminAiUsage />;
+      case 'plan-usage': return renderPlanUsage();
       default: return null;
     }
   };
@@ -1050,6 +1217,7 @@ export function AdminDashboard() {
     investors: 'Investors', providers: 'Providers', bookings: 'Bookings',
     submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking', registrations: 'Registrations', invoices: 'Invoices',     financing: 'Financing',
     'ai-usage': 'AI Usage',
+    'plan-usage': 'Plan Usage',
   };
   const subtitles: Record<AdminView, string> = {
     dashboard: 'Platform performance at a glance',
@@ -1067,6 +1235,7 @@ export function AdminDashboard() {
     invoices: 'All invoices across all businesses',
     financing: 'Financing offers shown to users',
     'ai-usage': 'AI token usage and provider interactions',
+    'plan-usage': 'Subscriber plan utilization and limits',
   };
 
   return (

@@ -29,6 +29,23 @@ var adminUserType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var adminUserPlanType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "AdminUserPlan",
+	Fields: graphql.Fields{
+		"userId":         &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"firstName":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"surname":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"email":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"planName":       &graphql.Field{Type: graphql.String},
+		"planDisplayName": &graphql.Field{Type: graphql.String},
+		"status":         &graphql.Field{Type: graphql.String},
+		"aiTokensUsed":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"storageBytes":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"storageLimit":   &graphql.Field{Type: graphql.Float},
+		"aiTokenLimit":   &graphql.Field{Type: graphql.Float},
+	},
+})
+
 var adminDashboardType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "AdminDashboard",
 	Fields: graphql.Fields{
@@ -114,6 +131,23 @@ func init() {
 				}
 			}
 			return result, nil
+		},
+	})
+
+	rootQuery.AddFieldConfig("adminUserPlans", &graphql.Field{
+		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(adminUserPlanType))),
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if ok, _ := adminGuard(p.Context); !ok {
+				return []interface{}{}, nil
+			}
+			if AppContainer == nil || AppContainer.SubscriptionRepo == nil {
+				return []interface{}{}, nil
+			}
+			rows, err := AppContainer.SubscriptionRepo.QueryAdminUserPlans(p.Context)
+			if err != nil {
+				return nil, err
+			}
+			return rows, nil
 		},
 	})
 

@@ -9,16 +9,17 @@ import {
   Shield,
   Zap,
   Rocket,
+  Sparkles,
 } from 'lucide-react';
 import type { Plan } from '../../contexts/SubscriptionContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { useAuth } from '../../contexts/AuthContext';
 
-type PlanType = 'free' | 'pro' | 'pro_plus';
+const planColors: Record<string, string> = { free: '#6b7280', starter: '#10b981', growth: '#3b82f6', scale: '#8b5cf6' };
 
 interface SubscriptionPlan {
-  id: PlanType;
+  id: string;
   displayName: string;
   description: string;
   priceMonthly: number;
@@ -30,10 +31,9 @@ interface SubscriptionPlan {
 }
 
 function mapPlanToSubscriptionPlan(plan: Plan): SubscriptionPlan {
-  const planColors: Record<string, string> = { free: '#6b7280', pro: '#10b981', pro_plus: '#8b5cf6' };
-  const popular: Record<string, boolean> = { free: false, pro: true, pro_plus: false };
+  const popular: Record<string, boolean> = { free: false, starter: false, growth: true, scale: false };
   return {
-    id: plan.name as PlanType,
+    id: plan.name,
     displayName: plan.displayName,
     description: plan.description,
     priceMonthly: plan.priceMonthly,
@@ -49,49 +49,58 @@ const featureComparison = [
   {
     category: 'Business Management',
     features: [
-      { name: 'Businesses', free: '1', pro: '3', pro_plus: 'Unlimited' },
-      { name: 'Team Members', free: '2', pro: '10', pro_plus: 'Unlimited' },
-      { name: 'Storage', free: '1 GB', pro: '10 GB', pro_plus: '100 GB' },
+      { name: 'Businesses', free: '1', starter: '3', growth: '10', scale: 'Unlimited' },
+      { name: 'Team Members', free: '1', starter: '3', growth: '10', scale: 'Unlimited' },
+      { name: 'Storage', free: '1 GB', starter: '10 GB', growth: '100 GB', scale: '1 TB' },
     ],
   },
   {
     category: 'AI Features',
     features: [
-      { name: 'AI Assistant', free: '50/mo', pro: '500/mo', pro_plus: 'Unlimited' },
-      { name: 'Pitch Deck Builder', free: 'Basic', pro: 'Advanced', pro_plus: 'Premium' },
-      { name: 'Business Plan Writer', free: false, pro: true, pro_plus: true },
+      { name: 'AI Assistant', free: '200K tokens/mo', starter: '2M tokens/mo', growth: '10M tokens/mo', scale: '50M tokens/mo' },
+      { name: 'AI Outputs', free: 'Basic', starter: 'Basic', growth: 'Advanced', scale: 'Advanced' },
+      { name: 'Pitch Decks', free: '1 basic', starter: '5 basic', growth: 'Unlimited advanced', scale: 'Unlimited advanced' },
+      { name: 'Business Plans', free: '1 basic', starter: '5 basic', growth: 'Unlimited advanced', scale: 'Unlimited advanced' },
     ],
   },
   {
     category: 'Growth Tools',
     features: [
-      { name: 'CRM', free: false, pro: 'Basic', pro_plus: 'Advanced' },
-      { name: 'Banking', free: false, pro: 'Basic', pro_plus: 'Full' },
-      { name: 'Social Media', free: false, pro: false, pro_plus: true },
-      { name: 'Marketplace', free: false, pro: 'Browse', pro_plus: 'Full' },
+      { name: 'CRM', free: false, starter: true, growth: true, scale: true },
+      { name: 'Invoicing', free: false, starter: true, growth: true, scale: true },
+      { name: 'Banking Integrations', free: false, starter: true, growth: true, scale: true },
+      { name: 'Website Creator', free: false, starter: true, growth: true, scale: true },
+      { name: 'Document Vault', free: false, starter: true, growth: true, scale: true },
+      { name: 'Social Media Scheduler', free: false, starter: true, growth: true, scale: true },
+      { name: 'Marketplace Access', free: false, starter: true, growth: true, scale: true },
+      { name: 'Workflow Automation', free: false, starter: false, growth: true, scale: true },
     ],
   },
   {
-    category: 'Insights',
+    category: 'Insights & Management',
     features: [
-      { name: 'Credit Score', free: false, pro: 'Basic', pro_plus: 'Full' },
-      { name: 'Health Score', free: false, pro: false, pro_plus: true },
-      { name: 'Analytics', free: 'Basic', pro: 'Advanced', pro_plus: 'Full' },
+      { name: 'Credit Score', free: 'Overview', starter: 'Full', growth: 'Full', scale: 'Full' },
+      { name: 'Health Score', free: true, starter: true, growth: true, scale: true },
+      { name: 'Investor Matching', free: false, starter: false, growth: true, scale: true },
+      { name: 'Advanced Branding', free: false, starter: false, growth: true, scale: true },
+      { name: 'Dedicated Account Manager', free: false, starter: false, growth: false, scale: true },
+      { name: 'API Access', free: false, starter: false, growth: false, scale: true },
     ],
   },
   {
     category: 'Support',
     features: [
-      { name: 'Support', free: 'Community', pro: 'Email', pro_plus: 'Priority' },
-      { name: 'Website Builder', free: 'Basic', pro: 'Pro', pro_plus: 'Advanced' },
+      { name: 'Support Level', free: 'Community', starter: 'Email', growth: 'Priority Email', scale: 'Dedicated Priority' },
+      { name: 'White-Glove Onboarding', free: false, starter: false, growth: false, scale: true },
     ],
   },
 ];
 
 const fallbackPlanIcons: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
-  free: Zap,
-  pro: Rocket,
-  pro_plus: TrendingUp,
+  free: Shield,
+  starter: Zap,
+  growth: Rocket,
+  scale: Sparkles,
 };
 
 export function BillingPage() {
@@ -112,14 +121,14 @@ export function BillingPage() {
   );
 
   const currentPlanData = useMemo(
-    () => displayPlans.find(p => p.id === (planName as PlanType)),
+    () => displayPlans.find(p => p.id === planName),
     [displayPlans, planName]
   );
 
-  const currentPlanId = planName as PlanType;
+  const currentPlanId = planName;
   const nextPlans = useMemo(
     () => displayPlans.filter(p => {
-      const order: Record<string, number> = { free: 0, pro: 1, pro_plus: 2 };
+      const order: Record<string, number> = { free: 0, starter: 1, growth: 2, scale: 3 };
       return (order[p.id] || 0) > (order[currentPlanId] || 0);
     }),
     [displayPlans, currentPlanId]
@@ -461,10 +470,10 @@ export function BillingPage() {
                     <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: 'var(--vm-text-secondary)' }}>
                       {feature.name as string}
                     </Typography>
-                    {(['free', 'pro', 'pro_plus'] as PlanType[]).map((plan) => (
-                      <Box key={plan} sx={{ textAlign: 'center' }}>
-                        {typeof feature[plan] === 'boolean' ? (
-                          feature[plan] ? (
+                    {displayPlans.map((plan) => (
+                      <Box key={plan.id} sx={{ textAlign: 'center' }}>
+                        {typeof feature[plan.id] === 'boolean' ? (
+                          feature[plan.id] ? (
                             <CheckCircle size={16} color="#22c55e" style={{ margin: '0 auto' }} />
                           ) : (
                             <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>—</Typography>
@@ -472,10 +481,10 @@ export function BillingPage() {
                         ) : (
                           <Typography sx={{
                             fontSize: { xs: 11, sm: 12 },
-                            color: plan === currentPlanId ? 'var(--vm-primary-400)' : 'var(--vm-text-secondary)',
-                            fontWeight: plan === currentPlanId ? 600 : 400,
+                            color: plan.id === currentPlanId ? 'var(--vm-primary-400)' : 'var(--vm-text-secondary)',
+                            fontWeight: plan.id === currentPlanId ? 600 : 400,
                           }}>
-                            {feature[plan] as string}
+                            {feature[plan.id] as string}
                           </Typography>
                         )}
                       </Box>

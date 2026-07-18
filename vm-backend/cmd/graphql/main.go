@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
@@ -17,6 +18,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/migrations"
 	"github.com/venturemate/vmbackend/internal/oauth"
+	"github.com/venturemate/vmbackend/internal/subscriptions"
 	"github.com/venturemate/vmbackend/internal/websites"
 )
 
@@ -99,6 +101,11 @@ func deleteDocumentHandler(container *app.Container) http.HandlerFunc {
 			return
 		}
 
+		totalStorage, err := container.FileHandler.CalculateTotalStorage(r.Context(), userID)
+		if err == nil {
+			container.UsageRepo.UpdateStorage(r.Context(), userID, subscriptions.BillingPeriod(time.Now()), totalStorage)
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
@@ -166,10 +173,49 @@ func uploadHandler(container *app.Container) http.HandlerFunc {
 			return
 		}
 
+		// Storage quota check
+		_, plan, err := container.SubscriptionRepo.GetUserSubscription(r.Context(), userID)
+		if err != nil {
+			http.Error(w, `{"error":"failed to lookup subscription"}`, http.StatusInternalServerError)
+			return
+		}
+		if plan != nil {
+			var limits map[string]interface{}
+			if err := json.Unmarshal([]byte(plan.Limits), &limits); err == nil {
+				if storageGB, ok := limits["storage_gb"]; ok {
+					var limitBytes int64 = -1
+					var gbLimit float64
+					switch v := storageGB.(type) {
+					case float64:
+						gbLimit = v
+						if v >= 0 {
+							limitBytes = int64(v * 1024 * 1024 * 1024)
+						}
+					}
+					if limitBytes >= 0 {
+						currentStorage, err := container.FileHandler.CalculateTotalStorage(r.Context(), userID)
+						if err != nil {
+							http.Error(w, fmt.Sprintf(`{"error":"failed to calculate storage: %s"}`, err.Error()), http.StatusInternalServerError)
+							return
+						}
+						if currentStorage+int64(len(fileData)) > limitBytes {
+							http.Error(w, fmt.Sprintf(`{"error":"storage limit exceeded: %.1f GB / %.0f GB used"}`, float64(currentStorage)/float64(1024*1024*1024), gbLimit), http.StatusConflict)
+							return
+						}
+					}
+				}
+			}
+		}
+
 		doc, err := container.FileHandler.ProcessUpload(r.Context(), fileData, header.Filename, category, tags, businessID, userID)
 		if err != nil {
 			http.Error(w, fmt.Sprintf(`{"error":"upload failed: %s"}`, err.Error()), http.StatusInternalServerError)
 			return
+		}
+
+		totalStorage, err := container.FileHandler.CalculateTotalStorage(r.Context(), userID)
+		if err == nil {
+			container.UsageRepo.UpdateStorage(r.Context(), userID, subscriptions.BillingPeriod(time.Now()), totalStorage)
 		}
 
 		w.Header().Set("Content-Type", "application/json")

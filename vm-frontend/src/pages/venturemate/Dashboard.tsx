@@ -1,4 +1,4 @@
-import { Box, Typography, Card, Avatar, Chip } from '@mui/material';
+import { Box, Typography, Card, Avatar, Chip, LinearProgress } from '@mui/material';
 import {
   TrendingUp,
   Users,
@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import type { ViewType } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 
 interface DashboardProps {
   onViewChange: (view: ViewType) => void;
@@ -24,8 +25,28 @@ export function Dashboard({ onViewChange }: DashboardProps) {
    const { user } = useAuth();
    const { businesses, selectedBusiness: activeBusiness } = useBusiness();
    const { format } = useCurrency();
+   const { usage, subscription } = useSubscription();
    const b = activeBusiness;
- 
+
+  const formatTokens = (tokens: number): string => {
+    if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
+    if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(0)}K`;
+    return tokens.toLocaleString();
+  };
+
+  const formatStorage = (bytes: number): string => {
+    if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
+    if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(0)} MB`;
+    if (bytes >= 1_024) return `${(bytes / 1_024).toFixed(0)} KB`;
+    return `${bytes} B`;
+  };
+
+  const getProgressColor = (ratio: number): string => {
+    if (ratio < 0.7) return '#10b981';
+    if (ratio < 0.9) return '#f59e0b';
+    return '#ef4444';
+  };
+
 const statsCards = b ? [
       { label: 'Total MRR', value: format(b.financials?.revenue?.currentMRR ?? 0), change: `${(b.financials?.revenue?.growthRate ?? 0) >= 0 ? '+' : ''}${b.financials?.revenue?.growthRate ?? 0}%`, icon: DollarSign, color: '#10b981' },
       { label: 'Active Users', value: b.metrics?.totalUsers?.toLocaleString() ?? '0', change: `${b.metrics?.activeUsers?.toLocaleString() ?? '0'} active`, icon: Users, color: '#3b82f6' },
@@ -113,6 +134,96 @@ const statsCards = b ? [
           </div>
         ))}
       </Box>
+      )}
+
+      {/* Usage Quota Cards */}
+      {usage && subscription?.plan?.limits && (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: '24px', mb: 4 }}>
+          {/* AI Usage */}
+          <Card
+            sx={{
+              bgcolor: 'var(--vm-bg-secondary)',
+              border: '1px solid var(--vm-border-subtle)',
+              borderRadius: 3,
+              p: { xs: 2, sm: 2.5, md: 3 },
+            }}
+          >
+            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2, overflowWrap: 'anywhere' }}>
+              <Bot size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+              AI Usage
+            </Typography>
+            {subscription.plan.limits.aiTokensMonthly === -1 || subscription.plan.limits.aiTokensMonthly === 0 ? (
+              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
+                Unlimited AI tokens
+              </Typography>
+            ) : (() => {
+              const used = usage.aiTokensUsed ?? 0;
+              const limit = subscription.plan.limits.aiTokensMonthly;
+              const ratio = limit > 0 ? used / limit : 0;
+              const percentage = Math.min(ratio * 100, 100);
+              const barColor = getProgressColor(ratio);
+              return (
+                <>
+                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', mb: 1.5, overflowWrap: 'anywhere' }}>
+                    {formatTokens(used)} / {formatTokens(limit)} AI tokens used this month
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={percentage}
+                    sx={{
+                      height: 8,
+                      borderRadius: 4,
+                      bgcolor: 'var(--vm-bg-tertiary)',
+                      '& .MuiLinearProgress-bar': { bgcolor: barColor, borderRadius: 4 },
+                    }}
+                  />
+                </>
+              );
+            })()}
+          </Card>
+
+          {/* Storage */}
+          <Card
+            sx={{
+              bgcolor: 'var(--vm-bg-secondary)',
+              border: '1px solid var(--vm-border-subtle)',
+              borderRadius: 3,
+              p: { xs: 2, sm: 2.5, md: 3 },
+            }}
+          >
+            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2, overflowWrap: 'anywhere' }}>
+              <FileText size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+              Storage
+            </Typography>
+            {(() => {
+              const usedBytes = usage.storageBytes ?? 0;
+              const limitGb = subscription.plan.limits.storageGb;
+              const usedGb = usedBytes / 1_073_741_824;
+              const ratio = limitGb > 0 ? usedGb / limitGb : 0;
+              const percentage = Math.min(ratio * 100, 100);
+              const barColor = getProgressColor(ratio);
+              const usedFormatted = formatStorage(usedBytes);
+              const limitFormatted = `${limitGb} GB`;
+              return (
+                <>
+                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', mb: 1.5, overflowWrap: 'anywhere' }}>
+                    {usedFormatted} / {limitFormatted} storage used
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={percentage}
+                    sx={{
+                      height: 8,
+                      borderRadius: 4,
+                      bgcolor: 'var(--vm-bg-tertiary)',
+                      '& .MuiLinearProgress-bar': { bgcolor: barColor, borderRadius: 4 },
+                    }}
+                  />
+                </>
+              );
+            })()}
+          </Card>
+        </Box>
       )}
 
       {/* Main Content Grid */}

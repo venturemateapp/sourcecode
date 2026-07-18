@@ -15,14 +15,16 @@ interface PlanSelectorProps {
 
 const planIcons: Record<string, React.ReactNode> = {
   free: <Star sx={{ fontSize: { xs: 24, md: 32 } }} />,
-  pro: <WorkspacePremium sx={{ fontSize: { xs: 24, md: 32 } }} />,
-  pro_plus: <WorkspacePremium sx={{ fontSize: { xs: 24, md: 32 } }} />,
+  starter: <Star sx={{ fontSize: { xs: 24, md: 32 } }} />,
+  growth: <WorkspacePremium sx={{ fontSize: { xs: 24, md: 32 } }} />,
+  scale: <WorkspacePremium sx={{ fontSize: { xs: 24, md: 32 } }} />,
 }
 
 const planColors: Record<string, string> = {
   free: 'rgba(255,255,255,0.08)',
-  pro: 'linear-gradient(135deg, #059669, #34d399)',
-  pro_plus: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+  starter: 'linear-gradient(135deg, #059669, #34d399)',
+  growth: 'linear-gradient(135deg, #2563eb, #60a5fa)',
+  scale: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
 }
 
 export function PlanSelector({ open, onClose, userId, currentPlanName }: PlanSelectorProps) {
@@ -127,9 +129,7 @@ export function PlanSelector({ open, onClose, userId, currentPlanName }: PlanSel
                     onClick={() => handleSelect(plan.name)}
                     sx={{
                       py: { xs: 1, md: 1.5 }, borderRadius: 2, fontWeight: 700, fontSize: { xs: 13, md: 15 },
-                      background: isCurrent ? 'rgba(255,255,255,0.08)' :
-                        plan.name === 'pro_plus' ? 'linear-gradient(135deg, #7c3aed, #a78bfa)' :
-                        'linear-gradient(135deg, #059669, #34d399)',
+                      background: isCurrent ? 'rgba(255,255,255,0.08)' : (planColors[plan.name] || 'linear-gradient(135deg, #059669, #34d399)'),
                       '&:hover': { opacity: 0.9 },
                     }}
                   >

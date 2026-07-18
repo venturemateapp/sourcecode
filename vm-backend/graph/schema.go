@@ -11,6 +11,19 @@ import (
 	"github.com/venturemate/vmbackend/internal/users"
 )
 
+var planLimitsType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "PlanLimits",
+	Fields: graphql.Fields{
+		"aiTokensMonthly":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxBusinesses":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxTeamMembers":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxPitchDecks":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxBusinessPlans": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"storageGb":        &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"isAdvanced":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+	},
+})
+
 var planFeatureType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "PlanFeature",
 	Fields: graphql.Fields{
@@ -45,6 +58,25 @@ var planType = graphql.NewObject(graphql.ObjectConfig{
 					return []map[string]interface{}{}, nil
 				}
 				return features, nil
+			},
+		},
+		"limits": &graphql.Field{
+			Type: planLimitsType,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				var limitsStr string
+				switch v := p.Source.(type) {
+				case *subscriptions.Plan:
+					limitsStr = v.Limits
+				case subscriptions.Plan:
+					limitsStr = v.Limits
+				default:
+					return map[string]interface{}{}, nil
+				}
+				var limits map[string]interface{}
+				if err := json.Unmarshal([]byte(limitsStr), &limits); err != nil {
+					return map[string]interface{}{}, nil
+				}
+				return limits, nil
 			},
 		},
 		"sortOrder": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
@@ -99,6 +131,28 @@ var authPayloadType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var usageLogType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "UsageLog",
+	Fields: graphql.Fields{
+		"aiTokensUsed": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"storageBytes": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"billingPeriod": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+	},
+})
+
+var addonPurchaseType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "AddonPurchase",
+	Fields: graphql.Fields{
+		"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"addonType":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"label":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"price":       &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"quantity":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"purchasedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"expiresAt":   &graphql.Field{Type: graphql.String},
+	},
+})
+
 var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Query",
 	Fields: graphql.Fields{
@@ -150,6 +204,41 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 				userID := p.Args["userId"].(string)
 				sub, _, err := AppContainer.SubscriptionRepo.GetUserSubscription(p.Context, userID)
 				return sub, err
+			},
+		},
+		"myUsage": &graphql.Field{
+			Type: usageLogType,
+			Args: graphql.FieldConfigArgument{
+				"userId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if AppContainer == nil {
+					return nil, nil
+				}
+				userID := p.Args["userId"].(string)
+				period := subscriptions.BillingPeriod(time.Now())
+				usage, err := AppContainer.UsageRepo.GetUsage(p.Context, userID, period)
+				if err != nil {
+					return map[string]interface{}{"aiTokensUsed": 0, "storageBytes": 0, "billingPeriod": period}, nil
+				}
+				return usage, nil
+			},
+		},
+		"myAddons": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(addonPurchaseType))),
+			Args: graphql.FieldConfigArgument{
+				"userId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if AppContainer == nil {
+					return []*subscriptions.AddonPurchase{}, nil
+				}
+				userID := p.Args["userId"].(string)
+				items, err := AppContainer.AddonRepo.ListByUser(p.Context, userID)
+				if err != nil {
+					return []*subscriptions.AddonPurchase{}, nil
+				}
+				return items, nil
 			},
 		},
 		"oAuthStatus": &graphql.Field{
@@ -282,6 +371,27 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				userID := p.Args["userId"].(string)
 				err := AppContainer.SubscriptionRepo.CancelSubscription(p.Context, userID)
 				return err == nil, err
+			},
+		},
+		"purchaseAddon": &graphql.Field{
+			Type: addonPurchaseType,
+			Args: graphql.FieldConfigArgument{
+				"userId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"addonType": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"label":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"price":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
+				"quantity": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if AppContainer == nil {
+					return nil, nil
+				}
+				userID := p.Args["userId"].(string)
+				addonType := p.Args["addonType"].(string)
+				label := p.Args["label"].(string)
+				price := p.Args["price"].(float64)
+				quantity := p.Args["quantity"].(int)
+				return AppContainer.AddonRepo.Purchase(p.Context, userID, addonType, label, price, quantity, "{}", nil)
 			},
 		},
 		"requestPasswordReset": &graphql.Field{

@@ -24,6 +24,7 @@ type DocumentInfo struct {
 	Name          string   `json:"name"`
 	Type          string   `json:"type"`
 	Size          string   `json:"size"`
+	SizeBytes     int64    `json:"sizeBytes"`
 	URL           string   `json:"url"`
 	Category      string   `json:"category"`
 	UploadedBy    string   `json:"uploadedBy"`
@@ -48,6 +49,28 @@ func NewFileHandler(s3Svc *s3.Service, bizRepo *businesses.Repository, geminiKey
 		GeminiKey: geminiKey,
 		Providers: NewProviderManagerFromEnv(),
 	}
+}
+
+func (fh *FileHandler) CalculateTotalStorage(ctx context.Context, userID string) (int64, error) {
+	businesses, err := fh.bizRepo.ListByUser(ctx, userID)
+	if err != nil {
+		return 0, fmt.Errorf("list businesses: %w", err)
+	}
+
+	var total int64
+	for _, biz := range businesses {
+		if biz.Documents == "" || biz.Documents == "[]" {
+			continue
+		}
+		var docs []DocumentInfo
+		if err := json.Unmarshal([]byte(biz.Documents), &docs); err != nil {
+			continue
+		}
+		for _, d := range docs {
+			total += d.SizeBytes
+		}
+	}
+	return total, nil
 }
 
 func detectContentType(data []byte) string {
@@ -267,6 +290,7 @@ func (fh *FileHandler) ProcessUpload(ctx context.Context, fileData []byte, filen
 		Name:         filename,
 		Type:         fileType,
 		Size:         sizeStr,
+		SizeBytes:    int64(len(fileData)),
 		URL:          s3URL,
 		Category:     category,
 		UploadedBy:   userID,

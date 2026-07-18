@@ -3,12 +3,14 @@ package graph
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/ai"
+	"github.com/venturemate/vmbackend/internal/subscriptions"
 )
 
 var proposedChangeType = graphql.NewObject(graphql.ObjectConfig{
@@ -194,6 +196,15 @@ func init() {
 				return map[string]interface{}{"message": "Business not found or access denied"}, nil
 			}
 
+			// Check AI token quota
+			sub, _, err := AppContainer.SubscriptionRepo.GetUserSubscription(p.Context, userID)
+			if sub != nil && sub.Plan != nil {
+				period := subscriptions.BillingPeriod(time.Now())
+				if quotaErr := AppContainer.PlanEnforcer.CheckAITokenQuota(p.Context, userID, sub.Plan.Name, period, 1); quotaErr != nil {
+					return map[string]interface{}{"message": fmt.Sprintf("AI token quota exceeded. %v", quotaErr)}, nil
+				}
+			}
+
 			provider, err := getProviderForUser(p.Context, userID, requestedProvider)
 			if err != nil {
 				log.Printf("AI provider error for user %s: %v", userID, err)
@@ -208,6 +219,11 @@ func init() {
 			if err != nil {
 				log.Printf("Agent execution error for user %s: %v", userID, err)
 				return map[string]interface{}{"message": "I could not complete that request. Check the AI provider connection and try again."}, nil
+			}
+			// Track token usage
+			if sub != nil && sub.Plan != nil && result != nil && result.TotalTokens > 0 {
+				period := subscriptions.BillingPeriod(time.Now())
+				_ = AppContainer.UsageRepo.IncrementAITokens(p.Context, userID, period, int64(result.TotalTokens))
 			}
 			return result, nil
 		},

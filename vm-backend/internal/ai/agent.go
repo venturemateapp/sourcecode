@@ -39,10 +39,13 @@ type AgentOperation struct {
 }
 
 type AgentResult struct {
-	Message    string           `json:"message"`
-	Provider   string           `json:"provider"`
-	Model      string           `json:"model"`
-	Operations []AgentOperation `json:"operations"`
+	Message      string           `json:"message"`
+	Provider     string           `json:"provider"`
+	Model        string           `json:"model"`
+	InputTokens  int              `json:"inputTokens"`
+	OutputTokens int              `json:"outputTokens"`
+	TotalTokens  int              `json:"totalTokens"`
+	Operations   []AgentOperation `json:"operations"`
 }
 
 type ProposedChange struct {
@@ -203,7 +206,19 @@ You are in a tool loop and may call multiple tools before answering.`, userName,
 			if message == "" {
 				message = summarizeOperations(operations)
 			}
-			return &AgentResult{Message: message, Provider: resp.Provider, Model: resp.Model, Operations: operations}, nil
+			totalTokens := 0
+			inputTokens := 0
+			outputTokens := 0
+			if resp.TokenUsage != nil {
+				inputTokens = resp.TokenUsage.InputTokens
+				outputTokens = resp.TokenUsage.OutputTokens
+				totalTokens = resp.TokenUsage.TotalTokens
+			}
+			return &AgentResult{
+				Message: message, Provider: resp.Provider, Model: resp.Model,
+				InputTokens: inputTokens, OutputTokens: outputTokens, TotalTokens: totalTokens,
+				Operations: operations,
+			}, nil
 		}
 
 		conversation = append(conversation, Message{Role: "assistant", Content: resp.Content, ToolCalls: resp.ToolCalls})
@@ -224,7 +239,7 @@ You are in a tool loop and may call multiple tools before answering.`, userName,
 		}
 	}
 
-	return &AgentResult{Message: summarizeOperations(operations), Provider: a.provider.Name(), Model: a.provider.Model(), Operations: operations}, nil
+	return &AgentResult{Message: summarizeOperations(operations), Provider: a.provider.Name(), Model: a.provider.Model(), InputTokens: 0, OutputTokens: 0, TotalTokens: 0, Operations: operations}, nil
 }
 
 func containsToolError(result string) bool {
