@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/invoices"
 )
 
@@ -263,6 +264,78 @@ func init() {
 			}
 			err = AppContainer.InvoiceRepo.Update(p.Context, existing)
 			return existing, err
+		},
+	})
+
+	rootMutation.AddFieldConfig("sendInvoice", &graphql.Field{
+		Type: invoiceType,
+		Args: graphql.FieldConfigArgument{
+			"id":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil || AppContainer.InvoicePdfGenerator == nil || AppContainer.Email == nil {
+				return nil, nil
+			}
+			inv, err := AppContainer.InvoiceRepo.GetByID(p.Context, p.Args["id"].(string))
+			if err != nil {
+				return nil, err
+			}
+
+			// Generate PDF if not already generated
+			if inv.PdfURL == "" {
+				pdfData, err := AppContainer.InvoicePdfGenerator.Generate(p.Context, inv, p.Args["businessId"].(string))
+				if err != nil {
+					return nil, fmt.Errorf("pdf generation failed: %w", err)
+				}
+				fileName := fmt.Sprintf("invoices/%s.pdf", inv.InvoiceNumber)
+				pdfURL, err := AppContainer.S3.Upload(p.Context, fileName, pdfData, "application/pdf")
+				if err != nil {
+					return nil, fmt.Errorf("pdf upload failed: %w", err)
+				}
+				if err := AppContainer.InvoiceRepo.UpdatePdfURL(p.Context, inv.ID, pdfURL); err != nil {
+					return nil, fmt.Errorf("save pdf url failed: %w", err)
+				}
+				inv.PdfURL = pdfURL
+			}
+
+			// Send email to customer
+			if inv.CustomerEmail != "" {
+				biz, err := AppContainer.BusinessRepo.GetByID(p.Context, p.Args["businessId"].(string))
+				if err != nil {
+					biz = &businesses.Business{Name: "VentureMate"}
+				}
+				emailBody := fmt.Sprintf(`
+<h2>Invoice from %s</h2>
+<p>Dear %s,</p>
+<p>Please find your invoice <strong>#%s</strong> attached below.</p>
+<table style="width:100%%;border-collapse:collapse;margin:16px 0;">
+<tr style="background:#10b981;color:#fff;"><th style="padding:8px;text-align:left;">Description</th><th style="padding:8px;text-align:center;">Qty</th><th style="padding:8px;text-align:right;">Amount</th></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;" colspan="3">%s</td></tr>
+<tr style="font-weight:bold;"><td style="padding:8px;" colspan="2">Total</td><td style="padding:8px;text-align:right;">%s %.2f</td></tr>
+</table>
+<p><a href="%s" style="display:inline-block;padding:10px 20px;background:#10b981;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Invoice PDF</a></p>
+<p style="color:#64748b;font-size:12px;">Due date: %s<br>Payment terms: %s</p>
+<hr>
+<p style="color:#64748b;font-size:12px;">Thank you for your business!</p>
+`, biz.Name, inv.CustomerName, inv.InvoiceNumber, inv.Notes, inv.Currency, inv.Amount, inv.PdfURL, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
+
+				if err := AppContainer.Email.SendTemplatedEmail(
+					[]string{inv.CustomerEmail},
+					fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name),
+					emailBody,
+				); err != nil {
+					return nil, fmt.Errorf("email send failed: %w", err)
+				}
+			}
+
+			// Update status to sent
+			if err := AppContainer.InvoiceRepo.UpdateStatus(p.Context, inv.ID, "sent"); err != nil {
+				return nil, fmt.Errorf("status update failed: %w", err)
+			}
+			inv.Status = "sent"
+
+			return inv, nil
 		},
 	})
 

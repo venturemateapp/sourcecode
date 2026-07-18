@@ -139,6 +139,12 @@ export function InvoicesPage() {
     setSaving(false);
   };
 
+  const sendInvoice = async (id: string) => {
+    if (!bizId) return;
+    await q('mutation M($i:ID!,$b:ID!){sendInvoice(id:$i businessId:$b){id status}}', { i: id, b: bizId });
+    load();
+  };
+
   const updateStatus = async (id: string, status: string) => {
     await q('mutation M($i:ID!,$s:String!){updateInvoiceStatus(id:$i status:$s){id status}}', { i: id, s: status });
     load();
@@ -201,7 +207,7 @@ export function InvoicesPage() {
                 <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                   {inv.status === 'draft' && <Tooltip title="Edit"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => openEdit(inv)}><Edit3 size={15} /></IconButton></Tooltip>}
                   <Tooltip title="Download PDF"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(inv)}><Download size={15} /></IconButton></Tooltip>
-                  {inv.status === 'draft' && <Tooltip title="Send"><IconButton size="small" sx={{ color: '#3b82f6' }} onClick={() => updateStatus(inv.id, 'sent')}><Send size={15} /></IconButton></Tooltip>}
+                  {inv.status === 'draft' && <Tooltip title="Send"><IconButton size="small" sx={{ color: '#3b82f6' }} onClick={() => sendInvoice(inv.id)}><Send size={15} /></IconButton></Tooltip>}
                   {inv.status === 'sent' && <Tooltip title="Mark Paid"><IconButton size="small" sx={{ color: '#22c55e' }} onClick={() => updateStatus(inv.id, 'paid')}><CheckCircle size={15} /></IconButton></Tooltip>}
                   {inv.status === 'sent' && <Tooltip title="Mark Overdue"><IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => updateStatus(inv.id, 'overdue')}><XCircle size={15} /></IconButton></Tooltip>}
                   {(inv.status === 'draft' || inv.status === 'sent') && <Tooltip title="Cancel"><IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => updateStatus(inv.id, 'cancelled')}><X size={15} /></IconButton></Tooltip>}
