@@ -169,7 +169,8 @@ function VentureMateApp() {
   const { subscription } = useSubscription();
   const toast = useToast();
 
-  const planFeatures = subscription?.plan?.features || [];
+  const planFeatures = subscription?.plan?.features;
+  const subscriptionLoaded = !!subscription?.plan;
 
   const viewFeatureMap: Partial<Record<ViewType, string>> = {
     'crm': 'CRM',
@@ -195,20 +196,23 @@ function VentureMateApp() {
   };
 
   const hasFeature = (view: ViewType): boolean => {
+    if (!subscriptionLoaded) return true;
     const feature = viewFeatureMap[view];
     if (!feature) return true;
-    return planFeatures.some(f => f.text === feature && f.included);
+    return (planFeatures || []).some(f => f.text === feature && f.included);
   };
 
   const getUpgradePlan = (view: ViewType): string => {
     const requiredFeature = viewFeatureMap[view];
-    const freeExcluded = ['CRM', 'Invoicing', 'Banking Integrations', 'Website Creator', 'Document Vault', 'Social Media Scheduler', 'Marketplace Access'];
-    const starterExcluded = ['Advanced Financial Modeling', 'Workflow Automation', 'Automated Content Generation'];
     if (!requiredFeature) return 'Growth';
-    if (freeExcluded.includes(requiredFeature)) return 'Starter';
-    if (starterExcluded.includes(requiredFeature)) return 'Growth';
-    if (requiredFeature === 'API Access' || requiredFeature === 'Custom Integrations' || requiredFeature === 'White-Glove Onboarding' || requiredFeature === 'Dedicated Priority Support') return 'Scale';
-    return 'Growth';
+    // Features included on Free but not Starter
+    const freeIncluded = ['Dashboard', 'AI Assistant', 'AI Assistant (limited)', 'Business Health Score', 'Credit Score overview', 'Basic Pitch Deck Generator', 'Basic Business Plan Generator', 'Basic Brand Kit', 'Community Support'];
+    if (freeIncluded.includes(requiredFeature)) return 'Starter';
+    // Features included on Starter but not Growth
+    const starterIncluded = ['Website Creator', 'CRM', 'Invoicing', 'Banking Integrations', 'Document Vault', 'Social Media Scheduler', 'Marketplace Access', 'Milestones & Team Management', 'Email Support'];
+    if (starterIncluded.includes(requiredFeature)) return 'Growth';
+    // Everything else requires Scale
+    return 'Scale';
   };
 
   useEffect(() => {
