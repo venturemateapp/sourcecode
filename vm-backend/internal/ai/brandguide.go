@@ -24,6 +24,9 @@ func GenerateBrandGuide(biz *businesses.Business, brandKit map[string]interface{
 	dark := stringValue(brandKit, "darkColor", "#052e24")
 	fontHeading := stringValue(brandKit, "fontHeading", "Inter")
 	fontBody := stringValue(brandKit, "fontBody", "Inter")
+	logo := stringValue(brandKit, "logo", "")
+	logoIcon := stringValue(brandKit, "logoIcon", "")
+	logoWhite := stringValue(brandKit, "logoWhite", "")
 
 	logos, _ := brandKit["logos"].([]interface{})
 	colors, _ := brandKit["colors"].([]interface{})
@@ -32,11 +35,11 @@ func GenerateBrandGuide(biz *businesses.Business, brandKit map[string]interface{
 	sections := []BrandGuideSection{
 		{
 			ID: "cover", Title: "Brand Guide", Order: 0,
-			Content: coverPage(name, primary, secondary, dark),
+			Content: coverPage(name, logo, primary, secondary, dark),
 		},
 		{
 			ID: "logo-system", Title: "Logo System", Order: 1,
-			Content: logoSections(name, logos, primary, secondary, dark),
+			Content: logoSections(name, logo, logoIcon, logoWhite, logos, primary, secondary, dark),
 		},
 		{
 			ID: "color-palette", Title: "Color Palette", Order: 2,
@@ -91,10 +94,20 @@ p{color:#475569;font-size:15px;line-height:1.7;margin-bottom:16px}
 		strings.ReplaceAll(fontHeading, " ", "+"), fontHeading, dark, primary, content)
 }
 
-func coverPage(name, primary, secondary, dark string) string {
-	initial := initials(name)
+func coverPage(name, logoURL, primary, secondary, dark string) string {
+	logoHTML := ""
+	if strings.HasPrefix(logoURL, "http") {
+		logoHTML = fmt.Sprintf(`<img src="%s" alt="%s logo" style="max-width:160px;max-height:120px;margin-bottom:32px;border-radius:12px;background:rgba(255,255,255,.1);padding:16px" />`, html.EscapeString(logoURL), html.EscapeString(name))
+	} else if strings.Contains(logoURL, "<svg") {
+		logoHTML = fmt.Sprintf(`<div style="width:120px;height:120px;margin-bottom:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);border-radius:20px;padding:16px">%s</div>`, logoURL)
+	} else if logoURL != "" {
+		logoHTML = fmt.Sprintf(`<img src="%s" alt="%s logo" style="max-width:160px;max-height:120px;margin-bottom:32px;border-radius:12px;background:rgba(255,255,255,.1);padding:16px" />`, html.EscapeString(logoURL), html.EscapeString(name))
+	} else {
+		initial := initials(name)
+		logoHTML = fmt.Sprintf(`<svg viewBox="0 0 80 80" style="width:120px;height:120px;margin-bottom:32px"><rect width="80" height="80" rx="20" fill="rgba(255,255,255,.2)"/><text x="40" y="44" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-size="32" font-weight="700">%s</text></svg>`, initial)
+	}
 	return fmt.Sprintf(`<div class="section" style="background:linear-gradient(135deg,%s,%s);min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:#fff;padding:80px 40px">
-<svg viewBox="0 0 80 80" style="width:120px;height:120px;margin-bottom:32px"><rect width="80" height="80" rx="20" fill="rgba(255,255,255,.2)"/><text x="40" y="44" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-size="32" font-weight="700">%s</text></svg>
+%s
 <h1 style="font-size:64px;margin-bottom:8px">%s</h1>
 <p style="font-size:20px;opacity:.8;margin-bottom:48px;max-width:600px">Brand Identity Guide</p>
 <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
@@ -102,12 +115,48 @@ func coverPage(name, primary, secondary, dark string) string {
 <span style="padding:8px 20px;background:rgba(255,255,255,.15);border-radius:20px;font-size:13px">Secondary: %s</span>
 </div>
 <div style="margin-top:64px;font-size:12px;opacity:.5">CONFIDENTIAL — %s Brand Guide</div>
-</div>`, primary, secondary, initial, html.EscapeString(name), primary, secondary, html.EscapeString(name))
+</div>`, primary, secondary, logoHTML, html.EscapeString(name), primary, secondary, html.EscapeString(name))
 }
 
-func logoSections(name string, logos []interface{}, primary, secondary, dark string) string {
+func logoSections(name, logoURL, logoIconURL, logoWhiteURL string, logos []interface{}, primary, secondary, dark string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`<div class="section section-alt"><h2>Logo System</h2><p>The %s logo system consists of three concept directions. Each is shown in light, dark, and monochrome variants.</p>`, html.EscapeString(name)))
+	sb.WriteString(fmt.Sprintf(`<div class="section section-alt"><h2>Logo System</h2><p>The %s logo system is shown below with the approved primary logo followed by concept explorations.</p>`, html.EscapeString(name)))
+
+	// Show the actual approved logo first
+	if logoURL != "" {
+		sb.WriteString(`<h3>Primary Logo</h3><div class="logo-grid" style="margin-bottom:40px">`)
+		logoVariants := []struct {
+			url   string
+			label string
+			bg    string
+		}{
+			{logoURL, "Primary", "#ffffff"},
+		}
+		if logoWhiteURL != "" && logoWhiteURL != logoURL {
+			logoVariants = append(logoVariants, struct {
+				url   string
+				label string
+				bg    string
+			}{logoWhiteURL, "On Dark", dark})
+		}
+		if logoIconURL != "" && logoIconURL != logoURL {
+			logoVariants = append(logoVariants, struct {
+				url   string
+				label string
+				bg    string
+			}{logoIconURL, "Icon", "#ffffff"})
+		}
+		for _, v := range logoVariants {
+			bgStyle := ""
+			if strings.Contains(v.bg, "#") {
+				bgStyle = fmt.Sprintf(`style="background:%s"`, v.bg)
+			}
+			sb.WriteString(fmt.Sprintf(`<div class="logo-cell" %s><img src="%s" alt="%s" style="max-width:160px;max-height:100px;object-fit:contain" /><div class="logo-label">%s</div></div>`, bgStyle, html.EscapeString(v.url), html.EscapeString(v.label), v.label))
+		}
+		sb.WriteString(`</div>`)
+	}
+
+	sb.WriteString(`<p>The following concept directions were explored during development.</p>`)
 
 	for li, l := range logos {
 		if logo, ok := l.(map[string]interface{}); ok {
