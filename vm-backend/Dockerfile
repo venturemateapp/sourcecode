@@ -18,6 +18,7 @@ RUN apk add --no-cache ca-certificates
 COPY --from=builder /app/server .
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/internal/email/assets ./internal/email/assets
+COPY --from=builder /app/internal/email/templates ./internal/email/templates
 COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 8080

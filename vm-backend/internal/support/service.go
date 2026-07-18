@@ -7,6 +7,7 @@ import (
 
 	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/email"
+	"github.com/venturemate/vmbackend/internal/notifications"
 )
 
 const supportSystemPrompt = `You are the VentureMate Support Bot. Your job is to answer user questions about VentureMate — an AI-powered startup operating system that helps entrepreneurs build, manage, and grow their businesses.
@@ -38,13 +39,14 @@ FORMATTING RULES (CRITICAL):
 - Always be warm and encouraging in tone`
 
 type Service struct {
-	repo    *Repository
-	aiMgr   *ai.ProviderManager
-	email   *email.Service
+	repo  *Repository
+	aiMgr *ai.ProviderManager
+	email *email.Service
+	notif *notifications.Service
 }
 
-func NewService(repo *Repository, aiMgr *ai.ProviderManager, emailSvc *email.Service) *Service {
-	return &Service{repo: repo, aiMgr: aiMgr, email: emailSvc}
+func NewService(repo *Repository, aiMgr *ai.ProviderManager, emailSvc *email.Service, notifSvc *notifications.Service) *Service {
+	return &Service{repo: repo, aiMgr: aiMgr, email: emailSvc, notif: notifSvc}
 }
 
 type ChatResult struct {
@@ -148,6 +150,19 @@ func (s *Service) AdminReply(ctx context.Context, sessionID, content string) (*M
 		return nil, err
 	}
 	_ = s.repo.UpdateSessionStatus(ctx, sessionID, "active")
+
+	session, err := s.repo.GetSession(ctx, sessionID)
+	if err == nil && session != nil && s.notif != nil {
+		url := "/vm/messages"
+		_, _ = s.notif.Notify(ctx, notifications.NotifyInput{
+			UserID:      session.UserID,
+			Type:        "support_reply",
+			Title:       "New support reply",
+			Description: truncateText(content, 120),
+			ActionURL:   &url,
+			ActionLabel: strPtr("View Reply"),
+		})
+	}
 	return msg, nil
 }
 
@@ -210,4 +225,16 @@ func extractSubject(prompt string) string {
 		subject = subject[:100] + "..."
 	}
 	return subject
+}
+
+func truncateText(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return string(runes[:max]) + "..."
+}
+
+func strPtr(s string) *string {
+	return &s
 }

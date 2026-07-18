@@ -176,7 +176,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	claudeKey := os.Getenv("CLAUDE_API_KEY")
 	grokKey := os.Getenv("GROK_API_KEY")
 	aiManager := ai.NewProviderManagerFromEnv()
-	supportSvc := support.NewService(supportRepo, aiManager, emailSvc)
+	supportSvc := support.NewService(supportRepo, aiManager, emailSvc, notificationSvc)
 
 	// 7. OAuth
 	oauthRepo := oauth.NewRepository(dbPool)
