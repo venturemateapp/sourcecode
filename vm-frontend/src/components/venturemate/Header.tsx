@@ -75,17 +75,12 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
       {searchOpen ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, maxWidth: 360 }}>
           <Search size={16} color="var(--vm-text-muted)" />
-          <input
-            autoFocus
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+          <TextField autoFocus size="small" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
             onKeyDown={e => { if (e.key === 'Escape') setSearchOpen(false); }}
             placeholder="Search VentureMate…"
-            style={{
-              flex: 1, border: 'none', outline: 'none', background: 'transparent',
-              color: '#fff', fontSize: 13, fontFamily: 'inherit',
-            }}
+            variant="standard"
+            sx={{ flex: 1, input: { color: '#fff', fontSize: 13 } }}
           />
           <IconButton size="small" onClick={() => { setSearchOpen(false); setSearchQuery(''); }} sx={{ color: 'var(--vm-text-muted)' }}>
             <X size={14} />

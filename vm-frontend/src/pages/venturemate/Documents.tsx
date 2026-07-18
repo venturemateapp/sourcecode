@@ -673,21 +673,8 @@ export function DocumentsPage(_props: DocumentsProps) {
                 </FormControl>
               </Box>
               <Box sx={{ flex: 2 }}>
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Tags (comma-separated)</Typography>
-                <input
-                  value={uploadTags}
-                  onChange={(e) => setUploadTags(e.target.value)}
-                  placeholder="e.g. contract, signed, Q1"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: '1px solid var(--vm-border-subtle)',
-                    backgroundColor: 'var(--vm-bg-tertiary)',
-                    color: 'var(--vm-text-primary)',
-                    fontSize: 13,
-                  }}
-                />
+                <TextField size="small" label="Tags (comma-separated)" value={uploadTags} onChange={(e) => setUploadTags(e.target.value)} placeholder="e.g. contract, signed, Q1" fullWidth
+                  sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
               </Box>
             </Box>
           )}

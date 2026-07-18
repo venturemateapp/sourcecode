@@ -84,7 +84,7 @@ export function SignIn() {
           boxShadow: '0 0 60px rgba(16, 185, 129, 0.1)',
         }}
       >
-        <form onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={handleSubmit}>
           <Stack spacing={3}>
             {/* Error Message */}
             {authError && (
@@ -248,7 +248,7 @@ export function SignIn() {
               </Link>
             </Box>
           </Stack>
-        </form>
+        </Box>
 
       </Card>
 

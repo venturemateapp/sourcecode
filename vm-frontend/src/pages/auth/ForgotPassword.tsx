@@ -128,7 +128,7 @@ export function ForgotPassword() {
             </Link>
           </Box>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={3}>
               {/* Email Field */}
               <TextField
@@ -213,7 +213,7 @@ export function ForgotPassword() {
                 </Box>
               </Link>
             </Stack>
-          </form>
+          </Box>
         )}
 
         {/* Visit our site */}

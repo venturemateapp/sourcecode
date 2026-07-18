@@ -474,7 +474,7 @@ export function LandingPage() {
 
               <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, md: 2 }, mb: { xs: 3, md: 4 }, flexWrap: 'wrap' }}>
-                  <img src="/VentureMate-logo.png" alt="VentureMate" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
+                  <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{ height: 40, width: 'auto', objectFit: 'contain' }} />
                   <Box>
                     <Typography variant="h6" fontWeight={700} sx={{ color: '#fff' }}>EcoTech Solutions</Typography>
                     <Typography sx={{ color: '#64748b', fontSize: '0.875rem' }}>Sustainability • Pre-seed</Typography>
@@ -981,7 +981,7 @@ export function LandingPage() {
           <Grid container spacing={6}>
             <Grid size={{ xs: 12, md: 4 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                <img src="/VentureMate-logo.png" alt="VentureMate" style={{ height: 80, width: 'auto', objectFit: 'contain' }} />
+                <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{ height: 80, width: 'auto', objectFit: 'contain' }} />
               </Box>
               <Typography sx={{ color: '#64748b', fontSize: '0.95rem', maxWidth: 300, lineHeight: 1.8 }}>
                 The all-in-one digital launchpad for the modern founder. Build, launch, and grow your startup with AI-powered tools.
