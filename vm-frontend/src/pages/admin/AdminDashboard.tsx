@@ -13,12 +13,12 @@ import { AdminAiUsage } from './AdminAiUsage';
 type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage' | 'plan-usage';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
+  { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
   { key: 'ai-usage', icon: Brain, label: 'AI Usage', desc: 'Token usage & interactions' },
   { key: 'banking', icon: Landmark, label: 'Banking', desc: 'Bank accounts' },
   { key: 'bookings', icon: ThumbsUp, label: 'Bookings', desc: 'Appointments' },
   { key: 'broadcast', icon: Bell, label: 'Broadcast', desc: 'Push notifications' },
   { key: 'businesses', icon: Building2, label: 'Businesses', desc: 'Startup profiles' },
-  { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
   { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
   { key: 'investors', icon: Globe, label: 'Investors', desc: 'Network partners' },
   { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
