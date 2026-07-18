@@ -5,6 +5,8 @@ import { AICreationStudio, type ProposedChange } from '../../components/venturem
 import { PlanViewer } from '../../components/venturemate/PlanViewer';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useToast } from '../../components/shared/toast';
 import { PageHeader, GlassCard } from '../../components/shared';
 import type { BusinessPlan as BusinessPlanType, PlanSection } from '../../types/venturemate';
 
@@ -96,9 +98,25 @@ function PlanPreview({ plan, primary, proposed = false }: { plan: BusinessPlanTy
 }
 
 export function BusinessPlan() {
-  const { selectedBusiness } = useBusiness();
+  const { selectedBusiness, businesses } = useBusiness();
+  const { subscription } = useSubscription();
+  const toast = useToast();
   const [viewMode, setViewMode] = useState<'grid' | 'slide'>('slide');
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its business plan with AI." />;
+
+  const maxBusinessPlans = subscription?.plan?.limits?.maxBusinessPlans;
+  const businessPlanCount = businesses.filter(b => b.businessPlan?.sections?.length || b.businessPlan?.executiveSummary).length;
+  const limitReached = maxBusinessPlans !== -1 && businessPlanCount >= (maxBusinessPlans ?? Infinity);
+
+  const handleBeforeGenerate = () => {
+    if (limitReached) {
+      toast.warning('Upgrade required', {
+        description: `You've reached the maximum of ${maxBusinessPlans} business plans on your ${subscription?.plan?.displayName || subscription?.plan?.name || 'current'} plan. Upgrade to add more.`,
+      });
+      return false;
+    }
+    return true;
+  };
 
   const plan = selectedBusiness.businessPlan;
   const brand = selectedBusiness.brandKit;
@@ -130,6 +148,7 @@ export function BusinessPlan() {
           'Make the plan more realistic for a Ghanaian startup at my current stage.',
         ]}
         emptyLabel="No approved business plan exists. Ask AI to generate the first complete version."
+        onBeforeGenerate={handleBeforeGenerate}
         renderCurrent={() => {
           if (!hasPlan) return null;
           if (viewMode === 'slide') return <PlanViewer title={plan.title || 'Business Plan'} summary={plan.executiveSummary || ''} sections={plan.sections || []} version={plan.version || '1.0'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;

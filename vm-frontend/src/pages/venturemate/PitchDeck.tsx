@@ -6,6 +6,8 @@ import { SlideViewer } from '../../components/venturemate/SlideViewer';
 import { ModernPitchDeck } from '../../components/venturemate/ModernPitchDeck';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useToast } from '../../components/shared/toast';
 import { PageHeader, GlassCard } from '../../components/shared';
 import type { PitchDeck as PitchDeckType, Slide, ViewType } from '../../types/venturemate';
 
@@ -82,10 +84,26 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
 }
 
 export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) {
-  const { selectedBusiness } = useBusiness();
+  const { selectedBusiness, businesses } = useBusiness();
+  const { subscription } = useSubscription();
+  const toast = useToast();
   const [viewMode, setViewMode] = useState<'grid' | 'slide'>('slide');
   const [designMode, setDesignMode] = useState<'classic' | 'premium'>('premium');
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its pitch deck with AI." />;
+
+  const maxPitchDecks = subscription?.plan?.limits?.maxPitchDecks;
+  const pitchDeckCount = businesses.filter(b => b.pitchDeck?.slides?.length).length;
+  const limitReached = maxPitchDecks !== -1 && pitchDeckCount >= (maxPitchDecks ?? Infinity);
+
+  const handleBeforeGenerate = () => {
+    if (limitReached) {
+      toast.warning('Upgrade required', {
+        description: `You've reached the maximum of ${maxPitchDecks} pitch decks on your ${subscription?.plan?.displayName || subscription?.plan?.name || 'current'} plan. Upgrade to add more.`,
+      });
+      return false;
+    }
+    return true;
+  };
 
   const deck = selectedBusiness.pitchDeck;
   const brand = selectedBusiness.brandKit;
@@ -139,6 +157,7 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
           'Rewrite the funding ask so assumptions and use of funds are clear.',
         ]}
         emptyLabel="No approved pitch deck exists. Ask AI to create the first investor story."
+        onBeforeGenerate={handleBeforeGenerate}
         renderCurrent={() => {
           if (viewMode === 'slide' && hasDeck) {
             if (designMode === 'premium') {

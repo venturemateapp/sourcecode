@@ -39,7 +39,6 @@ const NAV_SECTIONS: NavSection[] = [
   ]},
   { title: 'SCALE', items: [
     { label: 'Credit Score', icon: 'TrendingUp', view: 'credit-score' as ViewType },
-    { label: 'Health Score', icon: 'Heart', view: 'health-score' as ViewType },
   ]},
   { title: 'BUSINESS TOOLS', items: [
     { label: 'Pitch Deck', icon: 'Presentation', view: 'pitch-deck' as ViewType },

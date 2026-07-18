@@ -24,6 +24,7 @@ import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelec
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { HealthScorePage } from './HealthScore';
 import {
   TrendingUp,
   Landmark,
@@ -428,13 +429,17 @@ export function CreditScorePage(_props: CreditScoreProps) {
           },
         }}
       >
+        <Tab label="Health Score" />
         <Tab label="Financing Offers" />
         <Tab label="Applications" />
         <Tab label="History" />
       </Tabs>
 
+      {/* Health Score */}
+      {activeTab === 0 && <HealthScorePage />}
+
       {/* Financing Offers */}
-      {activeTab === 0 && (
+      {activeTab === 1 && (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: { xs: 2, md: 3 } }}>
           {financingOffers.map((offer) => (
             <Card
@@ -540,7 +545,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
       )}
 
       {/* Applications */}
-      {activeTab === 1 && (
+      {activeTab === 2 && (
         <Card
           sx={{
             bgcolor: 'var(--vm-bg-secondary)',
@@ -600,7 +605,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
       )}
 
       {/* History */}
-      {activeTab === 2 && (
+      {activeTab === 3 && (
         <Box sx={{ overflowX: 'auto' }}>
           <Card
             sx={{

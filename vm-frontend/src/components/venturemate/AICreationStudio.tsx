@@ -40,6 +40,7 @@ interface AICreationStudioProps {
   renderCurrent: () => ReactNode;
   renderProposal: (change: ProposedChange) => ReactNode;
   onApproved?: () => Promise<void> | void;
+  onBeforeGenerate?: () => boolean | Promise<boolean>;
 }
 
 const PROPOSE_MUTATION = `
@@ -67,7 +68,7 @@ let msgCounter = 0;
 export function AICreationStudio({
   domain, title: _title, description: _description, placeholder, starterPrompts,
   emptyLabel = 'No approved version yet. Ask AI to create the first one.',
-  renderCurrent, renderProposal, onApproved,
+  renderCurrent, renderProposal, onApproved, onBeforeGenerate,
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
   const [prompt, setPrompt] = useState('');
@@ -92,6 +93,10 @@ export function AICreationStudio({
 
   const requestProposal = async (instruction: string) => {
     if (!selectedBusiness || !userId || !instruction.trim() || loading) return;
+    if (onBeforeGenerate) {
+      const canProceed = await onBeforeGenerate();
+      if (!canProceed) return;
+    }
     setLoading(true);
     setError(null);
     setSuccess(null);

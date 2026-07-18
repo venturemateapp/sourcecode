@@ -4,6 +4,8 @@ import { Person } from '@mui/icons-material';
 import { Plus, MoreVertical, Edit2, Trash2, Mail, Briefcase, PieChart, Camera } from 'lucide-react';
 import type { TeamMember } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useToast } from '../../components/shared/toast';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 
 const ROLE_OPTIONS = [
@@ -52,12 +54,17 @@ const RESPONSIBILITY_OPTIONS = [
 
 export function TeamPage() {
   const { selectedBusiness: business, updateBusiness } = useBusiness();
+  const { subscription } = useSubscription();
+  const toast = useToast();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => business?.team || []);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const maxTeamMembers = subscription?.plan?.limits?.maxTeamMembers;
+  const limitReached = maxTeamMembers !== -1 && teamMembers.length >= (maxTeamMembers ?? Infinity);
 
   const [formData, setFormData] = useState<Partial<TeamMember>>({
     name: '',
@@ -92,6 +99,12 @@ export function TeamPage() {
   };
 
   const handleAddNew = () => {
+    if (limitReached) {
+      toast.warning('Upgrade required', {
+        description: `You've reached the maximum of ${maxTeamMembers} team members on your ${subscription?.plan?.displayName || subscription?.plan?.name || 'current'} plan. Upgrade to add more.`,
+      });
+      return;
+    }
     setIsEditing(false);
     setFormData({
       name: '',
@@ -202,14 +215,15 @@ export function TeamPage() {
             color: 'white',
             fontSize: { xs: 13, sm: 14 },
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: limitReached ? 'not-allowed' : 'pointer',
+            opacity: limitReached ? 0.5 : 1,
             width: { xs: '100%', sm: 'auto' },
             transition: 'all 0.2s',
-            '&:hover': { bgcolor: 'var(--vm-primary-500)' },
+            '&:hover': limitReached ? {} : { bgcolor: 'var(--vm-primary-500)' },
           }}
         >
           <Plus size={18} />
-          Add Team Member
+          {limitReached ? 'Limit Reached' : 'Add Team Member'}
         </Box>
       </Box>
 

@@ -6,6 +6,8 @@ import { RegisterBusinessModal } from '../../components/venturemate/RegisterBusi
 import type { ViewType, Business } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useToast } from '../../components/shared/toast';
 
 interface BusinessRegistrationStatus {
   id: string;
@@ -29,11 +31,26 @@ interface BusinessesProps {
 
 export function Businesses({ onViewChange }: BusinessesProps) {
   const { businesses: businessList, setSelectedBusinessId, addBusiness } = useBusiness();
+  const { subscription } = useSubscription();
+  const toast = useToast();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [, setSelectedBusiness] = useState<Business | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registrations, setRegistrations] = useState<Record<string, BusinessRegistrationStatus>>({});
+
+  const maxBusinesses = subscription?.plan?.limits?.maxBusinesses;
+  const limitReached = maxBusinesses !== -1 && businessList.length >= (maxBusinesses ?? Infinity);
+
+  const handleCreateClick = () => {
+    if (limitReached) {
+      toast.warning('Upgrade required', {
+        description: `You've reached the maximum of ${maxBusinesses} businesses on your ${subscription?.plan?.displayName || subscription?.plan?.name || 'current'} plan. Upgrade to add more.`,
+      });
+      return;
+    }
+    setCreateModalOpen(true);
+  };
 
   const fetchRegistrations = useCallback(() => {
     if (businessList.length === 0) return;
@@ -122,7 +139,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
           </Box>
           <Box
             component="button"
-            onClick={() => setCreateModalOpen(true)}
+            onClick={handleCreateClick}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -136,13 +153,14 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               color: 'white',
               fontSize: { xs: 13, sm: 14 },
               fontWeight: 600,
-              cursor: 'pointer',
+              cursor: limitReached ? 'not-allowed' : 'pointer',
+              opacity: limitReached ? 0.5 : 1,
               transition: 'all 0.2s',
-              '&:hover': { bgcolor: 'var(--vm-primary-500)' },
+              '&:hover': limitReached ? {} : { bgcolor: 'var(--vm-primary-500)' },
             }}
           >
             <Plus size={16} />
-            Create
+            {limitReached ? 'Limit Reached' : 'Create'}
           </Box>
         </Box>
       </Box>
