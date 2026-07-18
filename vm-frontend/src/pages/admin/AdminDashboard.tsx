@@ -22,7 +22,6 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; des
   { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
   { key: 'investors', icon: Globe, label: 'Investors', desc: 'Network partners' },
   { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
-  { key: 'plans', icon: BookOpen, label: 'Plans', desc: 'Subscription tiers' },
   { key: 'plan-usage', icon: CreditCard, label: 'Plan Usage', desc: 'Subscriber plan utilization' },
   { key: 'providers', icon: Briefcase, label: 'Providers', desc: 'Service providers' },
   { key: 'registrations', icon: FileText, label: 'Registrations', desc: 'Business registrations' },
