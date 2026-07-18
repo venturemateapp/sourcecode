@@ -170,6 +170,7 @@ function VentureMateApp() {
   const toast = useToast();
 
   const subscriptionLoaded = !!subscription?.plan;
+  const plansLoaded = plans.length > 0;
 
   const viewFeatureMap: Partial<Record<ViewType, string>> = {
     'crm': 'CRM',
@@ -195,12 +196,11 @@ function VentureMateApp() {
   };
 
   const hasFeature = (view: ViewType): boolean => {
-    if (!subscriptionLoaded) return true;
+    if (!subscriptionLoaded || !plansLoaded) return true;
     const feature = viewFeatureMap[view];
     if (!feature) return true;
-    // Check all plans — if ANY plan includes this feature and user's plan is >= that plan's tier, allow
     const userSort = subscription?.plan?.sortOrder ?? 0;
-    return (plans || []).some(p =>
+    return plans.some(p =>
       p.sortOrder <= userSort &&
       p.features.some(f => f.text === feature && f.included)
     );

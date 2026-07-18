@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { Box, Typography, Card, Tabs, Tab, Chip, Dialog, useTheme, useMediaQuery } from '@mui/material';
 import {
   CreditCard,
-  Receipt,
   TrendingUp,
   CheckCircle,
   Calendar,
@@ -307,7 +306,6 @@ export function BillingPage() {
         scrollButtons={isMobile ? 'auto' : false}
       >
         <Tab label="Plans" />
-        <Tab label="Invoices" />
         <Tab label="Features" />
       </Tabs>
 
@@ -481,25 +479,8 @@ export function BillingPage() {
         </>
       )}
 
-      {/* Invoices Tab */}
-      {activeTab === 1 && (
-        <Box sx={{ overflowX: 'auto' }}>
-          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
-            <Box sx={{ p: { xs: 3, sm: 4 }, textAlign: 'center' }}>
-              <Receipt size={32} color="var(--vm-text-muted)" style={{ margin: '0 auto 12px' }} />
-              <Typography sx={{ fontSize: 15, color: 'var(--vm-text-muted)', mb: 1 }}>
-                No invoices yet
-              </Typography>
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-                Invoices will appear here once you upgrade to a paid plan.
-              </Typography>
-            </Box>
-          </Card>
-        </Box>
-      )}
-
       {/* Features Tab */}
-      {activeTab === 2 && (
+      {activeTab === 1 && (
         <Box sx={{ overflowX: 'auto' }}>
           <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
             {/* Column headers */}
