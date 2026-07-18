@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Box, Card, Chip, Typography, TextField, MenuItem } from '@mui/material';
-import { Brain, Cpu, Zap, Clock, BarChart3, Filter } from 'lucide-react';
+import { Brain, Cpu, Zap, Clock, Filter } from 'lucide-react';
 import { graphqlRequest } from '../../lib/api';
 
 interface AiUsageRow {

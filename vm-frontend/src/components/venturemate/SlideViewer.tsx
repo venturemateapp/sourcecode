@@ -6,10 +6,15 @@ import jsPDF from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import type { Slide } from '../../types/venturemate';
 
+interface GlowPos {
+  color: string; width: number; height: number; blur: number;
+  top?: number; right?: number; bottom?: number; left?: number;
+}
+
 interface TemplateBg {
   base: string;
-  glow1: { color: string; top: number; right: number; width: number; height: number; blur: number };
-  glow2: { color: string; bottom: number; left: number; width: number; height: number; blur: number };
+  glow1: GlowPos;
+  glow2: GlowPos;
   mesh: string;
 }
 

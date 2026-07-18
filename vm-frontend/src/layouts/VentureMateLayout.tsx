@@ -35,7 +35,7 @@ export function VentureMateLayout({
         onClose={isMobile ? () => setMobileOpen(false) : undefined}
         ModalProps={{ keepMounted: true }}
         sx={{
-          width: isMobile ? 'auto' : 260,
+          width: 280,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: 280,
@@ -45,6 +45,7 @@ export function VentureMateLayout({
               : 'rgba(10, 10, 15, 0.8)',
             backdropFilter: 'blur(20px)',
             borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+            zIndex: 120,
           },
         }}
       >

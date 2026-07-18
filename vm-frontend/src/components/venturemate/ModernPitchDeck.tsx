@@ -1,4 +1,4 @@
-import { Box, Typography, Avatar, Chip } from '@mui/material';
+import { Box, Typography, Avatar } from '@mui/material';
 import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign } from 'lucide-react';
 import { AuroraBackground, FloatingOrb } from './AuroraBackground';
 import type { Slide } from '../../types/venturemate';
@@ -499,6 +499,7 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
         px: { xs: 4, sm: 6, md: 10 },
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <Icon size={14} color={accent} />
           <Box sx={{
             width: 10, height: 10, borderRadius: '50%', bgcolor: accent,
             boxShadow: `0 0 12px ${accent}60`,
@@ -541,7 +542,7 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
   );
 }
 
-export function ModernPitchDeck({ slides, title, logo, businessName, accentColor = '#8b5cf6', secondaryColor = '#2563eb' }: ModernPitchDeckProps) {
+export function ModernPitchDeck({ slides, title: _title, logo, businessName, accentColor = '#8b5cf6', secondaryColor = '#2563eb' }: ModernPitchDeckProps) {
   const accent = accentColor;
 
   if (!slides || slides.length === 0) return null;
@@ -555,7 +556,6 @@ export function ModernPitchDeck({ slides, title, logo, businessName, accentColor
 
         let slideContent: React.ReactNode;
         switch (slide.type) {
-          case 'cover':
           case 'title':
           case 'closing':
             slideContent = <CoverSlide {...common} />;

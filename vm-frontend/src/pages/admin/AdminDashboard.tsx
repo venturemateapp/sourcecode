@@ -212,6 +212,8 @@ export function AdminDashboard() {
       bgcolor: 'rgba(7, 19, 15, 0.95)',
       borderRight: '1px solid rgba(255,255,255,.06)',
       backdropFilter: 'blur(20px)',
+      zIndex: 120,
+      position: 'relative',
     }}>
       <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
         <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(245,158,11,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -271,20 +273,20 @@ export function AdminDashboard() {
   );
 
   const PageHeader = ({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) => (
-    <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, gap: 1.5, mb: 2.5, flexDirection: { xs: 'column', sm: 'row' } }}>
-      <Box sx={{ flex: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+    <Box sx={{ display: 'flex', alignItems: { xs: 'stretch', sm: 'center' }, gap: 1.5, mb: 2.5, flexDirection: { xs: 'column', sm: 'row' }, minWidth: 0 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
           {isMobile && (
             <IconButton size="small" onClick={() => setMobileNavOpen(true)} sx={{ color: 'rgba(255,255,255,.5)' }}>
               <Menu size={20} />
             </IconButton>
           )}
-          <Typography sx={{ fontSize: { xs: 18, sm: 22 }, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{title}</Typography>
+          <Typography sx={{ fontSize: { xs: 18, sm: 22 }, fontWeight: 800, color: '#fff', lineHeight: 1.2, whiteSpace: 'nowrap' }}>{title}</Typography>
           <Chip label="Admin" size="small" sx={{ bgcolor: 'rgba(245,158,11,.15)', color: '#f59e0b', fontWeight: 700, fontSize: 9, height: 20 }} />
         </Box>
-        {subtitle && <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 12, mt: 0.25, ml: { xs: 5, sm: 0 } }}>{subtitle}</Typography>}
+        {subtitle && <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 12, mt: 0.25 }}>{subtitle}</Typography>}
       </Box>
-      {action && <Box sx={{ ml: { xs: 5, sm: 0 } }}>{action}</Box>}
+      {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}
     </Box>
   );
 
@@ -1085,8 +1087,9 @@ export function AdminDashboard() {
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
-        maxHeight: '100vh',
+        height: '100vh',
         overflow: 'auto',
+        position: 'relative',
       }}>
         <Box sx={{
           px: { xs: 2, sm: 3, md: 4 },

@@ -10,13 +10,13 @@ import {
   LayoutDashboard, Building2, ChevronDown, ChevronRight, Bot, FolderOpen, Globe, Users,
   Landmark, Share2, Store, TrendingUp, CreditCard, Heart, Presentation, FileText, Receipt,
   Palette, Target, UserCircle, Lightbulb, BarChart3, Calculator, Calendar,
-  LogOut, X, Grid3x3, Workflow, Sparkles, Zap,
+  LogOut, X, Sparkles, Zap,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Building2, Bot, FolderOpen, Globe, Users, Landmark, Share2, Store,
   TrendingUp, CreditCard, Heart, Presentation, FileText, Receipt, Palette, Target,
-  UserCircle, Lightbulb, BarChart3, Calculator, Calendar, Grid3x3, Workflow,
+  UserCircle, Lightbulb, BarChart3, Calculator, Calendar,
 };
 
 const NAV_SECTIONS: NavSection[] = [
@@ -53,8 +53,6 @@ const NAV_SECTIONS: NavSection[] = [
     { label: 'Co-Founders', icon: 'UserCircle', view: 'cofounders' as ViewType },
   ]},
   { title: 'AI TOOLS', items: [
-    { label: 'Custom Objects', icon: 'Grid3x3', view: 'custom-objects' as ViewType },
-    { label: 'Workflows', icon: 'Workflow', view: 'workflows' as ViewType },
     { label: 'Dashboards', icon: 'BarChart3', view: 'dashboards' as ViewType },
   ]},
   { title: 'ACCOUNT', items: [
