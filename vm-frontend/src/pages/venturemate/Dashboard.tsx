@@ -52,7 +52,7 @@ const statsCards = b ? [
       { label: 'Active Users', value: b.metrics?.totalUsers?.toLocaleString() ?? '0', change: `${b.metrics?.activeUsers?.toLocaleString() ?? '0'} active`, icon: Users, color: '#3b82f6' },
       { label: 'Milestones', value: b.milestones?.length?.toString() ?? '0', change: `${b.milestones?.filter(m => m.status === 'in-progress')?.length ?? 0} in progress`, icon: Target, color: '#f59e0b' },
       { label: 'Documents', value: b.documents?.length?.toString() ?? '0', change: 'All organized', icon: FileText, color: '#8b5cf6' },
-      { label: 'Pitch Decks', value: b.pitchDeck?.slides?.length?.toString() ?? '0', change: `${b.pitchDeck?.slides?.length ?? 0} slides`, icon: Presentation, color: '#06b6d4' },
+      { label: 'Slides', value: b.pitchDeck?.slides?.length?.toString() ?? '0', change: `${b.pitchDeck?.slides?.length ?? 0} in pitch deck`, icon: Presentation, color: '#06b6d4' },
       { label: 'Websites', value: b.websiteConfig?.pages?.length?.toString() ?? '0', change: b.websiteConfig?.status ?? 'draft', icon: Globe, color: '#f97316' },
     ] : [];
  
@@ -137,7 +137,7 @@ const statsCards = b ? [
       )}
 
       {/* Usage Quota Cards */}
-      {usage && subscription?.plan?.limits && (
+      {subscription?.plan?.limits && (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: '24px', mb: 4 }}>
           {/* AI Usage */}
           <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 2.5, md: 3 } }}>
@@ -147,7 +147,7 @@ const statsCards = b ? [
                 AI Usage
               </Typography>
               {subscription.plan.limits.aiTokensMonthly !== -1 && subscription.plan.limits.aiTokensMonthly !== 0 && (() => {
-                const used = usage.aiTokensUsed ?? 0;
+                const used = usage?.aiTokensUsed ?? 0;
                 const limit = subscription.plan.limits.aiTokensMonthly;
                 const ratio = limit > 0 ? used / limit : 0;
                 const pct = Math.min(ratio * 100, 100);
@@ -163,7 +163,7 @@ const statsCards = b ? [
                 Unlimited AI tokens
               </Typography>
             ) : (() => {
-              const used = usage.aiTokensUsed ?? 0;
+              const used = usage?.aiTokensUsed ?? 0;
               const limit = subscription.plan.limits.aiTokensMonthly;
               const ratio = limit > 0 ? used / limit : 0;
               const percentage = Math.min(ratio * 100, 100);
@@ -195,7 +195,7 @@ const statsCards = b ? [
                 Storage
               </Typography>
               {(() => {
-                const usedBytes = usage.storageBytes ?? 0;
+                const usedBytes = usage?.storageBytes ?? 0;
                 const limitGb = subscription.plan.limits.storageGb;
                 const usedGb = usedBytes / 1_073_741_824;
                 const ratio = limitGb > 0 ? usedGb / limitGb : 0;
@@ -208,7 +208,7 @@ const statsCards = b ? [
               })()}
             </Box>
             {(() => {
-              const usedBytes = usage.storageBytes ?? 0;
+              const usedBytes = usage?.storageBytes ?? 0;
               const limitGb = subscription.plan.limits.storageGb;
               const usedGb = usedBytes / 1_073_741_824;
               const ratio = limitGb > 0 ? usedGb / limitGb : 0;
