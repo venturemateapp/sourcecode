@@ -1339,7 +1339,7 @@ export function AdminDashboard() {
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#050f0a', position: 'relative' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
       <AnimatedBackground />
       {isMobile ? (
         <Drawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)}
