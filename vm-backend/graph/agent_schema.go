@@ -106,6 +106,7 @@ func fullAgentTools() *ai.ToolRegistry {
 		InvoiceRepo:     AppContainer.InvoiceRepo,
 		InvestorRepo:    AppContainer.InvestorRepo,
 		FileHandler:     AppContainer.FileHandler,
+		RecraftClient:   AppContainer.RecraftClient,
 	})
 }
 

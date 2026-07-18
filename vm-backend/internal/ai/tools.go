@@ -16,6 +16,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/domains"
 	"github.com/venturemate/vmbackend/internal/investors"
 	"github.com/venturemate/vmbackend/internal/invoices"
+	"github.com/venturemate/vmbackend/internal/recraft"
 	"github.com/venturemate/vmbackend/internal/websites"
 )
 
@@ -34,6 +35,7 @@ type ToolDependencies struct {
 	InvoiceRepo     *invoices.Repository
 	InvestorRepo    *investors.Repository
 	FileHandler     *FileHandler
+	RecraftClient   *recraft.Client
 }
 
 type ToolRegistry struct {
@@ -51,7 +53,7 @@ func NewFullToolRegistry(deps ToolDependencies) *ToolRegistry {
 		tr.register(getBusinessInfoTool(deps.BusinessRepo))
 		tr.register(updateBusinessFieldTool(deps.BusinessRepo))
 		tr.register(listBusinessesTool(deps.BusinessRepo))
-		tr.register(generateSVGLogoTool(deps.BusinessRepo))
+		tr.register(generateSVGLogoTool(deps.BusinessRepo, deps.RecraftClient))
 		tr.register(deleteBusinessTool(deps.BusinessRepo))
 	}
 	if deps.DomainRepo != nil && deps.BusinessRepo != nil {
@@ -234,8 +236,8 @@ func deleteBusinessTool(repo *businesses.Repository) Tool {
 	}}
 }
 
-func generateSVGLogoTool(repo *businesses.Repository) Tool {
-	return Tool{Def: ToolDef{Name: "generateSVGLogo", Description: "Generate a lightweight local SVG logo. Save it only when the user explicitly approved this exact version.", Parameters: rawSchema(`{
+func generateSVGLogoTool(repo *businesses.Repository, rc *recraft.Client) Tool {
+	return Tool{Def: ToolDef{Name: "generateSVGLogo", Description: "Generate a logo. Uses Recraft AI for high-quality logos. Save it only when the user explicitly approved this exact version.", Parameters: rawSchema(`{
 		"type":"object","properties":{
 			"businessId":{"type":"string"},"label":{"type":"string"},"primaryColor":{"type":"string"},"secondaryColor":{"type":"string"},"shape":{"type":"string","enum":["rounded","circle","square"]},"confirmed":{"type":"boolean"}
 		},"required":["businessId"]
@@ -245,39 +247,60 @@ func generateSVGLogoTool(repo *businesses.Repository) Tool {
 			return jsonError(err), nil
 		}
 		primary := validHexOr(asString(args, "primaryColor"), "#10b981")
-		secondary := validHexOr(asString(args, "secondaryColor"), "#059669")
 		label := strings.TrimSpace(asString(args, "label"))
 		if label == "" {
-			label = initials(biz.Name)
+			label = biz.Name
 		}
-		if len([]rune(label)) > 4 {
-			label = string([]rune(label)[:4])
+
+		// Use Recraft for high-quality logo generation
+		var logoURL string
+		var svgURL string
+		if rc != nil {
+			prompt := fmt.Sprintf("Professional logo for '%s', primary color %s, minimal modern design, clean vector style suitable for a startup, no text", label, primary)
+			result, err := rc.GenerateLogo(prompt)
+			if err == nil && len(result.Data) > 0 {
+				logoURL = result.Data[0].URL
+				if svg, err := rc.VectorizeImage(logoURL); err == nil {
+					svgURL = svg
+				}
+			}
 		}
-		shape := asString(args, "shape")
-		rx := "24"
-		if shape == "square" {
-			rx = "0"
+
+		// Fallback to local SVG if Recraft unavailable
+		if logoURL == "" {
+			secondary := validHexOr(asString(args, "secondaryColor"), "#059669")
+			initials := label
+			if len([]rune(initials)) > 4 {
+				initials = string([]rune(initials)[:4])
+			}
+			shape := asString(args, "shape")
+			rx := "24"
+			if shape == "square" {
+				rx = "0"
+			}
+			if shape == "circle" {
+				rx = "64"
+			}
+			svg := fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%s"/><stop offset="1" stop-color="%s"/></linearGradient></defs><rect width="128" height="128" rx="%s" fill="url(#g)"/><text x="64" y="74" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="700">%s</text></svg>`, primary, secondary, rx, html.EscapeString(initials))
+			logoURL = "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(svg))
+			svgURL = logoURL
 		}
-		if shape == "circle" {
-			rx = "64"
-		}
-		svg := fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%s"/><stop offset="1" stop-color="%s"/></linearGradient></defs><rect width="128" height="128" rx="%s" fill="url(#g)"/><text x="64" y="74" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="700">%s</text></svg>`, primary, secondary, rx, html.EscapeString(label))
-		dataURL := "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(svg))
+
 		brand := map[string]interface{}{}
 		if json.Valid([]byte(biz.BrandKit)) {
 			_ = json.Unmarshal([]byte(biz.BrandKit), &brand)
 		}
-		brand["logo"], brand["logoWhite"], brand["logoIcon"] = dataURL, dataURL, dataURL
-		brand["primaryColor"], brand["secondaryColor"] = primary, secondary
+		brand["logo"], brand["logoWhite"], brand["logoIcon"] = logoURL, logoURL, svgURL
+		brand["primaryColor"] = primary
 		if !asBool(args, "confirmed") {
-			return jsonValue(map[string]interface{}{"success": true, "preview": true, "saved": false, "logo": dataURL, "brandKit": brand, "message": "Logo proposal generated but not saved. The user must approve this exact version."}), nil
+			return jsonValue(map[string]interface{}{"success": true, "preview": true, "saved": false, "logo": logoURL, "brandKit": brand, "message": "Logo proposal generated but not saved. The user must approve this exact version."}), nil
 		}
 		brandBytes, _ := json.Marshal(brand)
 		biz.BrandKit = string(brandBytes)
 		if err := repo.Update(ctx, biz); err != nil {
 			return jsonError(err), nil
 		}
-		return jsonValue(map[string]interface{}{"success": true, "saved": true, "logo": dataURL, "message": "Approved local SVG logo saved"}), nil
+		return jsonValue(map[string]interface{}{"success": true, "saved": true, "logo": logoURL, "message": "Approved logo saved"}), nil
 	}}
 }
 
