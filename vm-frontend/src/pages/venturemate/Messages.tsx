@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, Card, TextField, IconButton, Chip } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
@@ -6,7 +7,7 @@ import { graphqlRequest } from '../../lib/api';
 import { stripMarkdown } from '../../lib/stripMarkdown';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Send, MessageCircle, Plus, User } from 'lucide-react';
+import { Send, MessageCircle, Plus, User, ArrowLeft } from 'lucide-react';
 import { API_CONFIG } from '../../lib/constants';
 
 interface Conversation {
@@ -35,8 +36,10 @@ declare global { interface Window { __ws?: WebSocket } }
 export function MessagesPage() {
   const { user } = useAuth();
   const { selectedBusiness } = useBusiness();
+  const [searchParams] = useSearchParams();
+  const convParam = searchParams.get('conv');
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConv, setActiveConv] = useState<string | null>(null);
+  const [activeConv, setActiveConv] = useState<string | null>(convParam);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,13 @@ export function MessagesPage() {
   }, [q]);
 
   useEffect(() => { loadConvos(); }, [loadConvos]);
+
+  // Auto-load messages for conversation from URL param
+  useEffect(() => {
+    if (convParam) {
+      loadMessages(convParam);
+    }
+  }, [convParam, loadMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -195,6 +205,9 @@ export function MessagesPage() {
         ) : (
           <>
             <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconButton size="small" onClick={() => setActiveConv(null)} sx={{ color: 'var(--vm-text-muted)', display: { md: 'none' }, mr: -0.5 }}>
+                <ArrowLeft size={18} />
+              </IconButton>
               <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
                 {conversations.find(c => c.id === activeConv)?.subject || 'Chat'}
               </Typography>

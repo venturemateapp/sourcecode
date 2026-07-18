@@ -157,13 +157,13 @@ func (s *Service) AdminReply(ctx context.Context, sessionID, content string) (*M
 
 	session, err := s.repo.GetSession(ctx, sessionID)
 	if err == nil && session != nil && s.notif != nil {
-		url := "/vm/messages"
-		_, _ = s.notif.Notify(ctx, notifications.NotifyInput{
-			UserID:      session.UserID,
-			Type:        "support_reply",
-			Title:       "New support reply",
-			Description: truncateText(content, 120),
-			ActionURL:   &url,
+	url := fmt.Sprintf("/vm/messages?conv=%s", sessionID)
+	_, _ = s.notif.Notify(ctx, notifications.NotifyInput{
+		UserID:      session.UserID,
+		Type:        "support_reply",
+		Title:       "New support reply",
+		Description: truncateText(content, 120),
+		ActionURL:   &url,
 			ActionLabel: strPtr("View Reply"),
 		})
 	}

@@ -144,7 +144,7 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
           </Box>
         ) : (
           notifications.slice(0, 10).map(n => (
-            <MenuItem key={n.id} onClick={() => { markAsRead(n.id); }} sx={{
+            <MenuItem key={n.id} onClick={() => { markAsRead(n.id); if (n.actionUrl) navigate(n.actionUrl); setNotifAnchor(null); }} sx={{
               px: 1.5, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', alignItems: 'flex-start',
               bgcolor: n.read ? 'transparent' : 'rgba(16,185,129,.04)',
             }}>
