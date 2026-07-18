@@ -10,7 +10,7 @@ import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { AuthCallback } from './pages/auth/AuthCallback';
 import { OAuthCallback } from './pages/auth/OAuthCallback';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { ToastProvider } from './components/shared/toast';
+import { ToastProvider, useToast } from './components/shared/toast';
 import { Dashboard } from './pages/venturemate/Dashboard';
 import { Businesses } from './pages/venturemate/Businesses';
 import { PitchDeck } from './pages/venturemate/PitchDeck';
@@ -45,7 +45,7 @@ import { MessagesPage } from './pages/venturemate/Messages';
 import { LandingPage } from './pages/LandingPage';
 import { OnboardingPage } from './pages/onboarding/OnboardingPage';
 import { BusinessProvider, useBusiness } from './contexts/BusinessContext';
-import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { AIProviderProvider } from './contexts/AIProviderContext';
@@ -166,6 +166,50 @@ function VentureMateApp() {
   const location = window.location;
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const onboardingCompleted = localStorage.getItem('venturemate_onboarding_completed') === 'true';
+  const { subscription } = useSubscription();
+  const toast = useToast();
+
+  const planFeatures = subscription?.plan?.features || [];
+
+  const viewFeatureMap: Partial<Record<ViewType, string>> = {
+    'crm': 'CRM',
+    'invoices': 'Invoicing',
+    'banking': 'Banking Integrations',
+    'website-builder': 'Website Creator',
+    'websites': 'Website Creator',
+    'documents': 'Document Vault',
+    'social': 'Social Media Scheduler',
+    'marketplace': 'Marketplace Access',
+    'investors': 'Investor Matching',
+    'financial-forecast': 'Advanced Financial Modeling',
+    'milestones': 'Milestones & Team Management',
+    'team': 'Milestones & Team Management',
+    'companies': 'CRM',
+    'health-score': 'Business Health Score',
+    'credit-score': 'Credit Score overview',
+    'branding-kit': 'Basic Brand Kit',
+    'pitch-deck': 'Basic Pitch Deck Generator',
+    'business-plan': 'Basic Business Plan Generator',
+    'expenditure': 'Invoicing',
+    'cofounders': 'Investor Matching',
+  };
+
+  const hasFeature = (view: ViewType): boolean => {
+    const feature = viewFeatureMap[view];
+    if (!feature) return true;
+    return planFeatures.some(f => f.text === feature && f.included);
+  };
+
+  const getUpgradePlan = (view: ViewType): string => {
+    const requiredFeature = viewFeatureMap[view];
+    const freeExcluded = ['CRM', 'Invoicing', 'Banking Integrations', 'Website Creator', 'Document Vault', 'Social Media Scheduler', 'Marketplace Access'];
+    const starterExcluded = ['Advanced Financial Modeling', 'Workflow Automation', 'Automated Content Generation'];
+    if (!requiredFeature) return 'Growth';
+    if (freeExcluded.includes(requiredFeature)) return 'Starter';
+    if (starterExcluded.includes(requiredFeature)) return 'Growth';
+    if (requiredFeature === 'API Access' || requiredFeature === 'Custom Integrations' || requiredFeature === 'White-Glove Onboarding' || requiredFeature === 'Dedicated Priority Support') return 'Scale';
+    return 'Growth';
+  };
 
   useEffect(() => {
     if (!onboardingCompleted && !location.pathname.includes('/onboarding')) {
@@ -178,6 +222,14 @@ function VentureMateApp() {
   }
 
   const handleViewChange = (view: ViewType) => {
+    if (!hasFeature(view)) {
+      const plan = getUpgradePlan(view);
+      toast.warning('Upgrade required', {
+        description: `Your current plan doesn't include this feature. Upgrade to ${plan} to access it.`,
+        duration: 6000,
+      });
+      return;
+    }
     setActiveView(view);
   };
 
