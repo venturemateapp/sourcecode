@@ -27,6 +27,7 @@ export type RegisterData = {
   linkedIn?: string
   twitter?: string
   website?: string
+  referralCode?: string
 }
 
 interface ApiUser {
@@ -117,8 +118,8 @@ const UPDATE_PROFILE_MUTATION = `
 `
 
 const SIGNUP_MUTATION = `
-  mutation Signup($firstName: String!, $surname: String!, $email: String!, $password: String!) {
-    signup(firstName: $firstName, surname: $surname, email: $email, password: $password) {
+  mutation Signup($firstName: String!, $surname: String!, $email: String!, $password: String!, $referralCode: String) {
+    signup(firstName: $firstName, surname: $surname, email: $email, password: $password, referralCode: $referralCode) {
       token
       user {
         id
@@ -207,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         surname: userData.lastName,
         email: userData.email,
         password: userData.password,
+        referralCode: userData.referralCode || null,
       })
       const { token, user: apiUser } = data.signup
       const mappedUser = mapApiUserToUser(apiUser)

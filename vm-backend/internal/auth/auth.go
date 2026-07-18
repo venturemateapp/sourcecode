@@ -76,7 +76,7 @@ func Login(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr,
 	return tokenString, user, nil
 }
 
-func Signup(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr, password, firstName, surname, jwtSecret string) (string, *users.User, error) {
+func Signup(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr, password, firstName, surname, referralCode, jwtSecret string) (string, *users.User, error) {
 	existing, err := repo.FindByEmail(context.Background(), emailAddr)
 	if err == nil && existing != nil {
 		return "", nil, ErrEmailTaken
@@ -102,6 +102,11 @@ func Signup(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr
 
 	if err := subRepo.CreateFreeSubscription(context.Background(), user.ID); err != nil {
 		log.Printf("Warning: failed to create free subscription for user %s: %v", user.ID, err)
+	}
+
+	// Log referral if present
+	if referralCode != "" {
+		log.Printf("Referral: new user %s (%s) was referred by code %s", user.ID, user.Email, referralCode)
 	}
 
 	sub, plan, err := subRepo.GetUserSubscription(context.Background(), user.ID)

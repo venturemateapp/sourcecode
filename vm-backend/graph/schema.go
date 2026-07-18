@@ -298,10 +298,11 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 		"signup": &graphql.Field{
 			Type: authPayloadType,
 			Args: graphql.FieldConfigArgument{
-				"firstName": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"surname":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"email":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"password":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"firstName":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"surname":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"email":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"password":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"referralCode":  &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if AppContainer == nil {
@@ -311,11 +312,13 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				surname := p.Args["surname"].(string)
 				email := p.Args["email"].(string)
 				password := p.Args["password"].(string)
+				referralCode, _ := p.Args["referralCode"].(string)
 
 				token, user, err := auth.Signup(
 					AppContainer.UserRepo,
 					AppContainer.SubscriptionRepo,
 					email, password, firstName, surname,
+					referralCode,
 					AppContainer.JWTSecret,
 				)
 				if err != nil {

@@ -250,7 +250,7 @@ export function LandingPage() {
                 </GradientButton>
               ))}
               <Box sx={{ width: '1px', height: 24, bgcolor: 'rgba(255,255,255,0.1)', mx: 1.5 }} />
-              <GradientButton onClick={() => navigate('/vm/auth/signin')} variant="primary" size="sm">
+              <GradientButton onClick={() => navigate('/signup')} variant="primary" size="sm">
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   Get Started
                   <ArrowForward sx={{ fontSize: 18 }} />
@@ -306,7 +306,7 @@ export function LandingPage() {
           ))}
         </List>
         <Box sx={{ px: 3, pb: 3, mt: 'auto' }}>
-          <GradientButton onClick={() => { navigate('/vm/auth/signin'); setMobileMenuOpen(false); }} variant="primary" size="lg" fullWidth>
+          <GradientButton onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }} variant="primary" size="lg" fullWidth>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               Get Started
               <ArrowForward sx={{ fontSize: 18 }} />
@@ -965,7 +965,7 @@ export function LandingPage() {
             <Typography variant="h6" sx={{ color: '#94a3b8', mb: 5, maxWidth: 500, mx: 'auto' }}>
               Join thousands of founders building their dreams with VentureMate. Start free today.
             </Typography>
-            <GradientButton onClick={() => navigate('/vm/auth/signin')} variant="primary" size="lg" sx={{ width: { xs: '100%', md: 'auto' } }}>
+            <GradientButton onClick={() => navigate('/signup')} variant="primary" size="lg" sx={{ width: { xs: '100%', md: 'auto' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 Get Started
                 <ArrowForward sx={{ fontSize: 18 }} />

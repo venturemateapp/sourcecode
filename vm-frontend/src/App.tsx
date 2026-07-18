@@ -6,6 +6,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { VentureMateLayout } from './layouts/VentureMateLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 import { SignIn } from './pages/auth/SignIn';
+import { SignUp } from './pages/auth/SignUp';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { AuthCallback } from './pages/auth/AuthCallback';
 import { OAuthCallback } from './pages/auth/OAuthCallback';
@@ -346,6 +347,7 @@ function App() {
           <Route path="/vm/admin" element={<AdminDashboard />} />
         </Route>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/signup" element={<ToastProvider><SignUp /></ToastProvider>} />
       </Routes>
     </BrowserRouter>
     </LocalizationProvider>
