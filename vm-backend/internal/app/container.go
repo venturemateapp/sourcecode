@@ -147,7 +147,8 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
 	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
-	rateService := rates.NewService()
+	currencyAPIKey := os.Getenv("CURRENCY_API_KEY")
+	rateService := rates.NewService(currencyAPIKey)
 
 	notificationSvc := notifications.NewService(notificationRepo, emailSvc)
 
