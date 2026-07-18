@@ -264,20 +264,74 @@ export function BrandingKitPage(_props: BrandingKitProps) {
       />
 
       {guideSections && (
-        <Box sx={{ mb: 2.5, p: 2.5, borderRadius: 3, bgcolor: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <Box sx={{
+          mb: 2.5, borderRadius: 3, overflow: 'hidden',
+          bgcolor: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: { xs: 2, sm: 3 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
             <BookOpen size={16} color="var(--vm-primary-400)" />
             <Typography sx={{ fontSize: 13, fontWeight: 700, flex: 1, color: 'var(--vm-text-primary)' }}>Brand Identity Guide</Typography>
-            <Button size="small" sx={{ textTransform: 'none', fontSize: 11, color: 'var(--vm-primary-400)' }} onClick={() => {
-              const html = guideSections.sort((a, b) => a.order - b.order).map(s => s.content).join('');
+            <Button size="small" sx={{ textTransform: 'none', fontSize: 11, color: 'var(--vm-primary-400)', whiteSpace: 'nowrap' }} onClick={() => {
+              const content = guideSections.sort((a, b) => a.order - b.order).map(s => s.content).join('\n');
+              const font = brand.fontHeading || 'Inter';
+              const full = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${selectedBusiness.name} Brand Guide</title><link href="https://fonts.googleapis.com/css2?family=${font.replace(/ /g,'+')}:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"><style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'${font}',sans-serif;color:#1a1a2e;background:#fff;line-height:1.7;-webkit-font-smoothing:antialiased}
+.section{padding:clamp(32px,5vw,80px) clamp(16px,3vw,48px);max-width:960px;margin:0 auto}
+@media(min-width:768px){.section{padding:80px 48px}}
+.section-alt{background:#f8fafc;border-radius:16px;margin:24px auto}
+h1{font-size:clamp(28px,5vw,48px);font-weight:800;line-height:1.15;margin-bottom:8px}
+h2{font-size:clamp(20px,3vw,32px);font-weight:700;margin-bottom:16px;line-height:1.25}
+h3{font-size:clamp(16px,2vw,22px);font-weight:600;margin-bottom:12px;line-height:1.3}
+p{color:#475569;font-size:clamp(13px,1.2vw,16px);line-height:1.8;margin-bottom:16px;max-width:720px}
+img{max-width:100%;height:auto;border-radius:8px}
+svg{max-width:100%;height:auto}
+.logo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:clamp(8px,1.5vw,16px);margin:16px 0}
+.logo-cell{padding:clamp(12px,2vw,24px);border-radius:12px;text-align:center;background:#fff;border:1px solid #e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:120px}
+.logo-cell img,.logo-cell svg{max-width:140px;max-height:80px;width:auto;height:auto}
+.logo-label{font-size:10px;color:#64748b;margin-top:8px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.swatch{width:100%;height:clamp(40px,5vw,60px);border-radius:8px;margin-bottom:10px}
+.color-label{font-size:clamp(11px,1vw,14px);font-weight:600}
+.color-hex{font-size:10px;color:#64748b;font-family:monospace;margin-top:2px}
+.color-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:clamp(8px,1.5vw,16px);margin:16px 0}
+.dark-bg{background:${brand.darkColor || '#052e24'};color:#fff;padding:clamp(20px,3vw,40px);border-radius:16px;margin:24px 0}
+.dark-bg p{color:rgba(255,255,255,.7)}
+.rule-card{padding:clamp(12px,1.5vw,20px);border-left:4px solid ${brand.primaryColor || '#10b981'};background:#f8fafc;border-radius:0 8px 8px 0;margin-bottom:12px}
+.rule-do{border-color:#10b981}.rule-dont{border-color:#ef4444}
+</style></head><body>${content}</body></html>`;
               const w = window.open('', '_blank');
-              if (w) { w.document.write(html); w.document.close(); }
+              if (w) { w.document.write(full); w.document.close(); }
             }}>Open Full Guide</Button>
             <IconButton size="small" onClick={() => setGuideSections(null)} sx={{ color: 'var(--vm-text-muted)' }}><X size={14} /></IconButton>
           </Box>
-          {guideSections.sort((a, b) => a.order - b.order).map(s => (
-            <Box key={s.id} sx={{ '& > *': { maxWidth: '100%' } }} dangerouslySetInnerHTML={{ __html: s.content }} />
-          ))}
+          <Box sx={{ px: { xs: 1.5, sm: 3 }, py: { xs: 1.5, sm: 2.5 }, maxWidth: 900, mx: 'auto' }}>
+            {guideSections.sort((a, b) => a.order - b.order).map(s => (
+              <Box key={s.id} sx={{
+                mb: 3,
+                '& > *': { maxWidth: '100%', overflowWrap: 'break-word', wordBreak: 'break-word' },
+                '& h1, & h2, & h3': { color: 'var(--vm-text-primary)', fontWeight: 700, mb: 1.5, mt: 2.5 },
+                '& h1': { fontSize: { xs: 20, sm: 26 }, mt: 0 },
+                '& h2': { fontSize: { xs: 16, sm: 20 } },
+                '& h3': { fontSize: { xs: 14, sm: 16 } },
+                '& p': { color: 'var(--vm-text-secondary)', fontSize: { xs: 12, sm: 13.5 }, lineHeight: 1.8, mb: 1.5 },
+                '& img': { maxWidth: '100%', height: 'auto', borderRadius: 2, my: 1.5 },
+                '& svg': { maxWidth: '100%', height: 'auto' },
+                '& .grid, & .logo-grid': { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' } as any, gap: { xs: 1, sm: 2 }, my: 2 },
+                '& .logo-cell': { p: { xs: 1.5, sm: 2.5 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', textAlign: 'center' },
+                '& .logo-label': { fontSize: 10, color: 'var(--vm-text-muted)', mt: 0.75, textTransform: 'uppercase', letterSpacing: 0.5 },
+                '& .card': { p: { xs: 1.5, sm: 2.5 }, borderRadius: 2.5, border: '1px solid rgba(255,255,255,.06)', textAlign: 'center', bgcolor: 'rgba(255,255,255,.02)' },
+                '& .swatch': { width: '100%', height: { xs: 40, sm: 60 }, borderRadius: 1.5, mb: 1 },
+                '& .color-label': { fontSize: 12, fontWeight: 600, color: 'var(--vm-text-primary)' },
+                '& .color-hex': { fontSize: 10, color: 'var(--vm-text-muted)', fontFamily: 'monospace' },
+                '& .rule-card': { p: { xs: 1.25, sm: 2 }, borderRadius: 2, borderLeft: '4px solid var(--vm-primary-400)', bgcolor: 'rgba(255,255,255,.03)', mb: 1.5 },
+                '& .rule-do': { borderColor: '#10b981' },
+                '& .rule-dont': { borderColor: '#ef4444' },
+                '& .dark-bg': { bgcolor: brand.darkColor || '#052e24', color: '#fff', p: { xs: 2, sm: 3 }, borderRadius: 2.5, my: 2 },
+                '& .dark-bg p': { color: 'rgba(255,255,255,.7)' },
+                '& .section': { mb: { xs: 2, sm: 3 } },
+                '& .section-alt': { p: { xs: 1.5, sm: 2.5 }, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,.02)' },
+              }} dangerouslySetInnerHTML={{ __html: s.content }} />
+            ))}
+          </Box>
         </Box>
       )}
 

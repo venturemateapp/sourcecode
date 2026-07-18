@@ -67,29 +67,34 @@ func GenerateBrandGuide(biz *businesses.Business, brandKit map[string]interface{
 
 func wrapGuide(content, primary, dark, fontHeading string) string {
 	return fmt.Sprintf(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Brand Guide</title><link href="https://fonts.googleapis.com/css2?family=%s:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"><style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:'%s',sans-serif;color:#1a1a2e;background:#fff;line-height:1.6}
-.section{padding:80px 40px;max-width:1200px;margin:0 auto}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'%s',sans-serif;color:#1a1a2e;background:#fff;line-height:1.7;-webkit-font-smoothing:antialiased}
+.section{padding:64px 24px;max-width:960px;margin:0 auto}
+@media(min-width:768px){.section{padding:80px 48px}}
 .section-alt{background:#f8fafc}
-h1{font-size:48px;font-weight:800;line-height:1.1}
-h2{font-size:32px;font-weight:700;margin-bottom:24px}
-h3{font-size:20px;font-weight:600;margin-bottom:12px}
-p{color:#475569;font-size:15px;line-height:1.7;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
-.card{padding:24px;border-radius:16px;border:1px solid #e2e8f0;text-align:center}
-.logo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.logo-cell{padding:24px;border-radius:12px;text-align:center}
-.logo-cell svg{width:100%%;max-width:160px;height:auto}
-.logo-label{font-size:11px;color:#64748b;margin-top:8px;text-transform:uppercase;letter-spacing:.05em}
-.swatch{width:100%%;height:60px;border-radius:8px;margin-bottom:8px}
-.color-label{font-size:13px;font-weight:600}
-.color-hex{font-size:11px;color:#64748b;font-family:monospace}
-.dark-bg{background:%s;color:#fff}
-.dark-bg p{color:rgba(255,255,255,.7)}
-.rule-card{padding:20px;border-left:4px solid %s;background:#f8fafc;border-radius:0 8px 8px 0;margin-bottom:12px}
+h1{font-size:clamp(28px,5vw,48px);font-weight:800;line-height:1.15;margin-bottom:8px}
+h2{font-size:clamp(20px,3vw,32px);font-weight:700;margin-bottom:16px;line-height:1.25}
+h3{font-size:clamp(16px,2vw,22px);font-weight:600;margin-bottom:12px;line-height:1.3}
+p{color:#475569;font-size:clamp(13px,1.2vw,16px);line-height:1.8;margin-bottom:16px;max-width:720px}
+img{max-width:100%%;height:auto;border-radius:8px}
+svg{max-width:100%%;height:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:clamp(12px,2vw,24px);margin:24px 0}
+.card{padding:clamp(16px,2vw,24px);border-radius:clamp(8px,1.5vw,16px);border:1px solid #e2e8f0;text-align:center;background:#fff;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.logo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:clamp(8px,1.5vw,16px);margin:16px 0}
+.logo-cell{padding:clamp(12px,2vw,24px);border-radius:12px;text-align:center;background:#fff;border:1px solid #e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:120px}
+.logo-cell img,.logo-cell svg{max-width:140px;max-height:80px;width:auto;height:auto}
+.logo-label{font-size:10px;color:#64748b;margin-top:8px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.swatch{width:100%%;height:clamp(40px,5vw,60px);border-radius:8px;margin-bottom:10px}
+.color-label{font-size:clamp(11px,1vw,14px);font-weight:600;color:#1a1a2e}
+.color-hex{font-size:10px;color:#64748b;font-family:monospace;margin-top:2px}
+.dark-bg{background:%s;color:#fff;padding:clamp(20px,3vw,40px);border-radius:16px;margin:24px 0}
+.dark-bg p{color:rgba(255,255,255,.7);max-width:100%%}
+.rule-card{padding:clamp(12px,1.5vw,20px);border-left:4px solid %s;background:#f8fafc;border-radius:0 8px 8px 0;margin-bottom:12px}
+.rule-card p:last-child{margin-bottom:0}
 .rule-do{border-color:#10b981}
 .rule-dont{border-color:#ef4444}
-.mini-svg svg{width:60px;height:auto;display:block;margin:0 auto}
-@media(max-width:768px){.logo-grid{grid-template-columns:1fr 1fr}.section{padding:48px 20px}}
+.mini-svg svg{width:clamp(40px,5vw,60px);height:auto;display:block;margin:0 auto}
+.color-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:clamp(8px,1.5vw,16px);margin:16px 0}
 </style></head><body>%s</body></html>`,
 		strings.ReplaceAll(fontHeading, " ", "+"), fontHeading, dark, primary, content)
 }
