@@ -180,33 +180,6 @@ export function AICreationStudio({
             </Box>
 
             {renderProposal(proposal)}
-
-            <Box sx={{ mt: 2.5, p: 2, bgcolor: 'rgba(255,255,255,.02)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
-              <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 12, fontWeight: 800, mb: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <MessageSquare size={13} /> Revise this proposal
-              </Typography>
-              <TextField
-                fullWidth multiline minRows={2} maxRows={5}
-                value={revision}
-                onChange={(e: any) => setRevision(e.target.value)}
-                placeholder="Tell AI what to change — e.g., 'Make the headline shorter, use a warmer green'"
-                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'rgba(0,0,0,.2)' } }}
-              />
-              <Box sx={{ mt: 1.25, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <AnimatedButton variant="primary" size="sm" icon={<Send size={14} />} disabled={!revision.trim() || loading || applying} onClick={() => void requestProposal(revision)} loading={loading}>
-                  Update
-                </AnimatedButton>
-                <AnimatedButton variant="secondary" size="sm" icon={<Sparkles size={14} />} disabled={loading || applying} onClick={() => void requestProposal(`Create a distinctly different alternative for this ${humanize(domain)}. Keep it relevant to my approved business details.`)}>
-                  Another option
-                </AnimatedButton>
-                <AnimatedButton variant="success" size="sm" icon={<Check size={14} />} disabled={loading || applying} onClick={() => void approveProposal()} loading={applying}>
-                  Approve this version
-                </AnimatedButton>
-                <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); setRevision(''); }}>
-                  Discard
-                </AnimatedButton>
-              </Box>
-            </Box>
           </Card>
         ) : (
           <Card sx={{
@@ -280,8 +253,8 @@ export function AICreationStudio({
           </Box>
         )}
 
-        {/* Input area */}
-        <Box sx={{ p: 1.75, borderTop: messages.length > 0 ? '1px solid var(--vm-border-subtle)' : 'none' }}>
+          {/* Input area */}
+        <Box sx={{ p: 1.75, borderTop: messages.length > 0 ? '1px solid var(--vm-border-subtle)' : 'none', mt: 'auto' }}>
           {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 1.25, py: 0.5, fontSize: 12 }}>{error}</Alert>}
           {success && <Alert severity="success" onClose={() => setSuccess(null)} sx={{ mb: 1.25, py: 0.5, fontSize: 12 }}>{success}</Alert>}
 
@@ -308,13 +281,31 @@ export function AICreationStudio({
             {proposal ? 'Revise with AI' : 'Generate with AI'}
           </AnimatedButton>
 
-          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, mt: 1.5, mb: 0.75 }}>Try asking:</Typography>
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            {starterPrompts.map(item => (
-              <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)}
-                sx={{ fontSize: 10, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,.08)' }, maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.25, lineHeight: 1.4 } }} />
-            ))}
-          </Box>
+          {/* Approve/Discard buttons always below Generate when proposal exists */}
+          {proposal && (
+            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid var(--vm-border-subtle)', display: 'flex', gap: 1 }}>
+              <AnimatedButton variant="success" size="sm" icon={<Check size={14} />} disabled={loading || applying} onClick={() => void approveProposal()} loading={applying}
+                sx={{ flex: 1, fontSize: 12 }}>
+                Approve
+              </AnimatedButton>
+              <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); setRevision(''); }}
+                sx={{ flex: 1, fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                Discard
+              </AnimatedButton>
+            </Box>
+          )}
+
+          {!proposal && (
+            <>
+              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, mt: 1.5, mb: 0.75 }}>Try asking:</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {starterPrompts.map(item => (
+                  <Chip key={item} label={item} size="small" onClick={() => setPrompt(item)}
+                    sx={{ fontSize: 10, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,.08)' }, maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.25, lineHeight: 1.4 } }} />
+                ))}
+              </Box>
+            </>
+          )}
         </Box>
       </Card>
     </Box>
