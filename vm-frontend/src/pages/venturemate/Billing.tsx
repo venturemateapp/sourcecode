@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Box, Typography, Card, Tabs, Tab, Chip, Dialog, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, Card, Tabs, Tab, Chip, useTheme, useMediaQuery } from '@mui/material';
 import {
   CreditCard,
   TrendingUp,
@@ -108,15 +108,12 @@ export function BillingPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
-  const { subscription, plans, changePlan, planName } = useSubscription();
+  const { subscription, plans, planName } = useSubscription();
   const { format: fmtCurrency } = useCurrency();
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState(0);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState<string | null>(null);
-  const [upgrading, setUpgrading] = useState(false);
 
   const displayPlans: SubscriptionPlan[] = useMemo(
     () => plans.length > 0 ? plans.map(mapPlanToSubscriptionPlan) : [],
@@ -137,29 +134,12 @@ export function BillingPage() {
     [displayPlans, currentPlanId]
   );
 
-  const handleUpgrade = (planId: string) => {
-    setSelectedUpgradePlan(planId);
-    setShowUpgradeDialog(true);
-  };
-
-  const handleConfirmUpgrade = async () => {
-    if (!selectedUpgradePlan || !user?.id) return;
-    setUpgrading(true);
-    const ok = await changePlan(user.id, selectedUpgradePlan);
-    setUpgrading(false);
-    if (ok) setShowUpgradeDialog(false);
-  };
-
   const getSavings = (plan: SubscriptionPlan) => {
     if (plan.priceYearly === 0) return 0;
     const monthlyCost = plan.priceMonthly * 12;
     const savings = monthlyCost - plan.priceYearly;
     return Math.round((savings / monthlyCost) * 100);
   };
-
-  const usage = null;
-
-  const selectedPlanName = selectedUpgradePlan ? displayPlans.find(p => p.id === selectedUpgradePlan)?.displayName : '';
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, maxWidth: '100%' }}>
@@ -181,10 +161,7 @@ export function BillingPage() {
           </Typography>
         </Box>
         {nextPlans.length > 0 && (
-          <GradientButton variant="primary" size="md" onClick={() => {
-            setSelectedUpgradePlan(nextPlans[0].id);
-            setShowUpgradeDialog(true);
-          }}>
+          <GradientButton variant="outline" size="md" disabled sx={{ opacity: 0.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <TrendingUp size={18} />
               Upgrade Plan
@@ -244,14 +221,6 @@ export function BillingPage() {
             <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
               per month
             </Typography>
-          </Box>
-
-          {/* Usage */}
-          <Box>
-            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2 }}>
-              Usage This Month
-            </Typography>
-            {usage}
           </Box>
 
           {/* Billing Info */}
@@ -415,16 +384,15 @@ export function BillingPage() {
                 {/* CTA */}
                 <GradientButton
                   fullWidth
-                  variant={plan.id === currentPlanId ? 'outline' : 'primary'}
+                  variant={plan.id === currentPlanId ? 'outline' : 'outline'}
                   size="md"
-                  disabled={plan.id === currentPlanId}
-                  onClick={() => handleUpgrade(plan.id)}
+                  disabled
                   sx={{
                     color: '#fff !important',
-                    '&.Mui-disabled': { color: '#fff !important' },
+                    '&.Mui-disabled': { color: 'rgba(255,255,255,.3) !important' },
                   }}
                 >
-                  {plan.id === currentPlanId ? 'Current Plan' : 'Upgrade'}
+                  {plan.id === currentPlanId ? 'Current Plan' : 'Coming Soon'}
                 </GradientButton>
               </Card>
             ))}
@@ -556,33 +524,6 @@ export function BillingPage() {
           </Card>
         </Box>
       )}
-
-      {/* Upgrade Dialog */}
-      <Dialog open={showUpgradeDialog} onClose={() => !upgrading && setShowUpgradeDialog(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
-        <Box sx={{
-          p: { xs: 3, sm: 4 }, bgcolor: 'var(--vm-bg-secondary)',
-          height: { xs: '100vh', sm: 'auto' },
-          display: { xs: 'flex', sm: 'block' },
-          flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: { xs: 'center', sm: 'flex-start' },
-        }}>
-          <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2, textAlign: { xs: 'center', sm: 'left' }, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-            Upgrade to {selectedPlanName}
-          </Typography>
-          <Typography sx={{ fontSize: { xs: 14, sm: 15 }, color: 'var(--vm-text-secondary)', mb: { xs: 4, sm: 3 }, textAlign: { xs: 'center', sm: 'left' }, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-            You are about to upgrade from {currentPlanData?.displayName || 'Free'} to {selectedPlanName}.
-            The new plan will take effect immediately.
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'center', sm: 'flex-end' }, flexDirection: { xs: 'column-reverse', sm: 'row' } }}>
-            <GradientButton variant="outline" size="md" onClick={() => setShowUpgradeDialog(false)} disabled={upgrading} fullWidth={isMobile}>
-              Cancel
-            </GradientButton>
-            <GradientButton variant="primary" size="md" onClick={handleConfirmUpgrade} disabled={upgrading} fullWidth={isMobile}>
-              {upgrading ? 'Upgrading...' : 'Confirm Upgrade'}
-            </GradientButton>
-          </Box>
-        </Box>
-      </Dialog>
     </Box>
   );
 }

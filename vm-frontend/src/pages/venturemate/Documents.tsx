@@ -66,14 +66,6 @@ const fileTypeConfig: Record<string, { color: string; bgColor: string }> = {
   other: { color: '#9ca3af', bgColor: 'rgba(107,114,128,.16)' },
 };
 
-const documentTemplates = [
-  { id: 'template_001', name: 'Founder Agreement', description: 'Standard founder agreement template', category: 'legal' as const, type: 'docx' as const },
-  { id: 'template_002', name: 'Pitch Deck Template', description: 'Investor-ready pitch deck structure', category: 'marketing' as const, type: 'pptx' as const },
-  { id: 'template_003', name: 'Financial Model', description: '3-year financial projections template', category: 'financial' as const, type: 'xlsx' as const },
-  { id: 'template_004', name: 'Employee Offer Letter', description: 'Standard employment offer letter', category: 'hr' as const, type: 'docx' as const },
-  { id: 'template_005', name: 'NDA Template', description: 'Mutual non-disclosure agreement', category: 'legal' as const, type: 'docx' as const },
-  { id: 'template_006', name: 'Product Spec', description: 'Product specification document', category: 'product' as const, type: 'docx' as const },
-];
 
 interface DocumentsProps {
   onViewChange?: (_view: ViewType) => void;
@@ -107,7 +99,6 @@ export function DocumentsPage(_props: DocumentsProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [uploadFileData, setUploadFileData] = useState<File | null>(null);
   const [uploadCategory, setUploadCategory] = useState<string>('other');
   const [uploadTags, setUploadTags] = useState<string>('');
@@ -236,12 +227,6 @@ export function DocumentsPage(_props: DocumentsProps) {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: { xs: 1, sm: 2 }, width: { xs: '100%', sm: 'auto' }, '& > *': { flex: { xs: 1, sm: 'none' } } }}>
-          <GradientButton variant="outline" size="md" onClick={() => setShowTemplateDialog(true)}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FileText size={18} />
-              Templates
-            </Box>
-          </GradientButton>
           <GradientButton variant="primary" size="md" onClick={() => setShowUploadDialog(true)}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Upload size={18} />
@@ -742,74 +727,6 @@ export function DocumentsPage(_props: DocumentsProps) {
         </DialogActions>
       </Dialog>
 
-      {/* Templates Dialog */}
-      <Dialog open={showTemplateDialog} onClose={() => setShowTemplateDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ color: 'var(--vm-text-primary)', bgcolor: 'var(--vm-bg-secondary)' }}>
-          Document Templates
-        </DialogTitle>
-        <DialogContent sx={{ bgcolor: 'var(--vm-bg-secondary)' }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)', md: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
-            {documentTemplates.map((template) => {
-              const TemplateIcon = fileIcons[template.type] || FileIcon;
-              const category = documentCategories.find(c => c.id === template.category);
-
-              return (
-                <Card
-                  key={template.id}
-                  sx={{
-                    bgcolor: 'var(--vm-bg-tertiary)',
-                    border: '1px solid var(--vm-border-subtle)',
-                    borderRadius: 2,
-                    p: 3,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      borderColor: 'var(--vm-primary-500)',
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      bgcolor: `${category?.color}20`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      mb: 2,
-                    }}
-                  >
-                    <TemplateIcon size={24} color={category?.color} />
-                  </Box>
-                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-                    {template.name}
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-                    {template.description}
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label={template.category}
-                    sx={{
-                      bgcolor: `${category?.color}20`,
-                      color: category?.color,
-                      fontSize: 10,
-                      textTransform: 'capitalize',
-                      '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5 },
-                    }}
-                  />
-                </Card>
-              );
-            })}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ bgcolor: 'var(--vm-bg-secondary)', p: 2 }}>
-          <GradientButton variant="outline" size="md" onClick={() => setShowTemplateDialog(false)}>
-            Close
-          </GradientButton>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
