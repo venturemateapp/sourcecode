@@ -41,10 +41,10 @@ const shared = {
       },
     },
     MuiDialogTitle: {
-      styleOverrides: { root: { color: '#ffffff' } },
+      styleOverrides: { root: { color: '#ffffff', pb: 1 } },
     },
     MuiDialogContent: {
-      styleOverrides: { root: { color: '#d1fae5' } },
+      styleOverrides: { root: { color: '#d1fae5', pt: '24px !important' } },
     },
     MuiMenu: {
       styleOverrides: {

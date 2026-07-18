@@ -501,7 +501,7 @@ export function CRMPage() {
           <Typography sx={{ fontWeight: 700 }}>{contactForm?.id ? 'Edit' : 'New'} Contact</Typography>
           <IconButton size="small" onClick={() => setContactForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
+        <DialogContent sx={{ pt: 4, mt: 1 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Full Name" value={contactForm?.name || ''} onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
               sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
@@ -542,7 +542,7 @@ export function CRMPage() {
           <Typography sx={{ fontWeight: 700 }}>{dealForm?.id ? 'Edit' : 'New'} Deal</Typography>
           <IconButton size="small" onClick={() => setDealForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
+        <DialogContent sx={{ pt: 4, mt: 1 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Title" value={dealForm?.title || ''} onChange={e => setDealForm({ ...dealForm, title: e.target.value })}
               sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
@@ -584,7 +584,7 @@ export function CRMPage() {
           <Typography sx={{ fontWeight: 700, textTransform: 'capitalize' }}>Log {activityForm.type}</Typography>
           <IconButton size="small" onClick={() => setActivityForm({ open: false, type: 'note', contactId: '', description: '' })} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
+        <DialogContent sx={{ pt: 4, mt: 1 }}>
           {activityForm.contactId && contacts.find(c => c.id === activityForm.contactId) && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, p: 1.5, borderRadius: 2, bgcolor: 'var(--vm-bg-tertiary)' }}>
               <Avatar sx={{ width: 32, height: 32, bgcolor: 'var(--vm-primary-600)', fontSize: 12, fontWeight: 700 }}>
@@ -612,7 +612,7 @@ export function CRMPage() {
           <Typography sx={{ fontWeight: 700 }}>{taskForm?.id ? 'Edit' : 'New'} Task</Typography>
           <IconButton size="small" onClick={() => setTaskForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ pt: 3.5 }}>
+        <DialogContent sx={{ pt: 4, mt: 1 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Title" value={taskForm?.title || ''} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })}
               sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
