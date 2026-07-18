@@ -9,6 +9,7 @@ import {
   Bot,
   ChevronRight,
   HardDrive,
+  Palette,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ViewType } from '../../types/venturemate';
@@ -48,7 +49,9 @@ export function Dashboard({ onViewChange }: DashboardProps) {
 
 const statsCards = b ? [
       { label: 'Team Members', value: b.team?.length?.toString() ?? '0', change: `${b.team?.filter(m => m.role === 'member')?.length ?? 0} members`, icon: Users, color: '#3b82f6' },
+      { label: 'Logos', value: b.brandKit?.logo ? '1' : '0', change: b.brandKit?.logo ? 'Brand set' : 'No brand', icon: Palette, color: '#8b5cf6' },
       { label: 'Milestones', value: b.milestones?.length?.toString() ?? '0', change: `${b.milestones?.filter(m => m.status === 'in-progress')?.length ?? 0} in progress`, icon: Target, color: '#f59e0b' },
+      { label: 'Business Plan', value: b.businessPlan?.sections?.length?.toString() ?? '0', change: `${b.businessPlan?.sections?.length ?? 0} sections`, icon: FileText, color: '#10b981' },
       { label: 'Documents', value: b.documents?.length?.toString() ?? '0', change: 'All organized', icon: FileText, color: '#8b5cf6' },
       { label: 'Slides', value: b.pitchDeck?.slides?.length?.toString() ?? '0', change: `${b.pitchDeck?.slides?.length ?? 0} in pitch deck`, icon: Presentation, color: '#06b6d4' },
       { label: 'Websites', value: b.websiteConfig?.pages?.length?.toString() ?? '0', change: b.websiteConfig?.status ?? 'draft', icon: Globe, color: '#f97316' },
