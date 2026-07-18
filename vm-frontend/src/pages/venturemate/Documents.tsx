@@ -131,7 +131,7 @@ export function DocumentsPage(_props: DocumentsProps) {
       filtered = filtered.filter(
         doc =>
           doc.name.toLowerCase().includes(query) ||
-          doc.tags.some(tag => tag.toLowerCase().includes(query))
+          (doc.tags || []).some(tag => tag.toLowerCase().includes(query))
       );
     }
 
@@ -469,7 +469,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    {doc.tags.slice(0, 2).map((tag) => (
+                    {(doc.tags || []).slice(0, 2).map((tag) => (
                       <Typography key={tag} sx={{ fontSize: 10, color: 'var(--vm-text-muted)', bgcolor: 'var(--vm-bg-tertiary)', px: 0.5, borderRadius: 1 }}>
                         #{tag}
                       </Typography>
