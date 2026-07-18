@@ -1058,8 +1058,35 @@ export function AdminDashboard() {
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Term (months)" type="number" value={financingForm.termMonths} onChange={e => setFinancingForm({ ...financingForm, termMonths: parseInt(e.target.value as string) || 12 })}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
-            <TextField size="small" label="Requirements (JSON array)" value={financingForm.requirements} onChange={e => setFinancingForm({ ...financingForm, requirements: e.target.value })}
-              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>Requirements</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {(() => {
+                  let reqs: string[] = [];
+                  try { reqs = JSON.parse(financingForm.requirements); if (!Array.isArray(reqs)) reqs = []; } catch { reqs = []; }
+                  return reqs.map((r, i) => (
+                    <Chip key={i} size="small" label={r} onDelete={() => {
+                      const next = reqs.filter((_, j) => j !== i);
+                      setFinancingForm({ ...financingForm, requirements: JSON.stringify(next) });
+                    }} sx={{ bgcolor: 'rgba(139,92,246,.15)', color: '#a78bfa', fontSize: 11, '& .MuiChip-deleteIcon': { color: '#a78bfa', fontSize: 14 } }} />
+                  ));
+                })()}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <TextField size="small" placeholder="Add a requirement..." id="req-input"
+                  sx={{ flex: 1, input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+                <IconButton size="small" onClick={() => {
+                  const input = document.getElementById('req-input') as HTMLInputElement;
+                  if (!input?.value?.trim()) return;
+                  let reqs: string[] = [];
+                  try { reqs = JSON.parse(financingForm.requirements); if (!Array.isArray(reqs)) reqs = []; } catch { reqs = []; }
+                  setFinancingForm({ ...financingForm, requirements: JSON.stringify([...reqs, input.value.trim()]) });
+                  input.value = '';
+                }} sx={{ bgcolor: 'rgba(139,92,246,.15)', color: '#a78bfa', '&:hover': { bgcolor: 'rgba(139,92,246,.25)' } }}>
+                  <Plus size={16} />
+                </IconButton>
+              </Box>
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
