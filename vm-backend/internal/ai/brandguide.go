@@ -101,12 +101,20 @@ svg{max-width:100%%;height:auto}
 
 func coverPage(name, logoURL, primary, secondary, dark string) string {
 	logoHTML := ""
-	if strings.HasPrefix(logoURL, "http") {
-		logoHTML = fmt.Sprintf(`<img src="%s" alt="%s logo" style="max-width:160px;max-height:120px;margin-bottom:32px;border-radius:12px;background:rgba(255,255,255,.1);padding:16px" />`, html.EscapeString(logoURL), html.EscapeString(name))
+	if strings.HasPrefix(logoURL, "http") || (logoURL != "" && !strings.Contains(logoURL, "<svg")) {
+		style := "max-width:160px;max-height:120px;margin-bottom:32px;border-radius:12px;padding:16px;"
+		if strings.HasPrefix(logoURL, "http") {
+			style += "background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);box-shadow:0 4px 16px rgba(0,0,0,.1)"
+		} else {
+			style += "background:rgba(255,255,255,.1);border-radius:20px"
+		}
+		if strings.HasPrefix(logoURL, "http") {
+			logoHTML = fmt.Sprintf(`<img src="%s" alt="%s logo" style="%s" />`, html.EscapeString(logoURL), html.EscapeString(name), style)
+		} else {
+			logoHTML = fmt.Sprintf(`<div style="width:120px;height:120px;margin-bottom:32px;display:flex;align-items:center;justify-content:center;%s">%s</div>`, style, logoURL)
+		}
 	} else if strings.Contains(logoURL, "<svg") {
 		logoHTML = fmt.Sprintf(`<div style="width:120px;height:120px;margin-bottom:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);border-radius:20px;padding:16px">%s</div>`, logoURL)
-	} else if logoURL != "" {
-		logoHTML = fmt.Sprintf(`<img src="%s" alt="%s logo" style="max-width:160px;max-height:120px;margin-bottom:32px;border-radius:12px;background:rgba(255,255,255,.1);padding:16px" />`, html.EscapeString(logoURL), html.EscapeString(name))
 	} else {
 		initial := initials(name)
 		logoHTML = fmt.Sprintf(`<svg viewBox="0 0 80 80" style="width:120px;height:120px;margin-bottom:32px"><rect width="80" height="80" rx="20" fill="rgba(255,255,255,.2)"/><text x="40" y="44" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-size="32" font-weight="700">%s</text></svg>`, initial)
@@ -153,10 +161,14 @@ func logoSections(name, logoURL, logoIconURL, logoWhiteURL string, logos []inter
 		}
 		for _, v := range logoVariants {
 			bgStyle := ""
+			extraStyle := ""
 			if strings.Contains(v.bg, "#") {
 				bgStyle = fmt.Sprintf(`style="background:%s"`, v.bg)
 			}
-			sb.WriteString(fmt.Sprintf(`<div class="logo-cell" %s><img src="%s" alt="%s" style="max-width:160px;max-height:100px;object-fit:contain" /><div class="logo-label">%s</div></div>`, bgStyle, html.EscapeString(v.url), html.EscapeString(v.label), v.label))
+			if strings.HasPrefix(v.url, "http") {
+				extraStyle = "background:rgba(255,255,255,.06);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,.08)"
+			}
+			sb.WriteString(fmt.Sprintf(`<div class="logo-cell" %s><div style="display:flex;align-items:center;justify-content:center;width:100%%;min-height:80px;%s"><img src="%s" alt="%s" style="max-width:140px;max-height:80px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.08))" /></div><div class="logo-label">%s</div></div>`, bgStyle, extraStyle, html.EscapeString(v.url), html.EscapeString(v.label), v.label))
 		}
 		sb.WriteString(`</div>`)
 	}

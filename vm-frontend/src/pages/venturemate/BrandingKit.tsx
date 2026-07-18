@@ -51,6 +51,26 @@ function renderSvg(svg: string, options?: { dark?: boolean; size?: number }) {
   } catch { return null; }
 }
 
+function LogoDisplay({ logo, size = 100, contrast = false }: { logo: string; size?: number; contrast?: boolean }) {
+  const isRaster = logo.startsWith('http') || (logo.startsWith('data:') && !logo.includes('svg'));
+  const containerSx = contrast ? {
+    bgcolor: 'rgba(255,255,255,.06)', backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255,255,255,.1)', borderRadius: 2,
+    p: 1.5, boxShadow: '0 4px 16px rgba(0,0,0,.15)',
+  } : {};
+  if (logo.includes('<svg') || (logo.startsWith('data:') && logo.includes('svg'))) {
+    return <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerSx }}>{renderSvg(logo, { size })}</Box>;
+  }
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerSx }}>
+      <Box component="img" src={logo} alt="Logo" sx={{
+        maxWidth: size, maxHeight: size, objectFit: 'contain',
+        filter: isRaster ? 'drop-shadow(0 2px 8px rgba(0,0,0,.15))' : 'none',
+      }} />
+    </Box>
+  );
+}
+
 function ColorSwatch({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -96,7 +116,7 @@ function LogoCard({ logo, selected, onSelect, size = 72 }: { logo: LogoOption; s
       '&::before': selected ? { content: '""', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 0%, rgba(16,185,129,.08), transparent 70%)' } : {},
     }}>
       {selected && <Box sx={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: '50%', bgcolor: 'var(--vm-primary-500)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={12} color="#fff" /></Box>}
-      <Box sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5 }}>{renderSvg(logo.svg, { size })}</Box>
+      <Box sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5, '& svg': { maxWidth: '100%', maxHeight: '100%' } }}>{renderSvg(logo.svg, { size })}</Box>
       <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{logo.name}</Typography>
       <Chip size="small" label={logo.type} sx={{ mt: 0.75, fontSize: 9, textTransform: 'capitalize', bgcolor: selected ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.06)', color: selected ? 'var(--vm-primary-400)' : 'var(--vm-text-muted)', height: 20 }} />
       <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 1, lineHeight: 1.6, overflowWrap: 'anywhere' }}>{logo.concept?.slice(0, 90)}</Typography>
@@ -132,10 +152,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
             border: '1px solid rgba(255,255,255,.12)',
             boxShadow: '0 8px 32px rgba(0,0,0,.2)',
           }}>
-            {brand.logo ? (
-              brand.logo.includes('<svg') || brand.logo.startsWith('data:') ? renderSvg(brand.logo, { dark: true, size: 90 }) :
-              <Box component="img" src={brand.logo} sx={{ maxWidth: 90, maxHeight: 90, objectFit: 'contain', borderRadius: 1 }} />
-            ) : <Sparkles size={40} color="rgba(255,255,255,.3)" />}
+            {brand.logo ? <LogoDisplay logo={brand.logo} size={90} contrast /> : <Sparkles size={40} color="rgba(255,255,255,.3)" />}
             {brand.logo && brand.logo.includes('<svg') && (
               <IconButton size="small" onClick={() => downloadSvg(brand.logo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.svg`)}
                 sx={{ position: 'absolute', bottom: -8, right: -8, bgcolor: 'rgba(0,0,0,.5)', color: 'white', width: 28, height: 28, '&:hover': { bgcolor: 'rgba(0,0,0,.7)' } }}>
@@ -191,8 +208,15 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
                 p: 2.5, borderRadius: 2.5, bgcolor: bg, border: '1px solid rgba(255,255,255,.06)',
                 textAlign: 'center', minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
                 transition: 'all .2s', '&:hover': { transform: 'scale(1.02)' },
+                position: 'relative', overflow: 'hidden',
               }}>
-                {renderSvg(brand.logo, { dark, size: 72 })}
+                <Box sx={{
+                  bgcolor: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)',
+                  borderRadius: 1.5, p: 1.5, backdropFilter: dark ? 'none' : 'none',
+                  border: dark ? '1px solid rgba(255,255,255,.06)' : '1px solid rgba(0,0,0,.04)',
+                }}>
+                  <LogoDisplay logo={brand.logo} size={72} contrast />
+                </Box>
                 <Typography sx={{ fontSize: 9, color: dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', fontWeight: 600 }}>{label}</Typography>
               </Box>
             ))}
@@ -465,23 +489,21 @@ svg{max-width:100%;height:auto}
                 <Wand2 size={13} /> Logo on Apparel
               </Typography>
               {(() => {
-                const logoEl = brand.logo?.startsWith('http') ? (
-                  <Box component="img" src={brand.logo} sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                ) : brand.logo?.startsWith('data:') ? (
-                  <Box sx={{ maxWidth: '90%', maxHeight: '90%', display: 'flex', alignItems: 'center', justifyContent: 'center', '& svg': { maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' } }} dangerouslySetInnerHTML={{ __html: atob(brand.logo.split(',')[1]?.replace(/-/g,'+').replace(/_/g,'/') || '') }} />
-                ) : logos[selectedLogoIdx]?.svg ? (
-                  <Box sx={{ maxWidth: '90%', maxHeight: '90%', display: 'flex', alignItems: 'center', justifyContent: 'center', '& svg': { maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' } }} dangerouslySetInnerHTML={{ __html: logos[selectedLogoIdx].svg }} />
-                ) : null;
                 const shirtUrl = 'https://freepngimg.com/convert-png/2798-white-t-shirt-png-image';
+                const logoSrc = brand.logo || (logos[selectedLogoIdx]?.svg ? `data:image/svg+xml;base64,${btoa(logos[selectedLogoIdx].svg)}` : '');
                 return (
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)' }, gap: 2 }}>
                     <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: '#fff', border: '1px solid rgba(255,255,255,.06)' }}>
-                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>{logoEl}</Box>
+                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                        <LogoDisplay logo={logoSrc} size={60} contrast />
+                      </Box>
                       <Box component="img" src={shirtUrl} alt="White t-shirt" sx={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 0 }} />
                       <Typography sx={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(0,0,0,.3)', zIndex: 1, whiteSpace: 'nowrap' }}>Light Background</Typography>
                     </Box>
                     <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: brand.darkColor || '#0f172a', border: '1px solid rgba(255,255,255,.06)' }}>
-                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, filter: 'brightness(0) invert(1)' }}>{logoEl}</Box>
+                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                        <Box sx={{ filter: 'brightness(0) invert(1)' }}><LogoDisplay logo={logoSrc} size={60} contrast /></Box>
+                      </Box>
                       <Box component="img" src={shirtUrl} alt="Dark t-shirt" sx={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 0, opacity: 0.85 }} />
                       <Typography sx={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(255,255,255,.3)', zIndex: 1, whiteSpace: 'nowrap' }}>Dark Background</Typography>
                     </Box>
