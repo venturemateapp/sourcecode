@@ -180,6 +180,8 @@ const shared = {
     MuiChip: {
       styleOverrides: {
         root: { color: '#ffffff', borderColor: 'rgba(110,231,183,.45)' },
+        label: { whiteSpace: 'normal', overflowWrap: 'anywhere', px: 1.25, py: 0.75 },
+        labelSmall: { px: 1, py: 0.5, fontSize: 10 },
       },
     },
     MuiTooltip: {

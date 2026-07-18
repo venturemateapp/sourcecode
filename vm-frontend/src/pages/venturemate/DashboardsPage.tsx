@@ -68,9 +68,9 @@ export function DashboardsPage() {
                     <s.icon size={18} color={s.color} />
                   </Box>
                 </Box>
-                <Typography sx={{ fontSize: { xs: 22, sm: 28 }, fontWeight: 900, color: 'var(--vm-text-primary)', lineHeight: 1.1 }}>{s.value}</Typography>
-                <Typography sx={{ fontSize: 12, color: `${s.color}cc`, fontWeight: 600, mt: 0.25 }}>{s.label}</Typography>
-                <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 0.25 }}>{s.desc}</Typography>
+                <Typography sx={{ fontSize: { xs: 22, sm: 28 }, fontWeight: 900, color: 'var(--vm-text-primary)', lineHeight: 1.1, overflowWrap: 'anywhere' }}>{s.value}</Typography>
+                <Typography sx={{ fontSize: 12, color: `${s.color}cc`, fontWeight: 600, mt: 0.25, overflowWrap: 'anywhere' }}>{s.label}</Typography>
+                <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 0.25, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{s.desc}</Typography>
               </Card>
             ))}
           </Box>
@@ -90,7 +90,7 @@ export function DashboardsPage() {
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                           <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: stageColors[stage] || '#94a3b8' }} />
-                          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', textTransform: 'capitalize' }}>{stage.replace('_', ' ')}</Typography>
+                          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', textTransform: 'capitalize', overflowWrap: 'anywhere' }}>{stage.replace('_', ' ')}</Typography>
                         </Box>
                         <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{count}</Typography>
                       </Box>
@@ -119,8 +119,8 @@ export function DashboardsPage() {
                   return (
                     <Box key={s.label} sx={{ p: 1.5, borderRadius: 2, bgcolor: `${s.color}08`, border: `1px solid ${s.color}15` }}>
                       <Icon size={14} color={s.color} />
-                      <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'var(--vm-text-primary)', mt: 0.5 }}>{s.value}</Typography>
-                      <Typography sx={{ fontSize: 10, color: `${s.color}bb` }}>{s.label}</Typography>
+                      <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'var(--vm-text-primary)', mt: 0.5, overflowWrap: 'anywhere' }}>{s.value}</Typography>
+                      <Typography sx={{ fontSize: 10, color: `${s.color}bb`, overflowWrap: 'anywhere' }}>{s.label}</Typography>
                     </Box>
                   );
                 })}

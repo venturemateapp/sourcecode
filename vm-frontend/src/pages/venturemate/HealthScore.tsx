@@ -212,7 +212,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
               <text x="100" y="78" textAnchor="middle" fill="rgba(255,255,255,.4)" fontSize="10" fontFamily="Inter,sans-serif">/ 100</text>
             </svg>
             <Chip size="small" label={getScoreStatus(healthScore.overallScore).label}
-              sx={{ mt: 0.5, bgcolor: `${getScoreStatus(healthScore.overallScore).color}20`, color: getScoreStatus(healthScore.overallScore).color, fontSize: 11, fontWeight: 700 }} />
+              sx={{ mt: 0.5, bgcolor: `${getScoreStatus(healthScore.overallScore).color}20`, color: getScoreStatus(healthScore.overallScore).color, fontSize: 11, fontWeight: 700, '& .MuiChip-label': { overflowWrap: 'anywhere' } }} />
           </Box>
 
           <Box>
@@ -222,7 +222,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                 {healthScore.recommendations.slice(0, 3).map(r => (
                   <Box key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
                     <ArrowRight size={12} color="var(--vm-primary-400)" />
-                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>{r.title}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{r.title}</Typography>
                   </Box>
                 ))}
               </Box>
@@ -231,7 +231,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                 {healthScore.priorityActions.filter(a => !a.completed).slice(0, 3).map(a => (
                   <Box key={a.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.5 }}>
                     <TrendingUp size={12} color="#f59e0b" style={{ marginTop: 2 }} />
-                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>{a.title}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{a.title}</Typography>
                   </Box>
                 ))}
               </Box>
@@ -296,7 +296,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                   {Icon && <Icon size={22} color={getScoreColor(data.score)} />}
                 </Box>
                 <Box>
-                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
+                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                     {componentLabels[key]}
                   </Typography>
                   <Typography sx={{ fontSize: 20, fontWeight: 700, color: getScoreColor(data.score) }}>
@@ -354,7 +354,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                   fontSize: 10,
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5, overflowWrap: 'anywhere' },
                 }}
               />
               <Chip
@@ -366,17 +366,17 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                   fontSize: 10,
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                  '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5, overflowWrap: 'anywhere' },
                 }}
               />
             </Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 1 }}>
+            <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               {rec.title}
             </Typography>
-            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2 }}>
+            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               {rec.description}
             </Typography>
-            <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', textTransform: 'capitalize' }}>
+            <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               Category: {rec.component.replace('_', ' ')}
             </Typography>
           </Card>
@@ -430,19 +430,21 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                 )}
               </Box>
               <Box>
-                <Typography
-                  sx={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: action.completed ? 'var(--vm-text-muted)' : 'var(--vm-text-primary)',
-                    textDecoration: action.completed ? 'line-through' : 'none',
-                  }}
-                >
-                  {action.title}
-                </Typography>
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                  {action.description}
-                </Typography>
+<Typography
+                    sx={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: action.completed ? 'var(--vm-text-muted)' : 'var(--vm-text-primary)',
+                      textDecoration: action.completed ? 'line-through' : 'none',
+                      overflowWrap: 'anywhere',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {action.title}
+                  </Typography>
+                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                    {action.description}
+                  </Typography>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -454,9 +456,10 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
                   color: 'var(--vm-text-muted)',
                   fontSize: 10,
                   textTransform: 'capitalize',
+                  '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 }}
               />
-              <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+              <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 Due: {action.deadline ? new Date(action.deadline).toLocaleDateString('en-GB') : '—'}
               </Typography>
             </Box>

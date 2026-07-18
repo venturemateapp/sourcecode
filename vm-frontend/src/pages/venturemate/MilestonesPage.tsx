@@ -144,10 +144,10 @@ export function MilestonesPage() {
           { label: 'Overdue', value: overdueCount, color: '#ef4444' },
         ].map((stat) => (
           <Card key={stat.label} sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 3 } }}>
-            <Typography sx={{ fontSize: { xs: 16, sm: 20 }, fontWeight: 700, color: stat.color }}>
+            <Typography sx={{ fontSize: { xs: 16, sm: 20 }, fontWeight: 700, color: stat.color, overflowWrap: 'anywhere' }}>
               {stat.value}
             </Typography>
-            <Typography sx={{ fontSize: { xs: 11, sm: 13 }, color: 'var(--vm-text-muted)' }}>
+            <Typography sx={{ fontSize: { xs: 11, sm: 13 }, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
               {stat.label}
             </Typography>
           </Card>
@@ -161,7 +161,7 @@ export function MilestonesPage() {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2, gap: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
                 <Target size={18} color={getStatusColor(milestone.status)} />
-                <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 600, color: 'var(--vm-text-primary)', wordBreak: 'break-word' }}>
+                <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {milestone.title}
                 </Typography>
               </Box>
@@ -175,7 +175,7 @@ export function MilestonesPage() {
               </Box>
             </Box>
 
-            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2, lineHeight: 1.5 }}>
+            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2, lineHeight: 1.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               {milestone.description}
             </Typography>
 
@@ -193,7 +193,7 @@ export function MilestonesPage() {
               {milestone.assignee && (
                 <>
                   <User size={14} color="var(--vm-text-muted)" />
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {milestone.assignee}
                   </Typography>
                 </>
@@ -201,7 +201,7 @@ export function MilestonesPage() {
               {milestone.dependencies && milestone.dependencies.length > 0 && (
                 <>
                   <ArrowUp size={14} color="var(--vm-text-muted)" />
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                     {milestone.dependencies.length} dep.
                   </Typography>
                 </>

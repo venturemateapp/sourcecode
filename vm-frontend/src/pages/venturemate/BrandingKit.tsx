@@ -99,7 +99,7 @@ function renderSvg(svg: string, options?: { dark?: boolean; size?: number }) {
     });
     cleaned = cleaned.replace(/___KEEP_FILL___fill="(?:none|transparent)"___END_KEEP___/g, 'fill="none"');
     const sz = options?.size || 100;
-    return <Box sx={{ display: 'flex', '& svg': { width: sz, height: sz, maxWidth: sz, maxHeight: sz } }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
+    return <Box sx={{ display: 'flex', '& svg': { width: { xs: Math.min(sz, 60), sm: sz }, height: { xs: Math.min(sz, 60), sm: sz }, maxWidth: '100%', maxHeight: sz } }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
   } catch { return null; }
 }
 
@@ -124,8 +124,8 @@ function FontPreview({ name, label }: { name: string; label: string }) {
   return (
     <GlassCard sx={{ flex: 1, p: 1.5 }} hover={false}>
       <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, mb: 0.5 }}>{label}</Typography>
-      <Typography sx={{ fontFamily: name, fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{name}</Typography>
-      <Typography sx={{ fontFamily: name, fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.25, opacity: 0.7 }}>Aa Bb Cc Dd Ee Ff Gg 0123456789</Typography>
+      <Typography sx={{ fontFamily: name, fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{name}</Typography>
+      <Typography sx={{ fontFamily: name, fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.25, opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Aa Bb Cc Dd Ee Ff Gg 0123456789</Typography>
     </GlassCard>
   );
 }
@@ -150,8 +150,8 @@ function ColorPickerStep({ palettes, selected, onSelect }: { palettes: ColorPale
                   <Box key={j} sx={{ flex: 1, height: { xs: 28, sm: 36 }, borderRadius: 1, bgcolor: h, border: h === '#ffffff' || h === c.background ? '1px solid rgba(255,255,255,.1)' : 'none' }} />
                 ))}
               </Box>
-              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{pal.name}</Typography>
-              <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 0.25, lineHeight: 1.5 }}>{pal.rationale?.slice(0, 80)}</Typography>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{pal.name}</Typography>
+              <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 0.25, lineHeight: 1.5, overflowWrap: 'anywhere' }}>{pal.rationale?.slice(0, 80)}</Typography>
             </GlassCard>
           );
         })}
@@ -175,10 +175,10 @@ function TypoPickerStep({ pairs, selected, onSelect }: { pairs: TypographyPair[]
               '&:hover': { transform: 'translateY(-3px)' },
             }}>
               <Box sx={{ mb: 1.5 }}>
-                <Typography sx={{ fontFamily: pair.primaryFont, fontSize: 22, fontWeight: 800, color: 'var(--vm-text-primary)', lineHeight: 1.1 }}>{pair.primaryFont}</Typography>
-                <Typography sx={{ fontFamily: pair.secondaryFont, fontSize: 14, color: 'var(--vm-text-muted)', mt: 0.5 }}>{pair.secondaryFont}</Typography>
+                <Typography sx={{ fontFamily: pair.primaryFont, fontSize: 22, fontWeight: 800, color: 'var(--vm-text-primary)', lineHeight: 1.1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{pair.primaryFont}</Typography>
+                <Typography sx={{ fontFamily: pair.secondaryFont, fontSize: 14, color: 'var(--vm-text-muted)', mt: 0.5, overflowWrap: 'anywhere' }}>{pair.secondaryFont}</Typography>
               </Box>
-              <Typography sx={{ fontSize: 11, color: 'var(--vm-text-secondary)', fontFamily: pair.secondaryFont, lineHeight: 1.6 }}>{pair.rationale?.slice(0, 100)}</Typography>
+              <Typography sx={{ fontSize: 11, color: 'var(--vm-text-secondary)', fontFamily: pair.secondaryFont, lineHeight: 1.6, overflowWrap: 'anywhere' }}>{pair.rationale?.slice(0, 100)}</Typography>
             </GlassCard>
           );
         })}
@@ -205,9 +205,9 @@ function LogoPickerStep({ logos, selected, onSelect }: { logos: LogoOption[]; se
                 <Box sx={{ height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
                   {renderSvg(logo.svg, { size: 72 })}
                 </Box>
-                <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{logo.name}</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{logo.name}</Typography>
                 <Chip size="small" label={logo.type} sx={{ mt: 0.5, fontSize: 9, textTransform: 'capitalize' }} />
-                <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 0.75, lineHeight: 1.5 }}>{logo.concept?.slice(0, 80)}</Typography>
+                <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 0.75, lineHeight: 1.5, overflowWrap: 'anywhere' }}>{logo.concept?.slice(0, 80)}</Typography>
               </Box>
               <IconButton size="small" onClick={() => downloadSvg(logo.svg, `${logo.name.replace(/[^a-zA-Z0-9]/g, '_')}.svg`)} sx={{ mt: 1, color: 'var(--vm-text-muted)', '&:hover': { color: 'var(--vm-primary-400)' } }}>
                 <Download size={14} />
@@ -229,15 +229,15 @@ function VariationsDisplay({ logo, darkColor }: { logo: LogoOption; darkColor: s
   return (
     <Box>
       <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, mb: 2 }}>Logo Variations</Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, 1fr)' }, gap: 1 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3, 1fr)' }, gap: 1 }}>
         {items.map((item) => (
           <Box key={item.label} sx={{
             p: 2, borderRadius: 2, bgcolor: item.bg, border: '1px solid rgba(255,255,255,.08)',
             textAlign: 'center', minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             position: 'relative',
           }}>
-            {renderSvg(item.svg, { dark: item.dark, size: 72 })}
-            <Typography sx={{ fontSize: 9, color: item.dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', mt: 0.75 }}>{item.label}</Typography>
+            {renderSvg(item.svg, { dark: item.dark, size: 56 })}
+            <Typography sx={{ fontSize: 9, color: item.dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', mt: 0.75, overflowWrap: 'anywhere' }}>{item.label}</Typography>
             <IconButton size="small" onClick={() => downloadSvg(item.svg, `${logo.name.replace(/[^a-zA-Z0-9]/g, '_')}_${item.label.replace(/ /g, '_').toLowerCase()}.svg`)}
               sx={{ position: 'absolute', top: 4, right: 4, color: item.dark ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)', '&:hover': { color: item.dark ? 'white' : 'black' } }}>
               <Download size={12} />
@@ -287,8 +287,8 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
             )}
           </Box>
           <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-            <Typography sx={{ color: 'white', fontFamily: fontHeading, fontSize: { xs: 22, sm: 30 }, fontWeight: 900, lineHeight: 1.1 }}>{businessName}</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.65)', fontFamily: fontBody, fontSize: 12, mt: 0.75, lineHeight: 1.6, maxWidth: 400 }}>
+            <Typography sx={{ color: 'white', fontFamily: fontHeading, fontSize: { xs: 22, sm: 30 }, fontWeight: 900, lineHeight: 1.1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{businessName}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.65)', fontFamily: fontBody, fontSize: 12, mt: 0.75, lineHeight: 1.6, maxWidth: 400, overflowWrap: 'anywhere' }}>
               {brand.logoConcept || 'AI-crafted brand identity.'}
             </Typography>
           </Box>
@@ -321,7 +321,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
             ].map(({ label, bg, dark }) => (
               <Box key={label} sx={{ p: 2, borderRadius: 2, bgcolor: bg, border: '1px solid rgba(255,255,255,.08)', textAlign: 'center', minHeight: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 {renderSvg(brand.logo, { dark, size: 64 })}
-                <Typography sx={{ fontSize: 9, color: dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', mt: 0.75 }}>{label}</Typography>
+                <Typography sx={{ fontSize: 9, color: dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', mt: 0.75, overflowWrap: 'anywhere' }}>{label}</Typography>
               </Box>
             ))}
           </Box>
@@ -371,7 +371,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   };
 
   return (
-    <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 } }}>
+    <Box sx={{ p: { xs: 1.25, sm: 2, md: 3 }, maxWidth: '100%', overflow: 'hidden' }}>
       <PageHeader
         icon={<Palette size={18} />}
         title="Branding Kit"

@@ -96,23 +96,15 @@ body {
   overflow-x: hidden;
 }
 
-/* Scrollbar Styling */
+/* Scrollbar Styling — hidden but functional */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 0;
+  height: 0;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--vm-bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--vm-primary-700);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--vm-primary-600);
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Selection */

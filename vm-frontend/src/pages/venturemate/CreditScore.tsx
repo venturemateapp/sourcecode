@@ -462,10 +462,10 @@ export function CreditScorePage(_props: CreditScoreProps) {
                     <Landmark size={24} color="var(--vm-primary-400)" />
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                       {offer.lenderName}
                     </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                       {getProductTypeLabel(offer.productType)}
                     </Typography>
                   </Box>
@@ -487,13 +487,13 @@ export function CreditScorePage(_props: CreditScoreProps) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
                 <Box>
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Amount</Typography>
-                  <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                     {format(offer.minAmount)} - {format(offer.maxAmount)}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Rate</Typography>
-                  <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                     {offer.minRate}% - {offer.maxRate}%
                   </Typography>
                 </Box>
@@ -688,7 +688,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                 <Typography sx={{ fontSize: 18, fontWeight: 600 }}>
                   Apply for {getProductTypeLabel(selectedOffer?.productType || '')}
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {selectedOffer?.lenderName}
                 </Typography>
               </Box>
@@ -729,7 +729,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
               </Typography>
               <Grid container spacing={3}>
                 <Grid size={12}>
-                  <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1 }}>
+                  <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1, overflowWrap: 'anywhere' }}>
                     Loan Amount: ${applicationData.amount.toLocaleString()}
                   </Typography>
                   <Slider
@@ -846,7 +846,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                 <Grid container spacing={3}>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Lender</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{selectedOffer?.lenderName}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{selectedOffer?.lenderName}</Typography>
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Product</Typography>
@@ -854,7 +854,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Amount</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>${applicationData.amount.toLocaleString()}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, overflowWrap: 'anywhere' }}>${applicationData.amount.toLocaleString()}</Typography>
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Term</Typography>
@@ -862,7 +862,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Interest Rate</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{selectedOffer?.minRate}% - {selectedOffer?.maxRate}%</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, overflowWrap: 'anywhere' }}>{selectedOffer?.minRate}% - {selectedOffer?.maxRate}%</Typography>
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Purpose</Typography>
@@ -1055,7 +1055,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                       <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>Pre-qualified Amount</Typography>
-                      <Typography sx={{ fontSize: 24, fontWeight: 700, color: '#22c55e' }}>
+                      <Typography sx={{ fontSize: 24, fontWeight: 700, color: '#22c55e', overflowWrap: 'anywhere' }}>
                         ${eligibilityResult.preQualifiedAmount?.toLocaleString()}
                       </Typography>
                     </Box>

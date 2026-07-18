@@ -44,12 +44,14 @@ const statsCards = b ? [
              fontSize: { xs: 22, sm: 24, md: 28 },
              fontWeight: 700,
              color: 'var(--vm-text-primary)',
-             mb: 1,
-           }}
-         >
-           Welcome back, {user?.firstName || 'there'}!
-         </Typography>
-         <Typography sx={{ fontSize: { xs: 13, sm: 14, md: 15 }, color: 'var(--vm-text-muted)' }}>
+            mb: 1,
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
+            }}
+          >
+             Welcome back, {user?.firstName || 'there'}!
+          </Typography>
+          <Typography sx={{ fontSize: { xs: 13, sm: 14, md: 15 }, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
            {businesses.length > 0
              ? `You have ${businesses.length} business${businesses.length > 1 ? 'es' : ''} registered.`
              : 'Create your first business to get started.'}
@@ -101,12 +103,12 @@ const statsCards = b ? [
                   }}
                 />
               </Box>
-<Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                 {stat.value}
-               </Typography>
-               <Typography sx={{ fontSize: { xs: 11, sm: 13 }, color: 'var(--vm-text-muted)' }}>
-                 {stat.label}
-               </Typography>
+<Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
+                  {stat.value}
+                </Typography>
+<Typography sx={{ fontSize: { xs: 11, sm: 13 }, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
+                  {stat.label}
+                </Typography>
             </Card>
           </div>
         ))}
@@ -183,39 +185,39 @@ const statsCards = b ? [
                  </Typography>
                </Box>
                <Box>
-<Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                   {activeBusiness?.name ?? 'Untitled'}
-                 </Typography>
-                 <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)' }}>
-                   {activeBusiness?.tagline ?? ''}
-                 </Typography>
+<Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                    {activeBusiness?.name ?? 'Untitled'}
+                  </Typography>
+<Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                    {activeBusiness?.tagline ?? ''}
+                  </Typography>
               </Box>
             </Box>
 
 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: '16px', mb: 3 }}>
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>MRR</Typography>
-<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                     ${activeBusiness.financials?.revenue?.currentMRR?.toLocaleString() ?? 0}
                   </Typography>
                </div>
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Users</Typography>
-<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {activeBusiness.metrics?.totalUsers ?? 0}
-                  </Typography>
+<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
+                     {activeBusiness.metrics?.totalUsers ?? 0}
+                   </Typography>
                 </div>
                 <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Retention</Typography>
-                  <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {activeBusiness.metrics?.retentionRate ?? 0}%
-                  </Typography>
+<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
+                     {activeBusiness.metrics?.retentionRate ?? 0}%
+                   </Typography>
                 </div>
                 <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Runway</Typography>
-                  <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {activeBusiness.financials?.runway ?? 0} mo
-                  </Typography>
+<Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
+                     {activeBusiness.financials?.runway ?? 0} mo
+                   </Typography>
                 </div>
               </Box>
 
@@ -352,12 +354,12 @@ const statsCards = b ? [
                       bgcolor: 'var(--vm-bg-tertiary)',
                     }}
                   >
-                    <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-                      {milestone.title}
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1.5 }}>
-                      {milestone.description}
-                    </Typography>
+<Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                       {milestone.title}
+                     </Typography>
+<Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                       {milestone.description}
+                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar sx={{ width: 24, height: 24, fontSize: 10, bgcolor: 'var(--vm-primary-600)' }}>{milestone.assignee?.charAt(0) || '?'}</Avatar>
                       <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
@@ -422,12 +424,12 @@ const statsCards = b ? [
                       {(member.name?.[0] || '?').toUpperCase()}
                     </Avatar>
                     <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
-                        {member.name}
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                        {member.role}
-                      </Typography>
+<Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                         {member.name}
+                       </Typography>
+<Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
+                         {member.role}
+                       </Typography>
                     </Box>
                   </Box>
                 ))

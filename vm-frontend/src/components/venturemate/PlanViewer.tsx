@@ -127,18 +127,18 @@ function SummarySlide({ summary, template, logo, businessName }: { summary: stri
       {logo && (
         <Box sx={{ position: 'absolute', top: 20, left: 24, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Avatar src={logo} sx={{ width: 22, height: 22 }} />
-          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10, fontWeight: 600 }}>{businessName}</Typography>}
+          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10, fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>}
         </Box>
       )}
 
-      <Box sx={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', px: { xs: 3, sm: 5, md: 8 } }}>
+      <Box sx={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', px: { xs: 3, sm: 5, md: 8 }, overflow: 'auto' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
           <Eye size={16} color={accent} />
           <Typography sx={{ color: `${accent}cc`, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2 }}>Executive Summary</Typography>
         </Box>
         <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 28, md: 36 }, fontWeight: 900, lineHeight: 1.2, mb: 2, letterSpacing: '-0.02em' }}>Executive Summary</Typography>
         <Box sx={{ width: 40, height: 2.5, borderRadius: 2, bgcolor: accent, mb: 2, boxShadow: `0 0 12px ${accent}50` }} />
-        <Typography sx={{ color: 'rgba(255,255,255,.72)', fontSize: { xs: 12, sm: 14, md: 16 }, lineHeight: 1.8, whiteSpace: 'pre-wrap', maxWidth: '90%' }}>{summary}</Typography>
+        <Typography sx={{ color: 'rgba(255,255,255,.72)', fontSize: { xs: 12, sm: 14, md: 16 }, lineHeight: 1.8, whiteSpace: 'pre-wrap', maxWidth: '90%', overflowWrap: 'anywhere' }}>{summary}</Typography>
       </Box>
 
       <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1px', background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }} />
@@ -156,7 +156,7 @@ function SectionSlide({ section, index, template, logo, businessName }: { sectio
       {logo && (
         <Box sx={{ position: 'absolute', top: 16, left: 20, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Avatar src={logo} sx={{ width: 18, height: 18 }} />
-          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.25)', fontSize: 9, fontWeight: 600 }}>{businessName}</Typography>}
+          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.25)', fontSize: 9, fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>}
         </Box>
       )}
 
@@ -166,7 +166,7 @@ function SectionSlide({ section, index, template, logo, businessName }: { sectio
 
       <Box sx={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', px: { xs: 2, sm: 3.5, md: 5 }, pt: { xs: 5, sm: 6, md: 7 }, pb: { xs: 2, sm: 3 }, overflow: 'auto' }}>
         <Box sx={{ width: 28, height: 2.5, borderRadius: 2, bgcolor: accent, mb: 1.5, boxShadow: `0 0 10px ${accent}50` }} />
-        <Typography sx={{ color: 'white', fontSize: { xs: 18, sm: 24, md: 32 }, fontWeight: 900, lineHeight: 1.15, mb: 1.5, letterSpacing: '-0.02em' }}>{section.title}</Typography>
+        <Typography sx={{ color: 'white', fontSize: { xs: 18, sm: 24, md: 32 }, fontWeight: 900, lineHeight: 1.15, mb: 1.5, letterSpacing: '-0.02em', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{section.title}</Typography>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           <Typography sx={{ color: 'rgba(255,255,255,.68)', fontSize: { xs: 11.5, sm: 13, md: 15 }, lineHeight: 1.85, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{section.content}</Typography>
           {section.subsections && section.subsections.length > 0 && (
@@ -178,8 +178,8 @@ function SectionSlide({ section, index, template, logo, businessName }: { sectio
                   backdropFilter: 'blur(8px)',
                 }}>
                   <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}06, transparent)`, pointerEvents: 'none' }} />
-                  <Typography sx={{ position: 'relative', color: accent, fontSize: { xs: 11, sm: 12 }, fontWeight: 700, mb: 0.5 }}>{sub.title}</Typography>
-                  <Typography sx={{ position: 'relative', color: 'rgba(255,255,255,.55)', fontSize: { xs: 10.5, sm: 12 }, lineHeight: 1.7 }}>{sub.content}</Typography>
+                  <Typography sx={{ position: 'relative', color: accent, fontSize: { xs: 11, sm: 12 }, fontWeight: 700, mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{sub.title}</Typography>
+                  <Typography sx={{ position: 'relative', color: 'rgba(255,255,255,.55)', fontSize: { xs: 10.5, sm: 12 }, lineHeight: 1.7, overflowWrap: 'anywhere' }}>{sub.content}</Typography>
                 </Box>
               ))}
             </Box>
@@ -282,7 +282,7 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
         '&:hover .slide-nav': { opacity: 1 },
         fontFamily: template.font,
       }}>
-        <Box data-plan-inner sx={{ position: 'absolute', inset: 0 }}>
+        <Box data-plan-inner sx={{ position: 'absolute', inset: 0, overflow: 'auto' }}>
         {isSummary ? (
           <SummarySlide summary={summary} template={template} logo={logo} businessName={businessName} />
         ) : section ? (

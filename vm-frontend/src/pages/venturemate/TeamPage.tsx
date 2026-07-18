@@ -230,10 +230,10 @@ export function TeamPage() {
               p: { xs: 2, sm: 3 },
             }}
           >
-<Typography sx={{ fontSize: { xs: 16, sm: 20 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                <Typography sx={{ fontSize: { xs: 16, sm: 20 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                {stat.value}
              </Typography>
-             <Typography sx={{ fontSize: { xs: 11, sm: 13 }, color: 'var(--vm-text-muted)' }}>
+             <Typography sx={{ fontSize: { xs: 11, sm: 13 }, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                {stat.label}
              </Typography>
           </Card>
@@ -269,11 +269,11 @@ export function TeamPage() {
                 >
                   {!member.avatar && <Person sx={{ fontSize: 28 }} />}
                 </Avatar>
-                <Box>
-                  <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {member.name}
                   </Typography>
-                  <Typography sx={{ fontSize: 13, color: 'var(--vm-primary-400)' }}>
+                  <Typography sx={{ fontSize: 13, color: 'var(--vm-primary-400)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {member.title}
                   </Typography>
                 </Box>
@@ -289,13 +289,13 @@ export function TeamPage() {
             <Box sx={{ mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Mail size={14} color="#6ee7b7" />
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)' }}>
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {member.email}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Briefcase size={14} color="#6ee7b7" />
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)' }}>
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {member.role}
                 </Typography>
               </Box>
@@ -303,7 +303,7 @@ export function TeamPage() {
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <PieChart size={14} color="#6ee7b7" />
-              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)' }}>
+              <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>
                 {member.equity}% equity
               </Typography>
             </Box>

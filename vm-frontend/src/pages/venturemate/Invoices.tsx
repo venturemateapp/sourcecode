@@ -101,11 +101,11 @@ export function InvoicesPage() {
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 200 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{inv.invoiceNumber}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{inv.invoiceNumber}</Typography>
                     <Chip label={inv.status.replace('_', ' ')} size="small" sx={{ bgcolor: `${statusColor[inv.status] || '#94a3b8'}18`, color: statusColor[inv.status] || '#94a3b8', fontSize: 9, fontWeight: 700, height: 20 }} />
                     {inv.pdfUrl && <Chip label="PDF" size="small" sx={{ bgcolor: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: 9, height: 20 }} />}
                   </Box>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{inv.customerName} · {inv.currency} {inv.amount?.toLocaleString()}</Typography>
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{inv.customerName} · {inv.currency} {inv.amount?.toLocaleString()}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                   <Tooltip title="Download PDF"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(inv)}><Download size={15} /></IconButton></Tooltip>

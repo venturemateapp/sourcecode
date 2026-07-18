@@ -221,7 +221,7 @@ export function BillingPage() {
                 <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
                   Current Plan
                 </Typography>
-                <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: currentPlanData?.color || 'var(--vm-text-primary)' }}>
+                <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: currentPlanData?.color || 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {currentPlanData?.displayName || 'Free'}
                 </Typography>
               </Box>
@@ -250,7 +250,7 @@ export function BillingPage() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <CreditCard size={16} color="var(--vm-text-muted)" />
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)' }}>
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {subscription?.plan.displayName || currentPlanData?.displayName || 'Free'} Plan
                 </Typography>
               </Box>
@@ -368,10 +368,10 @@ export function BillingPage() {
                       return <Icon size={24} color={plan.color} />;
                     })()}
                   </Box>
-                  <Typography sx={{ fontSize: { xs: 17, sm: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: { xs: 17, sm: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {plan.displayName}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', px: 1 }}>
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', px: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {plan.description}
                   </Typography>
                 </Box>
@@ -394,7 +394,7 @@ export function BillingPage() {
                   {plan.features.map((feature, idx) => (
                     <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, mb: 1.25 }}>
                       <CheckCircle size={14} color={feature.included ? plan.color : 'var(--vm-text-muted)'} style={{ marginTop: 2, flexShrink: 0 }} />
-                      <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: feature.included ? 'var(--vm-text-secondary)' : 'var(--vm-text-muted)', lineHeight: 1.4 }}>
+                      <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: feature.included ? 'var(--vm-text-secondary)' : 'var(--vm-text-muted)', lineHeight: 1.4, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                         {feature.text}
                       </Typography>
                     </Box>
@@ -497,10 +497,10 @@ export function BillingPage() {
           flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: { xs: 'center', sm: 'flex-start' },
         }}>
-          <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2, textAlign: { xs: 'center', sm: 'left' } }}>
+          <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 2, textAlign: { xs: 'center', sm: 'left' }, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
             Upgrade to {selectedPlanName}
           </Typography>
-          <Typography sx={{ fontSize: { xs: 14, sm: 15 }, color: 'var(--vm-text-secondary)', mb: { xs: 4, sm: 3 }, textAlign: { xs: 'center', sm: 'left' } }}>
+          <Typography sx={{ fontSize: { xs: 14, sm: 15 }, color: 'var(--vm-text-secondary)', mb: { xs: 4, sm: 3 }, textAlign: { xs: 'center', sm: 'left' }, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
             You are about to upgrade from {currentPlanData?.displayName || 'Free'} to {selectedPlanName}.
             The new plan will take effect immediately.
           </Typography>

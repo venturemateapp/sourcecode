@@ -13,18 +13,17 @@ export function FinancialForecast() {
     return <NoBusinessSelected message="Select a business to view financial forecast" />;
   }
 
-  const { financials, metrics } = business;
+  const financials = business.financials || { fundingRaised: 0, fundingRounds: [], revenue: { currentMRR: 0, currentARR: 0, growthRate: 0, history: [] }, expenses: { monthlyBurn: 0, breakdown: [] }, runway: 0, burnRate: 0, projections: [] };
+  const metrics = business.metrics || { totalUsers: 0, activeUsers: 0, retentionRate: 0, churnRate: 0, nps: 0, cac: 0, ltv: 0, customMetrics: [] };
 
-  // Generate forecast data based on current metrics
   const generateForecast = () => {
     const years = timeRange === '1year' ? 1 : timeRange === '3year' ? 3 : 5;
     const data = [];
     
-    const currentMRR = financials.revenue.currentMRR;
-    const currentBurn = financials.expenses.monthlyBurn;
+    const currentMRR = financials.revenue?.currentMRR ?? 0;
+    const currentBurn = financials.expenses?.monthlyBurn ?? 0;
     
     for (let year = 1; year <= years; year++) {
-      // Growth assumptions based on stage
       const growthRate = business.stage === 'idea' ? 0 : 
                         business.stage === 'mvp' ? 0.15 : 
                         business.stage === 'beta' ? 0.25 : 
@@ -32,7 +31,7 @@ export function FinancialForecast() {
       
       const mrr = currentMRR * Math.pow(1 + growthRate, year);
       const arr = mrr * 12;
-      const expenses = currentBurn * 12 * Math.pow(1.1, year - 1); // 10% expense growth
+      const expenses = currentBurn * 12 * Math.pow(1.1, year - 1);
       const profit = arr - expenses;
       
       data.push({
@@ -115,7 +114,7 @@ export function FinancialForecast() {
         {[
           { 
             label: 'Current MRR', 
-            value: `$${financials.revenue.currentMRR.toLocaleString()}`,
+            value: `$${(financials.revenue?.currentMRR ?? 0).toLocaleString()}`,
             change: '+12%',
             icon: DollarSign
           },
@@ -151,11 +150,11 @@ export function FinancialForecast() {
             >
 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                  <Icon size={18} color="#10b981" />
-                 <Typography sx={{ fontSize: { xs: 11, sm: 12, md: 13 }, fontWeight: 600, color: 'var(--vm-text-muted)' }}>
+                 <Typography sx={{ fontSize: { xs: 11, sm: 12, md: 13 }, fontWeight: 600, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                    {stat.label}
                  </Typography>
                </Box>
-               <Typography sx={{ fontSize: { xs: 14, sm: 16 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+               <Typography sx={{ fontSize: { xs: 14, sm: 16 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                  {stat.value}
                </Typography>
                <Typography sx={{ fontSize: { xs: 11, sm: 12 }, color: 'var(--vm-primary-400)' }}>
@@ -279,10 +278,10 @@ export function FinancialForecast() {
                   { label: 'CAC', value: `$${metrics.cac || 100}` },
                 ].map((item) => (
                   <Box key={item.label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
+                    <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                       {item.label}
                     </Typography>
-                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                       {item.value}
                     </Typography>
                   </Box>
@@ -303,8 +302,8 @@ export function FinancialForecast() {
                 Runway Analysis
               </Typography>
               <Box sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: 32, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                  {financials.runway} months
+                <Typography sx={{ fontSize: 32, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
+                  {financials.runway ?? 0} months
                 </Typography>
                 <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
                   Current cash runway
@@ -321,15 +320,15 @@ export function FinancialForecast() {
               >
                 <Box
                   sx={{
-                    width: `${Math.min((financials.runway / 24) * 100, 100)}%`,
+                    width: `${Math.min(((financials.runway ?? 0) / 24) * 100, 100)}%`,
                     height: '100%',
-                    bgcolor: financials.runway > 12 ? '#10b981' : financials.runway > 6 ? '#f59e0b' : '#ef4444',
+                    bgcolor: (financials.runway ?? 0) > 12 ? '#10b981' : (financials.runway ?? 0) > 6 ? '#f59e0b' : '#ef4444',
                     borderRadius: 4,
                   }}
                 />
               </Box>
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mt: 1 }}>
-                {financials.runway > 12 ? 'Healthy runway' : financials.runway > 6 ? 'Consider fundraising' : 'Urgent: Fundraising needed'}
+                {(financials.runway ?? 0) > 12 ? 'Healthy runway' : (financials.runway ?? 0) > 6 ? 'Consider fundraising' : 'Urgent: Fundraising needed'}
               </Typography>
             </Card>
 

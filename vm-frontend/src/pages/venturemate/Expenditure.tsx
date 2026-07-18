@@ -91,14 +91,14 @@ export function ExpenditurePage() {
           <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(239,68,68,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
             <DollarSign size={16} color="#ef4444" />
           </Box>
-          <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{formatCurrency(grandTotal)}</Typography>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>{formatCurrency(grandTotal)}</Typography>
           <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Total Expenses</Typography>
         </Card>
         <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
           <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(16,185,129,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
             <Receipt size={16} color="#10b981" />
           </Box>
-          <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{items.length}</Typography>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>{items.length}</Typography>
           <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Total Entries</Typography>
         </Card>
         <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5, gridColumn: { xs: '1 / -1', sm: 'auto' } }}>
@@ -125,15 +125,15 @@ export function ExpenditurePage() {
                 <Box sx={{ width: 6, height: 40, borderRadius: 1, bgcolor: CATEGORY_COLORS[e.category] || '#94a3b8', flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{e.description}</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{e.description}</Typography>
                     <Chip label={e.category} size="small" sx={{ bgcolor: `${CATEGORY_COLORS[e.category] || '#94a3b8'}15`, color: CATEGORY_COLORS[e.category] || '#94a3b8', fontSize: 9, height: 18 }} />
                   </Box>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 0.25 }}>
-                    {e.vendor && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{e.vendor}</Typography>}
-                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{new Date(e.expenseDate).toLocaleDateString('en-GB')}</Typography>
+                    {e.vendor && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{e.vendor}</Typography>}
+                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{new Date(e.expenseDate).toLocaleDateString('en-GB')}</Typography>
                   </Box>
                 </Box>
-                <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#ef4444', flexShrink: 0 }}>-{formatCurrency(e.amount)}</Typography>
+                <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#ef4444', flexShrink: 0, overflowWrap: 'anywhere' }}>-{formatCurrency(e.amount)}</Typography>
                 <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => setForm(e)}><Edit3 size={14} /></IconButton>
                 <IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteItem(e.id)}><Trash2 size={14} /></IconButton>
               </Box>

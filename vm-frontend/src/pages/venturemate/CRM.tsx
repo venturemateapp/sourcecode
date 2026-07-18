@@ -240,8 +240,8 @@ export function CRMPage() {
             <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
               <s.icon size={18} color={s.color} />
             </Box>
-            <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 800, color: 'var(--vm-text-primary)', lineHeight: 1.1 }}>{s.value}</Typography>
-            <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mt: 0.25 }}>{s.label}</Typography>
+            <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 800, color: 'var(--vm-text-primary)', lineHeight: 1.1, overflowWrap: 'anywhere' }}>{s.value}</Typography>
+            <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mt: 0.25, overflowWrap: 'anywhere' }}>{s.label}</Typography>
           </Card>
         ))}
       </Box>
@@ -268,10 +268,10 @@ export function CRMPage() {
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{c.name}</Typography>
+                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{c.name}</Typography>
                       <Chip label={c.contactType} size="small" sx={{ bgcolor: `${getContactColor(c.contactType)}18`, color: getContactColor(c.contactType), fontSize: 9, fontWeight: 700, height: 20 }} />
                     </Box>
-                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{c.jobTitle} {c.company ? `· ${c.company}` : ''}</Typography>
+                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>{c.jobTitle} {c.company ? `· ${c.company}` : ''}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
                     <Tooltip title="Edit"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => setContactForm(c)}><Edit3 size={13} /></IconButton></Tooltip>
@@ -279,8 +279,8 @@ export function CRMPage() {
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1.5, mb: 1, flexWrap: 'wrap' }}>
-                  {c.email && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Mail size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{c.email}</Typography></Box>}
-                  {c.phone && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Phone size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{c.phone}</Typography></Box>}
+                  {c.email && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Mail size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.email}</Typography></Box>}
+                  {c.phone && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Phone size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.phone}</Typography></Box>}
                 </Box>
                 {c.notes && <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.notes}</Typography>}
                 <Box sx={{ display: 'flex', gap: 0.75, mt: 1.5 }}>
@@ -378,11 +378,11 @@ export function CRMPage() {
                             '&:hover': { borderColor: stage.color, boxShadow: `0 4px 12px ${stage.color}20`, transform: 'translateY(-1px)' },
                           }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', lineHeight: 1.3 }}>{d.title}</Typography>
+                              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', lineHeight: 1.3, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{d.title}</Typography>
                               <IconButton size="small" sx={{ color: '#ef444466', p: 0.25, ml: 0.5, flexShrink: 0 }} onClick={() => deleteDeal(d.id)}><Trash2 size={11} /></IconButton>
                             </Box>
 
-                            <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-primary-400)', mb: 1 }}>{formatCurrency(d.value)}</Typography>
+                            <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-primary-400)', mb: 1, overflowWrap: 'anywhere' }}>{formatCurrency(d.value)}</Typography>
 
                             {/* Probability bar */}
                             <Box sx={{ mb: 1 }}>
@@ -401,7 +401,7 @@ export function CRMPage() {
                                 <Avatar sx={{ width: 20, height: 20, fontSize: 8, bgcolor: `${getContactColor(contact.contactType)}22`, color: getContactColor(contact.contactType), fontWeight: 700 }}>
                                   {contact.name.charAt(0)}
                                 </Avatar>
-                                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{contact.name}</Typography>
+                                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{contact.name}</Typography>
                               </Box>
                             )}
                             {d.expectedCloseDate && (
@@ -452,12 +452,12 @@ export function CRMPage() {
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+                      <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                         {contacts.find(c => c.id === a.contactId)?.name || 'Unknown'}
                       </Typography>
                       <Chip label={a.type} size="small" sx={{ bgcolor: 'var(--vm-bg-tertiary)', color: 'var(--vm-text-muted)', fontSize: 9, height: 20 }} />
                     </Box>
-                    <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 0.5 }}>{a.description}</Typography>
+                    <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{a.description}</Typography>
                     <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{formatDate(a.createdAt)} by {a.createdBy}</Typography>
                   </Box>
                   <Tooltip title="Delete"><IconButton size="small" sx={{ color: '#ef444488', flexShrink: 0 }} onClick={() => deleteActivity(a.id)}><Trash2 size={13} /></IconButton></Tooltip>
@@ -479,9 +479,9 @@ export function CRMPage() {
                   {t.status === 'done' && <CheckCircle size={14} color="#22c55e" />}
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: t.status === 'done' ? 400 : 600, color: t.status === 'done' ? 'var(--vm-text-muted)' : 'var(--vm-text-primary)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: t.status === 'done' ? 400 : 600, color: t.status === 'done' ? 'var(--vm-text-muted)' : 'var(--vm-text-primary)', textDecoration: t.status === 'done' ? 'line-through' : 'none', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{t.title}</Typography>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.25 }}>
-                    {t.assignedTo && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}><Users size={11} style={{ marginRight: 2, verticalAlign: -1 }} />{t.assignedTo}</Typography>}
+                    {t.assignedTo && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}><Users size={11} style={{ marginRight: 2, verticalAlign: -1 }} />{t.assignedTo}</Typography>}
                     {t.dueDate && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}><Calendar size={11} style={{ marginRight: 2, verticalAlign: -1 }} />{formatDate(t.dueDate)}</Typography>}
                     <Chip label={t.status.replace('_', ' ')} size="small" sx={{ bgcolor: t.status === 'done' ? 'rgba(34,197,94,.12)' : t.status === 'in_progress' ? 'rgba(245,158,11,.12)' : 'rgba(148,163,184,.12)', color: t.status === 'done' ? '#22c55e' : t.status === 'in_progress' ? '#f59e0b' : '#94a3b8', fontSize: 9, height: 18 }} />
                   </Box>
@@ -593,7 +593,7 @@ export function CRMPage() {
               <Avatar sx={{ width: 32, height: 32, bgcolor: 'var(--vm-primary-600)', fontSize: 12, fontWeight: 700 }}>
                 {contacts.find(c => c.id === activityForm.contactId)!.name.charAt(0)}
               </Avatar>
-              <Box><Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)' }}>{contacts.find(c => c.id === activityForm.contactId)!.name}</Typography></Box>
+              <Box><Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{contacts.find(c => c.id === activityForm.contactId)!.name}</Typography></Box>
             </Box>
           )}
           <TextField fullWidth multiline rows={4} label="Description" value={activityForm.description} onChange={e => setActivityForm({ ...activityForm, description: e.target.value })}

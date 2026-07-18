@@ -27,7 +27,6 @@ const NAV_SECTIONS: NavSection[] = [
     { label: 'Documents', icon: 'FolderOpen', view: 'documents' as ViewType },
     { label: 'Website Builder', icon: 'Globe', view: 'website-builder' as ViewType },
     { label: 'Team', icon: 'Users', view: 'team' as ViewType },
-    { label: 'Network', icon: 'Share2', view: 'network' as ViewType },
   ]},
   { title: 'GROWTH', items: [
     { label: 'CRM', icon: 'Users', view: 'crm' as ViewType },
@@ -47,8 +46,6 @@ const NAV_SECTIONS: NavSection[] = [
     { label: 'Business Plan', icon: 'FileText', view: 'business-plan' as ViewType },
     { label: 'Branding Kit', icon: 'Palette', view: 'branding-kit' as ViewType },
     { label: 'Milestones', icon: 'Target', view: 'milestones' as ViewType },
-    { label: 'Financial Forecast', icon: 'BarChart3', view: 'financial-forecast' as ViewType },
-    { label: 'Market Research', icon: 'Lightbulb', view: 'market-research' as ViewType },
     { label: 'Investors', icon: 'TrendingUp', view: 'investors' as ViewType },
     { label: 'Co-Founders', icon: 'UserCircle', view: 'cofounders' as ViewType },
   ]},

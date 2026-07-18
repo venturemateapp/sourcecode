@@ -253,7 +253,7 @@ export function DocumentsPage(_props: DocumentsProps) {
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2, p: 2 }}>
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Total Documents</Typography>
-              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                 {stats.totalDocuments}
               </Typography>
             </Card>
@@ -261,7 +261,7 @@ export function DocumentsPage(_props: DocumentsProps) {
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2, p: 2 }}>
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Storage Used</Typography>
-              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                 {stats.totalSize}
               </Typography>
             </Card>
@@ -269,7 +269,7 @@ export function DocumentsPage(_props: DocumentsProps) {
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2, p: 2 }}>
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Categories</Typography>
-              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+              <Typography sx={{ fontSize: 24, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                 {stats.byCategory.filter(c => c.count > 0).length}
               </Typography>
             </Card>
@@ -277,7 +277,7 @@ export function DocumentsPage(_props: DocumentsProps) {
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2, p: 2 }}>
               <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Last Upload</Typography>
-              <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+              <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
                 {documents.length > 0 ? formatDate(documents[0].uploadedAt) : 'No uploads'}
               </Typography>
             </Card>
@@ -441,7 +441,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                   </IconButton>
                 </Box>
 
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5, wordBreak: 'break-word' }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {doc.name}
                 </Typography>
 
@@ -458,7 +458,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                       '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                     }}
                   />
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{doc.size}</Typography>
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>{doc.size}</Typography>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -515,7 +515,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                 </Box>
 
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.25 }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.25, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {doc.name}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -532,7 +532,7 @@ export function DocumentsPage(_props: DocumentsProps) {
                         '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
                       }}
                     />
-                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{doc.size}</Typography>
+                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>{doc.size}</Typography>
                   </Box>
                 </Box>
 
@@ -644,10 +644,10 @@ export function DocumentsPage(_props: DocumentsProps) {
                 <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
                   <FileText size={24} color="var(--vm-primary-400)" />
                 </Box>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5 }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   {uploadFileData.name}
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                   {(uploadFileData.size / 1024).toFixed(1)} KB
                 </Typography>
               </>
@@ -778,10 +778,10 @@ export function DocumentsPage(_props: DocumentsProps) {
                   >
                     <TemplateIcon size={24} color={category?.color} />
                   </Box>
-                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {template.name}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1 }}>
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {template.description}
                   </Typography>
                   <Chip

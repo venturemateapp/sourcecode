@@ -149,6 +149,8 @@ export function BusinessPickerModal({
                     fontSize: 15,
                     fontWeight: 600,
                     color: 'var(--vm-text-primary)',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
                   }}
                 >
                   {business.name}

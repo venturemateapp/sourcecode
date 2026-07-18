@@ -103,7 +103,7 @@ export function CompaniesPage() {
                 <Building2 size={20} color="#10b981" />
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{c.name}</Typography>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{c.name}</Typography>
                 {c.industry && <Chip label={c.industry} size="small" sx={{ mt: 0.25, bgcolor: 'rgba(139,92,246,.12)', color: '#a78bfa', fontSize: 9, height: 18 }} />}
               </Box>
               <Box sx={{ display: 'flex', gap: 0.25, flexShrink: 0 }}>
@@ -113,13 +113,13 @@ export function CompaniesPage() {
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1.5 }}>
-              {c.domain && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Globe size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{c.domain}</Typography></Box>}
-              {c.employeeCount > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Users size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{c.employeeCount} employees</Typography></Box>}
-              {c.revenue > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><DollarSign size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{formatCurrency(c.revenue)} revenue</Typography></Box>}
-              {c.addressCity && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)' }}>{c.addressCity}{c.addressCountry ? `, ${c.addressCountry}` : ''}</Typography></Box>}
+              {c.domain && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Globe size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{c.domain}</Typography></Box>}
+              {c.employeeCount > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Users size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.employeeCount} employees</Typography></Box>}
+              {c.revenue > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><DollarSign size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{formatCurrency(c.revenue)} revenue</Typography></Box>}
+              {c.addressCity && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{c.addressCity}{c.addressCountry ? `, ${c.addressCountry}` : ''}</Typography></Box>}
             </Box>
 
-            {c.description && <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.description}</Typography>}
+            {c.description && <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{c.description}</Typography>}
           </Card>
         ))}
       </Box>

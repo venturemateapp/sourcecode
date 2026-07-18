@@ -168,7 +168,7 @@ export function AICreationStudio({
                 </Box>
                 <Box>
                   <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900, fontSize: 14 }}>AI Proposal</Typography>
-                  <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11 }}>{proposal.summary || proposalMessage}</Typography>
+                  <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{proposal.summary || proposalMessage}</Typography>
                 </Box>
               </Box>
               <Chip label="Not saved" size="small" color="warning" variant="outlined" sx={{ fontSize: 10 }} />

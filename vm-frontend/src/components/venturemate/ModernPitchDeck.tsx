@@ -36,7 +36,7 @@ function SlideHeader({ logo, businessName, slideType, index, total }: {
           </Box>
         )}
         {businessName && (
-          <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,.5)' }}>{businessName}</Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,.5)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>
         )}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -63,7 +63,7 @@ function SlideFooter({ businessName }: { businessName?: string }) {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       px: { xs: 3, sm: 5, md: 8 }, py: { xs: 1.5, sm: 2.5 },
     }}>
-      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.15)' }}>{businessName || ''}</Typography>
+      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.15)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName || ''}</Typography>
       <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.15)' }}>Confidential</Typography>
     </Box>
   );
@@ -115,7 +115,7 @@ function CoverSlide({ slide, index, total, logo, businessName, accent }: {
         <Typography sx={{
           fontSize: { xs: 42, sm: 56, md: 80 }, fontWeight: 600,
           lineHeight: 0.92, letterSpacing: '-0.07em', color: 'white',
-          maxWidth: '80%',
+          maxWidth: '80%', overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>
           {slide.title}
         </Typography>
@@ -123,7 +123,7 @@ function CoverSlide({ slide, index, total, logo, businessName, accent }: {
         {slide.content && (
           <Typography sx={{
             mt: 4, fontSize: { xs: 16, sm: 18, md: 21 },
-            lineHeight: 1.6, color: 'rgba(255,255,255,.45)', maxWidth: 600,
+            lineHeight: 1.6, color: 'rgba(255,255,255,.45)', maxWidth: 600, overflowWrap: 'anywhere',
           }}>
             {slide.content}
           </Typography>
@@ -131,7 +131,7 @@ function CoverSlide({ slide, index, total, logo, businessName, accent }: {
 
         <Box sx={{ mt: 6, display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ width: 64, height: 1, bgcolor: accent }} />
-          <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,.35)' }}>
+          <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,.35)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {businessName || 'Building the future'}
           </Typography>
         </Box>
@@ -162,13 +162,14 @@ function ProblemSlide({ slide, index, total, logo, businessName, accent }: {
             <Typography sx={{
               fontSize: { xs: 36, sm: 48, md: 68 }, fontWeight: 600,
               lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
+              overflowWrap: 'anywhere', wordBreak: 'break-word',
             }}>
               {slide.title}
             </Typography>
             {slide.content && (
               <Typography sx={{
                 mt: 5, fontSize: { xs: 15, sm: 17, md: 19 },
-                lineHeight: 1.7, color: 'rgba(255,255,255,.45)', maxWidth: 480,
+                lineHeight: 1.7, color: 'rgba(255,255,255,.45)', maxWidth: 480, overflowWrap: 'anywhere',
               }}>
                 {slide.content}
               </Typography>
@@ -201,7 +202,7 @@ function ProblemSlide({ slide, index, total, logo, businessName, accent }: {
                         {String(i + 1).padStart(2, '0')}
                       </Typography>
                     </Box>
-                    <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', lineHeight: 1.5 }}>
+                    <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>
                       {bullet}
                     </Typography>
                   </Box>
@@ -233,6 +234,7 @@ function SolutionSlide({ slide, index, total, logo, businessName, accent }: {
         <Typography sx={{
           fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
           lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
+          overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>
           {slide.title}
         </Typography>
@@ -244,7 +246,7 @@ function SolutionSlide({ slide, index, total, logo, businessName, accent }: {
               <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 300, color: accent, mb: 4 }}>
                 0{i + 1}
               </Typography>
-              <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', lineHeight: 1.6 }}>
+              <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', lineHeight: 1.6, overflowWrap: 'anywhere' }}>
                 {point}
               </Typography>
             </GlassCard>
@@ -270,12 +272,13 @@ function MarketSlide({ slide, index, total, logo, businessName, accent }: {
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         px: { xs: 4, sm: 6, md: 10 },
       }}>
-        <Typography sx={{
-          fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-          lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-        }}>
-          {slide.title}
-        </Typography>
+            <Typography sx={{
+              fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
+              lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
+              overflowWrap: 'anywhere', wordBreak: 'break-word',
+            }}>
+              {slide.title}
+            </Typography>
 
         <Box sx={{ mt: 6, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
           <GlassCard sx={{ p: { xs: 3, sm: 4 } }}>
@@ -340,6 +343,7 @@ function TractionSlide({ slide, index, total, logo, businessName, accent }: {
         <Typography sx={{
           fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
           lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
+          overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>
           {slide.title}
         </Typography>
@@ -390,6 +394,7 @@ function BusinessModelSlide({ slide, index, total, logo, businessName, accent }:
         <Typography sx={{
           fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
           lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
+          overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>
           {slide.title}
         </Typography>
@@ -404,10 +409,10 @@ function BusinessModelSlide({ slide, index, total, logo, businessName, accent }:
               }}>
                 <Typography sx={{ fontSize: 18, fontWeight: 700, color: accent }}>{i + 1}</Typography>
               </Box>
-              <Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 500, color: 'rgba(255,255,255,.8)', mb: 2 }}>
+              <Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 500, color: 'rgba(255,255,255,.8)', mb: 2, overflowWrap: 'anywhere' }}>
                 {label}
               </Typography>
-              <Typography sx={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(255,255,255,.4)' }}>
+              <Typography sx={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(255,255,255,.4)', overflowWrap: 'anywhere' }}>
                 {items[i] || `Revenue stream ${i + 1} description with key metrics and pricing.`}
               </Typography>
             </GlassCard>
@@ -435,12 +440,13 @@ function AskSlide({ slide, index, total, logo, businessName, accent, secondary }
       }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 8, alignItems: 'center', height: '100%' }}>
           <Box>
-            <Typography sx={{
-              fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-              lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-            }}>
-              {slide.title}
-            </Typography>
+        <Typography sx={{
+          fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
+          lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
+          overflowWrap: 'anywhere', wordBreak: 'break-word',
+        }}>
+          {slide.title}
+        </Typography>
             <Typography sx={{
               mt: 5, fontSize: { xs: 42, sm: 56, md: 80 }, fontWeight: 600,
               letterSpacing: '-0.07em',
@@ -466,7 +472,7 @@ function AskSlide({ slide, index, total, logo, businessName, accent, secondary }
                   <Typography sx={{ fontSize: 13, fontWeight: 600, color: accent, minWidth: 28 }}>
                     0{i + 1}
                   </Typography>
-                  <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)' }}>
+                  <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', overflowWrap: 'anywhere' }}>
                     {use}
                   </Typography>
                 </Box>
@@ -504,7 +510,7 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
             width: 10, height: 10, borderRadius: '50%', bgcolor: accent,
             boxShadow: `0 0 12px ${accent}60`,
           }} />
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: accent, textTransform: 'uppercase', letterSpacing: 3 }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 600, color: accent, textTransform: 'uppercase', letterSpacing: 3, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {slide.type.replace('_', ' ')}
           </Typography>
         </Box>
@@ -512,14 +518,14 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
         <Typography sx={{
           fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
           lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-          maxWidth: '85%',
+          maxWidth: '85%', overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>
           {slide.title}
         </Typography>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4, mt: 5, alignItems: 'flex-start' }}>
           {slide.content && (
-            <Typography sx={{ fontSize: { xs: 14, sm: 16 }, lineHeight: 1.8, color: 'rgba(255,255,255,.6)', maxWidth: 520 }}>
+            <Typography sx={{ fontSize: { xs: 14, sm: 16 }, lineHeight: 1.8, color: 'rgba(255,255,255,.6)', maxWidth: 520, overflowWrap: 'anywhere' }}>
               {slide.content}
             </Typography>
           )}
@@ -528,7 +534,7 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
               {slide.bullets.map((bullet, bi) => (
                 <Box key={bi} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                   <Box sx={{ minWidth: 6, height: 6, borderRadius: '50%', bgcolor: accent, mt: 0.75, boxShadow: `0 0 6px ${accent}60` }} />
-                  <Typography sx={{ fontSize: { xs: 13, sm: 15 }, lineHeight: 1.6, color: 'rgba(255,255,255,.75)' }}>
+                  <Typography sx={{ fontSize: { xs: 13, sm: 15 }, lineHeight: 1.6, color: 'rgba(255,255,255,.75)', overflowWrap: 'anywhere' }}>
                     {bullet}
                   </Typography>
                 </Box>
@@ -585,7 +591,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
         return (
           <Box key={slide.id || index} sx={{
             position: 'relative', width: '100%', aspectRatio: '16 / 9',
-            overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,.06)',
+            overflow: 'auto', borderBottom: '1px solid rgba(255,255,255,.06)',
             minHeight: { xs: 300, sm: 400, md: 500 },
           }}>
             {slideContent}

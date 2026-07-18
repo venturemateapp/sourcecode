@@ -360,7 +360,7 @@ export function BankingPage(_props: BankingProps) {
                   <Chip size="small" icon={statusIcon(account.status)} label={account.status}
                     sx={{ bgcolor: `${statusColor(account.status)}20`, color: statusColor(account.status), fontSize: 10, fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
                 </Box>
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1 }}>{account.accountName} • {account.accountNumber}</Typography>
+                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{account.accountName} • {account.accountNumber}</Typography>
                 {account.status === 'pending' && isAdmin && (
                   <Box sx={{ display: 'flex', gap: 1, mt: 3, pt: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
                     <GradientButton variant="primary" size="sm" onClick={() => handleApprove(account.id)}>
@@ -399,11 +399,11 @@ export function BankingPage(_props: BankingProps) {
               return (
                 <Card key={inv.id} sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 3 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>{inv.invoiceNumber}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{inv.invoiceNumber}</Typography>
                     <Chip size="small" icon={statusIcon(actualStatus)} label={actualStatus}
                       sx={{ bgcolor: `${statusColor(actualStatus)}20`, color: statusColor(actualStatus), fontSize: 10, fontWeight: 600, textTransform: 'capitalize', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />
                   </Box>
-                  <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1, overflowWrap: 'anywhere' }}>
                     {format(inv.amount)}
                   </Typography>
                   <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.customerName}</Typography>

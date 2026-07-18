@@ -104,8 +104,8 @@ function renderFeatures(content: Record<string, unknown>, primary: string) {
       {features.slice(0, 6).map((f, i) => (
         <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', transition: 'all .2s', '&:hover': { bgcolor: 'rgba(255,255,255,.06)', transform: 'translateY(-2px)' } }}>
           {String(f.icon || '') && <Box sx={{ width: 32, height: 32, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${primary}20`, mb: 1, fontSize: 16 }}>✦</Box>}
-          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: { xs: 13, sm: 14 } }}>{String(f.title || '')}</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: { xs: 11, sm: 12 }, mt: 0.5, lineHeight: 1.6 }}>{String(f.description || '')}</Typography>
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: { xs: 13, sm: 14 }, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(f.title || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: { xs: 11, sm: 12 }, mt: 0.5, lineHeight: 1.6, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(f.description || '')}</Typography>
         </Box>
       ))}
       {!features.length && <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>{String(content.subtitle || '')}</Typography>}
@@ -121,10 +121,10 @@ function renderTestimonials(content: Record<string, unknown>, primary: string) {
       {items.slice(0, 6).map((t, i) => (
         <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
           <Box sx={{ color: primary, fontSize: 18, lineHeight: 1, mb: 0.5 }}>“</Box>
-          <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 11, sm: 12 }, lineHeight: 1.7, fontStyle: 'italic' }}>{String(t.quote || t.content || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 11, sm: 12 }, lineHeight: 1.7, fontStyle: 'italic', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(t.quote || t.content || '')}</Typography>
           <Box sx={{ mt: 1.5, borderTop: '1px solid rgba(255,255,255,.06)', pt: 1 }}>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12 }}>{String(t.author || t.name || '')}</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>{String(t.role || '')}</Typography>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 12, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(t.author || t.name || '')}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10, overflowWrap: 'anywhere' }}>{String(t.role || '')}</Typography>
           </Box>
         </Box>
       ))}
@@ -140,13 +140,13 @@ function renderPricing(content: Record<string, unknown>, primary: string) {
       {items.slice(0, 6).map((p, i) => (
         <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: i === 1 ? `${primary}10` : 'rgba(255,255,255,.03)', border: i === 1 ? `1px solid ${primary}40` : '1px solid rgba(255,255,255,.06)', position: 'relative' }}>
           {i === 1 && <Box sx={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', px: 1.5, py: 0.25, bgcolor: primary, color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '0 0 6px 6px', textTransform: 'uppercase' }}>Popular</Box>}
-          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 15 }}>{String(p.name || '')}</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 11, mt: 0.25 }}>{String(p.description || '')}</Typography>
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 15, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(p.name || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 11, mt: 0.25, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(p.description || '')}</Typography>
           <Typography sx={{ color: 'white', fontSize: { xs: 22, sm: 28 }, fontWeight: 900, mt: 1 }}>{String(p.price || '')}</Typography>
           {Array.isArray(p.features) && (
             <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               {p.features.slice(0, 5).map((f: any, fi: number) => (
-                <Typography key={fi} sx={{ color: 'rgba(255,255,255,.7)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography key={fi} sx={{ color: 'rgba(255,255,255,.7)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                   <Box component="span" sx={{ color: '#22c55e' }}>✓</Box> {String(f)}
                 </Typography>
               ))}
@@ -169,9 +169,9 @@ function renderTeam(content: Record<string, unknown>, primary: string) {
           <Box sx={{ width: 48, height: 48, borderRadius: '50%', bgcolor: `${primary}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 1, color: primary, fontSize: 16, fontWeight: 700 }}>
             {String(String(t.name || '?')[0] || '?').toUpperCase()}
           </Box>
-          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13 }}>{String(t.name || '')}</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>{String(t.role || '')}</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: 11, mt: 0.5, lineHeight: 1.5 }}>{String(t.bio || '')}</Typography>
+          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(t.name || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 11, overflowWrap: 'anywhere' }}>{String(t.role || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: 11, mt: 0.5, lineHeight: 1.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(t.bio || '')}</Typography>
         </Box>
       ))}
     </Box>
@@ -185,8 +185,8 @@ function renderFAQ(content: Record<string, unknown>) {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
       {items.slice(0, 8).map((f, i) => (
         <Box key={i} sx={{ p: { xs: 1.25, sm: 1.5 }, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)' }}>
-          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13 }}>{String(f.question || '')}</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, mt: 0.5, lineHeight: 1.6 }}>{String(f.answer || '')}</Typography>
+          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 13, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(f.question || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, mt: 0.5, lineHeight: 1.6, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(f.answer || '')}</Typography>
         </Box>
       ))}
     </Box>
@@ -200,8 +200,8 @@ function renderStats(content: Record<string, unknown>, primary: string) {
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: { xs: 1, sm: 1.5 }, mt: 1.5 }}>
       {stats.slice(0, 8).map((s, i) => (
         <Box key={i} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', textAlign: 'center' }}>
-          <Typography sx={{ color: primary, fontSize: { xs: 22, sm: 30 }, fontWeight: 900 }}>{String(s.value || '')}</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 11, mt: 0.25 }}>{String(s.label || '')}</Typography>
+          <Typography sx={{ color: primary, fontSize: { xs: 22, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere' }}>{String(s.value || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 11, mt: 0.25, overflowWrap: 'anywhere' }}>{String(s.label || '')}</Typography>
         </Box>
       ))}
     </Box>
@@ -216,8 +216,8 @@ function renderCarousel(content: Record<string, unknown>, primary: string) {
       {items.slice(0, 8).map((item, i) => (
         <Box key={i} sx={{ minWidth: { xs: '80%', sm: 320 }, scrollSnapAlign: 'start', p: { xs: 1.5, sm: 2 }, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)' }}>
           {item.image !== undefined && <Box component="img" src={String(item.image)} alt="" sx={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: 1, mb: 1 }} />}
-          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{String(item.title || '')}</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, mt: 0.5, lineHeight: 1.6 }}>{String(item.description || item.content || '')}</Typography>
+          <Typography sx={{ color: 'white', fontWeight: 700, fontSize: 14, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(item.title || '')}</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 12, mt: 0.5, lineHeight: 1.6, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{String(item.description || item.content || '')}</Typography>
           <Typography sx={{ color: primary, fontSize: 11, fontWeight: 700, mt: 0.75, cursor: 'default', display: item.cta !== undefined ? 'block' : 'none' }}>{String(item.cta || '')} →</Typography>
         </Box>
       ))}
@@ -257,7 +257,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {logo ? <Box component="img" src={logo} sx={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 0.5 }} /> : <Box sx={{ width: 28, height: 28, borderRadius: 0.5, bgcolor: primary }} />}
-          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14 }}>{businessName}</Typography>
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{businessName}</Typography>
         </Box>
         <Box sx={{ flex: 1 }} />
         <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 2 }}>
@@ -271,7 +271,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
       {sections.length === 0 ? (
         <Box sx={{ minHeight: 360, display: 'grid', placeItems: 'center', p: 3, background: `radial-gradient(circle at 75% 20%, ${primary}55, transparent 30%), linear-gradient(135deg, ${dark}, #07130f)` }}>
           <Box sx={{ textAlign: 'center', maxWidth: 650 }}>
-            <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42 }, fontWeight: 950 }}>{tagline || businessName}</Typography>
+            <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42 }, fontWeight: 950, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{tagline || businessName}</Typography>
             <Typography sx={{ color: 'rgba(255,255,255,.7)', mt: 1 }}>AI generates the full page structure here.</Typography>
           </Box>
         </Box>
@@ -294,8 +294,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
                 }}>
                   <Box sx={{ maxWidth: 720, position: 'relative', zIndex: 1 }}>
                     {logo && <Box component="img" src={logo} alt="" sx={{ width: { xs: 56, sm: 72 }, height: { xs: 56, sm: 72 }, objectFit: 'contain', mb: { xs: 1.5, sm: 2.5 }, mx: 'auto', display: 'block' }} />}
-                    <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42, md: 52 }, fontWeight: 950, lineHeight: 1.05, letterSpacing: '-.02em' }}>{heading || businessName}</Typography>
-                    {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 14, sm: 17 }, lineHeight: 1.7, mt: { xs: 1.5, sm: 2 }, maxWidth: 580, mx: 'auto' }}>{body}</Typography>}
+                    <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42, md: 52 }, fontWeight: 950, lineHeight: 1.05, letterSpacing: '-.02em', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading || businessName}</Typography>
+                    {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 14, sm: 17 }, lineHeight: 1.7, mt: { xs: 1.5, sm: 2 }, maxWidth: 580, mx: 'auto', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                     <Box sx={{ mt: { xs: 2, sm: 3 }, display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
                       <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 0.75, sm: 1 }, borderRadius: 999, bgcolor: primary, color: '#fff', fontWeight: 800, fontSize: { xs: 12, sm: 13 } }}>{text(content, 'primaryCta', 'cta') || 'Get Started'}</Box>
                       {text(content, 'secondaryCta') && <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 0.75, sm: 1 }, borderRadius: 999, border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.7)', fontWeight: 600, fontSize: { xs: 12, sm: 13 } }}>{text(content, 'secondaryCta')}</Box>}
@@ -307,8 +307,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="Features" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, maxWidth: 600 }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, maxWidth: 600, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                   {renderFeatures(content, primary)}
                 </Box>
               );
@@ -316,8 +316,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="Testimonials" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                   {renderTestimonials(content, primary)}
                 </Box>
               );
@@ -325,8 +325,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="Pricing" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                   {renderPricing(content, primary)}
                 </Box>
               );
@@ -334,8 +334,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="Team" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                   {renderTeam(content, primary)}
                 </Box>
               );
@@ -343,7 +343,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="Stats" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, textAlign: 'center' }}>{heading}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, textAlign: 'center', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
                   {renderStats(content, primary)}
                 </Box>
               );
@@ -351,7 +351,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="FAQ" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
                   {renderFAQ(content)}
                 </Box>
               );
@@ -359,8 +359,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="Highlights" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                   {renderCarousel(content, primary)}
                 </Box>
               );
@@ -368,8 +368,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="Contact" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75 }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 13, mt: 0.75, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                   <Box sx={{ mt: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Box sx={{ px: 2.5, py: 0.75, borderRadius: 999, bgcolor: primary, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'default' }}>Send Message</Box>
                   </Box>
@@ -378,8 +378,8 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
             case 'cta':
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 5 }, textAlign: 'center', background: `linear-gradient(135deg, ${dark}, ${primary}22)` }}>
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 22, sm: 34 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 14, mt: 1, maxWidth: 520, mx: 'auto' }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 22, sm: 34 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 14, mt: 1, maxWidth: 520, mx: 'auto', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                   <Box sx={{ mt: 2, display: 'inline-flex', px: 3, py: 1, borderRadius: 999, bgcolor: primary, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'default' }}>{text(content, 'cta') || 'Get Started'}</Box>
                 </Box>
               );
@@ -388,16 +388,16 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   <SectionLabel label="About" color={primary} />
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  <Typography sx={{ color: 'rgba(255,255,255,.65)', fontSize: { xs: 13, sm: 14 }, mt: 1.5, lineHeight: 1.8, maxWidth: 720 }}>{content.content ? String(content.content) : body}</Typography>
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  <Typography sx={{ color: 'rgba(255,255,255,.65)', fontSize: { xs: 13, sm: 14 }, mt: 1.5, lineHeight: 1.8, maxWidth: 720, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{content.content ? String(content.content) : body}</Typography>
                 </Box>
               );
             default:
               return (
                 <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
                   {section.type && <SectionLabel label={section.type} color={primary} />}
-                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900 }}>{heading}</Typography>}
-                  {body && <Typography sx={{ color: 'rgba(255,255,255,.65)', fontSize: 13, lineHeight: 1.7, mt: 1 }}>{body}</Typography>}
+                  {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
+                  {body && <Typography sx={{ color: 'rgba(255,255,255,.65)', fontSize: 13, lineHeight: 1.7, mt: 1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                 </Box>
               );
           }
@@ -578,12 +578,12 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
             <Box>
               <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 13, fontWeight: 900 }}>Hosting & publication</Typography>
-              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.25 }}>
+              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.25, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                 {website.status === 'published' ? 'Your website is live at the address above.' : 'Review the draft below, then press Publish when you are ready to go live.'}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center' }}>
-              {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 } }} />}
+              {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5, overflowWrap: 'anywhere' } }} />}
               {website.hasUnpublishedChanges && <Chip label="Unpublished changes" size="small" color="warning" />}
               {website.publicUrl && (
                 <Link href={website.publicUrl} target="_blank" rel="noreferrer" underline="none">

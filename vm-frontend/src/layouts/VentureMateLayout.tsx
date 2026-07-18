@@ -88,17 +88,6 @@ export function VentureMateLayout({
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            scrollbarWidth: 'thin',
-            '&::-webkit-scrollbar': {
-              width: 6,
-            },
-            '&::-webkit-scrollbar-track': {
-              background: 'rgba(255, 255, 255, 0.05)',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: 'rgba(16, 185, 129, 0.5)',
-              borderRadius: 3,
-            },
           }}
         >
           <Box sx={{ flex: 1, p: { xs: 1.5, sm: 2, md: 3 } }}>

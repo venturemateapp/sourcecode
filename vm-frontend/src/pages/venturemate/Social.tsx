@@ -269,8 +269,8 @@ export function SocialPage({ onViewChange }: { onViewChange?: (v: ViewType) => v
             <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
               <s.icon size={16} color={s.color} />
             </Box>
-            <Typography sx={{ fontSize: { xs: 18, sm: 22 }, fontWeight: 800, color: 'var(--vm-text-primary)', lineHeight: 1.1 }}>{s.value}</Typography>
-            <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.25 }}>{s.label}</Typography>
+            <Typography sx={{ fontSize: { xs: 18, sm: 22 }, fontWeight: 800, color: 'var(--vm-text-primary)', lineHeight: 1.1, overflowWrap: 'anywhere' }}>{s.value}</Typography>
+            <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.25, overflowWrap: 'anywhere' }}>{s.label}</Typography>
           </Card>
         ))}
       </Box>

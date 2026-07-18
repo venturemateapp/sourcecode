@@ -132,10 +132,10 @@ export function BusinessSwitcher({ onViewChange }: BusinessSwitcherProps) {
               </Typography>
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                 {business.name}
               </Typography>
-              <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>
+              <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                 {business.industry}
               </Typography>
             </Box>

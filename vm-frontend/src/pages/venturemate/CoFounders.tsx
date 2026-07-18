@@ -103,15 +103,15 @@ export function CoFoundersPage({ onViewChange }: { onViewChange: (view: ViewType
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
                 <Avatar sx={{ width: 44, height: 44, bgcolor: 'var(--vm-primary-600)', fontSize: 16, fontWeight: 700 }}>{p.name.charAt(0)}</Avatar>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{p.name}</Typography>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{p.title}</Typography>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{p.name}</Typography>
+                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{p.title}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
                     <MapPin size={11} color="var(--vm-text-muted)" />
-                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{p.location}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{p.location}</Typography>
                   </Box>
                 </Box>
                 <Box sx={{ textAlign: 'center', flexShrink: 0 }}>
-                  <Typography sx={{ fontSize: 18, fontWeight: 900, color: p.matchScore >= 85 ? '#22c55e' : p.matchScore >= 75 ? '#f59e0b' : '#94a3b8' }}>{p.matchScore}%</Typography>
+                  <Typography sx={{ fontSize: 18, fontWeight: 900, color: p.matchScore >= 85 ? '#22c55e' : p.matchScore >= 75 ? '#f59e0b' : '#94a3b8', overflowWrap: 'anywhere' }}>{p.matchScore}%</Typography>
                   <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>Match</Typography>
                 </Box>
               </Box>
@@ -133,14 +133,14 @@ export function CoFoundersPage({ onViewChange }: { onViewChange: (view: ViewType
       <Modal open={!!selectedProfile} onClose={() => setSelectedProfile(null)} title={selectedProfile?.name || 'Profile'} icon={<UserPlus size={20} />}>
         {selectedProfile && (
           <>
-            <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>{selectedProfile.title}</Typography>
-            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 1.5 }}>{selectedProfile.bio}</Typography>
+            <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{selectedProfile.title}</Typography>
+            <Typography sx={{ fontSize: 13, color: 'var(--vm-text-secondary)', mb: 1.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{selectedProfile.bio}</Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5 }}>
               {selectedProfile.skills.map(s => <Chip key={s} label={s} size="small" sx={{ bgcolor: 'rgba(16,185,129,.1)', color: '#34d399', fontSize: 10 }} />)}
             </Box>
             <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.location}</Typography></Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Briefcase size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{selectedProfile.experience}</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{selectedProfile.location}</Typography></Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Briefcase size={13} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>{selectedProfile.experience}</Typography></Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
               {selectedProfile.status !== 'matched' && (
