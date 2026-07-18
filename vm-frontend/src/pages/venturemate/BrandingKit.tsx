@@ -16,7 +16,16 @@ const DEFAULT_BRAND_KIT: BrandKit = {
 };
 
 function downloadSvg(svg: string, filename: string) {
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  if (svg.startsWith('http')) {
+    // Raster/URL logo - open in new tab or download via fetch
+    fetch(svg).then(r => r.blob()).then(blob => {
+      const ext = blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : 'png';
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename.replace('.svg', `.${ext}`); a.click(); URL.revokeObjectURL(a.href);
+    }).catch(() => window.open(svg, '_blank'));
+    return;
+  }
+  const content = svg.startsWith('data:') ? atob(svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : svg;
+  const blob = new Blob([content], { type: 'image/svg+xml' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
