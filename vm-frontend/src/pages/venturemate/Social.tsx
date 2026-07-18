@@ -7,7 +7,7 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  Users, TrendingUp, Heart, Calendar, Globe, MessageCircle, Share2, LogIn, RefreshCw,
+  Users, TrendingUp, Heart, Calendar, Globe, MessageCircle, Share2, LogIn,
   BarChart3,
 } from 'lucide-react';
 import type { ViewType } from '../../types/venturemate';
@@ -237,7 +237,6 @@ export function SocialPage({ onViewChange }: { onViewChange?: (v: ViewType) => v
           </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <GradientButton variant="ghost" size="sm" startIcon={<RefreshCw size={14} />} onClick={loadPosts}>Refresh</GradientButton>
         </Box>
       </Box>
 

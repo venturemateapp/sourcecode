@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, LinearProgress, Chip, CircularProgress } from '@mui/material';
-import { GradientButton } from '../../components/shared/buttons';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import {
   TrendingUp,
@@ -11,7 +10,6 @@ import {
   DollarSign,
   Globe,
   ArrowRight,
-  RefreshCw,
 } from 'lucide-react';
 import type { ViewType } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
@@ -73,14 +71,6 @@ const HEALTH_SCORE_QUERY = `
   }
 `;
 
-const RECALCULATE_HEALTH_MUTATION = `
-  mutation RecalculateHealthScore($businessId: ID!) {
-    recalculateHealthScore(businessId: $businessId) {
-      id, businessId, scoreType, scoreData, calculatedAt
-    }
-  }
-`;
-
 interface HealthScoreProps {
    
   onViewChange?: (_view: ViewType) => void;
@@ -108,7 +98,6 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
     priorityActions: [] as Array<{ id: string; title: string; description: string; component: string; deadline: string; completed: boolean }>,
   });
   const [loading, setLoading] = useState(true);
-  const [recalculating, setRecalculating] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!selectedBusiness?.id) {
@@ -135,21 +124,6 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
     fetchData();
   }, [fetchData]);
 
-  const handleRefresh = async () => {
-    if (!selectedBusiness?.id) return;
-    setRecalculating(true);
-    try {
-      await graphqlRequest(RECALCULATE_HEALTH_MUTATION, {
-        businessId: selectedBusiness.id,
-      });
-      await fetchData();
-    } catch {
-      // silently fail
-    } finally {
-      setRecalculating(false);
-    }
-  };
-
   if (!selectedBusiness) {
     return <NoBusinessSelected message="Select a business to view health score" />;
   }
@@ -165,7 +139,7 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+      <Box sx={{ mb: 4 }}>
         <Box>
           <Typography sx={{ fontSize: { xs: 22, sm: 28 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>
             Health Score
@@ -174,12 +148,6 @@ export function HealthScorePage({ onViewChange }: HealthScoreProps) {
             Assess your startup's overall health and readiness
           </Typography>
         </Box>
-        <GradientButton variant="primary" size="md" onClick={handleRefresh} disabled={recalculating}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {recalculating ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <RefreshCw size={18} />}
-            {recalculating ? 'Calculating...' : 'Refresh'}
-          </Box>
-        </GradientButton>
       </Box>
 
       {/* Main Score Card */}

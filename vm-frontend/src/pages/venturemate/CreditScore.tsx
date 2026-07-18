@@ -26,7 +26,6 @@ import { useBusiness } from '../../contexts/BusinessContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { HealthScorePage } from './HealthScore';
 import {
-  TrendingUp,
   Landmark,
   CheckCircle,
   FileText,
@@ -103,13 +102,7 @@ const CREDIT_HISTORY_QUERY = `
   }
 `;
 
-const RECALCULATE_MUTATION = `
-  mutation RecalculateCreditScore($businessId: ID!) {
-    recalculateCreditScore(businessId: $businessId) {
-      id, businessId, scoreType, scoreData, calculatedAt
-    }
-  }
-`;
+
 
 interface CreditScoreProps {
   onViewChange?: (_view: ViewType) => void;
@@ -137,7 +130,6 @@ export function CreditScorePage(_props: CreditScoreProps) {
   const [creditHistory, setCreditHistory] = useState<CreditHistoryItem[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [recalculating, setRecalculating] = useState(false);
 
   const [financingApplications] = useState<FinancingApplication[]>([]);
 
@@ -175,21 +167,6 @@ export function CreditScorePage(_props: CreditScoreProps) {
     setLoading(true);
     fetchData();
   }, [fetchData]);
-
-  const handleRecalculate = async () => {
-    if (!selectedBusiness?.id) return;
-    setRecalculating(true);
-    try {
-      await graphqlRequest(RECALCULATE_MUTATION, {
-        businessId: selectedBusiness.id,
-      });
-      await fetchData();
-    } catch {
-      // silently fail
-    } finally {
-      setRecalculating(false);
-    }
-  };
 
   // Apply Modal State
   const [applyModalOpen, setApplyModalOpen] = useState(false);
@@ -310,12 +287,6 @@ export function CreditScorePage(_props: CreditScoreProps) {
             Monitor your business credit and financing options
           </Typography>
         </Box>
-        <GradientButton variant="primary" size="md" onClick={handleRecalculate} disabled={recalculating}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {recalculating ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <TrendingUp size={18} />}
-            Refresh Score
-          </Box>
-        </GradientButton>
       </Box>
 
       {/* Speedometer Score Card */}
