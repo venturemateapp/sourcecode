@@ -92,6 +92,26 @@ func (s *Service) Delete(ctx context.Context, key string) (bool, error) {
 	return true, nil
 }
 
+func (s *Service) Download(ctx context.Context, key string) ([]byte, string, error) {
+	resp, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to download from S3: %w", err)
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read S3 object: %w", err)
+	}
+	contentType := "application/octet-stream"
+	if resp.ContentType != nil {
+		contentType = *resp.ContentType
+	}
+	return data, contentType, nil
+}
+
 func GenerateKey(prefix, filename string) string {
 	return fmt.Sprintf("%s/%d-%s", prefix, time.Now().UnixNano(), filename)
 }

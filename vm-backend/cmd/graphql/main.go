@@ -14,6 +14,7 @@ import (
 	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
 	"github.com/venturemate/vmbackend/graph"
+	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/app"
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/migrations"
@@ -111,6 +112,69 @@ func deleteDocumentHandler(container *app.Container) http.HandlerFunc {
 			"success": true,
 			"message": "Document deleted",
 		})
+	}
+}
+
+func downloadHandler(container *app.Container) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+
+		businessID := r.URL.Query().Get("businessId")
+		docID := r.URL.Query().Get("documentId")
+		if businessID == "" || docID == "" {
+			http.Error(w, `{"error":"businessId and documentId required"}`, http.StatusBadRequest)
+			return
+		}
+
+		biz, err := container.BusinessRepo.GetByIDAndUser(r.Context(), businessID, userID)
+		if err != nil || biz == nil {
+			http.Error(w, `{"error":"business not found"}`, http.StatusNotFound)
+			return
+		}
+
+		var docs []ai.DocumentInfo
+		if err := json.Unmarshal([]byte(biz.Documents), &docs); err != nil {
+			http.Error(w, `{"error":"invalid documents data"}`, http.StatusInternalServerError)
+			return
+		}
+
+		var found *ai.DocumentInfo
+		for _, d := range docs {
+			if d.ID == docID {
+				found = &d
+				break
+			}
+		}
+		if found == nil {
+			http.Error(w, `{"error":"document not found"}`, http.StatusNotFound)
+			return
+		}
+
+		key := found.S3Key
+		if key == "" && found.URL != "" {
+			parts := strings.SplitN(found.URL, ".amazonaws.com/", 2)
+			if len(parts) == 2 {
+				key = parts[1]
+			}
+		}
+		if key == "" {
+			http.Error(w, `{"error":"no s3 key"}`, http.StatusNotFound)
+			return
+		}
+
+		data, contentType, err := container.S3.Download(r.Context(), key)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"download failed: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, found.Name))
+		w.Write(data)
 	}
 }
 
@@ -269,6 +333,7 @@ func main() {
 	http.HandleFunc("/auth/oauth/", oauthHandler(container.OAuthManager))
 	http.Handle("/api/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, uploadHandler(container)))))
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))
+	http.Handle("/api/documents/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, downloadHandler(container)))))
 	http.HandleFunc("/api/public-sites/allow-domain", publicSites.AllowDomain)
 	http.HandleFunc("/api/public-sites/subdomain-availability", publicSites.SubdomainAvailability)
 	http.HandleFunc("/api/public-sites/contact", publicSites.SubmitContact)
