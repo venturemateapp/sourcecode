@@ -203,6 +203,8 @@ export function AdminDashboard() {
   const [financingForm, setFinancingForm] = useState<{ id?: string; lenderName: string; productType: string; minAmount: number; maxAmount: number; minRate: number; maxRate: number; termMonths: number; requirements: string }>({ lenderName: '', productType: 'loan', minAmount: 0, maxAmount: 0, minRate: 0, maxRate: 0, termMonths: 12, requirements: '[]' });
   const [planUsageData, setPlanUsageData] = useState<AdminUserPlan[]>([]);
   const [planUsageFilter, setPlanUsageFilter] = useState('');
+  const [planUsagePlanFilter, setPlanUsagePlanFilter] = useState('all');
+  const [planUsageStatusFilter, setPlanUsageStatusFilter] = useState('all');
   const [planUsageLoading, setPlanUsageLoading] = useState(false);
 
   const loadFinancingOffers = useCallback(async () => {
@@ -1036,6 +1038,8 @@ export function AdminDashboard() {
 
   const renderPlanUsage = () => {
     const filtered = planUsageData.filter(p => {
+      if (planUsagePlanFilter !== 'all' && p.planName !== planUsagePlanFilter) return false;
+      if (planUsageStatusFilter !== 'all' && p.status !== planUsageStatusFilter) return false;
       if (!planUsageFilter) return true;
       const q = planUsageFilter.toLowerCase();
       return (
@@ -1060,13 +1064,34 @@ export function AdminDashboard() {
             value={planUsageFilter}
             onChange={e => setPlanUsageFilter(e.target.value)}
             sx={{
-              minWidth: { xs: '100%', sm: 260 },
+              minWidth: { xs: '100%', sm: 220 },
               input: { color: '#fff', fontSize: 13 },
               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' },
               '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' },
               '& .MuiInputBase-root': { bgcolor: 'rgba(255,255,255,.04)', borderRadius: 2 },
             }}
           />
+        </Box>
+        <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)', display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mr: 0.5 }}>Plan:</Typography>
+          {['all', 'free', 'starter', 'growth', 'scale'].map(plan => (
+            <Chip key={plan} size="small" label={plan === 'all' ? 'All' : plan.charAt(0).toUpperCase() + plan.slice(1)}
+              onClick={() => setPlanUsagePlanFilter(plan)}
+              sx={{ bgcolor: planUsagePlanFilter === plan ? `${planColorMap[plan] || '#3b82f6'}25` : 'rgba(255,255,255,.04)',
+                color: planUsagePlanFilter === plan ? (planColorMap[plan] || '#3b82f6') : 'rgba(255,255,255,.5)',
+                fontWeight: planUsagePlanFilter === plan ? 700 : 500, fontSize: 10.5, cursor: 'pointer',
+                '&:hover': { bgcolor: planUsagePlanFilter === plan ? `${planColorMap[plan] || '#3b82f6'}30` : 'rgba(255,255,255,.08)' } }} />
+          ))}
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mx: 0.5 }}>|</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mr: 0.5 }}>Status:</Typography>
+          {['all', 'active', 'inactive', 'canceled'].map(s => (
+            <Chip key={s} size="small" label={s.charAt(0).toUpperCase() + s.slice(1)}
+              onClick={() => setPlanUsageStatusFilter(s)}
+              sx={{ bgcolor: planUsageStatusFilter === s ? 'rgba(245,158,11,.2)' : 'rgba(255,255,255,.04)',
+                color: planUsageStatusFilter === s ? '#f59e0b' : 'rgba(255,255,255,.5)',
+                fontWeight: planUsageStatusFilter === s ? 700 : 500, fontSize: 10.5, cursor: 'pointer',
+                '&:hover': { bgcolor: planUsageStatusFilter === s ? 'rgba(245,158,11,.25)' : 'rgba(255,255,255,.08)' } }} />
+          ))}
         </Box>
         {planUsageLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
