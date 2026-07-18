@@ -60,13 +60,14 @@ export function PlanSelector({ open, onClose, userId, currentPlanName }: PlanSel
       </DialogTitle>
 
       <DialogContent>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' }, mt: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row', lg: 'row' }, flexWrap: 'wrap', mt: 2 }}>
           {plans.map((plan) => {
             const isCurrent = plan.name === currentPlanName
             const isSelected = plan.name === selected
             return (
               <Card key={plan.id} sx={{
-                flex: 1,
+                flex: { xs: '1 1 100%', sm: '1 1 45%', lg: '1 1 22%' },
+                minWidth: { xs: '100%', sm: 200, lg: 180 },
                 bgcolor: 'rgba(255,255,255,0.03)',
                 border: '1px solid',
                 borderColor: isCurrent ? 'rgba(52, 211, 153, 0.5)' : isSelected ? 'rgba(52, 211, 153, 0.3)' : 'rgba(255,255,255,0.08)',
@@ -76,16 +77,18 @@ export function PlanSelector({ open, onClose, userId, currentPlanName }: PlanSel
                 transition: 'all 0.2s',
                 '&:hover': { borderColor: 'rgba(52, 211, 153, 0.4)' },
               }}>
-                {plan.name === 'pro' && (
-                  <Chip label="POPULAR" size="small" sx={{
-                    position: 'absolute', top: isCurrent ? -24 : -12, left: '50%', transform: 'translateX(-50%)',
-                    bgcolor: '#34d399', color: '#000', fontWeight: 700, fontSize: 11, zIndex: 1,
+                {plan.name === 'growth' && !isCurrent && (
+                  <Chip label="MOST POPULAR" size="small" sx={{
+                    position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+                    bgcolor: '#34d399', color: '#000', fontWeight: 700, fontSize: 9, height: 20, zIndex: 2,
+                    '& .MuiChip-label': { px: 1 },
                   }} />
                 )}
                 {isCurrent && (
                   <Chip label="CURRENT" size="small" sx={{
-                    position: 'absolute', top: plan.name === 'pro' ? -12 : -12, left: '50%', transform: 'translateX(-50%)',
-                    bgcolor: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontWeight: 700, fontSize: 11, zIndex: 1,
+                    position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+                    bgcolor: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontWeight: 700, fontSize: 9, height: 20, zIndex: 2,
+                    '& .MuiChip-label': { px: 1 },
                   }} />
                 )}
                 <CardContent sx={{ p: { xs: 2, md: 3 }, textAlign: 'center' }}>
@@ -113,11 +116,11 @@ export function PlanSelector({ open, onClose, userId, currentPlanName }: PlanSel
                     </Typography>
                   </Box>
 
-                  <Box sx={{ textAlign: 'left', mb: { xs: 2, md: 3 } }}>
+                  <Box sx={{ textAlign: 'left', mb: { xs: 2, md: 3 }, maxHeight: { xs: 140, md: 200 }, overflowY: 'auto' }}>
                     {plan.features.map((f, i) => (
                       <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, opacity: f.included ? 1 : 0.4 }}>
                         <Check sx={{ fontSize: { xs: 14, md: 16 }, color: f.included ? '#34d399' : 'rgba(255,255,255,0.3)' }} />
-                        <Typography sx={{ color: '#fff', fontSize: { xs: 12, md: 13 } }}>{f.text}</Typography>
+                        <Typography sx={{ color: '#fff', fontSize: { xs: 12, md: 13 }, overflowWrap: 'anywhere' }}>{f.text}</Typography>
                       </Box>
                     ))}
                   </Box>
