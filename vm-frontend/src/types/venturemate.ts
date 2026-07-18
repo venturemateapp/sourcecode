@@ -587,8 +587,7 @@ export type ViewType =
   | 'email-settings'
   | 'calendar'
   | 'custom-objects'
-  | 'workflows'
-  | 'dashboards';
+  | 'workflows';
 
 // Navigation
 export interface NavSection {

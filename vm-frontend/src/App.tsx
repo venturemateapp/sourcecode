@@ -24,7 +24,6 @@ import { EmailSettingsPage } from './pages/venturemate/EmailSettings';
 import { CalendarPage } from './pages/venturemate/CalendarPage';
 import { CustomObjectsPage } from './pages/venturemate/CustomObjectsPage';
 import { WorkflowsPage } from './pages/venturemate/WorkflowsPage';
-import { DashboardsPage } from './pages/venturemate/DashboardsPage';
 import { InvoicesPage } from './pages/venturemate/Invoices';
 import { ExpenditurePage } from './pages/venturemate/Expenditure';
 import { BankingPage } from './pages/venturemate/Banking';
@@ -283,8 +282,6 @@ function VentureMateApp() {
         return <CustomObjectsPage />;
       case 'workflows':
         return <WorkflowsPage />;
-      case 'dashboards':
-        return <DashboardsPage />;
       case 'crm':
         return <CRMPage />;
       case 'companies':

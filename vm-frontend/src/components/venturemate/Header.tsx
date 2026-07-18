@@ -25,7 +25,7 @@ const viewTitles: Record<ViewType, string> = {
   expenditure: 'Expenses', banking: 'Banking', social: 'Social', marketplace: 'Marketplace',
   'credit-score': 'Credit Score', 'health-score': 'Health Score', account: 'Account',
   billing: 'Billing', settings: 'Settings', 'email-settings': 'Email Settings', calendar: 'Calendar',
-  'custom-objects': 'Custom Objects', workflows: 'Workflows', dashboards: 'Dashboards',
+  'custom-objects': 'Custom Objects', workflows: 'Workflows',
 };
 
 export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {

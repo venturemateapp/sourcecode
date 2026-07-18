@@ -57,7 +57,6 @@ const viewTitles: Record<ViewType, string> = {
   calendar: 'Calendar',
   'custom-objects': 'Custom Objects',
   workflows: 'Workflows',
-  dashboards: 'Dashboard',
   'email-settings': 'Email Sync',
 };
 
