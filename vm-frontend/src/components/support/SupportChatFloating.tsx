@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Avatar,
@@ -26,6 +27,18 @@ export function SupportChatFloating() {
   } = useSupportChat();
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+
+  // Auto-open support chat when ?chat=sessionId is in URL
+  useEffect(() => {
+    const chatParam = searchParams.get('chat');
+    if (chatParam) {
+      switchSession(chatParam);
+      setOpen(true);
+      // Clean URL without reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [searchParams, switchSession, setOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

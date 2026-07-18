@@ -1,0 +1,1 @@
+ALTER TABLE expenditures DROP COLUMN IF EXISTS items;

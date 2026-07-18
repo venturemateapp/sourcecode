@@ -20,6 +20,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/db"
 	"github.com/venturemate/vmbackend/internal/financing"
 	"github.com/venturemate/vmbackend/internal/expenditure"
+	"github.com/venturemate/vmbackend/internal/expensepdf"
 	"github.com/venturemate/vmbackend/internal/invoicepdf"
 	"github.com/venturemate/vmbackend/internal/domains"
 	"github.com/venturemate/vmbackend/internal/email"
@@ -80,6 +81,7 @@ type Container struct {
 	CrmRepo              *crm.Repository
 	MetricoolService     *metricool.Service
 	ExpenditureRepo      *expenditure.Repository
+	ExpensePdfGenerator  *expensepdf.Generator
 	InvoicePdfGenerator  *invoicepdf.Generator
 	EmailSyncRepo        *crmemail.Repository
 	EmailSyncService     *crmemail.SyncService
@@ -146,6 +148,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	workflowEngine := crmworkflow.NewEngine(workflowRepo, dbPool, emailSvc)
 	financingRepo := financing.NewRepository(dbPool)
 	expenditureRepo := expenditure.NewRepository(dbPool)
+	expensePdfGen := expensepdf.NewGenerator(bizRepo)
 	invoicePdfGen := invoicepdf.NewGenerator(bizRepo)
 	scoreEngine := scores.NewEngine(bizRepo, invoiceRepo, scoreRepo)
 	healthEngine := scores.NewHealthEngine(bizRepo, scoreRepo)
@@ -234,6 +237,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		CrmRepo:              crmRepo,
 		MetricoolService:     metricoolSvc,
 		ExpenditureRepo:      expenditureRepo,
+		ExpensePdfGenerator:  expensePdfGen,
 		InvoicePdfGenerator:  invoicePdfGen,
 		EmailSyncRepo:        emailSyncRepo,
 		EmailSyncService:     emailSyncSvc,

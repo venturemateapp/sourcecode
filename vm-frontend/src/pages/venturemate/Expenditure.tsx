@@ -5,8 +5,8 @@ import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Receipt, Plus, Trash2, Edit3, Building2, DollarSign, Tag } from 'lucide-react';
-import type { Expenditure } from '../../types/venturemate';
+import { Receipt, Plus, Trash2, Edit3, Building2, DollarSign, Tag, Download, X } from 'lucide-react';
+import type { Expenditure, ExpenditureItem } from '../../types/venturemate';
 import { useCurrency } from '../../contexts/CurrencyContext';
 
 const EXPENSE_CATEGORIES = ['office', 'travel', 'software', 'marketing', 'legal', 'consulting', 'salary', 'equipment', 'utilities', 'rent', 'food', 'transport', 'other'];
@@ -17,6 +17,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   utilities: '#6366f1', rent: '#d946ef', food: '#14b8a6', transport: '#eab308', other: '#94a3b8',
 };
 
+const EMPTY_ITEM: ExpenditureItem = { description: '', quantity: 1, unitPrice: 0 };
+
+function calcTotal(items: ExpenditureItem[]): number {
+  return items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+}
+
+function parseItems(raw: string): ExpenditureItem[] {
+  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+}
+
+const EXPENSE_FIELDS = `id businessId category description amount currency expenseDate vendor receiptUrl items itemsList { description quantity unitPrice } notes createdAt updatedAt`;
+
 export function ExpenditurePage() {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
@@ -25,6 +37,7 @@ export function ExpenditurePage() {
   const [items, setItems] = useState<Expenditure[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Partial<Expenditure> | null>(null);
+  const [lineItems, setLineItems] = useState<ExpenditureItem[]>([{ ...EMPTY_ITEM }]);
   const [saving, setSaving] = useState(false);
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
@@ -33,7 +46,7 @@ export function ExpenditurePage() {
     if (!bizId) return;
     setLoading(true);
     try {
-      const d = await q<{ expenditures: Expenditure[] }>('query Q($b:ID!){expenditures(businessId:$b){id businessId category description amount currency expenseDate vendor receiptUrl notes createdAt updatedAt}}', { b: bizId });
+      const d = await q<{ expenditures: Expenditure[] }>(`query Q($b:ID!){expenditures(businessId:$b){${EXPENSE_FIELDS}}}`, { b: bizId });
       setItems(d.expenditures);
     } catch { /* ignore */ }
     setLoading(false);
@@ -41,20 +54,46 @@ export function ExpenditurePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const openCreate = () => {
+    setLineItems([{ ...EMPTY_ITEM }]);
+    setForm({ description: '', amount: 0, category: 'other', expenseDate: new Date().toISOString().split('T')[0], vendor: '', notes: '', items: '[]' });
+  };
+
+  const openEdit = (exp: Expenditure) => {
+    const parsed = parseItems(exp.items);
+    setLineItems(parsed.length > 0 ? parsed : [{ ...EMPTY_ITEM }]);
+    setForm({ ...exp });
+  };
+
+  const updateLineItem = (idx: number, field: keyof ExpenditureItem, value: string | number) => {
+    const next = [...lineItems];
+    next[idx] = { ...next[idx], [field]: value };
+    setLineItems(next);
+  };
+
+  const addLineItem = () => setLineItems([...lineItems, { ...EMPTY_ITEM }]);
+
+  const removeLineItem = (idx: number) => {
+    if (lineItems.length <= 1) return;
+    setLineItems(lineItems.filter((_, i) => i !== idx));
+  };
+
   const save = async () => {
-    if (!bizId || !form?.description || !form?.amount) return;
+    if (!bizId || !form?.description) return;
     setSaving(true);
     try {
+      const itemsJson = JSON.stringify(lineItems.filter(i => i.description.trim()));
+      const total = calcTotal(lineItems);
+      const vars: Record<string, unknown> = {
+        b: bizId, c: form.category || 'other', d: form.description,
+        a: total || form.amount || 0,
+        e: form.expenseDate || new Date().toISOString().split('T')[0],
+        v: form.vendor || '', n: form.notes || '', i: itemsJson,
+      };
       if (form.id) {
-        await q('mutation M($id:ID!,$b:ID!,$c:String!,$d:String!,$a:Float!,$e:String,$v:String,$n:String){updateExpenditure(id:$id businessId:$b category:$c description:$d amount:$a expenseDate:$e vendor:$v notes:$n){id}}', {
-          id: form.id, b: bizId, c: form.category || 'other', d: form.description, a: form.amount,
-          e: form.expenseDate || new Date().toISOString().split('T')[0], v: form.vendor || '', n: form.notes || '',
-        });
+        await q('mutation M($id:ID!,$b:ID!,$c:String!,$d:String!,$a:Float!,$e:String,$v:String,$n:String,$i:String){updateExpenditure(id:$id businessId:$b category:$c description:$d amount:$a expenseDate:$e vendor:$v notes:$n items:$i){id}}', { ...vars, id: form.id });
       } else {
-        await q('mutation M($b:ID!,$c:String!,$d:String!,$a:Float!,$e:String,$v:String,$n:String){createExpenditure(businessId:$b category:$c description:$d amount:$a expenseDate:$e vendor:$v notes:$n){id}}', {
-          b: bizId, c: form.category || 'other', d: form.description, a: form.amount,
-          e: form.expenseDate || new Date().toISOString().split('T')[0], v: form.vendor || '', n: form.notes || '',
-        });
+        await q('mutation M($b:ID!,$c:String!,$d:String!,$a:Float!,$e:String,$v:String,$n:String,$i:String){createExpenditure(businessId:$b category:$c description:$d amount:$a expenseDate:$e vendor:$v notes:$n items:$i){id}}', vars);
       }
       setForm(null);
       load();
@@ -66,6 +105,14 @@ export function ExpenditurePage() {
     if (!bizId || !confirm('Delete this expense?')) return;
     await q('mutation M($id:ID!,$b:ID!){deleteExpenditure(id:$id businessId:$b)}', { id, b: bizId });
     load();
+  };
+
+  const downloadPdf = async (exp: Expenditure) => {
+    if (!bizId) return;
+    try {
+      const d = await q<{ generateExpensePdf: string }>('mutation M($i:ID!,$b:ID!){generateExpensePdf(id:$i businessId:$b)}', { i: exp.id, b: bizId });
+      if (d.generateExpensePdf) window.open(d.generateExpensePdf, '_blank');
+    } catch { /* ignore */ }
   };
 
   const totalByCategory = items.reduce((acc, e) => {
@@ -83,7 +130,7 @@ export function ExpenditurePage() {
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Expenditure</Typography>
           <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{items.length} expenses · {format(grandTotal)} total</Typography>
         </Box>
-        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setForm({ description: '', amount: 0, category: 'other', expenseDate: new Date().toISOString().split('T')[0], vendor: '' })}>
+        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={openCreate}>
           Add Expense
         </GradientButton>
       </Box>
@@ -129,6 +176,9 @@ export function ExpenditurePage() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{e.description}</Typography>
                     <Chip label={e.category} size="small" sx={{ bgcolor: `${CATEGORY_COLORS[e.category] || '#94a3b8'}15`, color: CATEGORY_COLORS[e.category] || '#94a3b8', fontSize: 9, height: 18 }} />
+                    {e.itemsList && e.itemsList.length > 0 && (
+                      <Chip label={`${e.itemsList.length} item${e.itemsList.length !== 1 ? 's' : ''}`} size="small" sx={{ bgcolor: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: 9, height: 18 }} />
+                    )}
                   </Box>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 0.25 }}>
                     {e.vendor && <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{e.vendor}</Typography>}
@@ -136,7 +186,8 @@ export function ExpenditurePage() {
                   </Box>
                 </Box>
                 <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#ef4444', flexShrink: 0, overflowWrap: 'anywhere' }}>-{format(e.amount)}</Typography>
-                <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => setForm(e)}><Edit3 size={14} /></IconButton>
+                <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(e)}><Download size={14} /></IconButton>
+                <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => openEdit(e)}><Edit3 size={14} /></IconButton>
                 <IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteItem(e.id)}><Trash2 size={14} /></IconButton>
               </Box>
             </Card>
@@ -146,31 +197,54 @@ export function ExpenditurePage() {
 
       <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? 'Edit Expense' : 'Add Expense'} icon={<Receipt size={20} />}
         actions={<><GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
-          <GradientButton variant="primary" size="sm" disabled={saving || !form?.description || !form?.amount} onClick={save}>
+          <GradientButton variant="primary" size="sm" disabled={saving || !form?.description} onClick={save}>
             {saving ? <CircularProgress size={14} /> : form?.id ? 'Update' : 'Add'}
           </GradientButton></>}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-          <TextField size="small" label="Description" value={form?.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
-            sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <TextField size="small" label="Amount" type="number" value={form?.amount || ''} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <FormControl size="small">
-            <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Category</InputLabel>
-            <Select value={form?.category || 'other'} label="Category" onChange={e => setForm({ ...form, category: e.target.value })}
-              sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, textTransform: 'capitalize' }}>
-              {EXPENSE_CATEGORIES.map(c => <MenuItem key={c} value={c} sx={{ textTransform: 'capitalize' }}>{c}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <TextField size="small" label="Vendor" value={form?.vendor || ''} onChange={e => setForm({ ...form, vendor: e.target.value })}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <TextField size="small" label="Date" type="date" value={form?.expenseDate || ''} onChange={e => setForm({ ...form, expenseDate: e.target.value })}
-            InputLabelProps={{ shrink: true }} sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <TextField size="small" label="Description" value={form?.description || ''} onChange={e => setForm({ ...form, description: e.target.value })}
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <FormControl size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Category</InputLabel>
+              <Select value={form?.category || 'other'} label="Category" onChange={e => setForm({ ...form, category: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' }, textTransform: 'capitalize' }}>
+                {EXPENSE_CATEGORIES.map(c => <MenuItem key={c} value={c} sx={{ textTransform: 'capitalize' }}>{c}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField size="small" label="Vendor" value={form?.vendor || ''} onChange={e => setForm({ ...form, vendor: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Date" type="date" value={form?.expenseDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, expenseDate: e.target.value })}
+              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          </Box>
+
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>Line Items</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {lineItems.map((item, idx) => (
+              <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField size="small" placeholder="Description" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)}
+                  sx={{ flex: 1, minWidth: 120, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                <TextField size="small" type="number" placeholder="Qty" value={item.quantity || ''} onChange={e => updateLineItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                  sx={{ width: 70, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                <TextField size="small" type="number" placeholder="Price" value={item.unitPrice || ''} onChange={e => updateLineItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+                  sx={{ width: 100, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)', minWidth: 70, textAlign: 'right', fontWeight: 600 }}>
+                  {(item.quantity * item.unitPrice).toLocaleString()}
+                </Typography>
+                <IconButton size="small" onClick={() => removeLineItem(idx)} disabled={lineItems.length <= 1} sx={{ color: '#ef444488' }}><X size={14} /></IconButton>
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <GradientButton variant="outline" size="sm" onClick={addLineItem}><Plus size={12} style={{ marginRight: 4 }} /> Add Item</GradientButton>
+            <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-text-primary)' }}>
+              Total: {calcTotal(lineItems).toLocaleString()}
+            </Typography>
+          </Box>
+
           <TextField size="small" label="Notes" multiline rows={2} value={form?.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
-            sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
       </Modal>
     </Box>
   );
 }
-
-

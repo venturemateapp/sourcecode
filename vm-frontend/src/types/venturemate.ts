@@ -708,6 +708,12 @@ export interface Invoice {
   updatedAt: string;
 }
 
+export interface ExpenditureItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface Expenditure {
   id: string;
   businessId: string;
@@ -718,6 +724,8 @@ export interface Expenditure {
   expenseDate: string;
   vendor: string;
   receiptUrl: string;
+  items: string;
+  itemsList?: ExpenditureItem[];
   notes: string;
   createdAt: string;
   updatedAt: string;

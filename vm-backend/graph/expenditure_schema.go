@@ -1,11 +1,22 @@
 package graph
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/expenditure"
 )
+
+var expenseItemType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "ExpenseItem",
+	Fields: graphql.Fields{
+		"description": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"quantity":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"unitPrice":   &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+	},
+})
 
 var expenditureType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Expenditure",
@@ -19,11 +30,37 @@ var expenditureType = graphql.NewObject(graphql.ObjectConfig{
 		"expenseDate": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"vendor":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"receiptUrl":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"notes":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"createdAt":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"updatedAt":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"items":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"itemsList": &graphql.Field{
+			Type: graphql.NewList(graphql.NewNonNull(expenseItemType)),
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				exp, ok := p.Source.(*expenditure.Expenditure)
+				if !ok {
+					return []map[string]interface{}{}, nil
+				}
+				var items []map[string]interface{}
+				if err := json.Unmarshal([]byte(exp.Items), &items); err != nil {
+					return []map[string]interface{}{}, nil
+				}
+				return items, nil
+			},
+		},
+		"notes":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"updatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
+
+func expenditureMapper(e *expenditure.Expenditure) map[string]interface{} {
+	return map[string]interface{}{
+		"id": e.ID, "businessId": e.BusinessID, "category": e.Category,
+		"description": e.Description, "amount": e.Amount, "currency": e.Currency,
+		"expenseDate": e.ExpenseDate, "vendor": e.Vendor,
+		"receiptUrl": e.ReceiptURL, "items": e.Items, "notes": e.Notes,
+		"createdAt": e.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		"updatedAt": e.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+	}
+}
 
 func init() {
 	rootQuery.AddFieldConfig("expenditures", &graphql.Field{
@@ -40,15 +77,8 @@ func init() {
 				return nil, err
 			}
 			result := make([]interface{}, len(exps))
-			for i, e := range exps {
-				result[i] = map[string]interface{}{
-					"id": e.ID, "businessId": e.BusinessID, "category": e.Category,
-					"description": e.Description, "amount": e.Amount, "currency": e.Currency,
-					"expenseDate": e.ExpenseDate, "vendor": e.Vendor,
-					"receiptUrl": e.ReceiptURL, "notes": e.Notes,
-					"createdAt": e.CreatedAt.Format("2006-01-02T15:04:05Z"),
-					"updatedAt": e.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-				}
+			for i := range exps {
+				result[i] = expenditureMapper(&exps[i])
 			}
 			return result, nil
 		},
@@ -65,6 +95,7 @@ func init() {
 			"expenseDate": &graphql.ArgumentConfig{Type: graphql.String},
 			"vendor":      &graphql.ArgumentConfig{Type: graphql.String},
 			"receiptUrl":  &graphql.ArgumentConfig{Type: graphql.String},
+			"items":       &graphql.ArgumentConfig{Type: graphql.String},
 			"notes":       &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -79,10 +110,14 @@ func init() {
 				Currency:    getStringArg(p.Args, "currency"),
 				Vendor:      getStringArg(p.Args, "vendor"),
 				ReceiptURL:  getStringArg(p.Args, "receiptUrl"),
+				Items:       getStringArg(p.Args, "items"),
 				Notes:       getStringArg(p.Args, "notes"),
 			}
 			if e.Currency == "" {
 				e.Currency = "USD"
+			}
+			if e.Items == "" {
+				e.Items = "[]"
 			}
 			if d, ok := p.Args["expenseDate"].(string); ok {
 				e.ExpenseDate = d
@@ -92,14 +127,7 @@ func init() {
 			if err := AppContainer.ExpenditureRepo.Create(p.Context, e); err != nil {
 				return nil, err
 			}
-			return map[string]interface{}{
-				"id": e.ID, "businessId": e.BusinessID, "category": e.Category,
-				"description": e.Description, "amount": e.Amount, "currency": e.Currency,
-				"expenseDate": e.ExpenseDate, "vendor": e.Vendor,
-				"receiptUrl": e.ReceiptURL, "notes": e.Notes,
-				"createdAt": e.CreatedAt.Format("2006-01-02T15:04:05Z"),
-				"updatedAt": e.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-			}, nil
+			return expenditureMapper(e), nil
 		},
 	})
 
@@ -115,6 +143,7 @@ func init() {
 			"expenseDate": &graphql.ArgumentConfig{Type: graphql.String},
 			"vendor":      &graphql.ArgumentConfig{Type: graphql.String},
 			"receiptUrl":  &graphql.ArgumentConfig{Type: graphql.String},
+			"items":       &graphql.ArgumentConfig{Type: graphql.String},
 			"notes":       &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -130,7 +159,11 @@ func init() {
 				Currency:    getStringArg(p.Args, "currency"),
 				Vendor:      getStringArg(p.Args, "vendor"),
 				ReceiptURL:  getStringArg(p.Args, "receiptUrl"),
+				Items:       getStringArg(p.Args, "items"),
 				Notes:       getStringArg(p.Args, "notes"),
+			}
+			if e.Items == "" {
+				e.Items = "[]"
 			}
 			if d, ok := p.Args["expenseDate"].(string); ok {
 				e.ExpenseDate = d
@@ -143,14 +176,7 @@ func init() {
 			if err := AppContainer.ExpenditureRepo.Update(p.Context, e); err != nil {
 				return nil, err
 			}
-			return map[string]interface{}{
-				"id": e.ID, "businessId": e.BusinessID, "category": e.Category,
-				"description": e.Description, "amount": e.Amount, "currency": e.Currency,
-				"expenseDate": e.ExpenseDate, "vendor": e.Vendor,
-				"receiptUrl": e.ReceiptURL, "notes": e.Notes,
-				"createdAt": e.CreatedAt.Format("2006-01-02T15:04:05Z"),
-				"updatedAt": e.UpdatedAt.Format("2006-01-02T15:04:05Z"),
-			}, nil
+			return expenditureMapper(e), nil
 		},
 	})
 
@@ -166,6 +192,34 @@ func init() {
 			}
 			err := AppContainer.ExpenditureRepo.Delete(p.Context, p.Args["id"].(string), p.Args["businessId"].(string))
 			return err == nil, err
+		},
+	})
+
+	rootMutation.AddFieldConfig("generateExpensePdf", &graphql.Field{
+		Type: graphql.String,
+		Args: graphql.FieldConfigArgument{
+			"id":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil || AppContainer.ExpensePdfGenerator == nil {
+				return "", nil
+			}
+			exp, err := AppContainer.ExpenditureRepo.GetByID(p.Context, p.Args["id"].(string))
+			if err != nil {
+				return "", err
+			}
+			pdfData, err := AppContainer.ExpensePdfGenerator.Generate(p.Context, exp, p.Args["businessId"].(string))
+			if err != nil {
+				return "", fmt.Errorf("pdf generation failed: %w", err)
+			}
+
+			fileName := fmt.Sprintf("expenses/%s.pdf", exp.ID)
+			pdfURL, err := AppContainer.S3.Upload(p.Context, fileName, pdfData, "application/pdf")
+			if err != nil {
+				return "", fmt.Errorf("pdf upload failed: %w", err)
+			}
+			return pdfURL, nil
 		},
 	})
 }
