@@ -3,6 +3,7 @@ package support
 import (
 	"context"
 	"fmt"
+	"html"
 	"strings"
 
 	"github.com/venturemate/vmbackend/internal/ai"
@@ -156,16 +157,36 @@ func (s *Service) AdminReply(ctx context.Context, sessionID, content string) (*M
 	_ = s.repo.UpdateSessionStatus(ctx, sessionID, "active")
 
 	session, err := s.repo.GetSession(ctx, sessionID)
-	if err == nil && session != nil && s.notif != nil {
-	url := fmt.Sprintf("/vm?chat=%s", sessionID)
-	_, _ = s.notif.Notify(ctx, notifications.NotifyInput{
-		UserID:      session.UserID,
-		Type:        "support_reply",
-		Title:       "New support reply",
-		Description: truncateText(content, 120),
-		ActionURL:   &url,
-			ActionLabel: strPtr("View Reply"),
-		})
+	if err == nil && session != nil {
+		url := fmt.Sprintf("/vm?chat=%s", sessionID)
+		if s.notif != nil {
+			_, _ = s.notif.Notify(ctx, notifications.NotifyInput{
+				UserID:      session.UserID,
+				Type:        "support_reply",
+				Title:       "New support reply",
+				Description: truncateText(content, 120),
+				ActionURL:   &url,
+				ActionLabel: strPtr("View Reply"),
+			})
+		}
+		if s.email != nil && session.CreatedByEmail != "" {
+			emailBody := fmt.Sprintf(`
+<h2>New Reply to Your Support Request</h2>
+<p>Hello %s,</p>
+<p>An admin has replied to your support request "<strong>%s</strong>".</p>
+<hr>
+<p><strong>Message:</strong></p>
+<p>%s</p>
+<hr>
+<p><a href="https://venturemate.net/vm?chat=%s" style="display:inline-block;padding:10px 20px;background:#10b981;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Reply</a></p>
+<p style="color:#64748b;font-size:12px;">VentureMate Support</p>
+`, html.EscapeString(session.CreatedByName), html.EscapeString(session.Subject), html.EscapeString(content), sessionID)
+			_ = s.email.SendTemplatedEmail(
+				[]string{session.CreatedByEmail},
+				fmt.Sprintf("New support reply - %s", session.Subject),
+				emailBody,
+			)
+		}
 	}
 	return msg, nil
 }
