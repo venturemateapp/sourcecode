@@ -3,6 +3,7 @@ import {
   Box, Typography, Card, Tabs, Tab, Chip, Avatar, Dialog, DialogTitle, DialogContent,
   TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Tooltip, CircularProgress,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -564,8 +565,9 @@ export function CRMPage() {
             </FormControl>
             <TextField size="small" label="Probability %" type="number" value={dealForm?.probability || 10} onChange={e => setDealForm({ ...dealForm, probability: parseInt(e.target.value) || 0 })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Expected Close" type="date" value={dealForm?.expectedCloseDate || ''} onChange={e => setDealForm({ ...dealForm, expectedCloseDate: e.target.value })}
-              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <DatePicker label="Expected Close" format="dd/MM/yyyy" value={dealForm?.expectedCloseDate ? new Date(dealForm.expectedCloseDate) : null}
+              onChange={(date) => setDealForm({ ...dealForm, expectedCloseDate: date ? date.toISOString().split('T')[0] : '' })}
+              slotProps={{ textField: { size: 'small', sx: { input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
           </Box>
         </DialogContent>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
@@ -627,8 +629,9 @@ export function CRMPage() {
             </FormControl>
             <TextField size="small" label="Assigned To" value={taskForm?.assignedTo || ''} onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Due Date" type="date" value={taskForm?.dueDate || ''} onChange={e => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <DatePicker label="Due Date" format="dd/MM/yyyy" value={taskForm?.dueDate ? new Date(taskForm.dueDate) : null}
+              onChange={(date) => setTaskForm({ ...taskForm, dueDate: date ? date.toISOString().split('T')[0] : '' })}
+              slotProps={{ textField: { size: 'small', sx: { input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
           </Box>
         </DialogContent>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>

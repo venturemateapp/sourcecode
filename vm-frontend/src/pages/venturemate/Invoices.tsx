@@ -1,6 +1,7 @@
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, TextField, IconButton, Tooltip, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
@@ -239,10 +240,12 @@ export function InvoicesPage() {
                 {['USD', 'EUR', 'GBP', 'GHS', 'NGN', 'KES', 'ZAR'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField size="small" label="Issue Date" type="date" value={form?.issueDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, issueDate: e.target.value })}
-              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Due Date" type="date" value={form?.dueDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, dueDate: e.target.value })}
-              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <DatePicker label="Issue Date" format="dd/MM/yyyy" value={form?.issueDate ? new Date(form.issueDate) : null}
+              onChange={(date) => setForm({ ...form, issueDate: date ? date.toISOString().split('T')[0] : '' })}
+              slotProps={{ textField: { size: 'small', sx: { input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
+            <DatePicker label="Due Date" format="dd/MM/yyyy" value={form?.dueDate ? new Date(form.dueDate) : null}
+              onChange={(date) => setForm({ ...form, dueDate: date ? date.toISOString().split('T')[0] : '' })}
+              slotProps={{ textField: { size: 'small', sx: { input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
             <TextField size="small" label="PO Number" value={form?.poNumber || ''} onChange={e => setForm({ ...form, poNumber: e.target.value })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" label="Payment Terms" value={form?.paymentTerms || 'net30'} onChange={e => setForm({ ...form, paymentTerms: e.target.value })}

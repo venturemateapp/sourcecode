@@ -1,6 +1,7 @@
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Typography, Card, Chip, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
@@ -213,8 +214,9 @@ export function ExpenditurePage() {
             </FormControl>
             <TextField size="small" label="Vendor" value={form?.vendor || ''} onChange={e => setForm({ ...form, vendor: e.target.value })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Date" type="date" value={form?.expenseDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, expenseDate: e.target.value })}
-              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <DatePicker label="Date" format="dd/MM/yyyy" value={form?.expenseDate ? new Date(form.expenseDate) : null}
+              onChange={(date) => setForm({ ...form, expenseDate: date ? date.toISOString().split('T')[0] : '' })}
+              slotProps={{ textField: { size: 'small', sx: { input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
           </Box>
 
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>Line Items</Typography>
