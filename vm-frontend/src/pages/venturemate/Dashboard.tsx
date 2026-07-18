@@ -1,6 +1,5 @@
 import { Box, Typography, Card, Avatar, Chip, LinearProgress } from '@mui/material';
 import {
-  TrendingUp,
   Users,
   Target,
   FileText,
@@ -407,8 +406,6 @@ const statsCards = b ? [
               {[
                 { label: 'Generate Pitch Deck', icon: Presentation, view: 'pitch-deck' as ViewType },
                 { label: 'Write Business Plan', icon: FileText, view: 'business-plan' as ViewType },
-                { label: 'Market Research', icon: TrendingUp, view: 'market-research' as ViewType },
-                { label: 'Financial Forecast', icon: DollarSign, view: 'financial-forecast' as ViewType },
               ].map((action) => (
                 <Box
                   key={action.label}
