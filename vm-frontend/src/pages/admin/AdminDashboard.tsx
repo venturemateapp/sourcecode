@@ -5,6 +5,7 @@ import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, CreditCa
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
+import { AnimatedBackground } from '../../components/AnimatedBackground';
 import { graphqlRequest } from '../../lib/api';
 import { stripMarkdown } from '../../lib/stripMarkdown';
 import { AdminAiUsage } from './AdminAiUsage';
@@ -12,22 +13,22 @@ import { AdminAiUsage } from './AdminAiUsage';
 type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage' | 'plan-usage';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
-  { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
-  { key: 'users', icon: Users, label: 'Users', desc: 'Manage accounts' },
-  { key: 'businesses', icon: Building2, label: 'Businesses', desc: 'Startup profiles' },
-  { key: 'plans', icon: BookOpen, label: 'Plans', desc: 'Subscription tiers' },
-  { key: 'investors', icon: Globe, label: 'Investors', desc: 'Network partners' },
-  { key: 'providers', icon: Briefcase, label: 'Providers', desc: 'Service providers' },
-  { key: 'bookings', icon: ThumbsUp, label: 'Bookings', desc: 'Appointments' },
-  { key: 'submissions', icon: Mail, label: 'Leads', desc: 'Contact inquiries' },
-  { key: 'broadcast', icon: Bell, label: 'Broadcast', desc: 'Push notifications' },
-  { key: 'support', icon: MessageCircle, label: 'Support', desc: 'Chat sessions' },
-  { key: 'banking', icon: Landmark, label: 'Banking', desc: 'Bank accounts' },
-  { key: 'registrations', icon: FileText, label: 'Registrations', desc: 'Business registrations' },
-  { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
-  { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
   { key: 'ai-usage', icon: Brain, label: 'AI Usage', desc: 'Token usage & interactions' },
+  { key: 'banking', icon: Landmark, label: 'Banking', desc: 'Bank accounts' },
+  { key: 'bookings', icon: ThumbsUp, label: 'Bookings', desc: 'Appointments' },
+  { key: 'broadcast', icon: Bell, label: 'Broadcast', desc: 'Push notifications' },
+  { key: 'businesses', icon: Building2, label: 'Businesses', desc: 'Startup profiles' },
+  { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
+  { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
+  { key: 'investors', icon: Globe, label: 'Investors', desc: 'Network partners' },
+  { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
+  { key: 'plans', icon: BookOpen, label: 'Plans', desc: 'Subscription tiers' },
   { key: 'plan-usage', icon: CreditCard, label: 'Plan Usage', desc: 'Subscriber plan utilization' },
+  { key: 'providers', icon: Briefcase, label: 'Providers', desc: 'Service providers' },
+  { key: 'registrations', icon: FileText, label: 'Registrations', desc: 'Business registrations' },
+  { key: 'submissions', icon: Mail, label: 'Leads', desc: 'Contact inquiries' },
+  { key: 'support', icon: MessageCircle, label: 'Support', desc: 'Chat sessions' },
+  { key: 'users', icon: Users, label: 'Users', desc: 'Manage accounts' },
 ];
 
 interface DashboardData {
@@ -473,7 +474,13 @@ export function AdminDashboard() {
                       </Tooltip>
                     </Box>
                   ) : (
-                    <Typography sx={{ color: 'rgba(255,255,255,.2)', fontSize: 11 }}>—</Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="Revoke Admin">
+                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => exec(`mutation { adminSetAdmin(userId:"${u.id}",isAdmin:false) { id } }`, {})}>
+                          <Shield size={14} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   )}
                 </Box>
               </Box>
@@ -1319,6 +1326,7 @@ export function AdminDashboard() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#050f0a', position: 'relative' }}>
+      <AnimatedBackground />
       {isMobile ? (
         <Drawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)}
           sx={{ '& .MuiDrawer-paper': { width: 260, bgcolor: 'transparent', border: 'none' } }}>
