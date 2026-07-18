@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, useMediaQuery, useTheme, Tooltip } from '@mui/material';
+import { Box, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, MenuItem, useMediaQuery, useTheme, Tooltip } from '@mui/material';
 import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, CreditCard, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send, Brain } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
@@ -403,7 +403,7 @@ export function AdminDashboard() {
   };
 
   const renderUsers = () => {
-    const planNames = [...new Set(users.map(u => u.planName).filter(Boolean))].sort();
+    const planNames = [...new Set(users.map(u => u.planName).filter(Boolean))].sort() as string[];
     const filtered = users.filter(u => {
       if (userStatusFilter !== 'all' && u.status !== userStatusFilter) return false;
       if (userRoleFilter === 'admin' && !u.isAdmin) return false;
