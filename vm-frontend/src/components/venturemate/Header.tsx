@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, IconButton, Avatar, Badge, Menu, MenuItem, ListItemText, Divider, Tooltip, Button } from '@mui/material';
 import { Person, Logout } from '@mui/icons-material';
-import { Menu as MenuIcon, Bell, BellRing, Search, X } from 'lucide-react';
+import { Menu as MenuIcon, Bell, BellRing, Search, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { BusinessSwitcher } from './BusinessSwitcher';
@@ -155,9 +155,16 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
                   {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Typography>
               </Box>
-              <IconButton size="small" onClick={e => { e.stopPropagation(); deleteNotification(n.id); }} sx={{ color: 'rgba(255,255,255,.2)', '&:hover': { color: '#ef4444' } }}>
-                <X size={12} />
-              </IconButton>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, ml: 1 }}>
+                {!n.read && (
+                  <IconButton size="small" onClick={e => { e.stopPropagation(); markAsRead(n.id); }} sx={{ color: 'var(--vm-primary-400)', '&:hover': { color: '#34d399' }, width: 24, height: 24 }}>
+                    <CheckCircle size={14} />
+                  </IconButton>
+                )}
+                <IconButton size="small" onClick={e => { e.stopPropagation(); deleteNotification(n.id); }} sx={{ color: 'rgba(255,255,255,.2)', '&:hover': { color: '#ef4444' }, width: 24, height: 24 }}>
+                  <X size={12} />
+                </IconButton>
+              </Box>
             </MenuItem>
           ))
         )}
