@@ -254,8 +254,8 @@ export function AdminDashboard() {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      bgcolor: 'rgba(7, 19, 15, 0.95)',
-      borderRight: '1px solid rgba(255,255,255,.06)',
+      bgcolor: 'rgba(7,17,15,.95)',
+      borderRight: '1px solid rgba(255,255,255,.08)',
       backdropFilter: 'blur(20px)',
       zIndex: 120,
       position: 'relative',
@@ -263,7 +263,7 @@ export function AdminDashboard() {
       <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
         <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{ width: 36, height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
         <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin Panel</Typography>
+          <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin</Typography>
           <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10, lineHeight: 1.2 }}>{user?.email}</Typography>
         </Box>
         {isMobile && (
@@ -282,22 +282,19 @@ export function AdminDashboard() {
               key={item.key}
               onClick={() => handleNav(item.key)}
               sx={{
-                px: 1.5, py: 1.2, mb: 0.25, cursor: 'pointer', borderRadius: 2,
+                mx: 0.5, px: 1.5, py: 1, mb: 0.25, cursor: 'pointer', borderRadius: 1.5,
                 display: 'flex', alignItems: 'center', gap: 1.5,
-                bgcolor: active ? 'rgba(245,158,11,.1)' : 'transparent',
-                border: active ? '1px solid rgba(245,158,11,.2)' : '1px solid transparent',
+                bgcolor: active ? 'rgba(16,185,129,.1)' : 'transparent',
+                borderLeft: active ? '2px solid #10b981' : '2px solid transparent',
                 transition: 'all .15s ease',
-                '&:hover': { bgcolor: active ? 'rgba(245,158,11,.12)' : 'rgba(255,255,255,.03)' },
+                '&:hover': { bgcolor: active ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.04)' },
               }}
             >
-              <Box sx={{ width: 28, height: 28, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: active ? 'rgba(245,158,11,.15)' : 'transparent' }}>
-                <Icon size={15} color={active ? '#f59e0b' : 'rgba(255,255,255,.35)'} />
-              </Box>
+              <Icon size={15} color={active ? '#10b981' : 'rgba(255,255,255,.4)'} />
               <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'rgba(255,255,255,.55)' }}>{item.label}</Typography>
-                <Typography sx={{ fontSize: 9.5, color: active ? 'rgba(245,158,11,.4)' : 'rgba(255,255,255,.2)', display: { xs: 'none', md: 'block' } }}>{item.desc}</Typography>
+                <Typography sx={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? '#10b981' : 'rgba(255,255,255,.6)' }}>{item.label}</Typography>
               </Box>
-              {active && <ChevronRight size={12} color="#f59e0b" style={{ marginLeft: 'auto' }} />}
+              {active && <ChevronRight size={12} color="#10b981" style={{ marginLeft: 'auto' }} />}
             </Box>
           );
         })}
@@ -306,10 +303,10 @@ export function AdminDashboard() {
       <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,.06)' }}>
         <Box
           onClick={() => { logout(); navigate('/vm/auth/signin'); }}
-          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', px: 1.5, py: 1, borderRadius: 2, '&:hover': { bgcolor: 'rgba(255,255,255,.03)' } }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', px: 1.5, py: 1, borderRadius: 2, '&:hover': { bgcolor: 'rgba(255,255,255,.04)' } }}
         >
-          <LogOut size={14} color="rgba(255,255,255,.3)" />
-          <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Sign out</Typography>
+          <LogOut size={14} color="rgba(255,255,255,.4)" />
+          <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.4)', fontWeight: 500 }}>Sign out</Typography>
         </Box>
       </Box>
     </Box>
