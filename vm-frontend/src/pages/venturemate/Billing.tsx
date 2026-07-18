@@ -467,8 +467,8 @@ export function BillingPage() {
               <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 3 }, flexWrap: 'wrap' }}>
                 {[
                   { label: 'Per referral', value: '5M AI tokens' },
-                  { label: 'Paid referral', value: '$10 credit' },
-                  { label: 'Your earnings', value: '$0' },
+                  { label: 'Paid referral', value: fmtCurrency(10) + ' credit' },
+                  { label: 'Your earnings', value: fmtCurrency(0) },
                 ].map(s => (
                   <Box key={s.label} sx={{ textAlign: 'center', px: { xs: 1, sm: 2 } }}>
                     <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-primary-400)' }}>{s.value}</Typography>

@@ -7,6 +7,7 @@ import type { ViewType, Business } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import { useToast } from '../../components/shared/toast';
 
 interface BusinessRegistrationStatus {
@@ -33,6 +34,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
   const { businesses: businessList, setSelectedBusinessId, addBusiness } = useBusiness();
   const { subscription } = useSubscription();
   const toast = useToast();
+  const { format } = useCurrency();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [, setSelectedBusiness] = useState<Business | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -169,8 +171,8 @@ export function Businesses({ onViewChange }: BusinessesProps) {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: '24px', mb: 4 }}>
         {[
           { label: 'Total Businesses', value: businessList.length },
-          { label: 'Total Funding Raised', value: `$${(businessList.reduce((acc, b) => acc + (b.financials?.fundingRaised ?? 0), 0) / 1000000).toFixed(1)}M` },
-          { label: 'Combined MRR', value: `$${businessList.reduce((acc, b) => acc + (b.financials?.revenue?.currentMRR ?? 0), 0).toLocaleString()}` },
+          { label: 'Total Funding Raised', value: format(businessList.reduce((acc, b) => acc + (b.financials?.fundingRaised ?? 0), 0) / 1000000) },
+          { label: 'Combined MRR', value: format(businessList.reduce((acc, b) => acc + (b.financials?.revenue?.currentMRR ?? 0), 0)) },
           { label: 'Team Members', value: businessList.reduce((acc, b) => acc + (b.team?.length ?? 0), 0) },
         ].map((stat) => (
           <div key={stat.label}>
@@ -300,7 +302,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    ${(business.financials?.revenue?.currentMRR ?? 0).toLocaleString()}
+                    {format(business.financials?.revenue?.currentMRR ?? 0)}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>MRR</Typography>
                 </div>

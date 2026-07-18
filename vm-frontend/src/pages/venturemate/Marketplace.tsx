@@ -6,6 +6,7 @@ import { graphqlRequest } from '../../lib/api';
 import {
   Calendar, CheckCircle, Briefcase, Clock, Building2,
 } from 'lucide-react';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 interface ServiceProvider {
   id: string;
@@ -44,16 +45,12 @@ const CATEGORIES = [
   { value: 'media', label: 'Media', color: '#ef4444' },
 ];
 
-function formatCurrency(v: number, currency = 'USD') {
-  try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v); }
-  catch { return `${currency} ${v.toLocaleString()}`; }
-}
-
 function formatDate(s: string) {
   return new Date(s).toLocaleDateString('en-GB');
 }
 
 export function MarketplacePage() {
+  const { format } = useCurrency();
   const [tab, setTab] = useState(0);
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -171,7 +168,7 @@ export function MarketplacePage() {
                         <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{p.title}</Typography>
                         <Chip label={p.category} size="small" sx={{ mt: 0.5, bgcolor: cat ? `${cat.color}15` : 'rgba(255,255,255,.05)', color: cat?.color || 'var(--vm-text-muted)', fontSize: 9, fontWeight: 600, height: 20 }} />
                       </Box>
-                      <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'var(--vm-primary-400)', flexShrink: 0 }}>{formatCurrency(p.rateHourly)}<Typography component="span" sx={{ fontSize: 10, color: 'var(--vm-text-muted)' }}>/hr</Typography></Typography>
+                      <Typography sx={{ fontSize: 16, fontWeight: 800, color: 'var(--vm-primary-400)', flexShrink: 0 }}>{format(p.rateHourly)}<Typography component="span" sx={{ fontSize: 10, color: 'var(--vm-text-muted)' }}>/hr</Typography></Typography>
                     </Box>
                     {p.bio && <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', mb: 1.5, lineHeight: 1.5, flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.bio}</Typography>}
                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
@@ -233,7 +230,7 @@ export function MarketplacePage() {
             <Avatar src={bookingProvider.picture || ''} sx={{ width: 40, height: 40 }}>{bookingProvider.name.charAt(0)}</Avatar>
             <Box>
               <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{bookingProvider.name}</Typography>
-              <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{bookingProvider.title} · {formatCurrency(bookingProvider.rateHourly)}/hr</Typography>
+              <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>{bookingProvider.title} · {format(bookingProvider.rateHourly)}/hr</Typography>
             </Box>
           </Box>
         )}

@@ -3,10 +3,12 @@ import { Box, Typography, Card, Chip, Stack, Grid } from '@mui/material';
 import { Sparkles, TrendingUp, DollarSign, Users, Calendar, Download } from 'lucide-react';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 
 export function FinancialForecast() {
   const { selectedBusiness: business } = useBusiness();
+  const { format } = useCurrency();
   const [timeRange, setTimeRange] = useState<'1year' | '3year' | '5year'>('3year');
 
   if (!business) {
@@ -114,19 +116,19 @@ export function FinancialForecast() {
         {[
           { 
             label: 'Current MRR', 
-            value: `$${(financials.revenue?.currentMRR ?? 0).toLocaleString()}`,
+            value: format(financials.revenue?.currentMRR ?? 0),
             change: '+12%',
             icon: DollarSign
           },
           { 
             label: 'Projected Revenue', 
-            value: `$${(totalProjectedRevenue / 1000000).toFixed(1)}M`,
+            value: format(totalProjectedRevenue / 1000000),
             change: `${timeRange} total`,
             icon: TrendingUp
           },
           { 
             label: `Projected ${forecastData.length}Y Profit`, 
-            value: `$${(finalYearProfit / 1000000).toFixed(1)}M`,
+            value: format(finalYearProfit / 1000000),
             change: finalYearProfit > 0 ? 'Profitable' : 'Pre-profit',
             icon: Calendar
           },
@@ -228,13 +230,13 @@ export function FinancialForecast() {
                       {row.year}
                     </Box>
                     <Box component="td" sx={{ py: 2, px: 2, color: 'var(--vm-text-secondary)' }}>
-                      ${row.mrr.toLocaleString()}
+                      {format(row.mrr)}
                     </Box>
                     <Box component="td" sx={{ py: 2, px: 2, color: 'var(--vm-text-secondary)' }}>
-                      ${row.arr.toLocaleString()}
+                      {format(row.arr)}
                     </Box>
                     <Box component="td" sx={{ py: 2, px: 2, color: 'var(--vm-text-secondary)' }}>
-                      ${row.expenses.toLocaleString()}
+                      {format(row.expenses)}
                     </Box>
                     <Box component="td" sx={{ py: 2, px: 2 }}>
                       <Typography
@@ -243,7 +245,7 @@ export function FinancialForecast() {
                           fontWeight: 600,
                         }}
                       >
-                        {row.profit >= 0 ? '+' : ''}${row.profit.toLocaleString()}
+                        {row.profit >= 0 ? '+' : ''}{format(row.profit)}
                       </Typography>
                     </Box>
                   </Box>
@@ -274,8 +276,8 @@ export function FinancialForecast() {
                   { label: 'Growth Rate', value: business.stage === 'idea' ? 'N/A' : '15-45%' },
                   { label: 'Expense Growth', value: '10% YoY' },
                   { label: 'Churn Rate', value: '5% monthly' },
-                  { label: 'Customer LTV', value: `$${metrics.ltv || 500}` },
-                  { label: 'CAC', value: `$${metrics.cac || 100}` },
+                  { label: 'Customer LTV', value: format(metrics.ltv || 500) },
+                  { label: 'CAC', value: format(metrics.cac || 100) },
                 ].map((item) => (
                   <Box key={item.label} sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>

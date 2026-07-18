@@ -84,7 +84,7 @@ interface SettingsData {
 export function SettingsPage() {
   const navigate = useNavigate();
   const { user, logout, updateProfile } = useAuth();
-  const { currency: ctxCurrency, setCurrency: setCtxCurrency } = useCurrency();
+  const { currency: ctxCurrency, setCurrency: setCtxCurrency, format } = useCurrency();
   const [activeTab, setActiveTab] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -596,7 +596,7 @@ export function SettingsPage() {
                         <Chip size="small" label={subscription.status} sx={{ bgcolor: subscription.status === 'active' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)', color: subscription.status === 'active' ? '#22c55e' : '#f59e0b', fontSize: 11 }} />
                       </Box>
                       <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>
-                        ${(subscription.plan?.priceMonthly || 0).toFixed(2)}/month
+                        {format(subscription.plan?.priceMonthly || 0)}/month
                         {subscription.currentPeriodEnd ? ` • Renews ${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-GB')}` : ''}
                       </Typography>
                     </Box>

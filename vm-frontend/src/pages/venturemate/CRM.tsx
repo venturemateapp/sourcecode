@@ -12,6 +12,7 @@ import {
   UserPlus, PhoneCall,
 } from 'lucide-react';
 import type { CrmContact, CrmDeal, CrmActivity, CrmTask } from '../../types/venturemate';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const CONTACT_TYPES = [
   { value: 'lead', label: 'Lead', color: '#3b82f6' },
@@ -37,11 +38,6 @@ function getContactColor(type: string) {
   return CONTACT_TYPES.find(t => t.value === type)?.color || '#6b7280';
 }
 
-function formatCurrency(v: number, currency = 'USD') {
-  try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v); }
-  catch { return `${currency} ${v.toLocaleString()}`; }
-}
-
 function formatDate(s: string | null | undefined) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('en-GB');
@@ -49,6 +45,7 @@ function formatDate(s: string | null | undefined) {
 
 export function CRMPage() {
   const { selectedBusiness } = useBusiness();
+  const { format } = useCurrency();
   const bizId = selectedBusiness?.id;
 
   const [tab, setTab] = useState(0);
@@ -233,7 +230,7 @@ export function CRMPage() {
         {[
           { icon: Users, label: 'Contacts', value: stats.totalContacts, color: '#3b82f6' },
           { icon: TrendingUp, label: 'Deals', value: stats.totalDeals, color: '#22c55e' },
-          { icon: DollarSign, label: 'Pipeline Value', value: formatCurrency(stats.totalValue), color: '#f59e0b' },
+          { icon: DollarSign, label: 'Pipeline Value', value: format(stats.totalValue), color: '#f59e0b' },
           { icon: ListChecks, label: 'Pending Tasks', value: stats.tasksPending, color: '#8b5cf6' },
         ].map(s => (
           <Card key={s.label} sx={{ p: { xs: 1.5, sm: 2.5 }, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
@@ -313,7 +310,7 @@ export function CRMPage() {
                     <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.color }} />
                     <Box>
                       <Typography sx={{ fontSize: 11, fontWeight: 700, color: s.color }}>{s.label}</Typography>
-                      <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>{stageDeals.length} deals · {formatCurrency(stageValue)}</Typography>
+                      <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>{stageDeals.length} deals · {format(stageValue)}</Typography>
                     </Box>
                   </Box>
                 );
@@ -352,7 +349,7 @@ export function CRMPage() {
                       <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'var(--vm-text-primary)', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 }}>{stage.label}</Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Typography sx={{ fontSize: 11, fontWeight: 800, color: stage.color }}>{stageDeals.length}</Typography>
-                        <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>{formatCurrency(stageValue)}</Typography>
+                        <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>{format(stageValue)}</Typography>
                       </Box>
                     </Box>
 
@@ -382,7 +379,7 @@ export function CRMPage() {
                               <IconButton size="small" sx={{ color: '#ef444466', p: 0.25, ml: 0.5, flexShrink: 0 }} onClick={() => deleteDeal(d.id)}><Trash2 size={11} /></IconButton>
                             </Box>
 
-                            <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-primary-400)', mb: 1, overflowWrap: 'anywhere' }}>{formatCurrency(d.value)}</Typography>
+                            <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-primary-400)', mb: 1, overflowWrap: 'anywhere' }}>{format(d.value)}</Typography>
 
                             {/* Probability bar */}
                             <Box sx={{ mb: 1 }}>

@@ -319,7 +319,7 @@ const statsCards = b ? [
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>
                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>MRR</Typography>
 <Typography sx={{ fontSize: { xs: 14, sm: 16, md: 18 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
-                    ${activeBusiness.financials?.revenue?.currentMRR?.toLocaleString() ?? 0}
+                    {format(activeBusiness.financials?.revenue?.currentMRR ?? 0)}
                   </Typography>
                </div>
                <div style={{ padding: '16px', backgroundColor: 'var(--vm-bg-tertiary)', borderRadius: '8px' }}>

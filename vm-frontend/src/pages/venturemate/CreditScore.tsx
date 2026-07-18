@@ -548,7 +548,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                     {app.lender_name}
                   </Typography>
                   <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
-                    {getProductTypeLabel(app.product_type)} • ${app.amount.toLocaleString()}
+                    {getProductTypeLabel(app.product_type)} • {format(app.amount)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -706,7 +706,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
               <Grid container spacing={3}>
                 <Grid size={12}>
                   <Typography sx={{ fontSize: { xs: 12, sm: 14 }, color: 'var(--vm-text-muted)', mb: 1, overflowWrap: 'anywhere' }}>
-                    Loan Amount: ${applicationData.amount.toLocaleString()}
+                    Loan Amount: {format(applicationData.amount)}
                   </Typography>
                   <Slider
                     value={applicationData.amount}
@@ -720,8 +720,8 @@ export function CreditScorePage(_props: CreditScoreProps) {
                     }}
                   />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                    <span>${selectedOffer?.minAmount.toLocaleString()}</span>
-                    <span>${selectedOffer?.maxAmount.toLocaleString()}</span>
+                    <span>{format(selectedOffer?.minAmount ?? 0)}</span>
+                    <span>{format(selectedOffer?.maxAmount ?? 0)}</span>
                   </Box>
                 </Grid>
                 <Grid size={6}>
@@ -830,7 +830,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Amount</Typography>
-                    <Typography sx={{ fontSize: 14, fontWeight: 600, overflowWrap: 'anywhere' }}>${applicationData.amount.toLocaleString()}</Typography>
+                    <Typography sx={{ fontSize: 14, fontWeight: 600, overflowWrap: 'anywhere' }}>{format(applicationData.amount)}</Typography>
                   </Grid>
                   <Grid size={6}>
                     <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Term</Typography>
@@ -1032,7 +1032,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                       <Typography sx={{ fontSize: 14, color: 'var(--vm-text-muted)' }}>Pre-qualified Amount</Typography>
                       <Typography sx={{ fontSize: 24, fontWeight: 700, color: '#22c55e', overflowWrap: 'anywhere' }}>
-                        ${eligibilityResult.preQualifiedAmount?.toLocaleString()}
+                        {format(eligibilityResult.preQualifiedAmount ?? 0)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

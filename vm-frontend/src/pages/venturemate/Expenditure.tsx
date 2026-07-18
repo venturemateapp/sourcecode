@@ -7,6 +7,7 @@ import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Receipt, Plus, Trash2, Edit3, Building2, DollarSign, Tag } from 'lucide-react';
 import type { Expenditure } from '../../types/venturemate';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const EXPENSE_CATEGORIES = ['office', 'travel', 'software', 'marketing', 'legal', 'consulting', 'salary', 'equipment', 'utilities', 'rent', 'food', 'transport', 'other'];
 
@@ -18,6 +19,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export function ExpenditurePage() {
   const { selectedBusiness } = useBusiness();
+  const { format } = useCurrency();
   const bizId = selectedBusiness?.id;
 
   const [items, setItems] = useState<Expenditure[]>([]);
@@ -79,7 +81,7 @@ export function ExpenditurePage() {
       <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 0 } }}>
         <Box>
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Expenditure</Typography>
-          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{items.length} expenses · {formatCurrency(grandTotal)} total</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{items.length} expenses · {format(grandTotal)} total</Typography>
         </Box>
         <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setForm({ description: '', amount: 0, category: 'other', expenseDate: new Date().toISOString().split('T')[0], vendor: '' })}>
           Add Expense
@@ -91,7 +93,7 @@ export function ExpenditurePage() {
           <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(239,68,68,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
             <DollarSign size={16} color="#ef4444" />
           </Box>
-          <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>{formatCurrency(grandTotal)}</Typography>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>{format(grandTotal)}</Typography>
           <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Total Expenses</Typography>
         </Card>
         <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
@@ -108,7 +110,7 @@ export function ExpenditurePage() {
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.5 }}>By Category</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
             {Object.entries(totalByCategory).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([cat, val]) => (
-              <Chip key={cat} label={`${cat} ${formatCurrency(val)}`} size="small"
+              <Chip key={cat} label={`${cat} ${format(val)}`} size="small"
                 sx={{ bgcolor: `${CATEGORY_COLORS[cat] || '#94a3b8'}15`, color: CATEGORY_COLORS[cat] || '#94a3b8', fontSize: 9, height: 20 }} />
             ))}
           </Box>
@@ -133,7 +135,7 @@ export function ExpenditurePage() {
                     <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{new Date(e.expenseDate).toLocaleDateString('en-GB')}</Typography>
                   </Box>
                 </Box>
-                <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#ef4444', flexShrink: 0, overflowWrap: 'anywhere' }}>-{formatCurrency(e.amount)}</Typography>
+                <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#ef4444', flexShrink: 0, overflowWrap: 'anywhere' }}>-{format(e.amount)}</Typography>
                 <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => setForm(e)}><Edit3 size={14} /></IconButton>
                 <IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteItem(e.id)}><Trash2 size={14} /></IconButton>
               </Box>
@@ -171,7 +173,4 @@ export function ExpenditurePage() {
   );
 }
 
-function formatCurrency(v: number, currency = 'USD') {
-  try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v); }
-  catch { return `${currency} ${v.toLocaleString()}`; }
-}
+

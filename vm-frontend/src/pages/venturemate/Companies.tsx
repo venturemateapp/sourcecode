@@ -6,6 +6,7 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Building2, Plus, Trash2, Edit3, Globe, Users, DollarSign, MapPin } from 'lucide-react';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 interface Company {
   id: string;
@@ -29,6 +30,7 @@ const INDUSTRIES = ['Technology', 'Healthcare', 'Finance', 'Education', 'E-comme
 
 export function CompaniesPage() {
   const { selectedBusiness } = useBusiness();
+  const { format } = useCurrency();
   const bizId = selectedBusiness?.id;
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -115,7 +117,7 @@ export function CompaniesPage() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1.5 }}>
               {c.domain && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Globe size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{c.domain}</Typography></Box>}
               {c.employeeCount > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Users size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.employeeCount} employees</Typography></Box>}
-              {c.revenue > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><DollarSign size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{formatCurrency(c.revenue)} revenue</Typography></Box>}
+              {c.revenue > 0 && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><DollarSign size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{format(c.revenue)} revenue</Typography></Box>}
               {c.addressCity && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{c.addressCity}{c.addressCountry ? `, ${c.addressCountry}` : ''}</Typography></Box>}
             </Box>
 
@@ -163,7 +165,4 @@ export function CompaniesPage() {
   );
 }
 
-function formatCurrency(v: number, currency = 'USD') {
-  try { return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v); }
-  catch { return `${currency} ${v.toLocaleString()}`; }
-}
+

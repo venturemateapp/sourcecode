@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { ViewType, Investor } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const INVESTORS_QUERY = `
   query Investors {
@@ -67,6 +68,7 @@ interface InvestorsProps {
 }
 
 export function InvestorsPage({ onViewChange }: InvestorsProps) {
+  const { format } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [, setSelectedInvestor] = useState<Investor | null>(null);
@@ -308,7 +310,7 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
               <Box sx={{ flex: 1, textAlign: 'center', p: 1, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 1.5 }}>
                 <DollarSign size={14} style={{ margin: '0 auto', color: 'var(--vm-text-muted)' }} />
                 <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.5 }}>
-                  ${(investor.checkSize.min / 1000000).toFixed(0)}M-${(investor.checkSize.max / 1000000).toFixed(0)}M
+                  {format(investor.checkSize.min)}-{format(investor.checkSize.max)}
                 </Typography>
               </Box>
               <Box sx={{ flex: 1, textAlign: 'center', p: 1, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 1.5 }}>
