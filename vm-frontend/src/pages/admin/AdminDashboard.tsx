@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { graphqlRequest } from '../../lib/api';
+import { stripMarkdown } from '../../lib/stripMarkdown';
 import { AdminAiUsage } from './AdminAiUsage';
 
 type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage' | 'plan-usage';
@@ -1177,7 +1178,7 @@ export function AdminDashboard() {
                   <Box sx={{ maxWidth: '80%', p: 1.25, borderRadius: 2.5, fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
                     bgcolor: m.role === 'user' ? '#f59e0b' : 'rgba(255,255,255,.06)',
                     color: m.role === 'user' ? '#000' : 'rgba(255,255,255,.87)',
-                  }}>{m.content}</Box>
+                  }}>{stripMarkdown(m.content)}</Box>
                 </Box>
               ))}
               {supportMessages.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No messages in this session.</Typography>}

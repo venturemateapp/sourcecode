@@ -3,6 +3,7 @@ import { Box, Typography, Card, TextField, IconButton, Chip } from '@mui/materia
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { graphqlRequest } from '../../lib/api';
+import { stripMarkdown } from '../../lib/stripMarkdown';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Send, MessageCircle, Plus, User } from 'lucide-react';
@@ -205,7 +206,7 @@ export function MessagesPage() {
                   <Box sx={{ maxWidth: '75%', p: 1.25, borderRadius: 2.5, fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
                     bgcolor: m.senderId === user?.id ? 'var(--vm-primary-600)' : 'rgba(255,255,255,.06)',
                     color: m.senderId === user?.id ? '#fff' : 'var(--vm-text-primary)',
-                  }}>{m.content}</Box>
+                  }}>{stripMarkdown(m.content)}</Box>
                 </Box>
               ))}
               <div ref={messagesEndRef} />
