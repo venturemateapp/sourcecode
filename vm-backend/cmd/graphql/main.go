@@ -62,16 +62,15 @@ func optionalAuthMiddleware(jwtSecret string, next http.Handler) http.Handler {
 
 func authMiddleware(jwtSecret string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
+		tokenStr := strings.TrimSpace(r.Header.Get("Authorization"))
+		if tokenStr == "" {
+			tokenStr = r.URL.Query().Get("token")
+		}
+		if tokenStr == "" {
 			http.Error(w, `{"error":"missing authorization header"}`, http.StatusUnauthorized)
 			return
 		}
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenStr == authHeader {
-			http.Error(w, `{"error":"invalid authorization format"}`, http.StatusUnauthorized)
-			return
-		}
+		tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
 		userID, err := auth.ValidateToken(tokenStr, jwtSecret)
 		if err != nil {
 			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusUnauthorized)

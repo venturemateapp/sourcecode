@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { getToken } from '../../lib/auth';
 import {
   Box,
   Typography,
@@ -554,15 +555,21 @@ export function DocumentsPage(_props: DocumentsProps) {
         }}
       >
         <MenuItem onClick={() => {
-          if (selectedDoc?.url && selectedBusiness?.id) window.open(`/api/documents/download?businessId=${selectedBusiness.id}&documentId=${selectedDoc.id}`, '_blank');
+          if (selectedDoc && selectedBusiness?.id) {
+            const token = getToken();
+            const url = `/api/documents/download?businessId=${selectedBusiness.id}&documentId=${selectedDoc.id}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+            window.open(url, '_blank');
+          }
           handleMenuClose();
         }} sx={{ color: 'var(--vm-text-primary)' }}>
           <Download size={16} style={{ marginRight: 8 }} />
           Download
         </MenuItem>
         <MenuItem onClick={() => {
-          if (selectedDoc?.url) {
-            navigator.clipboard.writeText(selectedDoc.url);
+          if (selectedDoc && selectedBusiness?.id) {
+            const token = getToken();
+            const url = `/api/documents/download?businessId=${selectedBusiness.id}&documentId=${selectedDoc.id}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+            navigator.clipboard.writeText(window.location.origin + url);
           }
           handleMenuClose();
         }} sx={{ color: 'var(--vm-text-primary)' }}>
