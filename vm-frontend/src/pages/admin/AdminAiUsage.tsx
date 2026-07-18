@@ -147,7 +147,6 @@ export function AdminAiUsage() {
             select size="small" label="Domain" value={domainFilter}
             onChange={e => setDomainFilter(e.target.value)}
             sx={{ minWidth: 160 }}
-            SelectProps={{ displayEmpty: true }}
           >
             <MenuItem value="">All Domains</MenuItem>
             {domains.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
@@ -156,7 +155,6 @@ export function AdminAiUsage() {
             select size="small" label="Source" value={sourceFilter}
             onChange={e => setSourceFilter(e.target.value)}
             sx={{ minWidth: 140 }}
-            SelectProps={{ displayEmpty: true }}
           >
             <MenuItem value="">All Sources</MenuItem>
             <MenuItem value="chat">AI Chat</MenuItem>
