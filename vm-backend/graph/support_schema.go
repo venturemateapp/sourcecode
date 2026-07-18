@@ -175,4 +175,31 @@ func init() {
 			return err == nil, err
 		},
 	})
+
+	rootMutation.AddFieldConfig("adminSupportReply", &graphql.Field{
+		Type: supportMessageType,
+		Args: graphql.FieldConfigArgument{
+			"sessionId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"content":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil || AppContainer.SupportService == nil {
+				return nil, nil
+			}
+			sessionID := p.Args["sessionId"].(string)
+			content := p.Args["content"].(string)
+
+			msg, err := AppContainer.SupportService.AdminReply(p.Context, sessionID, content)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]interface{}{
+				"id":        msg.ID,
+				"sessionId": msg.SessionID,
+				"role":      msg.Role,
+				"content":   msg.Content,
+				"createdAt": msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			}, nil
+		},
+	})
 }

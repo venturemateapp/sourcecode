@@ -142,6 +142,15 @@ func (s *Service) Escalate(ctx context.Context, sessionID string, userID string)
 	return s.sendEscalationEmail(ctx, session, session.CreatedByName, session.CreatedByEmail, "", "User requested escalation.", summary)
 }
 
+func (s *Service) AdminReply(ctx context.Context, sessionID, content string) (*Message, error) {
+	msg, err := s.repo.AddMessage(ctx, sessionID, "assistant", content)
+	if err != nil {
+		return nil, err
+	}
+	_ = s.repo.UpdateSessionStatus(ctx, sessionID, "active")
+	return msg, nil
+}
+
 func (s *Service) sendEscalationEmail(ctx context.Context, session *Session, name, emailAddr, prompt, aiReply, summary string) error {
 	body := fmt.Sprintf(`
 <h2>Support Chat Escalation</h2>

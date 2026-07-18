@@ -120,6 +120,8 @@ export function AdminDashboard() {
   const [supportSessions, setSupportSessions] = useState<Array<{ id: string; userId: string; subject: string; status: string; createdByName: string; createdByEmail: string; summary: string; createdAt: string; updatedAt: string }>>([]);
   const [supportMessages, setSupportMessages] = useState<Array<{ id: string; sessionId: string; role: string; content: string; createdAt: string }>>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [supportReply, setSupportReply] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const [bankAccounts, setBankAccounts] = useState<Array<{ id: string; userId: string; businessId: string; bankName: string; accountType: string; accountNumber: string; accountName: string; currency: string; status: string; createdAt: string }>>([]);
   const [registrations, setRegistrations] = useState<Array<{ id: string; businessId: string; userId: string; registrationType: string; status: string; legalName: string; ownerName: string; ownerEmail: string; ownerPhone: string; addressCity: string; addressCountry: string; adminNotes: string; createdAt: string }>>([]);
   const [adminInvoices, setAdminInvoices] = useState<Array<{ id: string; userId: string; businessId: string; invoiceNumber: string; customerName: string; amount: number; currency: string; status: string; dueDate: string; createdAt: string }>>([]);
@@ -160,6 +162,22 @@ export function AdminDashboard() {
   const loadSupportMessages = useCallback(async (sessionId: string) => {
     try { const d = await graphqlRequest<{ supportSessionMessages: typeof supportMessages }>(`query { supportSessionMessages(sessionId:"${sessionId}") { id sessionId role content createdAt } }`); setSupportMessages(d.supportSessionMessages); } catch { /* ignore */ }
   }, []);
+
+  const sendSupportReply = useCallback(async () => {
+    if (!selectedSession || !supportReply.trim()) return;
+    setSendingReply(true);
+    try {
+      const d = await graphqlRequest<{ adminSupportReply: { id: string } }>(
+        `mutation M($s:ID!,$c:String!){adminSupportReply(sessionId:$s content:$c){id}}`,
+        { s: selectedSession, c: supportReply.trim() }
+      );
+      if (d.adminSupportReply) {
+        setSupportReply('');
+        await loadSupportMessages(selectedSession);
+      }
+    } catch { /* ignore */ }
+    setSendingReply(false);
+  }, [selectedSession, supportReply, loadSupportMessages]);
 
   const loadBookings = useCallback(async () => {
     try { const d = await graphqlRequest<{ myBookings: typeof bookings }>('query { myBookings { id providerName userName projectTitle status createdAt } }'); setBookings(d.myBookings); } catch { /* ignore */ }
@@ -1181,13 +1199,24 @@ export function AdminDashboard() {
                   }}>{stripMarkdown(m.content)}</Box>
                 </Box>
               ))}
-              {supportMessages.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No messages in this session.</Typography>}
-            </Box>
-          </>
-        )}
-      </Card>
-    </Box>
-  );
+               {supportMessages.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No messages in this session.</Typography>}
+             </Box>
+             <Box sx={{ display: 'flex', gap: 1, p: 1.5, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+               <TextField fullWidth size="small" placeholder="Type your reply..." value={supportReply}
+                 onChange={e => setSupportReply(e.target.value)}
+                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendSupportReply(); } }}
+                 sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'rgba(255,255,255,.04)', color: '#fff', fontSize: 13 },
+                   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.1)' } }} />
+               <IconButton size="small" onClick={sendSupportReply} disabled={sendingReply || !supportReply.trim()}
+                 sx={{ bgcolor: '#f59e0b', color: '#000', borderRadius: 1.5, width: 36, height: 36, '&:hover': { bgcolor: '#d97706' }, '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,.08)', color: 'rgba(255,255,255,.2)' } }}>
+                 <Send size={15} />
+               </IconButton>
+             </Box>
+           </>
+         )}
+       </Card>
+     </Box>
+   );
 
   const renderContent = () => {
     switch (view) {
