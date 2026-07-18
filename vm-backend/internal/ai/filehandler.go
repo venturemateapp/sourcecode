@@ -33,6 +33,7 @@ type DocumentInfo struct {
 	Tags          []string `json:"tags"`
 	SharedWith    []string `json:"sharedWith"`
 	ExtractedText string   `json:"extractedText,omitempty"`
+	S3Key         string   `json:"s3Key,omitempty"`
 }
 
 type FileHandler struct {
@@ -292,6 +293,7 @@ func (fh *FileHandler) ProcessUpload(ctx context.Context, fileData []byte, filen
 		Size:         sizeStr,
 		SizeBytes:    int64(len(fileData)),
 		URL:          s3URL,
+		S3Key:        s3Key,
 		Category:     category,
 		UploadedBy:   userID,
 		UploadedAt:   now,
@@ -368,8 +370,10 @@ func (fh *FileHandler) DeleteDocument(ctx context.Context, docID string, busines
 		return fmt.Errorf("update business documents: %w", err)
 	}
 
-	if _, err := fh.s3.Delete(ctx, "documents/"+businessID+"/"+found.Name); err != nil {
-		return fmt.Errorf("s3 delete failed (doc removed from db): %w", err)
+	if found.S3Key != "" {
+		if _, err := fh.s3.Delete(ctx, found.S3Key); err != nil {
+			return fmt.Errorf("s3 delete failed (doc removed from db): %w", err)
+		}
 	}
 
 	return nil
