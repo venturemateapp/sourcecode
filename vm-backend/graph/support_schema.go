@@ -1,6 +1,9 @@
 package graph
 
 import (
+	"encoding/json"
+	"time"
+
 	"github.com/graphql-go/graphql"
 )
 
@@ -193,6 +196,21 @@ func init() {
 			if err != nil {
 				return nil, err
 			}
+
+			// Push to real-time chat via WebSocket for the user
+			session, _ := AppContainer.SupportService.GetSession(p.Context, sessionID)
+			if session != nil && AppContainer.ChatHub != nil {
+				data, _ := json.Marshal(map[string]interface{}{
+					"type":    "support_reply",
+					"content": content,
+					"role":    "assistant",
+					"sessionId": sessionID,
+					"createdAt": msg.CreatedAt.Format(time.RFC3339),
+				})
+				AppContainer.ChatHub.SendToUser(session.UserID, data)
+				AppContainer.ChatHub.SendToAdmins(data)
+			}
+
 			return map[string]interface{}{
 				"id":        msg.ID,
 				"sessionId": msg.SessionID,

@@ -119,6 +119,10 @@ func (s *Service) GetSessions(ctx context.Context) ([]Session, error) {
 	return s.repo.GetAllSessions(ctx)
 }
 
+func (s *Service) GetSession(ctx context.Context, sessionID string) (*Session, error) {
+	return s.repo.GetSession(ctx, sessionID)
+}
+
 func (s *Service) GetUserSessions(ctx context.Context, userID string) ([]Session, error) {
 	return s.repo.GetUserSessions(ctx, userID)
 }
