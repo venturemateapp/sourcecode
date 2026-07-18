@@ -9,14 +9,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, ChevronDown, ChevronRight, Bot, FolderOpen, Globe, Users,
   Landmark, Share2, Store, TrendingUp, CreditCard, Heart, Presentation, FileText, Receipt,
-  Palette, Target, UserCircle, Lightbulb, BarChart3, Calculator, Calendar,
+  Palette, Target, UserCircle, Lightbulb, Calculator, Calendar,
   LogOut, X, Sparkles,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   LayoutDashboard, Building2, Bot, FolderOpen, Globe, Users, Landmark, Share2, Store,
   TrendingUp, CreditCard, Heart, Presentation, FileText, Receipt, Palette, Target,
-  UserCircle, Lightbulb, BarChart3, Calculator, Calendar,
+  UserCircle, Lightbulb, Calculator, Calendar,
 };
 
 const NAV_SECTIONS: NavSection[] = [
@@ -50,7 +50,6 @@ const NAV_SECTIONS: NavSection[] = [
     { label: 'Co-Founders', icon: 'UserCircle', view: 'cofounders' as ViewType },
   ]},
   { title: 'AI TOOLS', items: [
-    { label: 'Dashboards', icon: 'BarChart3', view: 'dashboards' as ViewType },
   ]},
   { title: 'ACCOUNT', items: [
     { label: 'Profile', icon: 'UserCircle', view: 'profile' as ViewType },
