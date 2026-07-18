@@ -197,18 +197,32 @@ func init() {
 				return nil, err
 			}
 
-			// Push to real-time chat via WebSocket for the user
+			// Push to real-time chat via WebSocket
 			session, _ := AppContainer.SupportService.GetSession(p.Context, sessionID)
-			if session != nil && AppContainer.ChatHub != nil {
-				data, _ := json.Marshal(map[string]interface{}{
-					"type":    "support_reply",
-					"content": content,
-					"role":    "assistant",
+			if session != nil && AppContainer.ChatRepo != nil && AppContainer.ChatHub != nil {
+				// Also save to chat_messages so user sees it in Messages page
+				chatMsg, chatErr := AppContainer.ChatRepo.AddMessage(p.Context, sessionID, "admin", content)
+				if chatErr == nil && chatMsg != nil {
+					data, _ := json.Marshal(map[string]interface{}{
+						"type":           "new_message",
+						"conversationId": sessionID,
+						"senderId":       "admin",
+						"content":        content,
+						"id":             chatMsg.ID,
+						"createdAt":      chatMsg.CreatedAt.Format(time.RFC3339),
+					})
+					AppContainer.ChatHub.SendToUser(session.UserID, data)
+					AppContainer.ChatHub.SendToAdmins(data)
+				}
+
+				// Also broadcast a support_reply event for non-chat pages
+				notifData, _ := json.Marshal(map[string]interface{}{
+					"type":      "support_reply",
 					"sessionId": sessionID,
+					"content":   content,
 					"createdAt": msg.CreatedAt.Format(time.RFC3339),
 				})
-				AppContainer.ChatHub.SendToUser(session.UserID, data)
-				AppContainer.ChatHub.SendToAdmins(data)
+				AppContainer.ChatHub.SendToUser(session.UserID, notifData)
 			}
 
 			return map[string]interface{}{
