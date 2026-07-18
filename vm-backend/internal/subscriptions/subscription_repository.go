@@ -153,7 +153,7 @@ func (r *Repository) QueryAdminUserPlans(ctx context.Context) ([]map[string]inte
 	          FROM users u
 	          JOIN user_subscriptions us ON us.user_id = u.id
 	          JOIN subscription_plans sp ON sp.id = us.plan_id
-	          LEFT JOIN usage_log ul ON ul.user_id = u.id AND ul.billing_period = to_char(NOW(), 'YYYY-MM')
+	          LEFT JOIN usage_log ul ON ul.user_id = u.id AND ul.billing_period::text = to_char(NOW(), 'YYYY-MM')
 	          ORDER BY u.created_at DESC`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
