@@ -311,7 +311,6 @@ function VentureMateApp() {
     <BusinessProvider>
       <AIProviderProvider>
       <NotificationProvider>
-      <ToastProvider>
       <CurrencyProvider>
       <SupportChatProvider>
       <VentureMateLayout
@@ -323,7 +322,6 @@ function VentureMateApp() {
       <SupportChatFloating />
       </SupportChatProvider>
       </CurrencyProvider>
-      </ToastProvider>
       </NotificationProvider>
       </AIProviderProvider>
     </BusinessProvider>
@@ -344,7 +342,7 @@ function App() {
         </Route>
         <Route path="/vm/onboarding" element={<ToastProvider><OnboardingPage /></ToastProvider>} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/vm/*" element={<SubscriptionProvider><VentureMateApp /></SubscriptionProvider>} />
+          <Route path="/vm/*" element={<SubscriptionProvider><ToastProvider><VentureMateApp /></ToastProvider></SubscriptionProvider>} />
           <Route path="/vm/admin" element={<AdminDashboard />} />
         </Route>
         <Route path="/" element={<LandingPage />} />
