@@ -166,10 +166,9 @@ function VentureMateApp() {
   const location = window.location;
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const onboardingCompleted = localStorage.getItem('venturemate_onboarding_completed') === 'true';
-  const { subscription } = useSubscription();
+  const { subscription, plans } = useSubscription();
   const toast = useToast();
 
-  const planFeatures = subscription?.plan?.features;
   const subscriptionLoaded = !!subscription?.plan;
 
   const viewFeatureMap: Partial<Record<ViewType, string>> = {
@@ -199,7 +198,12 @@ function VentureMateApp() {
     if (!subscriptionLoaded) return true;
     const feature = viewFeatureMap[view];
     if (!feature) return true;
-    return (planFeatures || []).some(f => f.text === feature && f.included);
+    // Check all plans — if ANY plan includes this feature and user's plan is >= that plan's tier, allow
+    const userSort = subscription?.plan?.sortOrder ?? 0;
+    return (plans || []).some(p =>
+      p.sortOrder <= userSort &&
+      p.features.some(f => f.text === feature && f.included)
+    );
   };
 
   const getUpgradePlan = (view: ViewType): string => {
