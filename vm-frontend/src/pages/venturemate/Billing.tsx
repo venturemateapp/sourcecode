@@ -15,6 +15,7 @@ import type { Plan } from '../../contexts/SubscriptionContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/shared/toast';
 
 const planColors: Record<string, string> = { free: '#6b7280', starter: '#10b981', growth: '#3b82f6', scale: '#8b5cf6' };
 
@@ -108,6 +109,7 @@ export function BillingPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
   const { subscription, plans, changePlan, planName } = useSubscription();
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState(0);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
@@ -427,6 +429,53 @@ export function BillingPage() {
               </Card>
             ))}
           </Box>
+
+          {/* Refer & Earn */}
+          <Card sx={{ mt: 3, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2.5, sm: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: 'rgba(16,185,129,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TrendingUp size={20} color="#10b981" />
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                  Refer & Earn
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                  Share VentureMate and earn free AI tokens or subscription credits
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ flex: 1, minWidth: 200, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 2, p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mb: 0.5 }}>Your referral link</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-primary-400)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user?.id ? `https://venturemate.net/signup?ref=${user.id.slice(0, 8)}` : 'Sign in to get your link'}
+                  </Typography>
+                </Box>
+                <GradientButton variant="outline" size="sm" onClick={() => {
+                  if (user?.id) {
+                    navigator.clipboard.writeText(`https://venturemate.net/signup?ref=${user.id.slice(0, 8)}`);
+                    toast.warning('Link copied!', { description: 'Share it with your network to earn rewards.', duration: 3000 });
+                  }
+                }} sx={{ flexShrink: 0 }}>
+                  Copy Link
+                </GradientButton>
+              </Box>
+              <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 3 }, flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Per referral', value: '5M AI tokens' },
+                  { label: 'Paid referral', value: '$10 credit' },
+                  { label: 'Your earnings', value: '$0' },
+                ].map(s => (
+                  <Box key={s.label} sx={{ textAlign: 'center', px: { xs: 1, sm: 2 } }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-primary-400)' }}>{s.value}</Typography>
+                    <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)' }}>{s.label}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          </Card>
         </>
       )}
 
