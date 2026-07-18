@@ -10,6 +10,7 @@ import {
   Building2,
   Bot,
   ChevronRight,
+  HardDrive,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ViewType } from '../../types/venturemate';
@@ -140,18 +141,24 @@ const statsCards = b ? [
       {usage && subscription?.plan?.limits && (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: '24px', mb: 4 }}>
           {/* AI Usage */}
-          <Card
-            sx={{
-              bgcolor: 'var(--vm-bg-secondary)',
-              border: '1px solid var(--vm-border-subtle)',
-              borderRadius: 3,
-              p: { xs: 2, sm: 2.5, md: 3 },
-            }}
-          >
-            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2, overflowWrap: 'anywhere' }}>
-              <Bot size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
-              AI Usage
-            </Typography>
+          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 2.5, md: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
+                <Bot size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+                AI Usage
+              </Typography>
+              {subscription.plan.limits.aiTokensMonthly !== -1 && subscription.plan.limits.aiTokensMonthly !== 0 && (() => {
+                const used = usage.aiTokensUsed ?? 0;
+                const limit = subscription.plan.limits.aiTokensMonthly;
+                const ratio = limit > 0 ? used / limit : 0;
+                const pct = Math.min(ratio * 100, 100);
+                return (
+                  <Chip size="small" label={`${pct.toFixed(0)}% used`}
+                    sx={{ bgcolor: pct > 90 ? 'rgba(239,68,68,.15)' : pct > 70 ? 'rgba(245,158,11,.15)' : 'rgba(16,185,129,.15)',
+                      color: pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#22c55e', fontWeight: 700, fontSize: 10 }} />
+                );
+              })()}
+            </Box>
             {subscription.plan.limits.aiTokensMonthly === -1 || subscription.plan.limits.aiTokensMonthly === 0 ? (
               <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere' }}>
                 Unlimited AI tokens
@@ -162,39 +169,45 @@ const statsCards = b ? [
               const ratio = limit > 0 ? used / limit : 0;
               const percentage = Math.min(ratio * 100, 100);
               const barColor = getProgressColor(ratio);
+              const remaining = Math.max(limit - used, 0);
               return (
                 <>
-                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', mb: 1.5, overflowWrap: 'anywhere' }}>
-                    {formatTokens(used)} / {formatTokens(limit)} AI tokens used this month
+                  <Typography sx={{ fontSize: 22, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.25 }}>
+                    {formatTokens(used)}
+                    <Typography component="span" sx={{ fontSize: 12, fontWeight: 400, color: 'var(--vm-text-muted)', ml: 1 }}>
+                      of {formatTokens(limit)} tokens
+                    </Typography>
                   </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={percentage}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      bgcolor: 'var(--vm-bg-tertiary)',
-                      '& .MuiLinearProgress-bar': { bgcolor: barColor, borderRadius: 4 },
-                    }}
-                  />
+                  <Typography sx={{ fontSize: 11, color: remaining > 0 ? 'var(--vm-primary-400)' : '#ef4444', mb: 1.5, fontWeight: 600 }}>
+                    {remaining > 0 ? `${formatTokens(remaining)} tokens remaining this month` : 'Token quota exhausted'}
+                  </Typography>
+                  <LinearProgress variant="determinate" value={percentage}
+                    sx={{ height: 8, borderRadius: 4, bgcolor: 'var(--vm-bg-tertiary)', '& .MuiLinearProgress-bar': { bgcolor: barColor, borderRadius: 4 } }} />
                 </>
               );
             })()}
           </Card>
 
           {/* Storage */}
-          <Card
-            sx={{
-              bgcolor: 'var(--vm-bg-secondary)',
-              border: '1px solid var(--vm-border-subtle)',
-              borderRadius: 3,
-              p: { xs: 2, sm: 2.5, md: 3 },
-            }}
-          >
-            <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 2, overflowWrap: 'anywhere' }}>
-              <FileText size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
-              Storage
-            </Typography>
+          <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: { xs: 2, sm: 2.5, md: 3 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere' }}>
+                <HardDrive size={18} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+                Storage
+              </Typography>
+              {(() => {
+                const usedBytes = usage.storageBytes ?? 0;
+                const limitGb = subscription.plan.limits.storageGb;
+                const usedGb = usedBytes / 1_073_741_824;
+                const ratio = limitGb > 0 ? usedGb / limitGb : 0;
+                const pct = Math.min(ratio * 100, 100);
+                return (
+                  <Chip size="small" label={`${pct.toFixed(1)}% used`}
+                    sx={{ bgcolor: pct > 90 ? 'rgba(239,68,68,.15)' : pct > 70 ? 'rgba(245,158,11,.15)' : 'rgba(16,185,129,.15)',
+                      color: pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#22c55e', fontWeight: 700, fontSize: 10 }} />
+                );
+              })()}
+            </Box>
             {(() => {
               const usedBytes = usage.storageBytes ?? 0;
               const limitGb = subscription.plan.limits.storageGb;
@@ -203,22 +216,20 @@ const statsCards = b ? [
               const percentage = Math.min(ratio * 100, 100);
               const barColor = getProgressColor(ratio);
               const usedFormatted = formatStorage(usedBytes);
-              const limitFormatted = `${limitGb} GB`;
+              const remainingGb = Math.max(limitGb - usedGb, 0);
               return (
                 <>
-                  <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)', mb: 1.5, overflowWrap: 'anywhere' }}>
-                    {usedFormatted} / {limitFormatted} storage used
+                  <Typography sx={{ fontSize: 22, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.25 }}>
+                    {usedFormatted}
+                    <Typography component="span" sx={{ fontSize: 12, fontWeight: 400, color: 'var(--vm-text-muted)', ml: 1 }}>
+                      of {limitGb} GB
+                    </Typography>
                   </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={percentage}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      bgcolor: 'var(--vm-bg-tertiary)',
-                      '& .MuiLinearProgress-bar': { bgcolor: barColor, borderRadius: 4 },
-                    }}
-                  />
+                  <Typography sx={{ fontSize: 11, color: remainingGb > 0 ? 'var(--vm-primary-400)' : '#ef4444', mb: 1.5, fontWeight: 600 }}>
+                    {remainingGb > 0 ? `${remainingGb.toFixed(1)} GB remaining` : 'Storage full'}
+                  </Typography>
+                  <LinearProgress variant="determinate" value={percentage}
+                    sx={{ height: 8, borderRadius: 4, bgcolor: 'var(--vm-bg-tertiary)', '& .MuiLinearProgress-bar': { bgcolor: barColor, borderRadius: 4 } }} />
                 </>
               );
             })()}
