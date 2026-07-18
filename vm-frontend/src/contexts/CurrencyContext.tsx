@@ -44,7 +44,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user, updateProfile } = useAuth();
   const [rates, setRates] = useState<CurrencyRate[]>(defaultRates);
 
-  const currency = user?.preferredCurrency || 'USD';
+  const currency = user?.preferredCurrency || 'GHS';
 
   useEffect(() => {
     let cancelled = false;

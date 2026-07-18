@@ -94,6 +94,7 @@ func Signup(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr
 		Password:  string(hash),
 		Onboarded: true,
 		Status:    "active",
+		PreferredCurrency: "GHS",
 	}
 
 	if err := repo.Create(context.Background(), user); err != nil {
