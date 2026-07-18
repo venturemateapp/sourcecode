@@ -636,8 +636,8 @@ export function AdminDashboard() {
                 sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
             ))}
             <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }} SelectProps={{ native: true }}>
-              {['vc','angel','accelerator','pe'].map(t => <option key={t} value={t}>{t}</option>)}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              {['vc','angel','accelerator','pe'].map(t => <MenuItem key={t} value={t} sx={{ color: '#fff' }}>{t}</MenuItem>)}
             </TextField>
           </Box>
         </DialogContent>
@@ -746,8 +746,8 @@ export function AdminDashboard() {
               {provForm.picture && <Avatar src={provForm.picture} sx={{ width: 28, height: 28, mt: 0.5, mx: 'auto' }} />}
             </Box>
             <TextField select size="small" label="Category" value={provForm.category} onChange={e => setProvForm({...provForm, category: e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} SelectProps={{ native: true }}>
-              {['engineering','design','marketing','legal','accounting','consulting','hr','media'].map(c => <option key={c} value={c}>{c}</option>)}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              {['engineering','design','marketing','legal','accounting','consulting','hr','media'].map(c => <MenuItem key={c} value={c} sx={{ color: '#fff' }}>{c}</MenuItem>)}
             </TextField>
             <TextField size="small" label="Skills (comma)" value={provForm.skills} onChange={e => setProvForm({...provForm, skills: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
@@ -1045,8 +1045,8 @@ export function AdminDashboard() {
             <TextField size="small" label="Lender Name" value={financingForm.lenderName} onChange={e => setFinancingForm({ ...financingForm, lenderName: e.target.value })}
               sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField select size="small" label="Product Type" value={financingForm.productType} onChange={e => setFinancingForm({ ...financingForm, productType: e.target.value })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} SelectProps={{ native: true }}>
-              {['loan', 'line_of_credit', 'term_loan'].map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              {['loan', 'line_of_credit', 'term_loan'].map(t => <MenuItem key={t} value={t} sx={{ color: '#fff' }}>{t.replace('_', ' ')}</MenuItem>)}
             </TextField>
             <TextField size="small" label="Min Amount" type="number" value={financingForm.minAmount} onChange={e => setFinancingForm({ ...financingForm, minAmount: parseFloat(e.target.value) || 0 })}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />

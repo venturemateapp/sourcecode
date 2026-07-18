@@ -662,24 +662,15 @@ export function DocumentsPage(_props: DocumentsProps) {
           {uploadFileData && (
             <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
               <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Category</Typography>
-                <select
-                  value={uploadCategory}
-                  onChange={(e) => setUploadCategory(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: '1px solid var(--vm-border-subtle)',
-                    backgroundColor: 'var(--vm-bg-tertiary)',
-                    color: 'var(--vm-text-primary)',
-                    fontSize: 13,
-                  }}
-                >
-                  {documentCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.label}</option>
-                  ))}
-                </select>
+                <FormControl fullWidth size="small">
+                  <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Category</InputLabel>
+                  <Select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)}
+                    sx={{ color: 'var(--vm-text-primary)', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-subtle)' } }}>
+                    {documentCategories.map(cat => (
+                      <MenuItem key={cat.id} value={cat.id} sx={{ color: 'var(--vm-text-primary)' }}>{cat.label}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Box>
               <Box sx={{ flex: 2 }}>
                 <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', mb: 0.5 }}>Tags (comma-separated)</Typography>

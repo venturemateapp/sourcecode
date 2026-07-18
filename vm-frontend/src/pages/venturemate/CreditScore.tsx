@@ -746,7 +746,6 @@ export function CreditScorePage(_props: CreditScoreProps) {
                     fullWidth
                     label="Purpose of Loan"
                     select
-                    SelectProps={{ native: true }}
                     value={applicationData.purpose}
                     onChange={(e) => setApplicationData({ ...applicationData, purpose: e.target.value })}
                     sx={{
@@ -755,12 +754,12 @@ export function CreditScorePage(_props: CreditScoreProps) {
                       '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' },
                     }}
                   >
-                    <option value="">Select purpose...</option>
-                    <option value="expansion">Business Expansion</option>
-                    <option value="equipment">Equipment Purchase</option>
-                    <option value="inventory">Inventory</option>
-                    <option value="working_capital">Working Capital</option>
-                    <option value="refinancing">Refinancing</option>
+                    <MenuItem value=""><em>Select purpose...</em></MenuItem>
+                    <MenuItem value="expansion" sx={{ color: 'var(--vm-text-primary)' }}>Business Expansion</MenuItem>
+                    <MenuItem value="equipment" sx={{ color: 'var(--vm-text-primary)' }}>Equipment Purchase</MenuItem>
+                    <MenuItem value="inventory" sx={{ color: 'var(--vm-text-primary)' }}>Inventory</MenuItem>
+                    <MenuItem value="working_capital" sx={{ color: 'var(--vm-text-primary)' }}>Working Capital</MenuItem>
+                    <MenuItem value="refinancing" sx={{ color: 'var(--vm-text-primary)' }}>Refinancing</MenuItem>
                   </TextField>
                 </Grid>
               </Grid>
