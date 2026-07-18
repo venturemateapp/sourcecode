@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Building2, ChevronDown, ChevronRight, Bot, FolderOpen, Globe, Users,
   Landmark, Share2, Store, TrendingUp, CreditCard, Heart, Presentation, FileText, Receipt,
   Palette, Target, UserCircle, Lightbulb, BarChart3, Calculator, Calendar,
-  LogOut, X, Sparkles, Zap,
+  LogOut, X, Sparkles,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -127,13 +127,10 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
             <X size={18} />
           </IconButton>
         )}
-        <Box sx={{
-          width: collapsed ? 28 : 32, height: collapsed ? 28 : 32, borderRadius: 1.5,
-          background: 'linear-gradient(135deg, #10b981, #059669)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Zap size={collapsed ? 14 : 16} color="white" />
-        </Box>
+        <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{
+          width: collapsed ? 28 : 32, height: collapsed ? 28 : 'auto', flexShrink: 0,
+          objectFit: 'contain',
+        }} />
         {!collapsed && (
           <Box sx={{ minWidth: 0 }}>
             <Typography sx={{ color: 'white', fontSize: 13, fontWeight: 900, lineHeight: 1.2 }}>VentureMate</Typography>

@@ -216,9 +216,7 @@ export function AdminDashboard() {
       position: 'relative',
     }}>
       <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(245,158,11,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Shield size={18} color="#f59e0b" />
-        </Box>
+        <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{ width: 36, height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin Panel</Typography>
           <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10, lineHeight: 1.2 }}>{user?.email}</Typography>
