@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Box, Button, Chip, CircularProgress, Typography, IconButton, Tooltip } from '@mui/material';
 import { BookOpen, Palette, Sparkles, Type, Eye, Check, X, Wand2, Download } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
@@ -6,7 +6,7 @@ import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelec
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
 import { PageHeader } from '../../components/shared';
-import type { BrandKit, BrandingFull, LogoOption, ColorPalette, TypographyPair, ViewType } from '../../types/venturemate';
+import type { BrandKit, BrandingFull, LogoOption, ViewType } from '../../types/venturemate';
 
 interface BrandingKitProps { onViewChange?: (_view: ViewType) => void; }
 
@@ -51,7 +51,7 @@ function renderSvg(svg: string, options?: { dark?: boolean; size?: number }) {
   } catch { return null; }
 }
 
-function ColorSwatch({ label, value, onClick }: { label: string; value: string; onClick?: () => void }) {
+function ColorSwatch({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Tooltip title={copied ? 'Copied!' : 'Click to copy'}>

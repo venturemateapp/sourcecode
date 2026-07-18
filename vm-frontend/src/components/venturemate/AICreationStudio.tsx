@@ -1,6 +1,6 @@
 import { useState, type ReactNode, useRef, useEffect } from 'react';
 import { Alert, Box, Card, Chip, TextField, Typography } from '@mui/material';
-import { Bot, Check, Send, Sparkles, X, MessageSquare } from 'lucide-react';
+import { Bot, Check, Send, Sparkles, X } from 'lucide-react';
 import { GenerationProgress } from './GenerationProgress';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
@@ -59,10 +59,6 @@ const APPLY_MUTATION = `
   }
 `;
 
-function humanize(value: string) {
-  return value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
-
 let msgCounter = 0;
 
 export function AICreationStudio({
@@ -72,7 +68,7 @@ export function AICreationStudio({
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
   const [prompt, setPrompt] = useState('');
-  const [revision, setRevision] = useState('');
+
   const [messages, setMessages] = useState<StudioMessage[]>([]);
   const [proposalMessage, setProposalMessage] = useState('');
   const [proposal, setProposal] = useState<ProposedChange | null>(null);
@@ -116,7 +112,6 @@ export function AICreationStudio({
       const assistantMsg: StudioMessage = { role: 'assistant', content: result.message || 'I prepared a version for review.', id: `m-${++msgCounter}` };
       setMessages(current => [...current, assistantMsg]);
       setPrompt('');
-      setRevision('');
       if (!nextProposal && !result.message) setError('AI did not return a reviewable change. Describe the result you want more specifically.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI generation failed. Please try rephrasing your request.');
@@ -288,7 +283,7 @@ export function AICreationStudio({
                 sx={{ flex: 1, fontSize: 12 }}>
                 Approve
               </AnimatedButton>
-              <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); setRevision(''); }}
+              <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); }}
                 sx={{ flex: 1, fontSize: 12, color: 'var(--vm-text-muted)' }}>
                 Discard
               </AnimatedButton>
