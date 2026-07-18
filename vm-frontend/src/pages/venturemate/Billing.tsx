@@ -451,9 +451,37 @@ export function BillingPage() {
       {activeTab === 2 && (
         <Box sx={{ overflowX: 'auto' }}>
           <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
+            {/* Column headers */}
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1.5fr 1fr 1fr 1fr', sm: '2fr 1fr 1fr 1fr' },
+              gap: { xs: 1, sm: 2 },
+              p: { xs: 1.5, sm: 2 },
+              borderBottom: '1px solid var(--vm-border-subtle)',
+              bgcolor: 'var(--vm-bg-tertiary)',
+              alignItems: 'center',
+              position: 'sticky', top: 0, zIndex: 1,
+            }}>
+              <Typography sx={{ fontSize: { xs: 11, sm: 12 }, fontWeight: 700, color: 'var(--vm-text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                Feature
+              </Typography>
+              {displayPlans.map(plan => (
+                <Box key={plan.id} sx={{ textAlign: 'center' }}>
+                  <Typography sx={{
+                    fontSize: { xs: 11, sm: 12 }, fontWeight: 700,
+                    color: plan.id === currentPlanId ? 'var(--vm-primary-400)' : 'var(--vm-text-secondary)',
+                  }}>
+                    {plan.displayName}
+                  </Typography>
+                  <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', mt: 0.25 }}>
+                    ${plan.priceMonthly}/mo
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
             {featureComparison.map((category) => (
               <Box key={category.category}>
-                <Box sx={{ bgcolor: 'var(--vm-bg-tertiary)', p: { xs: 1.5, sm: 2 } }}>
+                <Box sx={{ bgcolor: 'var(--vm-bg-tertiary)', p: { xs: 1.5, sm: 2 }, borderBottom: '1px solid var(--vm-border-subtle)' }}>
                   <Typography sx={{ fontSize: { xs: 13, sm: 14 }, fontWeight: 600, color: 'var(--vm-text-primary)' }}>
                     {category.category}
                   </Typography>
