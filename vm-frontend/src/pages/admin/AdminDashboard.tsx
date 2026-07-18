@@ -112,6 +112,9 @@ export function AdminDashboard() {
   const [, setModal] = useState<{ type: string; data?: Record<string, unknown> } | null>(null);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [userFilter, setUserFilter] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [busy, setBusy] = useState(false);
   const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
   const [loadProv, setLoadProv] = useState(false);
@@ -419,12 +422,48 @@ export function AdminDashboard() {
     );
   };
 
-  const renderUsers = () => (
-    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
-      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Users size={16} color="#f59e0b" />
-        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Users <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({users.length})</Typography></Typography>
-      </Box>
+  const renderUsers = () => {
+    const filtered = users.filter(u => {
+      if (userStatusFilter !== 'all' && u.status !== userStatusFilter) return false;
+      if (userRoleFilter === 'admin' && !u.isAdmin) return false;
+      if (userRoleFilter === 'user' && u.isAdmin) return false;
+      if (!userFilter) return true;
+      const q = userFilter.toLowerCase();
+      return u.firstName.toLowerCase().includes(q) || u.surname.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    });
+    const admins = users.filter(u => u.isAdmin).length;
+    const active = users.filter(u => u.status === 'active').length;
+
+    return (
+      <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+        <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+          <Users size={16} color="#f59e0b" />
+          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Users <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({filtered.length})</Typography></Typography>
+          <TextField size="small" placeholder="Search by name or email..." value={userFilter} onChange={e => setUserFilter(e.target.value)}
+            sx={{ minWidth: { xs: '100%', sm: 220 }, input: { color: '#fff', fontSize: 13 },
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' },
+              '& .MuiInputBase-root': { bgcolor: 'rgba(255,255,255,.04)', borderRadius: 2 } }} />
+        </Box>
+        <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1, borderBottom: '1px solid rgba(255,255,255,.04)', display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mr: 0.5 }}>Status:</Typography>
+          {['all', 'active', 'suspended'].map(s => (
+            <Chip key={s} size="small" label={s === 'all' ? 'All' : s.slice(0,1).toUpperCase()+s.slice(1)}
+              onClick={() => setUserStatusFilter(s)}
+              sx={{ bgcolor: userStatusFilter===s ? 'rgba(245,158,11,.2)' : 'rgba(255,255,255,.04)', color: userStatusFilter===s ? '#f59e0b' : 'rgba(255,255,255,.5)', fontWeight: userStatusFilter===s ? 700 : 500, fontSize: 10.5, cursor: 'pointer' }} />
+          ))}
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mx: 0.5 }}>|</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mr: 0.5 }}>Role:</Typography>
+          {['all', 'admin', 'user'].map(r => (
+            <Chip key={r} size="small" label={r === 'all' ? 'All' : r.slice(0,1).toUpperCase()+r.slice(1)}
+              onClick={() => setUserRoleFilter(r)}
+              sx={{ bgcolor: userRoleFilter===r ? 'rgba(16,185,129,.2)' : 'rgba(255,255,255,.04)', color: userRoleFilter===r ? '#10b981' : 'rgba(255,255,255,.5)', fontWeight: userRoleFilter===r ? 700 : 500, fontSize: 10.5, cursor: 'pointer' }} />
+          ))}
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+          <Box sx={{ textAlign: 'center' }}><Typography sx={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>{users.length}</Typography><Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>Total</Typography></Box>
+          <Box sx={{ textAlign: 'center' }}><Typography sx={{ color: '#22c55e', fontSize: 20, fontWeight: 800 }}>{active}</Typography><Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>Active</Typography></Box>
+          <Box sx={{ textAlign: 'center' }}><Typography sx={{ color: '#f59e0b', fontSize: 20, fontWeight: 800 }}>{admins}</Typography><Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>Admins</Typography></Box>
+        </Box>
       {users.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No users found.</Typography>}
       <Box sx={{ overflow: 'auto' }}>
         <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
@@ -436,7 +475,7 @@ export function AdminDashboard() {
             </Box>
           </Box>
           <Box component="tbody">
-            {users.map(u => (
+            {filtered.map(u => (
               <Box key={u.id} component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.03)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
                 <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
                   <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{u.firstName} {u.surname}</Typography>
