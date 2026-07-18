@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, Card, TextField, IconButton, Chip } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
@@ -7,7 +7,7 @@ import { graphqlRequest } from '../../lib/api';
 import { stripMarkdown } from '../../lib/stripMarkdown';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Send, MessageCircle, Plus, User, ArrowLeft } from 'lucide-react';
+import { Send, MessageCircle, Plus, User, ArrowLeft, ChevronLeft } from 'lucide-react';
 import { API_CONFIG } from '../../lib/constants';
 
 interface Conversation {
@@ -50,6 +50,7 @@ export function MessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [wsConnected, setWsConnected] = useState(false);
 
+  const navigate = useNavigate();
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
   const loadConvos = useCallback(async () => {
@@ -161,9 +162,20 @@ export function MessagesPage() {
 
   return (
     <Box sx={{ display: 'flex', gap: 2, height: { xs: 'auto', md: 'calc(100vh - 160px)' }, flexDirection: { xs: 'column', md: 'row' }, p: { xs: 1, sm: 2 } }}>
+      {/* Page back button */}
+      <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5, mb: -1 }}>
+        <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: 'var(--vm-text-muted)' }}>
+          <ChevronLeft size={20} />
+        </IconButton>
+        <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>Back</Typography>
+      </Box>
+
       {/* Conversations list */}
       <Card sx={{ width: { xs: '100%', md: 320 }, flexShrink: 0, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: { xs: 240, md: 'none' } }}>
         <Box sx={{ px: 1.5, py: 1.25, borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton size="small" onClick={() => navigate(-1)} sx={{ color: 'var(--vm-text-muted)', display: { xs: 'none', md: 'inline-flex' } }}>
+            <ChevronLeft size={18} />
+          </IconButton>
           <MessageCircle size={16} color="var(--vm-primary-400)" />
           <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
             {user?.isAdmin ? 'Support Requests' : 'Messages'}
