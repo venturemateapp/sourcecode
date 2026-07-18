@@ -37,7 +37,7 @@ interface DashboardData {
   recentSignups: Array<{ id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; createdAt: string }>;
 }
 
-interface UserRow { id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; createdAt: string; }
+interface UserRow { id: string; firstName: string; surname: string; email: string; status: string; isAdmin: boolean; planName?: string; createdAt: string; }
 interface BizRow { id: string; name: string; industry: string; status: string; ownerName: string; ownerEmail: string; }
 interface AdminUserPlan {
   userId: string; firstName: string; surname: string; email: string;
@@ -115,6 +115,7 @@ export function AdminDashboard() {
   const [userFilter, setUserFilter] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
   const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [userPlanFilter, setUserPlanFilter] = useState('all');
   const [busy, setBusy] = useState(false);
   const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
   const [loadProv, setLoadProv] = useState(false);
@@ -140,8 +141,14 @@ export function AdminDashboard() {
   }, []);
 
   const loadUsers = useCallback(async () => {
-    const d = await graphqlRequest<{ adminUsers: UserRow[] }>('query { adminUsers { id firstName surname email status isAdmin createdAt } }');
-    setUsers(d.adminUsers);
+    try {
+      const [u, p] = await Promise.all([
+        graphqlRequest<{ adminUsers: UserRow[] }>('query { adminUsers { id firstName surname email status isAdmin createdAt } }'),
+        graphqlRequest<{ adminUserPlans: AdminUserPlan[] }>('query { adminUserPlans { userId planName } }'),
+      ]);
+      const planMap = new Map(p.adminUserPlans?.map(pl => [pl.userId, pl.planName]) || []);
+      setUsers(u.adminUsers.map(usr => ({ ...usr, planName: planMap.get(usr.id) || '' })));
+    } catch { /* ignore */ }
   }, []);
 
   const loadBiz = useCallback(async () => {
@@ -396,10 +403,12 @@ export function AdminDashboard() {
   };
 
   const renderUsers = () => {
+    const planNames = [...new Set(users.map(u => u.planName).filter(Boolean))].sort();
     const filtered = users.filter(u => {
       if (userStatusFilter !== 'all' && u.status !== userStatusFilter) return false;
       if (userRoleFilter === 'admin' && !u.isAdmin) return false;
       if (userRoleFilter === 'user' && u.isAdmin) return false;
+      if (userPlanFilter !== 'all' && (u.planName || '') !== userPlanFilter) return false;
       if (!userFilter) return true;
       const q = userFilter.toLowerCase();
       return u.firstName.toLowerCase().includes(q) || u.surname.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
@@ -431,6 +440,14 @@ export function AdminDashboard() {
               onClick={() => setUserRoleFilter(r)}
               sx={{ bgcolor: userRoleFilter===r ? 'rgba(16,185,129,.2)' : 'rgba(255,255,255,.04)', color: userRoleFilter===r ? '#10b981' : 'rgba(255,255,255,.5)', fontWeight: userRoleFilter===r ? 700 : 500, fontSize: 10.5, cursor: 'pointer' }} />
           ))}
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mx: 0.5 }}>|</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, mr: 0.5 }}>Plan:</Typography>
+          <Chip size="small" label="All" onClick={() => setUserPlanFilter('all')}
+            sx={{ bgcolor: userPlanFilter==='all' ? 'rgba(139,92,246,.2)' : 'rgba(255,255,255,.04)', color: userPlanFilter==='all' ? '#a78bfa' : 'rgba(255,255,255,.5)', fontWeight: userPlanFilter==='all' ? 700 : 500, fontSize: 10.5, cursor: 'pointer' }} />
+          {planNames.map(p => (
+            <Chip key={p} size="small" label={p} onClick={() => setUserPlanFilter(p)}
+              sx={{ bgcolor: userPlanFilter===p ? 'rgba(139,92,246,.2)' : 'rgba(255,255,255,.04)', color: userPlanFilter===p ? '#a78bfa' : 'rgba(255,255,255,.5)', fontWeight: userPlanFilter===p ? 700 : 500, fontSize: 10.5, cursor: 'pointer', textTransform: 'capitalize' }} />
+          ))}
         </Box>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
           <Box sx={{ textAlign: 'center' }}><Typography sx={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>{users.length}</Typography><Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 10 }}>Total</Typography></Box>
@@ -442,7 +459,7 @@ export function AdminDashboard() {
         <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
           <Box component="thead">
             <Box component="tr" sx={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-              {['Name', 'Email', 'Status', 'Role', 'Joined', 'Actions'].map(h => (
+              {['Name', 'Email', 'Plan', 'Status', 'Role', 'Joined', 'Actions'].map(h => (
                 <Box key={h} component="th" sx={{ textAlign: 'left', px: { xs: 1.5, sm: 2.5 }, py: 1.5, color: 'rgba(255,255,255,.3)', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</Box>
               ))}
             </Box>
@@ -455,6 +472,9 @@ export function AdminDashboard() {
                 </Box>
                 <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
                   <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>{u.email}</Typography>
+                </Box>
+                <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
+                  {u.planName ? <Chip label={u.planName} size="small" sx={{ bgcolor: 'rgba(139,92,246,.12)', color: '#a78bfa', fontSize: 10, fontWeight: 600, textTransform: 'capitalize' }} /> : <Typography sx={{ color: 'rgba(255,255,255,.2)', fontSize: 11 }}>—</Typography>}
                 </Box>
                 <Box component="td" sx={{ px: 2.5, py: 1.25 }}>
                   <StatusBadge status={u.status} />
