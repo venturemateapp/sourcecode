@@ -19,7 +19,7 @@ type Service struct {
 	port     int
 	username string
 	password string
-	from     string // e.g. "VentureMate <support@venturemate.com>"
+	from     string // e.g. "VentureMate <ops@venturemate.net>"
 	logo     string // either https:// public URL or data:image/png;base64,...
 }
 

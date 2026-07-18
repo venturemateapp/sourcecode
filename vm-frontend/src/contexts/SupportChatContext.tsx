@@ -106,7 +106,7 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
         setSessions(d.mySupportSessions);
       } catch { /* ignore */ }
     } catch {
-      setMessages(prev => [...prev, { id: `bot-${Date.now()}`, role: 'assistant', content: "I'm having trouble connecting right now. Please try again later or email support@venturemate.com directly." }]);
+      setMessages(prev => [...prev, { id: `bot-${Date.now()}`, role: 'assistant', content: "I'm having trouble connecting right now. Please try again later or email ops@venturemate.net directly." }]);
     } finally {
       setLoading(false);
     }
