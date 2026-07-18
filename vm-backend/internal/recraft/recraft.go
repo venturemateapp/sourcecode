@@ -48,8 +48,7 @@ func (c *Client) GenerateLogo(prompt string) (*GenerateResponse, error) {
 	}
 	body := GenerateRequest{
 		Prompt: prompt,
-		Style:  "logo_raster",
-		Model:  "recraftv3",
+		Model:  "recraftv4_1",
 		N:      1,
 		Size:   "1024x1024",
 	}
