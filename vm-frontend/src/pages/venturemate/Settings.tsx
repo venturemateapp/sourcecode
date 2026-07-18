@@ -11,7 +11,7 @@ import {
 import { GradientButton } from '../../components/shared/buttons';
 import {
   User, Lock, Bell, Palette, CreditCard, Link as LinkIcon, Shield,
-  Globe, Mail, Eye, EyeOff, CheckCircle, Save, Upload, LogOut, Key, X, Plus,
+  Globe, Mail, Eye, EyeOff, CheckCircle, Save, Upload, LogOut, X, Plus,
 } from 'lucide-react';
 import { graphqlRequest } from '../../lib/api';
 import { AIProviderSettingsCard } from '../../components/venturemate/AIProviderSettingsCard';
@@ -267,18 +267,6 @@ export function SettingsPage() {
       const provider = appIdToProvider[appId];
       if (!provider) return;
       window.location.href = `/auth/oauth/${provider}/login?userId=${user.id}`;
-    }
-  };
-
-  const handleApiKeyAction = async (action: 'reveal' | 'regenerate') => {
-    if (!user) return;
-    if (action === 'regenerate') {
-      const newKey = 'vm_live_' + Array.from({ length: 32 }, () =>
-        'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]
-      ).join('');
-      const updated = { ...settings, apiKey: newKey };
-      setSettings(updated);
-      await saveSettingsToBackend(updated);
     }
   };
 
@@ -593,18 +581,6 @@ export function SettingsPage() {
                 ))}
               </Box>
               <Divider sx={{ my: 4, borderColor: 'var(--vm-border-subtle)' }} />
-              <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 3 }}>API Keys</Typography>
-              <Box sx={{ p: 3, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 2, border: '1px solid var(--vm-border-subtle)' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <Key size={20} color="var(--vm-primary-400)" />
-                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'var(--vm-text-primary)' }}>Secret API Key</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <TextField fullWidth value={settings.apiKey ? settings.apiKey.slice(0, 12) + '••••••••••••••••••••••••' : 'No API key generated'} disabled sx={{ minWidth: { xs: '100%', md: 300 }, flex: { md: 1 }, '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
-                  <GradientButton variant="outline" size="sm" onClick={() => handleApiKeyAction('reveal')}>Reveal</GradientButton>
-                  <GradientButton variant="outline" size="sm" onClick={() => handleApiKeyAction('regenerate')}>Regenerate</GradientButton>
-                </Box>
-              </Box>
             </Card>
           )}
 
