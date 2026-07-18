@@ -211,7 +211,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);
   const [proposedBrand, setProposedBrand] = useState<BrandingFull | null>(null);
-  const [activeTab, setActiveTab] = useState<'logo' | 'colors' | 'typography' | 'variations'>('logo');
+  const [activeTab, setActiveTab] = useState<'logo' | 'colors' | 'typography' | 'variations' | 'mockups'>('logo');
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedTypoIdx, setSelectedTypoIdx] = useState(0);
   const [selectedLogoIdx, setSelectedLogoIdx] = useState(0);
@@ -246,6 +246,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
     { key: 'colors' as const, label: 'Colours', icon: <Palette size={14} /> },
     { key: 'typography' as const, label: 'Typography', icon: <Type size={14} /> },
     { key: 'variations' as const, label: 'Variations', icon: <Wand2 size={14} /> },
+    { key: 'mockups' as const, label: 'Mockups', icon: <Wand2 size={14} /> },
   ];
 
   return (
@@ -401,6 +402,38 @@ export function BrandingKitPage(_props: BrandingKitProps) {
                   </Box>
                 );
               })}
+            </Box>
+          )}
+
+          {activeTab === 'mockups' && (brand.logo || logos.length > 0) && (
+            <Box sx={{ mb: 2 }}>
+              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, mb: 2, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Wand2 size={13} /> Logo on Apparel
+              </Typography>
+              {(() => {
+                const logoEl = brand.logo?.startsWith('http') ? (
+                  <Box component="img" src={brand.logo} sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                ) : brand.logo?.startsWith('data:') ? (
+                  <Box sx={{ maxWidth: '90%', maxHeight: '90%', display: 'flex', alignItems: 'center', justifyContent: 'center', '& svg': { maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' } }} dangerouslySetInnerHTML={{ __html: atob(brand.logo.split(',')[1]?.replace(/-/g,'+').replace(/_/g,'/') || '') }} />
+                ) : logos[selectedLogoIdx]?.svg ? (
+                  <Box sx={{ maxWidth: '90%', maxHeight: '90%', display: 'flex', alignItems: 'center', justifyContent: 'center', '& svg': { maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' } }} dangerouslySetInnerHTML={{ __html: logos[selectedLogoIdx].svg }} />
+                ) : null;
+                const shirtUrl = 'https://freepngimg.com/convert-png/2798-white-t-shirt-png-image';
+                return (
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)' }, gap: 2 }}>
+                    <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: '#fff', border: '1px solid rgba(255,255,255,.06)' }}>
+                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>{logoEl}</Box>
+                      <Box component="img" src={shirtUrl} alt="White t-shirt" sx={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 0 }} />
+                      <Typography sx={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(0,0,0,.3)', zIndex: 1, whiteSpace: 'nowrap' }}>Light Background</Typography>
+                    </Box>
+                    <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: brand.darkColor || '#0f172a', border: '1px solid rgba(255,255,255,.06)' }}>
+                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, filter: 'brightness(0) invert(1)' }}>{logoEl}</Box>
+                      <Box component="img" src={shirtUrl} alt="Dark t-shirt" sx={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 0, opacity: 0.85 }} />
+                      <Typography sx={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(255,255,255,.3)', zIndex: 1, whiteSpace: 'nowrap' }}>Dark Background</Typography>
+                    </Box>
+                  </Box>
+                );
+              })()}
             </Box>
           )}
 
