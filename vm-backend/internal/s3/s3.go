@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type Service struct {
@@ -49,7 +48,6 @@ func (s *Service) Upload(ctx context.Context, key string, data []byte, contentTy
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(data),
 		ContentType: aws.String(contentType),
-		ACL:         types.ObjectCannedACLPublicRead,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to S3: %w", err)
