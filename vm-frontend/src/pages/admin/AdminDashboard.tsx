@@ -258,26 +258,25 @@ export function AdminDashboard() {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      bgcolor: 'rgba(7,17,15,.95)',
-      borderRight: '1px solid rgba(255,255,255,.08)',
-      backdropFilter: 'blur(20px)',
+      bgcolor: 'var(--vm-bg-primary)',
+      borderRight: '1px solid var(--vm-border-subtle)',
       zIndex: 120,
       position: 'relative',
     }}>
       <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
         <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{ width: 36, height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
         <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ color: '#fff', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin</Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10, lineHeight: 1.2 }}>{user?.email}</Typography>
+          <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin</Typography>
+          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, lineHeight: 1.2 }}>{user?.email}</Typography>
         </Box>
         {isMobile && (
-          <IconButton size="small" onClick={() => setMobileNavOpen(false)} sx={{ ml: 'auto', color: 'rgba(255,255,255,.4)' }}>
+          <IconButton size="small" onClick={() => setMobileNavOpen(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}>
             <X size={18} />
           </IconButton>
         )}
       </Box>
 
-      <Box sx={{ flex: 1, py: 1, overflow: 'auto', px: 1 }}>
+      <Box sx={{ flex: 1, py: 0.5, overflow: 'auto', px: 1 }}>
         {NAV_ITEMS.map(item => {
           const Icon = item.icon;
           const active = view === item.key;
@@ -286,31 +285,31 @@ export function AdminDashboard() {
               key={item.key}
               onClick={() => handleNav(item.key)}
               sx={{
-                mx: 0.5, px: 1.5, py: 1, mb: 0.25, cursor: 'pointer', borderRadius: 1.5,
-                display: 'flex', alignItems: 'center', gap: 1.5,
+                mx: 0.75, px: 1.5, py: 0.75, mb: 0.25, cursor: 'pointer', borderRadius: 1.5,
+                display: 'flex', alignItems: 'center', gap: 1.5, minHeight: 36,
                 bgcolor: active ? 'rgba(16,185,129,.1)' : 'transparent',
-                borderLeft: active ? '2px solid #10b981' : '2px solid transparent',
+                borderLeft: active ? '2px solid var(--vm-primary-400)' : '2px solid transparent',
                 transition: 'all .15s ease',
                 '&:hover': { bgcolor: active ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.04)' },
               }}
             >
-              <Icon size={15} color={active ? '#10b981' : 'rgba(255,255,255,.4)'} />
+              <Icon size={16} color={active ? 'var(--vm-primary-400)' : 'var(--vm-text-muted)'} />
               <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography sx={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? '#10b981' : 'rgba(255,255,255,.6)' }}>{item.label}</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--vm-text-primary)' : 'var(--vm-text-secondary)' }}>{item.label}</Typography>
               </Box>
-              {active && <ChevronRight size={12} color="#10b981" style={{ marginLeft: 'auto' }} />}
+              {active && <ChevronRight size={12} color="var(--vm-primary-400)" style={{ marginLeft: 'auto' }} />}
             </Box>
           );
         })}
       </Box>
 
-      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+      <Box sx={{ p: 2, borderTop: '1px solid var(--vm-border-subtle)' }}>
         <Box
           onClick={() => { logout(); navigate('/vm/auth/signin'); }}
           sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', px: 1.5, py: 1, borderRadius: 2, '&:hover': { bgcolor: 'rgba(255,255,255,.04)' } }}
         >
-          <LogOut size={14} color="rgba(255,255,255,.4)" />
-          <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.4)', fontWeight: 500 }}>Sign out</Typography>
+          <LogOut size={14} color="var(--vm-text-muted)" />
+          <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', fontWeight: 500 }}>Sign out</Typography>
         </Box>
       </Box>
     </Box>
