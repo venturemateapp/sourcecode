@@ -70,13 +70,13 @@ var planType = graphql.NewObject(graphql.ObjectConfig{
 				case subscriptions.Plan:
 					limitsStr = v.Limits
 				default:
-					return map[string]interface{}{}, nil
+					return defaultPlanLimits(), nil
 				}
-				var limits map[string]interface{}
-				if err := json.Unmarshal([]byte(limitsStr), &limits); err != nil {
-					return map[string]interface{}{}, nil
+				var raw map[string]interface{}
+				if err := json.Unmarshal([]byte(limitsStr), &raw); err != nil || len(raw) == 0 {
+					return defaultPlanLimits(), nil
 				}
-				return limits, nil
+				return mapKeysToCamel(raw), nil
 			},
 		},
 		"sortOrder": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
@@ -580,4 +580,46 @@ func timeParse(s string) (time.Time, error) {
 		t, err = time.Parse("2006-01-02", s)
 	}
 	return t, err
+}
+
+func defaultPlanLimits() map[string]interface{} {
+	return map[string]interface{}{
+		"aiTokensMonthly":  0,
+		"maxBusinesses":    0,
+		"maxTeamMembers":   0,
+		"maxPitchDecks":    0,
+		"maxBusinessPlans": 0,
+		"storageGb":        0,
+		"isAdvanced":       false,
+	}
+}
+
+func mapKeysToCamel(raw map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(raw))
+	snakeToCamel := map[string]string{
+		"ai_tokens_monthly":  "aiTokensMonthly",
+		"max_businesses":     "maxBusinesses",
+		"max_team_members":   "maxTeamMembers",
+		"max_pitch_decks":    "maxPitchDecks",
+		"max_business_plans": "maxBusinessPlans",
+		"storage_gb":         "storageGb",
+		"is_advanced":        "isAdvanced",
+	}
+	for k, v := range raw {
+		if camel, ok := snakeToCamel[k]; ok {
+			out[camel] = v
+		} else {
+			out[k] = v
+		}
+	}
+	// Ensure all fields have default values
+	for _, camel := range []string{"aiTokensMonthly", "maxBusinesses", "maxTeamMembers", "maxPitchDecks", "maxBusinessPlans", "storageGb"} {
+		if _, ok := out[camel]; !ok {
+			out[camel] = 0
+		}
+	}
+	if _, ok := out["isAdvanced"]; !ok {
+		out["isAdvanced"] = false
+	}
+	return out
 }
