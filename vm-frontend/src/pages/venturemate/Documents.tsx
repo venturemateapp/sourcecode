@@ -554,7 +554,7 @@ export function DocumentsPage(_props: DocumentsProps) {
         }}
       >
         <MenuItem onClick={() => {
-          if (selectedDoc?.url) window.open(selectedDoc.url, '_blank');
+          if (selectedDoc?.url && selectedBusiness?.id) window.open(`/api/documents/download?businessId=${selectedBusiness.id}&documentId=${selectedDoc.id}`, '_blank');
           handleMenuClose();
         }} sx={{ color: 'var(--vm-text-primary)' }}>
           <Download size={16} style={{ marginRight: 8 }} />
