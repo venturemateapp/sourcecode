@@ -252,6 +252,16 @@ func init() {
 			if err != nil || biz == nil {
 				return map[string]interface{}{"message": "Business not found or access denied", "proposals": nil}, nil
 			}
+
+			// Check AI token quota
+			sub, _, err := AppContainer.SubscriptionRepo.GetUserSubscription(p.Context, userID)
+			if sub != nil && sub.Plan != nil {
+				period := subscriptions.BillingPeriod(time.Now())
+				if quotaErr := AppContainer.PlanEnforcer.CheckAITokenQuota(p.Context, userID, sub.Plan.Name, period, 1); quotaErr != nil {
+					return map[string]interface{}{"message": fmt.Sprintf("AI token quota exceeded. %v", quotaErr), "proposals": nil}, nil
+				}
+			}
+
 			provider, err := getProviderForUser(p.Context, userID, requestedProvider)
 			if err != nil {
 				return map[string]interface{}{"message": "AI service is unavailable.", "proposals": nil}, nil
@@ -278,6 +288,11 @@ func init() {
 			if err != nil {
 				log.Printf("Propose error for user %s: %v", userID, err)
 				return map[string]interface{}{"message": "I encountered an error processing your request.", "proposals": nil}, nil
+			}
+			// Track token usage
+			if sub != nil && sub.Plan != nil && proposal != nil && proposal.TotalTokens > 0 {
+				period := subscriptions.BillingPeriod(time.Now())
+				_ = AppContainer.UsageRepo.IncrementAITokens(p.Context, userID, period, int64(proposal.TotalTokens))
 			}
 			return map[string]interface{}{"message": proposal.Message, "provider": proposal.Provider, "model": proposal.Model, "proposals": proposal.Changes}, nil
 		},

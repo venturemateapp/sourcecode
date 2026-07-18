@@ -103,10 +103,13 @@ func rawJSONText(raw json.RawMessage) string {
 }
 
 type Proposal struct {
-	Message  string           `json:"message"`
-	Changes  []ProposedChange `json:"changes"`
-	Provider string           `json:"provider,omitempty"`
-	Model    string           `json:"model,omitempty"`
+	Message      string           `json:"message"`
+	Changes      []ProposedChange `json:"changes"`
+	Provider     string           `json:"provider,omitempty"`
+	Model        string           `json:"model,omitempty"`
+	TotalTokens  int              `json:"totalTokens,omitempty"`
+	InputTokens  int              `json:"inputTokens,omitempty"`
+	OutputTokens int              `json:"outputTokens,omitempty"`
 }
 
 // ProviderForPlan now intentionally ignores subscription plan routing. The active
@@ -361,6 +364,11 @@ Rules:
 	if err := json.Unmarshal([]byte(content), &proposal); err != nil {
 		log.Printf("AI proposal JSON parse error for domain %s: %v. AI response length: %d, content preview: %s", domain, err, len(content), truncate(content, 200))
 		proposal = Proposal{Message: strings.TrimSpace(resp.Content), Provider: resp.Provider, Model: resp.Model}
+		if resp.TokenUsage != nil {
+			proposal.TotalTokens = resp.TokenUsage.TotalTokens
+			proposal.InputTokens = resp.TokenUsage.InputTokens
+			proposal.OutputTokens = resp.TokenUsage.OutputTokens
+		}
 		if isCreativeDomain(domain) {
 			proposal.Message = "I prepared a safe starter version from the approved business information. Review it and tell me what to change."
 			proposal.Changes = []ProposedChange{defaultCreativeChange(domain, biz)}
@@ -369,6 +377,11 @@ Rules:
 		}
 	}
 	proposal.Provider, proposal.Model = resp.Provider, resp.Model
+	if resp.TokenUsage != nil {
+		proposal.TotalTokens = resp.TokenUsage.TotalTokens
+		proposal.InputTokens = resp.TokenUsage.InputTokens
+		proposal.OutputTokens = resp.TokenUsage.OutputTokens
+	}
 	if len(proposal.Changes) == 0 && isCreativeDomain(domain) {
 		proposal.Message = "I prepared a complete starter version for review."
 		proposal.Changes = []ProposedChange{defaultCreativeChange(domain, biz)}
