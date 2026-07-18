@@ -1,6 +1,6 @@
 import { useState, type ReactNode, useRef, useEffect } from 'react';
 import { Alert, Box, Card, Chip, TextField, Typography } from '@mui/material';
-import { Bot, Check, Send, Sparkles, X } from 'lucide-react';
+import { Bot, Check, Sparkles, X } from 'lucide-react';
 import { GenerationProgress } from './GenerationProgress';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
