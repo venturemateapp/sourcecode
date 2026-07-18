@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { Plan } from '../../contexts/SubscriptionContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/shared/toast';
@@ -109,6 +110,7 @@ export function BillingPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useAuth();
   const { subscription, plans, changePlan, planName } = useSubscription();
+  const { format: fmtCurrency } = useCurrency();
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState(0);
@@ -238,7 +240,7 @@ export function BillingPage() {
               </Box>
             </Box>
             <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 0.5 }}>
-              ${currentPlanData?.priceMonthly || 0}
+                {fmtCurrency(currentPlanData?.priceMonthly || 0)}
             </Typography>
             <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>
               per month
@@ -390,7 +392,7 @@ export function BillingPage() {
                 {/* Price */}
                 <Box sx={{ textAlign: 'center', mb: { xs: 2.5, sm: 3 } }}>
                   <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    ${billingPeriod === 'monthly' ? plan.priceMonthly : Math.round(plan.priceYearly / 12)}
+                    {fmtCurrency(billingPeriod === 'monthly' ? plan.priceMonthly : Math.round(plan.priceYearly / 12))}
                   </Typography>
                   <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>per month</Typography>
                   {billingPeriod === 'yearly' && plan.priceYearly > 0 && (
@@ -523,7 +525,7 @@ export function BillingPage() {
                     {plan.displayName}
                   </Typography>
                   <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', mt: 0.25 }}>
-                    ${plan.priceMonthly}/mo
+                    {fmtCurrency(plan.priceMonthly)}/mo
                   </Typography>
                 </Box>
               ))}
