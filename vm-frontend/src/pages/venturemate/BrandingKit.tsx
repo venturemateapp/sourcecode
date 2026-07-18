@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Box, Button, Chip, CircularProgress, Typography, IconButton } from '@mui/material';
 import { BookOpen, Palette, Sparkles, Type, Eye, Check, X, ChevronRight, ChevronLeft, Wand2, Download, DownloadCloud } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
@@ -340,6 +340,14 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const [guideLoading, setGuideLoading] = useState(false);
   const [step, setStep] = useState<'colors' | 'typography' | 'logos' | 'variations' | 'complete'>('colors');
   const [proposedBrand, setProposedBrand] = useState<BrandingFull | null>(null);
+
+  // Skip directly to complete view when a brand kit already exists
+  useEffect(() => {
+    const kit = selectedBusiness?.brandKit as Record<string, unknown> | undefined;
+    if (kit?.logo) {
+      setStep('complete');
+    }
+  }, [selectedBusiness?.brandKit]);
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedTypoIdx, setSelectedTypoIdx] = useState(0);
   const [selectedLogoIdx, setSelectedLogoIdx] = useState(0);
