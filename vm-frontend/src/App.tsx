@@ -308,27 +308,25 @@ function VentureMateApp() {
   };
 
   return (
-    <SubscriptionProvider>
-      <BusinessProvider>
-        <AIProviderProvider>
-        <NotificationProvider>
-        <ToastProvider>
-        <CurrencyProvider>
-        <SupportChatProvider>
-        <VentureMateLayout
-          activeView={activeView}
-          onViewChange={handleViewChange}
-        >
-          {renderContent()}
-        </VentureMateLayout>
-        <SupportChatFloating />
-        </SupportChatProvider>
-        </CurrencyProvider>
-        </ToastProvider>
-        </NotificationProvider>
-        </AIProviderProvider>
-      </BusinessProvider>
-    </SubscriptionProvider>
+    <BusinessProvider>
+      <AIProviderProvider>
+      <NotificationProvider>
+      <ToastProvider>
+      <CurrencyProvider>
+      <SupportChatProvider>
+      <VentureMateLayout
+        activeView={activeView}
+        onViewChange={handleViewChange}
+      >
+        {renderContent()}
+      </VentureMateLayout>
+      <SupportChatFloating />
+      </SupportChatProvider>
+      </CurrencyProvider>
+      </ToastProvider>
+      </NotificationProvider>
+      </AIProviderProvider>
+    </BusinessProvider>
   );
 }
 
@@ -346,7 +344,7 @@ function App() {
         </Route>
         <Route path="/vm/onboarding" element={<ToastProvider><OnboardingPage /></ToastProvider>} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/vm/*" element={<VentureMateApp />} />
+          <Route path="/vm/*" element={<SubscriptionProvider><VentureMateApp /></SubscriptionProvider>} />
           <Route path="/vm/admin" element={<AdminDashboard />} />
         </Route>
         <Route path="/" element={<LandingPage />} />
