@@ -265,8 +265,9 @@ export function AdminDashboard() {
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      bgcolor: 'var(--vm-bg-primary)',
-      borderRight: '1px solid var(--vm-border-subtle)',
+      bgcolor: 'rgba(7,17,15,.95)',
+      backdropFilter: 'blur(16px)',
+      borderRight: '1px solid rgba(255,255,255,.06)',
       zIndex: 120,
       position: 'relative',
     }}>
