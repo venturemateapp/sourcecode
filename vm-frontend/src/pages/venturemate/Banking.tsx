@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Grid, FormControl, InputLabel, Select } from '@mui/material';
+import { Box, Typography, Card, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Grid, FormControl, InputLabel, Select, IconButton } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,7 +20,13 @@ import {
   Calendar,
   AlertTriangle,
 } from 'lucide-react';
-import type { ViewType } from '../../types/venturemate';
+import type { ViewType, InvoiceItem } from '../../types/venturemate';
+
+const EMPTY_ITEM: InvoiceItem = { description: '', quantity: 1, unitPrice: 0 };
+
+function calcTotal(items: InvoiceItem[]): number {
+  return items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+}
 
 interface BankAccount {
   id: string;
@@ -144,6 +150,7 @@ export function BankingPage(_props: BankingProps) {
     issueDate: new Date().toISOString().split('T')[0],
     notes: '',
   });
+  const [lineItems, setLineItems] = useState<InvoiceItem[]>([{ ...EMPTY_ITEM }]);
 
   const isAdmin = user?.status === 'admin';
   const userId = user?.id || '';
@@ -228,17 +235,19 @@ export function BankingPage(_props: BankingProps) {
     if (!userId || !businessId) return;
     setCreatingInvoice(true);
     try {
+      const itemsJson = JSON.stringify(lineItems.filter(i => i.description.trim()));
+      const total = calcTotal(lineItems);
       const data = await graphqlRequest<{ createInvoice: Invoice }>(CREATE_INVOICE_MUTATION, {
         userId,
         businessId,
         invoiceNumber: invoiceForm.invoiceNumber,
         customerName: invoiceForm.customerName,
         customerEmail: invoiceForm.customerEmail || null,
-        amount: invoiceForm.amount,
+        amount: total || invoiceForm.amount,
         currency: invoiceForm.currency,
         dueDate: invoiceForm.dueDate,
         issueDate: invoiceForm.issueDate,
-        items: '[]',
+        items: itemsJson,
         notes: invoiceForm.notes || null,
       });
       setInvoices(prev => [data.createInvoice, ...prev]);
@@ -249,6 +258,7 @@ export function BankingPage(_props: BankingProps) {
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         issueDate: new Date().toISOString().split('T')[0], notes: '',
       });
+      setLineItems([{ ...EMPTY_ITEM }]);
     } catch (err) {
       console.error('Failed to create invoice:', err);
     } finally {
@@ -328,7 +338,7 @@ export function BankingPage(_props: BankingProps) {
         '& .MuiTab-root': { color: 'var(--vm-text-muted)', textTransform: 'none', fontSize: { xs: '0.75rem', sm: '0.875rem' }, minWidth: { xs: 'auto', sm: 90 }, '&.Mui-selected': { color: 'var(--vm-primary-400)' } },
       }}>
         <Tab label="Bank Accounts" />
-        <Tab label="Invoices" />
+        {false && <Tab label="Invoices" />}
       </Tabs>
 
       {/* === Bank Accounts Tab === */}
@@ -378,7 +388,7 @@ export function BankingPage(_props: BankingProps) {
       )}
 
       {/* === Invoices Tab === */}
-      {activeTab === 1 && (
+      {false && activeTab === 1 && (
         invoicesLoading ? (
           <Typography sx={{ color: 'var(--vm-text-muted)', textAlign: 'center', py: 6 }}>Loading invoices...</Typography>
         ) : invoices.length === 0 ? (
@@ -493,10 +503,6 @@ export function BankingPage(_props: BankingProps) {
               sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField label="Amount" type="number" value={invoiceForm.amount || ''} onChange={(e) => setInvoiceForm({ ...invoiceForm, amount: parseFloat(e.target.value) || 0 })} fullWidth
-                  sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
                 <FormControl fullWidth>
                   <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
                   <Select value={invoiceForm.currency} label="Currency" onChange={(e) => setInvoiceForm({ ...invoiceForm, currency: e.target.value })}
@@ -516,13 +522,60 @@ export function BankingPage(_props: BankingProps) {
                   slotProps={{ textField: { fullWidth: true, sx: { '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } } } }} />
               </Grid>
             </Grid>
-            <TextField label="Notes (optional)" multiline rows={3} value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} fullWidth
+
+            <Box>
+              <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)', mb: 1 }}>Line Items</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {lineItems.map((item, idx) => (
+                  <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                    <TextField size="small" placeholder="Description" value={item.description}
+                      onChange={(e) => {
+                        const next = [...lineItems];
+                        next[idx] = { ...next[idx], description: e.target.value };
+                        setLineItems(next);
+                      }}
+                      sx={{ flex: 1, minWidth: 100, '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+                    <TextField size="small" type="number" placeholder="Qty" value={item.quantity || ''}
+                      onChange={(e) => {
+                        const next = [...lineItems];
+                        next[idx] = { ...next[idx], quantity: parseInt(e.target.value) || 0 };
+                        setLineItems(next);
+                      }}
+                      sx={{ width: 60, '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+                    <TextField size="small" type="number" placeholder="Price" value={item.unitPrice || ''}
+                      onChange={(e) => {
+                        const next = [...lineItems];
+                        next[idx] = { ...next[idx], unitPrice: parseFloat(e.target.value) || 0 };
+                        setLineItems(next);
+                      }}
+                      sx={{ width: 90, '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
+                    <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)', minWidth: 60, textAlign: 'right', fontWeight: 600 }}>
+                      {(item.quantity * item.unitPrice).toLocaleString()}
+                    </Typography>
+                    <IconButton size="small" onClick={() => {
+                      if (lineItems.length <= 1) return;
+                      setLineItems(lineItems.filter((_, i) => i !== idx));
+                    }} disabled={lineItems.length <= 1} sx={{ color: '#ef444488' }}><X size={14} /></IconButton>
+                  </Box>
+                ))}
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                <GradientButton variant="outline" size="sm" onClick={() => setLineItems([...lineItems, { ...EMPTY_ITEM }])}>
+                  <Plus size={12} style={{ marginRight: 4 }} /> Add Item
+                </GradientButton>
+                <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-text-primary)' }}>
+                  Total: {invoiceForm.currency} {calcTotal(lineItems).toLocaleString()}
+                </Typography>
+              </Box>
+            </Box>
+
+            <TextField label="Notes (optional)" multiline rows={2} value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} fullWidth
               sx={{ '& .MuiInputBase-root': { bgcolor: 'var(--vm-bg-primary)', color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }} />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, justifyContent: 'center' }}>
           <GradientButton variant="outline" size="md" onClick={() => setShowCreateInvoiceModal(false)}>Cancel</GradientButton>
-          <GradientButton variant="primary" size="md" onClick={handleCreateInvoice} disabled={creatingInvoice || !invoiceForm.customerName || !invoiceForm.invoiceNumber || invoiceForm.amount <= 0}>
+          <GradientButton variant="primary" size="md" onClick={handleCreateInvoice} disabled={creatingInvoice || !invoiceForm.customerName || !invoiceForm.invoiceNumber || (!lineItems.some(i => i.description.trim()) && calcTotal(lineItems) <= 0)}>
             <FileText size={16} style={{ marginRight: 8 }} /> {creatingInvoice ? 'Creating...' : 'Create'}
           </GradientButton>
         </DialogActions>

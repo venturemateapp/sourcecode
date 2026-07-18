@@ -285,7 +285,7 @@ func init() {
 				}
 			}
 
-			proposal, err := ai.ProposeChanges(p.Context, provider, biz, prompt, domain, extraCtx)
+			proposal, err := ai.ProposeChanges(p.Context, provider, biz, prompt, domain, extraCtx, AppContainer.RecraftClient)
 			if err != nil {
 				log.Printf("Propose error for user %s: %v", userID, err)
 				return map[string]interface{}{"message": "I encountered an error processing your request.", "proposals": nil}, nil

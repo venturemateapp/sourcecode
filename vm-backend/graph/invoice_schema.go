@@ -190,6 +190,82 @@ func init() {
 		},
 	})
 
+	rootMutation.AddFieldConfig("updateInvoice", &graphql.Field{
+		Type: invoiceType,
+		Args: graphql.FieldConfigArgument{
+			"id":              &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"userId":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"invoiceNumber":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"customerName":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"customerEmail":   &graphql.ArgumentConfig{Type: graphql.String},
+			"amount":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
+			"subtotal":        &graphql.ArgumentConfig{Type: graphql.Float},
+			"taxRate":         &graphql.ArgumentConfig{Type: graphql.Float},
+			"taxAmount":       &graphql.ArgumentConfig{Type: graphql.Float},
+			"discount":        &graphql.ArgumentConfig{Type: graphql.Float},
+			"shippingCost":    &graphql.ArgumentConfig{Type: graphql.Float},
+			"currency":        &graphql.ArgumentConfig{Type: graphql.String},
+			"dueDate":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"issueDate":       &graphql.ArgumentConfig{Type: graphql.String},
+			"items":           &graphql.ArgumentConfig{Type: graphql.String},
+			"notes":           &graphql.ArgumentConfig{Type: graphql.String},
+			"customerAddress": &graphql.ArgumentConfig{Type: graphql.String},
+			"billingAddress":  &graphql.ArgumentConfig{Type: graphql.String},
+			"poNumber":        &graphql.ArgumentConfig{Type: graphql.String},
+			"paymentTerms":    &graphql.ArgumentConfig{Type: graphql.String},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil {
+				return nil, nil
+			}
+			id := p.Args["id"].(string)
+			existing, err := AppContainer.InvoiceRepo.GetByID(p.Context, id)
+			if err != nil {
+				return nil, err
+			}
+			dueDate, _ := time.Parse(time.RFC3339, p.Args["dueDate"].(string))
+			if dueDate.IsZero() {
+				dueDate, _ = time.Parse("2006-01-02", p.Args["dueDate"].(string))
+			}
+			issueDate := dueDate
+			if v, ok := p.Args["issueDate"]; ok && v != nil && v.(string) != "" {
+				issueDate, _ = time.Parse("2006-01-02", v.(string))
+				if issueDate.IsZero() {
+					issueDate, _ = time.Parse(time.RFC3339, v.(string))
+				}
+			}
+			existing.InvoiceNumber = p.Args["invoiceNumber"].(string)
+			existing.CustomerName = p.Args["customerName"].(string)
+			existing.CustomerEmail = getStringArg(p.Args, "customerEmail")
+			existing.Amount = p.Args["amount"].(float64)
+			existing.Subtotal = getFloatArg(p.Args, "subtotal")
+			existing.TaxRate = getFloatArg(p.Args, "taxRate")
+			existing.TaxAmount = getFloatArg(p.Args, "taxAmount")
+			existing.Discount = getFloatArg(p.Args, "discount")
+			existing.ShippingCost = getFloatArg(p.Args, "shippingCost")
+			existing.Currency = getStringArg(p.Args, "currency")
+			existing.DueDate = dueDate
+			existing.IssueDate = issueDate
+			existing.Items = getStringArg(p.Args, "items")
+			existing.Notes = getStringArg(p.Args, "notes")
+			existing.CustomerAddress = getStringArg(p.Args, "customerAddress")
+			existing.BillingAddress = getStringArg(p.Args, "billingAddress")
+			existing.PONumber = getStringArg(p.Args, "poNumber")
+			existing.PaymentTerms = getStringArg(p.Args, "paymentTerms")
+			if existing.Currency == "" {
+				existing.Currency = "USD"
+			}
+			if existing.Items == "" {
+				existing.Items = "[]"
+			}
+			if existing.PaymentTerms == "" {
+				existing.PaymentTerms = "net30"
+			}
+			err = AppContainer.InvoiceRepo.Update(p.Context, existing)
+			return existing, err
+		},
+	})
+
 	rootMutation.AddFieldConfig("generateInvoicePdf", &graphql.Field{
 		Type: graphql.String,
 		Args: graphql.FieldConfigArgument{

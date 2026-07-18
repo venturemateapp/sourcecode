@@ -6,8 +6,20 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { FileText, Plus, Download, Trash2, Send, CheckCircle, XCircle, X, Building2 } from 'lucide-react';
-import type { Invoice } from '../../types/venturemate';
+import { FileText, Plus, Download, Trash2, Send, CheckCircle, XCircle, X, Building2, Edit3 } from 'lucide-react';
+import type { Invoice, InvoiceItem } from '../../types/venturemate';
+
+const INVOICE_FIELDS = `id userId businessId invoiceNumber customerName customerEmail amount subtotal taxRate taxAmount discount shippingCost currency status dueDate issueDate paidDate items itemsList { description quantity unitPrice } notes customerAddress billingAddress poNumber paymentTerms pdfUrl pdfGeneratedAt createdAt updatedAt`;
+
+const EMPTY_ITEM: InvoiceItem = { description: '', quantity: 1, unitPrice: 0 };
+
+function calcTotal(items: InvoiceItem[]): number {
+  return items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+}
+
+function parseItems(raw: string): InvoiceItem[] {
+  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; }
+}
 
 export function InvoicesPage() {
   const { user } = useAuth();
@@ -17,6 +29,7 @@ export function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Partial<Invoice> | null>(null);
+  const [lineItems, setLineItems] = useState<InvoiceItem[]>([]);
   const [saving, setSaving] = useState(false);
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
@@ -25,7 +38,7 @@ export function InvoicesPage() {
     if (!bizId) return;
     setLoading(true);
     try {
-      const d = await q<{ invoices: Invoice[] }>('query Q($b:ID!){invoices(businessId:$b){id userId businessId invoiceNumber customerName customerEmail amount subtotal taxRate taxAmount discount shippingCost currency status dueDate issueDate paidDate items notes customerAddress billingAddress poNumber paymentTerms pdfUrl pdfGeneratedAt createdAt updatedAt}}', { b: bizId });
+      const d = await q<{ invoices: Invoice[] }>(`query Q($b:ID!){invoices(businessId:$b){${INVOICE_FIELDS}}}`, { b: bizId });
       setInvoices(d.invoices);
     } catch { /* ignore */ }
     setLoading(false);
@@ -33,19 +46,92 @@ export function InvoicesPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const openCreate = () => {
+    setLineItems([{ ...EMPTY_ITEM }]);
+    setForm({
+      invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`,
+      customerName: '',
+      customerEmail: '',
+      amount: 0,
+      subtotal: 0,
+      taxRate: 0,
+      taxAmount: 0,
+      discount: 0,
+      shippingCost: 0,
+      currency: 'USD',
+      dueDate: new Date().toISOString().split('T')[0],
+      issueDate: new Date().toISOString().split('T')[0],
+      paymentTerms: 'net30',
+      notes: '',
+      customerAddress: '',
+      billingAddress: '',
+      poNumber: '',
+      items: '[]',
+    });
+  };
+
+  const openEdit = (inv: Invoice) => {
+    const items = parseItems(inv.items);
+    setLineItems(items.length > 0 ? items : [{ ...EMPTY_ITEM }]);
+    setForm({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      customerName: inv.customerName,
+      customerEmail: inv.customerEmail,
+      amount: inv.amount,
+      subtotal: inv.subtotal,
+      taxRate: inv.taxRate,
+      taxAmount: inv.taxAmount,
+      discount: inv.discount,
+      shippingCost: inv.shippingCost,
+      currency: inv.currency,
+      dueDate: inv.dueDate?.split('T')[0] || '',
+      issueDate: inv.issueDate?.split('T')[0] || '',
+      paymentTerms: inv.paymentTerms,
+      notes: inv.notes,
+      customerAddress: inv.customerAddress,
+      billingAddress: inv.billingAddress,
+      poNumber: inv.poNumber,
+      items: inv.items,
+    });
+  };
+
+  const updateLineItem = (idx: number, field: keyof InvoiceItem, value: string | number) => {
+    const next = [...lineItems];
+    next[idx] = { ...next[idx], [field]: value };
+    setLineItems(next);
+  };
+
+  const addLineItem = () => setLineItems([...lineItems, { ...EMPTY_ITEM }]);
+
+  const removeLineItem = (idx: number) => {
+    if (lineItems.length <= 1) return;
+    setLineItems(lineItems.filter((_, i) => i !== idx));
+  };
+
   const save = async () => {
-    if (!bizId || !user || !form?.customerName || !form?.invoiceNumber || !form?.amount) return;
+    if (!bizId || !user || !form?.customerName || !form?.invoiceNumber) return;
     setSaving(true);
     try {
+      const itemsJson = JSON.stringify(lineItems.filter(i => i.description.trim()));
+      const total = calcTotal(lineItems);
+      const vars = {
+        u: user.id, b: bizId, n: form.invoiceNumber, c: form.customerName,
+        e: form.customerEmail || '',
+        a: total, d: form.dueDate || new Date().toISOString().split('T')[0],
+        s: form.subtotal || 0, t: form.taxRate || 0, x: form.taxAmount || 0,
+        sc: form.shippingCost || 0, cu: form.currency || 'USD', i: itemsJson,
+        o: form.notes || '', ca: form.customerAddress || '',
+        ba: form.billingAddress || '', po: form.poNumber || '',
+        pt: form.paymentTerms || 'net30',
+        id: form.id || '',
+      };
       if (form.id) {
-        // update not implemented in full - use status update instead
+        await q(`mutation M($id:ID!,$u:ID!,$b:ID!,$n:String!,$c:String!,$e:String,$a:Float!,$d:String!,$s:Float,$t:Float,$x:Float,$sc:Float,$cu:String,$i:String,$o:String,$ca:String,$ba:String,$po:String,$pt:String){
+          updateInvoice(id:$id userId:$u businessId:$b invoiceNumber:$n customerName:$c customerEmail:$e amount:$a dueDate:$d subtotal:$s taxRate:$t taxAmount:$x shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}`, vars);
       } else {
-        await q('mutation M($u:ID!,$b:ID!,$n:String!,$c:String!,$a:Float!,$d:String!,$s:Float,$t:Float,$x:Float,$sc:Float,$cu:String,$i:String,$o:String,$ca:String,$ba:String,$po:String,$pt:String){createInvoice(userId:$u businessId:$b invoiceNumber:$n customerName:$c amount:$a dueDate:$d subtotal:$s taxRate:$t taxAmount:$x shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}', {
-          u: user.id, b: bizId, n: form.invoiceNumber, c: form.customerName, a: form.amount || 0, d: form.dueDate || new Date().toISOString().split('T')[0],
-          s: form.subtotal || 0, t: form.taxRate || 0, x: form.taxAmount || 0, sc: form.shippingCost || 0,
-          cu: form.currency || 'USD', i: form.items || '[]', o: form.notes || '',
-          ca: form.customerAddress || '', ba: form.billingAddress || '', po: form.poNumber || '', pt: form.paymentTerms || 'net30',
-        });
+        await q(`mutation M($u:ID!,$b:ID!,$n:String!,$c:String!,$e:String,$a:Float!,$d:String!,$s:Float,$t:Float,$x:Float,$sc:Float,$cu:String,$i:String,$o:String,$ca:String,$ba:String,$po:String,$pt:String){
+          createInvoice(userId:$u businessId:$b invoiceNumber:$n customerName:$c customerEmail:$e amount:$a dueDate:$d subtotal:$s taxRate:$t taxAmount:$x shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}`, vars);
       }
       setForm(null);
       load();
@@ -84,7 +170,7 @@ export function InvoicesPage() {
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Invoices</Typography>
           <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{invoices.length} invoices · {invoices.filter(i => i.status === 'paid').length} paid</Typography>
         </Box>
-        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setForm({ invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`, customerName: '', amount: 0, currency: 'USD', dueDate: new Date().toISOString().split('T')[0], paymentTerms: 'net30', items: '[]' })}>
+        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={openCreate}>
           New Invoice
         </GradientButton>
       </Box>
@@ -105,9 +191,15 @@ export function InvoicesPage() {
                     <Chip label={inv.status.replace('_', ' ')} size="small" sx={{ bgcolor: `${statusColor[inv.status] || '#94a3b8'}18`, color: statusColor[inv.status] || '#94a3b8', fontSize: 9, fontWeight: 700, height: 20 }} />
                     {inv.pdfUrl && <Chip label="PDF" size="small" sx={{ bgcolor: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: 9, height: 20 }} />}
                   </Box>
-                  <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{inv.customerName} · {inv.currency} {inv.amount?.toLocaleString()}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{inv.customerName} · {inv.currency} {inv.amount?.toLocaleString()}</Typography>
+                    {inv.itemsList && inv.itemsList.length > 0 && (
+                      <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>({inv.itemsList.length} item{inv.itemsList.length !== 1 ? 's' : ''})</Typography>
+                    )}
+                  </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                  {inv.status === 'draft' && <Tooltip title="Edit"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => openEdit(inv)}><Edit3 size={15} /></IconButton></Tooltip>}
                   <Tooltip title="Download PDF"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(inv)}><Download size={15} /></IconButton></Tooltip>
                   {inv.status === 'draft' && <Tooltip title="Send"><IconButton size="small" sx={{ color: '#3b82f6' }} onClick={() => updateStatus(inv.id, 'sent')}><Send size={15} /></IconButton></Tooltip>}
                   {inv.status === 'sent' && <Tooltip title="Mark Paid"><IconButton size="small" sx={{ color: '#22c55e' }} onClick={() => updateStatus(inv.id, 'paid')}><CheckCircle size={15} /></IconButton></Tooltip>}
@@ -121,31 +213,62 @@ export function InvoicesPage() {
         </Box>
       )}
 
-      <Modal open={!!form} onClose={() => setForm(null)} title="New Invoice" icon={<FileText size={20} />}
+      <Modal open={!!form} onClose={() => setForm(null)} title={form?.id ? 'Edit Invoice' : 'New Invoice'} icon={<FileText size={20} />}
         actions={<><GradientButton variant="ghost" size="sm" onClick={() => setForm(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={saving || !form?.customerName || !form?.invoiceNumber} onClick={save}>
-            {saving ? <CircularProgress size={14} /> : 'Create Invoice'}
+            {saving ? <CircularProgress size={14} /> : form?.id ? 'Update Invoice' : 'Create Invoice'}
           </GradientButton></>}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-          <TextField size="small" label="Invoice #" value={form?.invoiceNumber || ''} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <TextField size="small" label="Customer Name" value={form?.customerName || ''} onChange={e => setForm({ ...form, customerName: e.target.value })}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <TextField size="small" label="Amount" type="number" value={form?.amount || ''} onChange={e => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <FormControl size="small">
-            <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
-            <Select value={form?.currency || 'USD'} label="Currency" onChange={e => setForm({ ...form, currency: e.target.value })}
-              sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-              {['USD', 'EUR', 'GBP', 'GHS', 'NGN', 'KES', 'ZAR'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <TextField size="small" label="Due Date" type="date" value={form?.dueDate || ''} onChange={e => setForm({ ...form, dueDate: e.target.value })}
-            InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <TextField size="small" label="PO Number" value={form?.poNumber || ''} onChange={e => setForm({ ...form, poNumber: e.target.value })}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <TextField size="small" label="Invoice #" value={form?.invoiceNumber || ''} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Customer Name" value={form?.customerName || ''} onChange={e => setForm({ ...form, customerName: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Customer Email" value={form?.customerEmail || ''} onChange={e => setForm({ ...form, customerEmail: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <FormControl size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Currency</InputLabel>
+              <Select value={form?.currency || 'USD'} label="Currency" onChange={e => setForm({ ...form, currency: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                {['USD', 'EUR', 'GBP', 'GHS', 'NGN', 'KES', 'ZAR'].map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <TextField size="small" label="Issue Date" type="date" value={form?.issueDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, issueDate: e.target.value })}
+              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Due Date" type="date" value={form?.dueDate?.split('T')[0] || ''} onChange={e => setForm({ ...form, dueDate: e.target.value })}
+              InputLabelProps={{ shrink: true }} sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="PO Number" value={form?.poNumber || ''} onChange={e => setForm({ ...form, poNumber: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Payment Terms" value={form?.paymentTerms || 'net30'} onChange={e => setForm({ ...form, paymentTerms: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          </Box>
+
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', mt: 1 }}>Line Items</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {lineItems.map((item, idx) => (
+              <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField size="small" placeholder="Description" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)}
+                  sx={{ flex: 1, minWidth: 120, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                <TextField size="small" type="number" placeholder="Qty" value={item.quantity || ''} onChange={e => updateLineItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                  sx={{ width: 70, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                <TextField size="small" type="number" placeholder="Price" value={item.unitPrice || ''} onChange={e => updateLineItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+                  sx={{ width: 100, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)', minWidth: 70, textAlign: 'right', fontWeight: 600 }}>
+                  {(item.quantity * item.unitPrice).toLocaleString()}
+                </Typography>
+                <IconButton size="small" onClick={() => removeLineItem(idx)} disabled={lineItems.length <= 1} sx={{ color: '#ef444488' }}><X size={14} /></IconButton>
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <GradientButton variant="outline" size="sm" onClick={addLineItem}><Plus size={12} style={{ marginRight: 4 }} /> Add Item</GradientButton>
+            <Typography sx={{ fontSize: 15, fontWeight: 800, color: 'var(--vm-text-primary)' }}>
+              Total: {form?.currency || 'USD'} {calcTotal(lineItems).toLocaleString()}
+            </Typography>
+          </Box>
+
           <TextField size="small" label="Notes" multiline rows={2} value={form?.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })}
-            sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
       </Modal>
     </Box>

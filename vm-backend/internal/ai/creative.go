@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/venturemate/vmbackend/internal/businesses"
+	"github.com/venturemate/vmbackend/internal/recraft"
 )
 
 const (
@@ -541,7 +542,7 @@ The newValue must be a COMPLETE JSON object:
 	}
 }
 
-func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, domain string) error {
+func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, domain string, rc *recraft.Client) error {
 	if proposal == nil || biz == nil {
 		return nil
 	}
@@ -559,7 +560,7 @@ func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, dom
 		switch kind {
 		case "branding":
 			change.Field = "brandKit"
-			normalized, err := normalizeBrandKitProposal(change.NewValue, biz)
+			normalized, err := normalizeBrandKitProposal(change.NewValue, biz, rc)
 			if err != nil {
 				return err
 			}
@@ -714,7 +715,7 @@ func stringValue(values map[string]interface{}, key, fallback string) string {
 	return fallback
 }
 
-func normalizeBrandKitProposal(raw string, biz *businesses.Business) (string, error) {
+func normalizeBrandKitProposal(raw string, biz *businesses.Business, rc *recraft.Client) (string, error) {
 	incoming := map[string]interface{}{}
 	_ = json.Unmarshal([]byte(raw), &incoming)
 	brand := mergeJSONMap(raw, biz.BrandKit)
@@ -728,8 +729,37 @@ func normalizeBrandKitProposal(raw string, biz *businesses.Business) (string, er
 	selColor := intFromMap(incoming, "selectedColors", 0)
 	selTypo := intFromMap(incoming, "selectedTypography", 0)
 
-	// Process selected logo
-	if selLogo >= 0 && selLogo < len(logos) {
+	// Process selected logo — Recraft first, then fallback to LLM SVG
+	recraftUsed := false
+	if rc != nil {
+		primary := stringValue(brand, "primaryColor", "#10b981")
+		prompt := fmt.Sprintf("Professional logo for '%s', primary color %s, minimal modern design, clean vector style suitable for a startup, no text", biz.Name, primary)
+		if result, err := rc.GenerateLogo(prompt); err == nil && len(result.Data) > 0 {
+			rasterURL := result.Data[0].URL
+			brand["logo"] = rasterURL
+			brand["logoIcon"] = rasterURL
+			brand["logoWhite"] = rasterURL
+			if svgURL, err := rc.VectorizeImage(rasterURL); err == nil {
+				brand["logoWhite"] = svgURL
+			}
+			recraftUsed = true
+		}
+	}
+	if recraftUsed {
+		if selLogo >= 0 && selLogo < len(logos) {
+			if logoObj, ok := logos[selLogo].(map[string]interface{}); ok {
+				if name, _ := logoObj["name"].(string); name != "" {
+					brand["logoName"] = name
+				}
+				if concept, _ := logoObj["concept"].(string); concept != "" {
+					brand["logoConcept"] = concept
+				}
+				if c, _ := logoObj["colors"].([]interface{}); len(c) > 0 {
+					brand["logoColors"] = c
+				}
+			}
+		}
+	} else if selLogo >= 0 && selLogo < len(logos) {
 		if logoObj, ok := logos[selLogo].(map[string]interface{}); ok {
 			svgStr, _ := logoObj["svg"].(string)
 			if s := extractSVG(svgStr); s != "" {

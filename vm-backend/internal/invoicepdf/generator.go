@@ -3,8 +3,11 @@ package invoicepdf
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -15,10 +18,11 @@ import (
 
 type Generator struct {
 	bizRepo *businesses.Repository
+	http    *http.Client
 }
 
 func NewGenerator(bizRepo *businesses.Repository) *Generator {
-	return &Generator{bizRepo: bizRepo}
+	return &Generator{bizRepo: bizRepo, http: &http.Client{Timeout: 10 * time.Second}}
 }
 
 func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, businessID string) ([]byte, error) {
@@ -27,131 +31,192 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 		return nil, fmt.Errorf("get business: %w", err)
 	}
 
+	// Parse brand kit for logo and colors
+	type BrandKit struct {
+		Logo         string `json:"logo"`
+		PrimaryColor string `json:"primaryColor"`
+		DarkColor    string `json:"darkColor"`
+	}
+	var brand BrandKit
+	if biz.BrandKit != "" {
+		json.Unmarshal([]byte(biz.BrandKit), &brand)
+	}
+	primary := "#10b981"
+	dark := "#0a1f16"
+	if brand.PrimaryColor != "" {
+		primary = brand.PrimaryColor
+	}
+	if brand.DarkColor != "" {
+		dark = brand.DarkColor
+	}
+	pr, pg, pb := parseHex(primary)
+	dr, dg, db := parseHex(dark)
+
 	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetMargins(20, 20, 20)
+	pdf.SetMargins(20, 15, 20)
 	pdf.AddPage()
 
-	primaryR, primaryG, primaryB := 16, 185, 129
-	headerR, headerG, headerB := 15, 23, 42
+	// === HEADER with logo ===
+	if brand.Logo != "" {
+		logoReader := g.logoReader(brand.Logo)
+		if logoReader != nil {
+			pdf.RegisterImageReader("logo", "logo", logoReader)
+			pdf.Image("logo", 20, 15, 30, 0, false, "", 0, "")
+		}
+	}
 
-	pdf.SetFillColor(headerR, headerG, headerB)
-	pdf.Rect(20, 20, 170, 30, "F")
-	pdf.SetY(24)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Helvetica", "B", 16)
-	pdf.CellFormat(80, 10, "INVOICE", "", 0, "L", false, 0, "")
+	// Invoice title on the right
+	pdf.SetY(18)
+	pdf.SetFont("Helvetica", "B", 22)
+	pdf.SetTextColor(dr, dg, db)
+	pdf.CellFormat(170, 10, "INVOICE", "", 0, "R", false, 0, "")
+
 	pdf.SetFont("Helvetica", "", 8)
-	pdf.SetY(36)
-	pdf.CellFormat(80, 6, fmt.Sprintf("Invoice #: %s", inv.InvoiceNumber), "", 0, "L", false, 0, "")
+	pdf.SetTextColor(100, 100, 100)
+	pdf.SetY(29)
+	pdf.CellFormat(170, 5, fmt.Sprintf("# %s", inv.InvoiceNumber), "", 0, "R", false, 0, "")
 
-	pdf.SetY(24)
-	pdf.SetX(130)
-	pdf.SetFont("Helvetica", "B", 14)
-	pdf.SetTextColor(255, 255, 255)
-	pdf.CellFormat(60, 10, biz.Name, "", 0, "R", false, 0, "")
-	pdf.SetFont("Helvetica", "", 7)
-	pdf.SetX(130)
-	pdf.SetY(32)
-	pdf.CellFormat(60, 6, biz.Tagline, "", 0, "R", false, 0, "")
+	// Divider line
+	pdf.SetY(38)
+	pdf.SetDrawColor(pr, pg, pb)
+	pdf.SetLineWidth(0.5)
+	pdf.Line(20, 38, 190, 38)
 
-	pdf.SetY(60)
-	pdf.SetTextColor(headerR, headerG, headerB)
+	// === FROM / TO section ===
+	pdf.SetY(44)
+	pdf.SetFont("Helvetica", "B", 9)
+	pdf.SetTextColor(dr, dg, db)
+	pdf.CellFormat(85, 5, "FROM", "", 0, "L", false, 0, "")
+	pdf.CellFormat(85, 5, "TO", "", 0, "L", false, 0, "")
+
+	pdf.SetY(50)
 	pdf.SetFont("Helvetica", "B", 10)
-	pdf.CellFormat(80, 6, "From:", "", 0, "L", false, 0, "")
-	pdf.CellFormat(80, 6, "To:", "", 0, "L", false, 0, "")
+	pdf.SetTextColor(30, 30, 30)
+	pdf.CellFormat(85, 5, biz.Name, "", 0, "L", false, 0, "")
+	pdf.CellFormat(85, 5, inv.CustomerName, "", 0, "L", false, 0, "")
 
-	pdf.SetY(67)
-	pdf.SetTextColor(60, 60, 60)
+	pdf.SetY(56)
 	pdf.SetFont("Helvetica", "", 8)
-	pdf.CellFormat(80, 5, biz.Name, "", 0, "L", false, 0, "")
-	pdf.CellFormat(80, 5, inv.CustomerName, "", 0, "L", false, 0, "")
+	pdf.SetTextColor(100, 100, 100)
+	pdf.CellFormat(85, 4, biz.Location, "", 0, "L", false, 0, "")
+	addrLine := inv.CustomerAddress
+	if inv.BillingAddress != "" {
+		addrLine = inv.BillingAddress
+	}
+	pdf.CellFormat(85, 4, addrLine, "", 0, "L", false, 0, "")
 
-	pdf.SetY(73)
-	pdf.CellFormat(80, 5, biz.Location, "", 0, "L", false, 0, "")
-	if inv.CustomerAddress != "" {
-		pdf.CellFormat(80, 5, inv.CustomerAddress, "", 0, "L", false, 0, "")
+	if inv.CustomerEmail != "" {
+		pdf.SetY(61)
+		pdf.SetX(105)
+		pdf.CellFormat(85, 4, inv.CustomerEmail, "", 0, "L", false, 0, "")
 	}
 
-	pdf.SetY(67)
-	pdf.SetX(130)
-	pdf.SetFont("Helvetica", "B", 8)
-	pdf.SetTextColor(headerR, headerG, headerB)
-	pdf.CellFormat(60, 5, fmt.Sprintf("Date: %s", inv.IssueDate.Format("Jan 02, 2006")), "", 0, "R", false, 0, "")
-	pdf.SetY(73)
-	pdf.SetX(130)
-	pdf.SetTextColor(60, 60, 60)
-	pdf.CellFormat(60, 5, fmt.Sprintf("Due: %s", inv.DueDate.Format("Jan 02, 2006")), "", 0, "R", false, 0, "")
+	// === INVOICE DETAILS ===
+	pdf.SetY(44)
+	pdf.SetX(120)
+	pdf.SetFont("Helvetica", "B", 9)
+	pdf.SetTextColor(dr, dg, db)
+	details := []struct{ label, value string }{
+		{"Date:", inv.IssueDate.Format("Jan 02, 2006")},
+		{"Due Date:", inv.DueDate.Format("Jan 02, 2006")},
+		{"Status:", strings.ToUpper(inv.Status)},
+	}
 	if inv.PONumber != "" {
-		pdf.SetY(79)
-		pdf.SetX(130)
-		pdf.CellFormat(60, 5, "PO: "+inv.PONumber, "", 0, "R", false, 0, "")
+		details = append(details, struct{ label, value string }{"PO Number:", inv.PONumber})
+	}
+	if inv.PaymentTerms != "" {
+		details = append(details, struct{ label, value string }{"Terms:", inv.PaymentTerms})
+	}
+	y := float64(50)
+	for _, d := range details {
+		pdf.SetXY(120, y)
+		pdf.SetFont("Helvetica", "B", 8)
+		pdf.SetTextColor(dr, dg, db)
+		pdf.CellFormat(35, 4, d.label, "", 0, "L", false, 0, "")
+		pdf.SetFont("Helvetica", "", 8)
+		pdf.SetTextColor(60, 60, 60)
+		pdf.CellFormat(50, 4, d.value, "", 0, "L", false, 0, "")
+		y += 5
 	}
 
-	pdf.SetY(90)
-	pdf.SetFillColor(primaryR, primaryG, primaryB)
+	// === ITEMS TABLE HEADER ===
+	tableTop := 75.0
+	pdf.SetY(tableTop)
+	pdf.SetFillColor(pr, pg, pb)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Helvetica", "B", 8)
-	colW := []float64{80, 20, 30, 30}
-	headers := []string{"Description", "Qty", "Unit Price", "Amount"}
+	colW := []float64{76, 18, 28, 28, 28}
+	headers := []string{"Description", "Qty", "Unit Price", "Tax", "Amount"}
 	for i, h := range headers {
 		pdf.CellFormat(colW[i], 8, h, "1", 0, "C", true, 0, "")
 	}
 	pdf.Ln(-1)
 
+	// === ITEMS ===
 	pdf.SetTextColor(40, 40, 40)
 	pdf.SetFont("Helvetica", "", 8)
 	var items []invoices.InvoiceItem
 	json.Unmarshal([]byte(inv.Items), &items)
+	rowH := 6.0
 	for _, item := range items {
-		total := float64(item.Quantity) * item.UnitPrice
-		y := pdf.GetY()
-		if y+7 > 270 {
+		qty := float64(item.Quantity)
+		lineTotal := qty * item.UnitPrice
+		y = pdf.GetY()
+		if y+rowH+2 > 260 {
 			pdf.AddPage()
+			tableTop = pdf.GetY()
 		}
-		pdf.CellFormat(colW[0], 7, item.Description, "1", 0, "L", false, 0, "")
-		pdf.CellFormat(colW[1], 7, fmt.Sprintf("%d", item.Quantity), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(colW[2], 7, fmt.Sprintf("%.2f", item.UnitPrice), "1", 0, "R", false, 0, "")
-		pdf.CellFormat(colW[3], 7, fmt.Sprintf("%.2f", total), "1", 0, "R", false, 0, "")
+		// Check if description needs multi-cell
+		pdf.CellFormat(colW[0], rowH, item.Description, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(colW[1], rowH, fmt.Sprintf("%d", item.Quantity), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(colW[2], rowH, fmt.Sprintf("%.2f", item.UnitPrice), "1", 0, "R", false, 0, "")
+		taxStr := "-"
+		if inv.TaxRate > 0 {
+			taxStr = fmt.Sprintf("%.1f%%", inv.TaxRate)
+		}
+		pdf.CellFormat(colW[3], rowH, taxStr, "1", 0, "C", false, 0, "")
+		pdf.CellFormat(colW[4], rowH, fmt.Sprintf("%.2f", lineTotal), "1", 0, "R", false, 0, "")
 		pdf.Ln(-1)
 	}
 
-	totalY := pdf.GetY() + 4
-	pdf.SetY(totalY)
-	pdf.SetX(120)
+	// === TOTALS ===
+	totalStart := pdf.GetY() + 3
+	pdf.SetY(totalStart)
+	pdf.SetX(130)
 	pdf.SetFont("Helvetica", "", 9)
-	pdf.SetTextColor(40, 40, 40)
-	pdf.CellFormat(40, 6, "Subtotal:", "", 0, "R", false, 0, "")
-	pdf.CellFormat(40, 6, fmt.Sprintf("$%.2f", inv.Subtotal), "", 0, "R", false, 0, "")
-	pdf.Ln(-1)
+	pdf.SetTextColor(60, 60, 60)
 
+	totals := []struct{ label, value string }{
+		{"Subtotal:", fmt.Sprintf("$%.2f", inv.Subtotal)},
+	}
 	if inv.Discount > 0 {
-		pdf.SetX(120)
-		pdf.CellFormat(40, 6, "Discount:", "", 0, "R", false, 0, "")
-		pdf.CellFormat(40, 6, fmt.Sprintf("-$%.2f", inv.Discount), "", 0, "R", false, 0, "")
-		pdf.Ln(-1)
+		totals = append(totals, struct{ label, value string }{"Discount:", fmt.Sprintf("-$%.2f", inv.Discount)})
 	}
 	if inv.TaxRate > 0 {
-		pdf.SetX(120)
-		pdf.CellFormat(40, 6, fmt.Sprintf("Tax (%.1f%%):", inv.TaxRate), "", 0, "R", false, 0, "")
-		pdf.CellFormat(40, 6, fmt.Sprintf("$%.2f", inv.TaxAmount), "", 0, "R", false, 0, "")
-		pdf.Ln(-1)
+		totals = append(totals, struct{ label, value string }{fmt.Sprintf("Tax (%.1f%%):", inv.TaxRate), fmt.Sprintf("$%.2f", inv.TaxAmount)})
 	}
 	if inv.ShippingCost > 0 {
-		pdf.SetX(120)
-		pdf.CellFormat(40, 6, "Shipping:", "", 0, "R", false, 0, "")
-		pdf.CellFormat(40, 6, fmt.Sprintf("$%.2f", inv.ShippingCost), "", 0, "R", false, 0, "")
+		totals = append(totals, struct{ label, value string }{"Shipping:", fmt.Sprintf("$%.2f", inv.ShippingCost)})
+	}
+
+	for _, t := range totals {
+		pdf.SetX(130)
+		pdf.CellFormat(35, 6, t.label, "", 0, "R", false, 0, "")
+		pdf.CellFormat(35, 6, t.value, "", 0, "R", false, 0, "")
 		pdf.Ln(-1)
 	}
 
-	pdf.SetY(pdf.GetY() + 2)
-	pdf.SetFillColor(primaryR, primaryG, primaryB)
+	// Total row
+	pdf.Ln(2)
+	pdf.SetFillColor(pr, pg, pb)
 	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Helvetica", "B", 11)
-	pdf.SetX(120)
-	pdf.CellFormat(40, 8, "TOTAL:", "1", 0, "R", true, 0, "")
-	pdf.CellFormat(40, 8, fmt.Sprintf("$%.2f", inv.Amount), "1", 0, "R", true, 0, "")
+	pdf.SetFont("Helvetica", "B", 12)
+	pdf.SetX(125)
+	pdf.CellFormat(40, 9, "TOTAL:", "1", 0, "R", true, 0, "")
+	pdf.CellFormat(35, 9, fmt.Sprintf("$%.2f", inv.Amount), "1", 0, "R", true, 0, "")
 
-	pdf.SetY(totalY + 2)
+	// Status badge
+	pdf.SetY(totalStart)
 	pdf.SetX(20)
 	statusColors := map[string][3]int{
 		"draft": {180, 180, 180}, "sent": {59, 130, 246},
@@ -161,25 +226,62 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.SetFillColor(sc[0], sc[1], sc[2])
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Helvetica", "B", 7)
-	pdf.CellFormat(20, 5, strings.ToUpper(inv.Status), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(18, 5, strings.ToUpper(inv.Status), "1", 0, "C", true, 0, "")
 
+	// Notes
 	if inv.Notes != "" {
-		pdf.SetY(260)
+		pdf.SetY(248)
+		pdf.SetFont("Helvetica", "B", 7)
+		pdf.SetTextColor(dr, dg, db)
+		pdf.CellFormat(170, 4, "Notes:", "", 0, "L", false, 0, "")
+		pdf.SetY(253)
+		pdf.SetFont("Helvetica", "", 7)
 		pdf.SetTextColor(100, 100, 100)
-		pdf.SetFont("Helvetica", "I", 7)
-		pdf.CellFormat(170, 5, "Notes:", "", 0, "L", false, 0, "")
-		pdf.SetY(265)
-		pdf.MultiCell(170, 4, inv.Notes, "", "L", false)
+		pdf.MultiCell(170, 3.5, inv.Notes, "", "L", false)
 	}
 
-	pdf.SetY(-15)
-	pdf.SetFont("Helvetica", "", 7)
-	pdf.SetTextColor(150, 150, 150)
-	pdf.CellFormat(170, 5, fmt.Sprintf("Generated by VentureMate on %s", time.Now().Format("Jan 02, 2006 15:04")), "", 0, "C", false, 0, "")
+	// Footer
+	pdf.SetY(-12)
+	pdf.SetFont("Helvetica", "", 6)
+	pdf.SetTextColor(160, 160, 160)
+	pdf.CellFormat(170, 4, fmt.Sprintf("Generated by VentureMate on %s", time.Now().Format("Jan 02, 2006")), "", 0, "C", false, 0, "")
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
 		return nil, fmt.Errorf("pdf output: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+func (g *Generator) logoReader(logo string) io.Reader {
+	if strings.HasPrefix(logo, "data:image/svg+xml;base64,") {
+		b, err := base64.StdEncoding.DecodeString(strings.SplitN(logo, ",", 2)[1])
+		if err != nil {
+			return nil
+		}
+		return bytes.NewReader(b)
+	}
+	if strings.HasPrefix(logo, "http") {
+		resp, err := g.http.Get(logo)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			return nil
+		}
+		defer resp.Body.Close()
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil
+		}
+		return bytes.NewReader(data)
+	}
+	return nil
+}
+
+func parseHex(hex string) (int, int, int) {
+	hex = strings.TrimPrefix(hex, "#")
+	if len(hex) != 6 {
+		return 16, 185, 129
+	}
+	r, g, b := 0, 0, 0
+	fmt.Sscanf(hex, "%02x%02x%02x", &r, &g, &b)
+	return r, g, b
 }

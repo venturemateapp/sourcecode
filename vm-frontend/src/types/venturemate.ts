@@ -671,6 +671,12 @@ export interface CrmTask {
   updatedAt: string;
 }
 
+export interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface Invoice {
   id: string;
   userId: string;
@@ -690,6 +696,7 @@ export interface Invoice {
   issueDate: string;
   paidDate: string | null;
   items: string;
+  itemsList?: InvoiceItem[];
   notes: string;
   customerAddress: string;
   billingAddress: string;
