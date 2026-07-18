@@ -205,7 +205,7 @@ export function MessagesPage() {
         ) : (
           <>
             <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton size="small" onClick={() => setActiveConv(null)} sx={{ color: 'var(--vm-text-muted)', display: { md: 'none' }, mr: -0.5 }}>
+              <IconButton size="small" onClick={() => setActiveConv(null)} sx={{ color: 'var(--vm-text-muted)', mr: -0.5 }}>
                 <ArrowLeft size={18} />
               </IconButton>
               <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
