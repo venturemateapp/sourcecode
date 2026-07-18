@@ -35,10 +35,22 @@ export function SupportChatFloating() {
     if (chatParam) {
       switchSession(chatParam);
       setOpen(true);
-      // Clean URL without reload
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [searchParams, switchSession, setOpen]);
+
+  // Listen for direct open events from notification clicks
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ sessionId: string }>).detail;
+      if (detail?.sessionId) {
+        switchSession(detail.sessionId);
+        setOpen(true);
+      }
+    };
+    window.addEventListener('supportchat:open', handler);
+    return () => window.removeEventListener('supportchat:open', handler);
+  }, [switchSession, setOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

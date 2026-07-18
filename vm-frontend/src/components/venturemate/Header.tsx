@@ -144,7 +144,7 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
           </Box>
         ) : (
           notifications.slice(0, 10).map(n => (
-            <MenuItem key={n.id} onClick={() => { if (n.actionUrl) navigate(n.actionUrl); setNotifAnchor(null); }} sx={{
+            <MenuItem key={n.id} onClick={() => { if (n.actionUrl) { navigate(n.actionUrl); const chatMatch = n.actionUrl.match(/chat=([^&]+)/); if (chatMatch) window.dispatchEvent(new CustomEvent('supportchat:open', { detail: { sessionId: chatMatch[1] } })); } setNotifAnchor(null); }} sx={{
               px: 1.5, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', alignItems: 'flex-start',
               bgcolor: n.read ? 'transparent' : 'rgba(16,185,129,.04)',
             }}>
