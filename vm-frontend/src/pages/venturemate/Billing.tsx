@@ -335,7 +335,7 @@ export function BillingPage() {
           {/* Plans Grid */}
           <Box sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' },
             gap: { xs: 2.5, sm: 3 },
           }}>
             {displayPlans.map((plan) => (
@@ -362,9 +362,9 @@ export function BillingPage() {
                 {/* Badges */}
                 {plan.popular && plan.id !== currentPlanId && (
                   <Chip size="small" label="Most Popular" sx={{
-                    position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
-                    bgcolor: 'var(--vm-primary-600)', color: '#ffffff !important', fontSize: 11, fontWeight: 700, height: 24,
-                    '& .MuiChip-label': { color: '#ffffff !important', px: 1.5 },
+                    position: 'absolute', top: 12, right: 12,
+                    bgcolor: 'var(--vm-primary-600)', color: '#ffffff !important', fontSize: 10, fontWeight: 700, height: 22, zIndex: 2,
+                    '& .MuiChip-label': { color: '#ffffff !important', px: 1 },
                   }} />
                 )}
 
@@ -401,7 +401,7 @@ export function BillingPage() {
                 </Box>
 
                 {/* Features */}
-                <Box sx={{ mb: { xs: 2.5, sm: 3 } }}>
+                <Box sx={{ mb: { xs: 2.5, sm: 3 }, maxHeight: { xs: 200, sm: 260 }, overflowY: 'auto' }}>
                   {plan.features.map((feature, idx) => (
                     <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, mb: 1.25 }}>
                       <CheckCircle size={14} color={feature.included ? plan.color : 'var(--vm-text-muted)'} style={{ marginTop: 2, flexShrink: 0 }} />
