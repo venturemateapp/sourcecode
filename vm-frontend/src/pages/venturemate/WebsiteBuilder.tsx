@@ -427,6 +427,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [unpublishing, setUnpublishing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const loadWebsite = useCallback(async () => {
     if (!selectedBusiness) return;
@@ -435,6 +436,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
     try {
       const data = await graphqlRequest<{ myWebsite: WebsiteRecord | null }>(WEBSITE_QUERY, { businessId: selectedBusiness.id });
       setWebsite(data.myWebsite || null);
+      setRefreshKey(k => k + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load the website draft.');
     } finally {
@@ -645,7 +647,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
         </Card>
       )}
 
-      <AICreationStudio
+      <AICreationStudio key={refreshKey}
         domain="website"
         title="AI Website Studio"
         description="Tell AI what the business website should communicate. It automatically uses the approved logo, colours, business name, tagline, description, location, and other business records."
