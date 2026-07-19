@@ -470,20 +470,13 @@ svg{max-width:100%;height:auto}
                 const shirtUrl = 'https://freepngimg.com/convert-png/2798-white-t-shirt-png-image';
                 const logoSrc = brand.logo || (logos[selectedLogoIdx]?.svg ? `data:image/svg+xml;base64,${btoa(logos[selectedLogoIdx].svg)}` : '');
                 return (
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)' }, gap: 2 }}>
+                  <Box sx={{ maxWidth: 400, mx: 'auto' }}>
                     <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: '#fff', border: '1px solid rgba(255,255,255,.06)' }}>
                       <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
                         <LogoDisplay logo={logoSrc} size={60} contrast />
                       </Box>
                       <Box component="img" src={shirtUrl} alt="White t-shirt" sx={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 0 }} />
                       <Typography sx={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(0,0,0,.3)', zIndex: 1, whiteSpace: 'nowrap' }}>Light Background</Typography>
-                    </Box>
-                    <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: brand.darkColor || '#0f172a', border: '1px solid rgba(255,255,255,.06)' }}>
-                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                        <Box sx={{ filter: 'brightness(0) invert(1)' }}><LogoDisplay logo={logoSrc} size={60} contrast /></Box>
-                      </Box>
-                      <Box component="img" src={shirtUrl} alt="Dark t-shirt" sx={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 0, opacity: 0.85 }} />
-                      <Typography sx={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(255,255,255,.3)', zIndex: 1, whiteSpace: 'nowrap' }}>Dark Background</Typography>
                     </Box>
                   </Box>
                 );
