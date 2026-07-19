@@ -49,15 +49,24 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isEscalated, setIsEscalated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadedLastSession, setLoadedLastSession] = useState(false);
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
-  // Load existing sessions on mount
+  // Load existing sessions on mount and auto-switch to the most recent one
   useEffect(() => {
     if (!user?.id) return;
     q<{ mySupportSessions: SupportSession[] }>('query Q($u:ID!){mySupportSessions(userId:$u){id subject status createdAt updatedAt}}', { u: user.id })
-      .then(d => setSessions(d.mySupportSessions)).catch(() => {});
-  }, [user?.id, q]);
+      .then(d => {
+        setSessions(d.mySupportSessions);
+        if (d.mySupportSessions.length > 0 && !sessionId) {
+          const latest = d.mySupportSessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+          setSessionId(latest.id);
+          setLoadedLastSession(true);
+          loadMessages(latest.id);
+        }
+      }).catch(() => {});
+  }, [user?.id, q, loadMessages]);
 
   // Load messages when switching to an existing session
   const loadMessages = useCallback(async (sid: string) => {
@@ -74,7 +83,7 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
     setSessionId(id);
     setIsEscalated(false);
     await loadMessages(id);
-    const s = sessions.find(s => s.id === id);
+    const s = sessions.find(x => x.id === id);
     if (s?.status === 'escalated' || s?.status === 'closed') setIsEscalated(true);
   }, [sessions, loadMessages]);
 
@@ -138,9 +147,17 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore */ }
   }, [user, sessionId, q]);
 
+  const handleSetOpen = useCallback((v: boolean) => {
+    setOpen(v);
+    if (v && !sessionId && sessions.length > 0 && loadedLastSession) {
+      const latest = sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+      switchSession(latest.id);
+    }
+  }, [sessionId, sessions, loadedLastSession, switchSession]);
+
   return (
     <SupportChatContext.Provider value={{
-      open, setOpen, messages, sessions, sessionId, isEscalated, loading,
+      open, setOpen: handleSetOpen, messages, sessions, sessionId, isEscalated, loading,
       sendMessage, resetChat, switchSession, escalate,
     }}>
       {children}
