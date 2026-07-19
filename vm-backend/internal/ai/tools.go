@@ -251,12 +251,21 @@ func generateSVGLogoTool(repo *businesses.Repository, rc *recraft.Client) Tool {
 		if label == "" {
 			label = biz.Name
 		}
+		secondary := "#059669"
+		accent := "#34d399"
+		if biz.BrandKit != "" {
+			var bk map[string]interface{}
+			if json.Unmarshal([]byte(biz.BrandKit), &bk) == nil {
+				if s, ok := bk["secondaryColor"].(string); ok { secondary = s }
+				if a, ok := bk["accentColor"].(string); ok { accent = a }
+			}
+		}
 
 		// Use Recraft for high-quality logo generation
 		var logoURL string
 		var svgURL string
 		if rc != nil {
-			prompt := fmt.Sprintf("Design a stunning, full-color modern brand logo for '%s'. Brand color: %s (use this prominently). Create a rich, vibrant logo with depth, gradients, and professional polish. The logo should feature bold colors, modern geometric shapes, and a distinctive mark that works as an app icon. Use multiple colors from a cohesive palette — not just the primary color. Style: premium, contemporary, high-end branding. Make it look like a top-tier Silicon Valley startup logo. Do NOT make it black and white or monochrome. Include subtle gradients or color overlays for a premium feel.", label, primary)
+			prompt := fmt.Sprintf("Design a stunning, full-color modern brand logo for '%s'. Brand colors: primary %s, secondary %s, accent %s. Use these exact colors as the logo's color palette. Create a rich, vibrant logo with depth, gradients, and professional polish. The logo should feature bold colors, modern geometric shapes, and a distinctive mark that works as an app icon. Style: premium, contemporary, high-end branding. Make it look like a top-tier Silicon Valley startup logo. Do NOT make it black and white or monochrome. Include subtle gradients or color overlays for a premium feel.", label, primary, secondary, accent)
 			result, err := rc.GenerateLogo(prompt)
 			if err == nil && len(result.Data) > 0 {
 				logoURL = result.Data[0].URL
