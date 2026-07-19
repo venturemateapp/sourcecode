@@ -735,7 +735,21 @@ func normalizeBrandKitProposal(raw string, biz *businesses.Business, rc *recraft
 		primary := stringValue(brand, "primaryColor", "#10b981")
 		secondary := stringValue(brand, "secondaryColor", "#059669")
 		accent := stringValue(brand, "accentColor", "#34d399")
-		prompt := fmt.Sprintf("Design a stunning, full-color modern brand logo for '%s'. Brand colors: primary %s, secondary %s, accent %s. Use these exact colors as the logo's color palette. Create a rich, vibrant logo with depth, gradients, and professional polish. The logo should feature bold colors, modern geometric shapes, and a distinctive mark that works as an app icon. Style: premium, contemporary, high-end branding. Make it look like a top-tier Silicon Valley startup logo. Do NOT make it black and white or monochrome. Include subtle gradients or color overlays for a premium feel.", biz.Name, primary, secondary, accent)
+		prompt := fmt.Sprintf(`You are a world-class logo designer. Generate a sophisticated, memorable logo for "%s".
+
+DESIGN REQUIREMENTS:
+- Style: Modern, minimalist, luxury aesthetic
+- Color Palette: %s (primary), %s (secondary), %s (accent) — use these exact colors prominently
+- Symbolism: Incorporate the brand's core concept subtly — no literal or cartoony representations
+- Technical: Scalable to favicon and billboard without loss of clarity
+- Negative Space: Use intentional white space; logo should work standalone or with a wordmark
+- Output: Full-color modern design, NOT black and white, NOT monochrome, NOT minimalist to the point of being generic
+
+CONSTRAINTS:
+- Maximum 3 distinct color areas in the main composition
+- Geometric precision over organic curves
+- Zero drop shadows or heavy effects — rely on form and color contrast
+- Make it unforgettable — a logo that people recognize instantly`, biz.Name, primary, secondary, accent)
 		if result, err := rc.GenerateLogo(prompt); err == nil && len(result.Data) > 0 {
 			rasterURL := result.Data[0].URL
 			brand["logo"] = rasterURL
