@@ -223,7 +223,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);
   const [proposedBrand, setProposedBrand] = useState<BrandingFull | null>(null);
-  const [activeTab, setActiveTab] = useState<'mockups' | 'colors' | 'typography' | 'variations'>('mockups');
+  const [activeTab, setActiveTab] = useState<'mockups' | 'colors' | 'typography'>('mockups');
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedTypoIdx, setSelectedTypoIdx] = useState(0);
   const [selectedLogoIdx, setSelectedLogoIdx] = useState(0);
@@ -257,7 +257,6 @@ export function BrandingKitPage(_props: BrandingKitProps) {
     { key: 'mockups' as const, label: 'Mockups', icon: <Wand2 size={14} /> },
     { key: 'colors' as const, label: 'Colours', icon: <Palette size={14} /> },
     { key: 'typography' as const, label: 'Typography', icon: <Type size={14} /> },
-    { key: 'variations' as const, label: 'Variations', icon: <Wand2 size={14} /> },
   ];
 
   return (
@@ -489,31 +488,6 @@ svg{max-width:100%;height:auto}
                   </Box>
                 );
               })()}
-            </Box>
-          )}
-
-          {activeTab === 'variations' && logos.length > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(3,1fr)' }, gap: 1.5 }}>
-                {[
-                  { label: 'Light Background', svg: logos[selectedLogoIdx].variations?.lightBackground || logos[selectedLogoIdx].svg, bg: '#ffffff', dark: false },
-                  { label: 'Dark Background', svg: logos[selectedLogoIdx].variations?.darkBackground || logos[selectedLogoIdx].svg, bg: fullBrand.darkColor || '#0f172a', dark: true },
-                  { label: 'Monochrome', svg: logos[selectedLogoIdx].variations?.monochrome || logos[selectedLogoIdx].svg, bg: '#f8fafc', dark: false },
-                ].map((item) => (
-                  <Box key={item.label} sx={{
-                    p: 2.5, borderRadius: 2.5, bgcolor: item.bg, border: '1px solid rgba(255,255,255,.06)',
-                    textAlign: 'center', minHeight: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
-                    position: 'relative', transition: 'all .2s', '&:hover': { transform: 'scale(1.02)' },
-                  }}>
-                    {renderSvg(item.svg, { dark: item.dark, size: 64 })}
-                    <Typography sx={{ fontSize: 10, color: item.dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', fontWeight: 600 }}>{item.label}</Typography>
-                    <IconButton size="small" onClick={() => downloadSvg(item.svg, `${logos[selectedLogoIdx].name.replace(/[^a-zA-Z0-9]/g, '_')}_${item.label.replace(/ /g, '_').toLowerCase()}.svg`)}
-                      sx={{ position: 'absolute', top: 6, right: 6, color: item.dark ? 'rgba(255,255,255,.3)' : 'rgba(0,0,0,.3)', '&:hover': { color: item.dark ? 'white' : 'black' } }}>
-                      <Download size={11} />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Box>
             </Box>
           )}
 
