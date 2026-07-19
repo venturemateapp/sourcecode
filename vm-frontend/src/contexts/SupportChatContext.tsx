@@ -52,6 +52,17 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
+  // Load messages when switching to an existing session
+  const loadMessages = useCallback(async (sid: string) => {
+    try {
+      const d = await q<{ supportSessionMessages: Array<{ role: string; content: string }> }>(
+        'query Q($s:ID!){supportSessionMessages(sessionId:$s){role content createdAt}}', { s: sid });
+      setMessages(d.supportSessionMessages.map((m, i) => ({
+        id: `hist-${i}`, role: m.role as 'user' | 'assistant', content: m.content,
+      })));
+    } catch { /* ignore */ }
+  }, [q]);
+
   // Load existing sessions on mount and auto-switch to the most recent one
   useEffect(() => {
     if (!user?.id) return;
@@ -65,17 +76,6 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
         }
       }).catch(() => {});
   }, [user?.id, q, loadMessages]);
-
-  // Load messages when switching to an existing session
-  const loadMessages = useCallback(async (sid: string) => {
-    try {
-      const d = await q<{ supportSessionMessages: Array<{ role: string; content: string }> }>(
-        'query Q($s:ID!){supportSessionMessages(sessionId:$s){role content createdAt}}', { s: sid });
-      setMessages(d.supportSessionMessages.map((m, i) => ({
-        id: `hist-${i}`, role: m.role as 'user' | 'assistant', content: m.content,
-      })));
-    } catch { /* ignore */ }
-  }, [q]);
 
   const switchSession = useCallback(async (id: string) => {
     setSessionId(id);
