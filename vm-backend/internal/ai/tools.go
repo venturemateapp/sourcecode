@@ -256,7 +256,7 @@ func generateSVGLogoTool(repo *businesses.Repository, rc *recraft.Client) Tool {
 		var logoURL string
 		var svgURL string
 		if rc != nil {
-			prompt := fmt.Sprintf("Professional logo for '%s', primary color %s, minimal modern design, clean vector style suitable for a startup, no text", label, primary)
+			prompt := fmt.Sprintf("Premium brand logo for '%s'. Primary color: %s. Design a distinctive, memorable logo mark that works as both an app icon and a brand identity. Use elegant shapes, balanced composition, and professional negative space. Style: clean, sophisticated, vector-quality. Suitable for a modern business brand. No text or letters in the icon itself.", label, primary)
 			result, err := rc.GenerateLogo(prompt)
 			if err == nil && len(result.Data) > 0 {
 				logoURL = result.Data[0].URL
