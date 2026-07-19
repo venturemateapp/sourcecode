@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Button, Chip, CircularProgress, Typography, IconButton, Tooltip } from '@mui/material';
-import { BookOpen, Palette, Sparkles, Type, Eye, Check, X, Wand2, Download } from 'lucide-react';
+import { BookOpen, Palette, Sparkles, Type, Eye, X, Wand2, Download } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -226,7 +226,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const [activeTab, setActiveTab] = useState<'mockups' | 'colors' | 'typography'>('mockups');
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedTypoIdx, setSelectedTypoIdx] = useState(0);
-  const [selectedLogoIdx, setSelectedLogoIdx] = useState(0);
+  const [selectedLogoIdx] = useState(0);
 
   useEffect(() => {
     const kit = selectedBusiness?.brandKit as Record<string, unknown> | undefined;
