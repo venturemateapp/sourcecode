@@ -6,7 +6,7 @@ import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelec
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
 import { PageHeader } from '../../components/shared';
-import type { BrandKit, BrandingFull, LogoOption, ViewType } from '../../types/venturemate';
+import type { BrandKit, BrandingFull, ViewType } from '../../types/venturemate';
 
 interface BrandingKitProps { onViewChange?: (_view: ViewType) => void; }
 
@@ -113,28 +113,7 @@ function FontPreview({ name, label }: { name: string; label: string }) {
   );
 }
 
-function LogoCard({ logo, selected, onSelect, size = 72 }: { logo: LogoOption; selected: boolean; onSelect: () => void; size?: number }) {
-  return (
-    <Box onClick={onSelect} sx={{
-      p: 2.5, borderRadius: 3, cursor: 'pointer', textAlign: 'center',
-      border: selected ? '2px solid var(--vm-primary-400)' : '1px solid rgba(255,255,255,.06)',
-      bgcolor: selected ? 'rgba(16,185,129,.06)' : 'rgba(255,255,255,.02)',
-      transition: 'all .25s cubic-bezier(.4,0,.2,1)',
-      position: 'relative', overflow: 'hidden',
-      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,.3)', borderColor: selected ? 'var(--vm-primary-400)' : 'rgba(255,255,255,.12)' },
-      '&::before': selected ? { content: '""', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 0%, rgba(16,185,129,.08), transparent 70%)' } : {},
-    }}>
-      {selected && <Box sx={{ position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: '50%', bgcolor: 'var(--vm-primary-500)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={12} color="#fff" /></Box>}
-      <Box sx={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5, '& svg': { maxWidth: '100%', maxHeight: '100%' } }}>{renderSvg(logo.svg, { size })}</Box>
-      <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{logo.name}</Typography>
-      <Chip size="small" label={logo.type} sx={{ mt: 0.75, fontSize: 9, textTransform: 'capitalize', bgcolor: selected ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.06)', color: selected ? 'var(--vm-primary-400)' : 'var(--vm-text-muted)', height: 20 }} />
-      <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: 1, lineHeight: 1.6, overflowWrap: 'anywhere' }}>{logo.concept?.slice(0, 90)}</Typography>
-      <IconButton size="small" onClick={(e) => { e.stopPropagation(); downloadSvg(logo.svg, `${logo.name.replace(/[^a-zA-Z0-9]/g, '_')}.svg`); }} sx={{ mt: 1, color: 'var(--vm-text-muted)', '&:hover': { color: 'var(--vm-primary-400)' } }}>
-        <Download size={13} />
-      </IconButton>
-    </Box>
-  );
-}
+
 
 function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandingFull; businessName: string; proposed?: boolean }) {
   const { primaryColor, secondaryColor, accentColor, darkColor, fontHeading, fontBody } = brand;
@@ -244,14 +223,14 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);
   const [proposedBrand, setProposedBrand] = useState<BrandingFull | null>(null);
-  const [activeTab, setActiveTab] = useState<'logo' | 'colors' | 'typography' | 'variations' | 'mockups'>('logo');
+  const [activeTab, setActiveTab] = useState<'mockups' | 'colors' | 'typography' | 'variations'>('mockups');
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedTypoIdx, setSelectedTypoIdx] = useState(0);
   const [selectedLogoIdx, setSelectedLogoIdx] = useState(0);
 
   useEffect(() => {
     const kit = selectedBusiness?.brandKit as Record<string, unknown> | undefined;
-    if (kit?.logo) setActiveTab('logo');
+    if (kit?.logo) setActiveTab('mockups');
   }, [selectedBusiness?.brandKit]);
 
   const handleGenerateGuide = useCallback(async () => {
@@ -275,11 +254,10 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const tabGradient = `linear-gradient(135deg, ${brand.primaryColor || '#10b981'}20, transparent)`;
 
   const tabs = [
-    { key: 'logo' as const, label: 'Logo', icon: <Eye size={14} /> },
+    { key: 'mockups' as const, label: 'Mockups', icon: <Wand2 size={14} /> },
     { key: 'colors' as const, label: 'Colours', icon: <Palette size={14} /> },
     { key: 'typography' as const, label: 'Typography', icon: <Type size={14} /> },
     { key: 'variations' as const, label: 'Variations', icon: <Wand2 size={14} /> },
-    { key: 'mockups' as const, label: 'Mockups', icon: <Wand2 size={14} /> },
   ];
 
   return (
@@ -431,14 +409,6 @@ svg{max-width:100%;height:auto}
           )}
 
           {/* Tab content */}
-          {activeTab === 'logo' && logos.length > 0 && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3,1fr)' }, gap: 1.5, mb: 2 }}>
-              {logos.map((logo, i) => (
-                <LogoCard key={i} logo={logo} selected={selectedLogoIdx === i} onSelect={() => setSelectedLogoIdx(i)} />
-              ))}
-            </Box>
-          )}
-
           {activeTab === 'colors' && palettes.length > 0 && (
             <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' }, mb: 2 }}>
               {palettes.map((pal, i) => {
