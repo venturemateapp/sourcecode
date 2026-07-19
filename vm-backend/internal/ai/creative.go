@@ -733,7 +733,7 @@ func normalizeBrandKitProposal(raw string, biz *businesses.Business, rc *recraft
 	recraftUsed := false
 	if rc != nil {
 		primary := stringValue(brand, "primaryColor", "#10b981")
-		prompt := fmt.Sprintf("Premium brand logo for '%s'. Primary color: %s. Design a distinctive, memorable logo mark that works as both an app icon and a brand identity. Use elegant shapes, balanced composition, and professional negative space. Style: clean, sophisticated, vector-quality. Suitable for a modern business brand. No text or letters in the icon itself.", biz.Name, primary)
+		prompt := fmt.Sprintf("Design a stunning, full-color modern brand logo for '%s'. Brand color: %s (use this prominently). Create a rich, vibrant logo with depth, gradients, and professional polish. The logo should feature bold colors, modern geometric shapes, and a distinctive mark that works as an app icon. Use multiple colors from a cohesive palette — not just the primary color. Style: premium, contemporary, high-end branding. Make it look like a top-tier Silicon Valley startup logo. Do NOT make it black and white or monochrome. Include subtle gradients or color overlays for a premium feel.", biz.Name, primary)
 		if result, err := rc.GenerateLogo(prompt); err == nil && len(result.Data) > 0 {
 			rasterURL := result.Data[0].URL
 			brand["logo"] = rasterURL
