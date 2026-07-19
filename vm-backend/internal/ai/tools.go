@@ -265,21 +265,35 @@ func generateSVGLogoTool(repo *businesses.Repository, rc *recraft.Client) Tool {
 		var logoURL string
 		var svgURL string
 		if rc != nil {
-			prompt := fmt.Sprintf(`You are a world-class logo designer. Generate a sophisticated, memorable logo for "%s".
+			prompt := fmt.Sprintf(`Create a premium, production-ready logo for "%s".
 
-DESIGN REQUIREMENTS:
-- Style: Modern, minimalist, luxury aesthetic
-- Color Palette: %s (primary), %s (secondary), %s (accent) — use these exact colors prominently
-- Symbolism: Incorporate the brand's core concept subtly — no literal or cartoony representations
-- Technical: Scalable to favicon and billboard without loss of clarity
-- Negative Space: Use intentional white space; logo should work standalone or with a wordmark
-- Output: Full-color modern design, NOT black and white, NOT monochrome, NOT minimalist to the point of being generic
+VISUAL DIRECTION:
+Style: Modern geometric minimalist with a luxury-finish feel
+Aesthetic: High-end, sophisticated, timeless — looks like a top 10 global brand
+Color Palette: Primary %s, Secondary %s, Accent %s (use these exact colors prominently)
+Mood: Confident but approachable, cutting-edge but grounded
 
-CONSTRAINTS:
+DESIGN SPECIFICATIONS:
+- Geometric, scalable form — works at favicon 16px and billboard 1000px+
+- Central motif incorporating the brand's core purpose subtly (no literal icons)
+- Negative space integration — logo reads instantly at small scale
+- Clean vector lines, precise geometric construction
+- Solid color blocks only — zero gradients, shadows, or effects
+- Full-color vibrant design, NOT black and white, NOT monochrome
+
+TECHNICAL OUTPUT:
+- Vector-quality design suitable for SVG
+- Icon-only mark for standalone use (works with or without wordmark)
 - Maximum 3 distinct color areas in the main composition
-- Geometric precision over organic curves
-- Zero drop shadows or heavy effects — rely on form and color contrast
-- Make it unforgettable — a logo that people recognize instantly`, label, primary, secondary, accent)
+
+WHAT NOT TO DO:
+- No drop shadows, glows, lens flares, or any effects
+- No gradients or gradient fills of any kind
+- Avoid clichés: no generic globes, swooshes, or tech circles
+- No trendy or dated elements — design for longevity
+- Do NOT make it monochrome, black and white, or grayscale
+
+Make it unforgettable — a logo people recognize instantly from the shape alone.`, label, primary, secondary, accent)
 			result, err := rc.GenerateLogo(prompt)
 			if err == nil && len(result.Data) > 0 {
 				logoURL = result.Data[0].URL
