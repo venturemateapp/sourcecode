@@ -68,7 +68,7 @@ export function AICreationStudio({
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
   const [prompt, setPrompt] = useState('');
-
+  const [lastPrompt, setLastPrompt] = useState('');
   const [messages, setMessages] = useState<StudioMessage[]>([]);
   const [proposalMessage, setProposalMessage] = useState('');
   const [proposal, setProposal] = useState<ProposedChange | null>(null);
@@ -96,6 +96,7 @@ export function AICreationStudio({
     setLoading(true);
     setError(null);
     setSuccess(null);
+    setLastPrompt(instruction.trim());
     const contextualPrompt = proposal
       ? `${instruction.trim()}\n\nRevise the pending AI proposal below. Preserve everything I did not ask to change.\nPending proposal field: ${proposal.field}\nPending proposal JSON:\n${proposal.newValue}`
       : instruction.trim();
@@ -276,18 +277,27 @@ export function AICreationStudio({
             {proposal ? 'Revise with AI' : 'Generate with AI'}
           </AnimatedButton>
 
-          {/* Approve/Discard buttons always below Generate when proposal exists */}
+          {/* Next / Approve / Discard buttons always below Generate when proposal exists */}
           {proposal && (
-            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid var(--vm-border-subtle)', display: 'flex', gap: 1 }}>
-              <AnimatedButton variant="success" size="sm" icon={<Check size={14} />} disabled={loading || applying} onClick={() => void approveProposal()} loading={applying}
-                sx={{ flex: 1, fontSize: 12 }}>
-                Approve
-              </AnimatedButton>
-              <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); }}
-                sx={{ flex: 1, fontSize: 12, color: 'var(--vm-text-muted)' }}>
-                Discard
-              </AnimatedButton>
-            </Box>
+            <>
+              {lastPrompt && (
+                <AnimatedButton fullWidth variant="secondary" size="sm" icon={<Sparkles size={14} />} disabled={loading || applying}
+                  onClick={() => void requestProposal(lastPrompt)}
+                  loading={loading} sx={{ mt: 1.5, fontSize: 12 }}>
+                  Next — same prompt
+                </AnimatedButton>
+              )}
+              <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid var(--vm-border-subtle)', display: 'flex', gap: 1 }}>
+                <AnimatedButton variant="success" size="sm" icon={<Check size={14} />} disabled={loading || applying} onClick={() => void approveProposal()} loading={applying}
+                  sx={{ flex: 1, fontSize: 12 }}>
+                  Approve
+                </AnimatedButton>
+                <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); }}
+                  sx={{ flex: 1, fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                  Discard
+                </AnimatedButton>
+              </Box>
+            </>
           )}
 
           {!proposal && (
