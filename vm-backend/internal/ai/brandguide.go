@@ -133,93 +133,40 @@ func coverPage(name, logoURL, primary, secondary, dark string) string {
 
 func logoSections(name, logoURL, logoIconURL, logoWhiteURL string, logos []interface{}, primary, secondary, dark string) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`<div class="section section-alt"><h2>Logo System</h2><p>The %s logo system is shown below with the approved primary logo followed by concept explorations.</p>`, html.EscapeString(name)))
+	sb.WriteString(fmt.Sprintf(`<div class="section section-alt"><h2>Logo System</h2><p>The approved %s logo is shown below.</p>`, html.EscapeString(name)))
 
-	// Show the actual approved logo first
-	if logoURL != "" {
-		sb.WriteString(`<h3>Primary Logo</h3><div class="logo-grid" style="margin-bottom:40px">`)
-		logoVariants := []struct {
-			url   string
-			label string
-			bg    string
-		}{
-			{logoURL, "Primary", "#ffffff"},
-		}
-		if logoWhiteURL != "" && logoWhiteURL != logoURL {
-			logoVariants = append(logoVariants, struct {
-				url   string
-				label string
-				bg    string
-			}{logoWhiteURL, "On Dark", dark})
-		}
-		if logoIconURL != "" && logoIconURL != logoURL {
-			logoVariants = append(logoVariants, struct {
-				url   string
-				label string
-				bg    string
-			}{logoIconURL, "Icon", "#ffffff"})
-		}
-		for _, v := range logoVariants {
-			bgStyle := ""
-			extraStyle := ""
-			if strings.Contains(v.bg, "#") {
-				bgStyle = fmt.Sprintf(`style="background:%s"`, v.bg)
-			}
-			if strings.HasPrefix(v.url, "http") {
-				extraStyle = "background:rgba(255,255,255,.06);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,.08)"
-			}
-			sb.WriteString(fmt.Sprintf(`<div class="logo-cell" %s><div style="display:flex;align-items:center;justify-content:center;width:100%%;min-height:80px;%s"><img src="%s" alt="%s" style="max-width:140px;max-height:80px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.08))" /></div><div class="logo-label">%s</div></div>`, bgStyle, extraStyle, html.EscapeString(v.url), html.EscapeString(v.label), v.label))
-		}
+	if logoURL == "" {
 		sb.WriteString(`</div>`)
+		return sb.String()
 	}
 
-	sb.WriteString(`<p>The following concept directions were explored during development.</p>`)
-
-	for li, l := range logos {
-		if logo, ok := l.(map[string]interface{}); ok {
-			svgStr := stringValue(logo, "svg", "")
-			svg := extractSVG(svgStr)
-			concept := stringValue(logo, "concept", "")
-			variations, _ := logo["variations"].(map[string]interface{})
-
-			sb.WriteString(fmt.Sprintf(`<div style="margin-top:48px"><h3>Concept %d: %s</h3><p style="margin-bottom:16px">%s</p>`, li+1, html.EscapeString(stringValue(logo, "name", "")), html.EscapeString(concept)))
-
-			// 3×3 or 1×3 grid
-			sb.WriteString(`<div class="logo-grid">`)
-
-			type variant struct {
-				svg   string
-				label string
-				bg    string
-			}
-			variants := []variant{
-				{svg, "Primary", "#ffffff"},
-			}
-
-			if variations != nil {
-				if lv := stringValue(variations, "lightBackground", ""); lv != "" {
-					variants = append(variants, variant{lv, "Light BG", "#ffffff"})
-				}
-				if dv := stringValue(variations, "darkBackground", ""); dv != "" {
-					variants = append(variants, variant{dv, "Dark BG", dark})
-				}
-				if mv := stringValue(variations, "monochrome", ""); mv != "" {
-					variants = append(variants, variant{mv, "Monochrome", "#f8fafc"})
-				}
-			}
-
-			for i, v := range variants {
-				bgStyle := ""
-				if i == 2 {
-					bgStyle = fmt.Sprintf("style=\"background:%s\"", v.bg)
-				}
-				sb.WriteString(fmt.Sprintf(`<div class="logo-cell" %s>%s<div class="logo-label">%s</div></div>`, bgStyle, v.svg, v.label))
-			}
-
-			sb.WriteString(`</div></div>`)
+	sb.WriteString(`<div class="logo-grid" style="margin-top:24px">`)
+	type logoVariant struct {
+		url   string
+		label string
+		bg    string
+	}
+	variants := []logoVariant{
+		{logoURL, "Primary", "#ffffff"},
+	}
+	if logoWhiteURL != "" && logoWhiteURL != logoURL {
+		variants = append(variants, logoVariant{logoWhiteURL, "On Dark", dark})
+	}
+	if logoIconURL != "" && logoIconURL != logoURL {
+		variants = append(variants, logoVariant{logoIconURL, "Icon", "#ffffff"})
+	}
+	for _, v := range variants {
+		bgStyle := ""
+		extraStyle := ""
+		if strings.Contains(v.bg, "#") {
+			bgStyle = fmt.Sprintf(`style="background:%s"`, v.bg)
 		}
+		if strings.HasPrefix(v.url, "http") {
+			extraStyle = "background:rgba(255,255,255,.06);border-radius:8px;padding:12px;border:1px solid rgba(255,255,255,.08)"
+		}
+		sb.WriteString(fmt.Sprintf(`<div class="logo-cell" %s><div style="display:flex;align-items:center;justify-content:center;width:100%%;min-height:80px;%s"><img src="%s" alt="%s" style="max-width:140px;max-height:80px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.08))" /></div><div class="logo-label">%s</div></div>`, bgStyle, extraStyle, html.EscapeString(v.url), html.EscapeString(v.label), v.label))
 	}
-	sb.WriteString(`</div>`)
+	sb.WriteString(`</div></div>`)
 	return sb.String()
 }
 
