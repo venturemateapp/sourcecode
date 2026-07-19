@@ -49,7 +49,6 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isEscalated, setIsEscalated] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [loadedLastSession, setLoadedLastSession] = useState(false);
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
@@ -62,7 +61,6 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
         if (d.mySupportSessions.length > 0 && !sessionId) {
           const latest = d.mySupportSessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
           setSessionId(latest.id);
-          setLoadedLastSession(true);
           loadMessages(latest.id);
         }
       }).catch(() => {});
@@ -149,11 +147,7 @@ export function SupportChatProvider({ children }: { children: ReactNode }) {
 
   const handleSetOpen = useCallback((v: boolean) => {
     setOpen(v);
-    if (v && !sessionId && sessions.length > 0 && loadedLastSession) {
-      const latest = sessions.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-      switchSession(latest.id);
-    }
-  }, [sessionId, sessions, loadedLastSession, switchSession]);
+  }, []);
 
   return (
     <SupportChatContext.Provider value={{
