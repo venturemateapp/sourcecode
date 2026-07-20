@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Box, Typography, Card, Chip, Avatar, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, Stack } from '@mui/material';
+import { Box, Typography, Card, Chip, Avatar, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, Stack, CircularProgress } from '@mui/material';
 import { Person } from '@mui/icons-material';
 import { Plus, MoreVertical, Edit2, Trash2, Mail, Briefcase, PieChart, Camera } from 'lucide-react';
 import type { TeamMember } from '../../types/venturemate';
@@ -80,6 +80,7 @@ export function TeamPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const maxTeamMembers = subscription?.plan?.limits?.maxTeamMembers;
@@ -100,6 +101,7 @@ export function TeamPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+    setAvatarUploading(true);
     const token = (await import('../../lib/auth')).getToken();
     const formData = new FormData();
     formData.append('file', file);
@@ -110,10 +112,16 @@ export function TeamPage() {
         body: formData,
       });
       const data = await res.json();
-      if (data.url) setFormData(prev => ({ ...prev, avatar: data.url }));
+      if (data.url) {
+        setFormData(prev => ({ ...prev, avatar: data.url }));
+        toast.success('Avatar uploaded');
+      } else {
+        toast.error('Upload failed', { description: data.error || 'Unknown error' });
+      }
     } catch (err) {
-      console.error('Avatar upload failed:', err);
+      toast.error('Upload failed', { description: 'Please try again.' });
     }
+    setAvatarUploading(false);
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, member: TeamMember) => {
@@ -476,7 +484,7 @@ export function TeamPage() {
               <Box
                 component="button"
                 type="button"
-                onClick={() => avatarInputRef.current?.click()}
+                onClick={() => { if (!avatarUploading) avatarInputRef.current?.click(); }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -489,12 +497,13 @@ export function TeamPage() {
                   color: 'var(--vm-text-secondary)',
                   fontSize: 13,
                   fontWeight: 600,
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
+                  cursor: avatarUploading ? 'not-allowed' : 'pointer',
+                  opacity: avatarUploading ? 0.6 : 1,
+                  '&:hover': { bgcolor: avatarUploading ? 'transparent' : 'var(--vm-bg-hover)' },
                 }}
               >
-                <Camera size={16} />
-                Upload Photo
+                {avatarUploading ? <CircularProgress size={14} /> : <Camera size={16} />}
+                {avatarUploading ? 'Uploading...' : 'Upload Photo'}
               </Box>
             </Box>
 

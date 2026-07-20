@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { graphqlRequest } from '../../lib/api';
 import { AIProviderSettingsCard } from '../../components/venturemate/AIProviderSettingsCard';
+import { useToast } from '../../components/shared/toast';
 
 const AVATAR_COLORS = ['#059669', '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'];
 
@@ -69,6 +70,7 @@ interface SettingsData {
 export function SettingsPage() {
   const navigate = useNavigate();
   const { user, logout, updateProfile } = useAuth();
+  const toast = useToast();
   const { currency: ctxCurrency, setCurrency: setCtxCurrency, format } = useCurrency();
   const [activeTab, setActiveTab] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -235,9 +237,14 @@ export function SettingsPage() {
         body: formData,
       });
       const data = await res.json();
-      if (data.url) setAvatarData(data.url);
+      if (data.url) {
+        setAvatarData(data.url);
+        toast.success('Avatar uploaded');
+      } else {
+        toast.error('Upload failed', { description: data.error || 'Unknown error' });
+      }
     } catch (err) {
-      console.error('Avatar upload failed:', err);
+      toast.error('Upload failed', { description: 'Please try again.' });
     }
     setSaving(false);
   };
