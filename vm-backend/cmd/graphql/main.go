@@ -219,6 +219,7 @@ func teamAvatarUploadHandler(container *app.Container) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf(`{"error":"upload failed: %s"}`, err.Error()), http.StatusInternalServerError)
 			return
 		}
+		container.S3.SetPublicRead(r.Context(), fileName)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
