@@ -1,11 +1,54 @@
 package graph
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/crm"
 )
+
+type teamMember struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func notifyTaskAssignment(ctx context.Context, businessID, assignedTo, taskTitle, taskStatus string) {
+	if AppContainer == nil || AppContainer.Email == nil || AppContainer.BusinessRepo == nil || assignedTo == "" {
+		return
+	}
+	biz, err := AppContainer.BusinessRepo.GetByID(ctx, businessID)
+	if err != nil || biz == nil {
+		return
+	}
+	var members []teamMember
+	if err := json.Unmarshal([]byte(biz.Team), &members); err != nil {
+		return
+	}
+	var email string
+	for _, m := range members {
+		if m.Name == assignedTo {
+			email = m.Email
+			break
+		}
+	}
+	if email == "" {
+		return
+	}
+	subject := fmt.Sprintf("Task Assigned: %s", taskTitle)
+	body := fmt.Sprintf(`
+<h2>Task Assigned</h2>
+<p>You have been assigned a new task:</p>
+<table style="width:100%%;border-collapse:collapse;margin:16px 0;">
+<tr><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold;">Title</td><td style="padding:8px;border-bottom:1px solid #eee;">%s</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;font-weight:bold;">Status</td><td style="padding:8px;border-bottom:1px solid #eee;">%s</td></tr>
+</table>
+<p style="color:#64748b;font-size:12px;">Please log in to VentureMate to view and update your tasks.</p>
+`, taskTitle, taskStatus)
+	AppContainer.Email.SendTemplatedEmail([]string{email}, subject, body)
+}
 
 func formatTime(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05Z")
@@ -504,6 +547,7 @@ func init() {
 			if err := AppContainer.CrmRepo.CreateTask(p.Context, t); err != nil {
 				return nil, err
 			}
+			notifyTaskAssignment(p.Context, t.BusinessID, t.AssignedTo, t.Title, t.Status)
 			return map[string]interface{}{
 				"id": t.ID, "businessId": t.BusinessID, "contactId": t.ContactID,
 				"title": t.Title, "description": t.Description, "dueDate": formatPtr(t.DueDate),
@@ -550,6 +594,12 @@ func init() {
 			}
 			if err := AppContainer.CrmRepo.UpdateTask(p.Context, t); err != nil {
 				return nil, err
+			}
+			if t.AssignedTo != "" && t.AssignedTo != existing.AssignedTo {
+				notifyTaskAssignment(p.Context, t.BusinessID, t.AssignedTo, t.Title, t.Status)
+			}
+			if t.Status != existing.Status {
+				notifyTaskAssignment(p.Context, t.BusinessID, t.AssignedTo, t.Title, t.Status)
 			}
 			return map[string]interface{}{
 				"id": t.ID, "businessId": t.BusinessID, "contactId": t.ContactID,

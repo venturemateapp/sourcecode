@@ -4,6 +4,7 @@ import { Person } from '@mui/icons-material';
 import { Plus, MoreVertical, Edit2, Trash2, Mail, Briefcase, PieChart, Camera } from 'lucide-react';
 import type { TeamMember } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { useToast } from '../../components/shared/toast';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
@@ -54,9 +55,26 @@ const RESPONSIBILITY_OPTIONS = [
 
 export function TeamPage() {
   const { selectedBusiness: business, updateBusiness } = useBusiness();
+  const { user } = useAuth();
   const { subscription } = useSubscription();
   const toast = useToast();
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => business?.team || []);
+  const currentUserMember: TeamMember = {
+    id: '__self__',
+    name: user ? `${user.firstName} ${user.lastName}`.trim() || user.email : '',
+    email: user?.email || '',
+    role: 'Founder & CEO',
+    title: 'Account Owner',
+    avatar: user?.avatar || '',
+    equity: 0,
+    status: 'active',
+    joinedDate: user?.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+    responsibilities: ['Strategy'],
+  };
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
+    const existing = business?.team || [];
+    const hasSelf = existing.some(m => m.email === user?.email || m.id === '__self__');
+    return hasSelf ? existing : [currentUserMember, ...existing];
+  });
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -295,12 +313,16 @@ export function TeamPage() {
                   </Typography>
                 </Box>
               </Box>
-              <IconButton
-                onClick={(e) => handleMenuOpen(e, member)}
-                sx={{ color: 'var(--vm-text-muted)' }}
-              >
-                <MoreVertical size={18} />
-              </IconButton>
+              {member.id === '__self__' ? (
+                <Chip label="You" size="small" sx={{ bgcolor: 'rgba(16,185,129,.15)', color: '#10b981', fontSize: 9, fontWeight: 700, height: 20 }} />
+              ) : (
+                <IconButton
+                  onClick={(e) => handleMenuOpen(e, member)}
+                  sx={{ color: 'var(--vm-text-muted)' }}
+                >
+                  <MoreVertical size={18} />
+                </IconButton>
+              )}
             </Box>
 
             <Box sx={{ mb: 2 }}>

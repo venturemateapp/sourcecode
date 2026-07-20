@@ -1,12 +1,13 @@
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Box, Typography, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, TextField, IconButton, CircularProgress, Select, MenuItem, FormControl, InputLabel, Tooltip, Avatar } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Calendar, Plus, Trash2, RefreshCw, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Plus, Trash2, RefreshCw, Building2, ChevronLeft, ChevronRight, CheckSquare, Clock } from 'lucide-react';
 import {
   format,
   startOfMonth,
@@ -20,6 +21,7 @@ import {
   isToday,
   eachDayOfInterval,
 } from 'date-fns';
+import type { CrmTask } from '../../types/venturemate';
 
 interface CalendarAccount {
   id: string; email: string; provider: string; caldavUrl: string; syncEnabled: boolean; lastSyncedAt: string | null;
@@ -46,6 +48,13 @@ export function CalendarPage() {
   const [saving, setSaving] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<CrmTask[]>([]);
+  const [eventForm, setEventForm] = useState<{ open: boolean; type: 'event' | 'task'; title: string; date: string; startTime: string; endTime: string; description: string; assignedTo: string }>({ open: false, type: 'event', title: '', date: '', startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' });
+
+  const assignableUsers = [
+    ...(user ? [{ name: `${user.firstName} ${user.lastName}`.trim() || user.email, email: user.email }] : []),
+    ...(selectedBusiness?.team?.filter(m => m.status === 'active').map(m => ({ name: m.name, email: m.email })) || []),
+  ].filter((v, i, a) => a.findIndex(x => x.email === v.email) === i);
 
   const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -72,12 +81,14 @@ export function CalendarPage() {
       const from = startOfMonth(currentMonth);
       const to = endOfMonth(currentMonth);
 
-      const [acctData, evData] = await Promise.all([
+      const [acctData, evData, taskData] = await Promise.allSettled([
         q<{ calendarAccounts: CalendarAccount[] }>('query Q($b:ID!){calendarAccounts(businessId:$b){id email provider caldavUrl syncEnabled lastSyncedAt}}', { b: bizId }),
         q<{ calendarEvents: CalendarEvent[] }>('query Q($b:ID!,$f:String!,$t:String!){calendarEvents(businessId:$b from:$f to:$t){id title description location startTime endTime isAllDay status contactId}}', { b: bizId, f: from.toISOString(), t: to.toISOString() }),
+        q<{ crmTasks: CrmTask[] }>('query T($b:ID!){crmTasks(businessId:$b){id title description dueDate status}}', { b: bizId }),
       ]);
-      setAccounts(acctData.calendarAccounts);
-      setEvents(evData.calendarEvents);
+      if (acctData.status === 'fulfilled') setAccounts(acctData.value.calendarAccounts);
+      if (evData.status === 'fulfilled') setEvents(evData.value.calendarEvents);
+      if (taskData.status === 'fulfilled') setTasks(taskData.value.crmTasks);
     } catch { /* ignore */ }
     setLoading(false);
   }, [bizId, q, currentMonth]);
@@ -118,10 +129,37 @@ export function CalendarPage() {
     setTimeout(() => { setSyncingId(null); loadAll(); }, 3000);
   };
 
+  const saveEvent = async () => {
+    if (!bizId || !user || !eventForm.title || !eventForm.date) return;
+    setSaving(true);
+    try {
+      if (eventForm.type === 'event' && accounts.length > 0) {
+        const startTime = new Date(`${eventForm.date}T${eventForm.startTime}:00`).toISOString();
+        const endTime = new Date(`${eventForm.date}T${eventForm.endTime}:00`).toISOString();
+        await q('mutation M($b:ID!,$a:ID!,$t:String!,$d:String,$s:String!,$e:String!,$i:Boolean){createCalendarEvent(businessId:$b accountId:$a title:$t description:$d startTime:$s endTime:$e isAllDay:$i){id}}', {
+          b: bizId, a: accounts[0].id, t: eventForm.title, d: eventForm.description || '',
+          s: startTime, e: endTime, i: false,
+        });
+      } else {
+        await q('mutation M($b:ID!,$t:String!,$d:String,$s:String,$u:String){createCrmTask(businessId:$b title:$t description:$d status:$s assignedTo:$u){id}}', {
+          b: bizId, t: eventForm.title, d: eventForm.description || '',
+          s: eventForm.type === 'task' ? 'pending' : 'done', u: eventForm.assignedTo || user.id,
+        });
+      }
+      setEventForm({ open: false, type: 'event', title: '', date: '', startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' });
+      loadAll();
+    } catch (err) {
+      console.error('Failed to save:', err);
+    }
+    setSaving(false);
+  };
+
   const getEventsForDay = (day: Date) => events.filter(e => {
     const ed = new Date(e.startTime);
     return isSameDay(ed, day);
   });
+
+  const getTasksForDay = (day: Date) => tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), day));
 
   if (!bizId) return <Box sx={{ p: 4, textAlign: 'center', color: 'var(--vm-text-muted)' }}><Building2 size={40} /><Typography sx={{ mt: 1 }}>Select a business</Typography></Box>;
 
@@ -134,7 +172,7 @@ export function CalendarPage() {
       <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 0 } }}>
         <Box>
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Calendar</Typography>
-          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{accounts.length} calendars · {eventCount} events this month</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{accounts.length} calendars · {eventCount + tasks.filter(t => t.dueDate && isSameMonth(new Date(t.dueDate), currentMonth)).length} items this month</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <GradientButton variant="ghost" size="sm" onClick={prevMonth}>
@@ -144,6 +182,8 @@ export function CalendarPage() {
           <GradientButton variant="ghost" size="sm" onClick={nextMonth}>
             <ChevronRight size={16} />
           </GradientButton>
+          <GradientButton variant="outline" size="sm" startIcon={<CheckSquare size={14} />} onClick={() => setEventForm({ open: true, type: 'task', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })}>Add Task</GradientButton>
+          <GradientButton variant="outline" size="sm" startIcon={<Clock size={14} />} onClick={() => setEventForm({ open: true, type: 'event', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })} disabled={accounts.length === 0} title={accounts.length === 0 ? 'Connect a calendar first' : ''}>Add Event</GradientButton>
           <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setShowConnForm(true)}>Connect</GradientButton>
         </Box>
       </Box>
@@ -187,6 +227,11 @@ export function CalendarPage() {
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 } }}>
             {calendarDays.map((day, idx) => {
               const dayEvents = getEventsForDay(day);
+              const dayTasks = getTasksForDay(day);
+              const dayItems = [
+                ...dayEvents.map(e => ({ id: e.id, type: 'event' as const, title: e.title, startTime: e.startTime, isAllDay: e.isAllDay })),
+                ...dayTasks.map(t => ({ id: t.id, type: 'task' as const, title: t.title, startTime: t.dueDate || '', isAllDay: true })),
+              ].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
               const inMonth = isSameMonth(day, currentMonth);
               const today = isToday(day);
               const dayNum = day.getDate();
@@ -221,32 +266,32 @@ export function CalendarPage() {
                     {dayNum}
                   </Typography>
 
-                  {/* Event dots (up to 3 visible, then +N more) */}
-                  {dayEvents.length > 0 && (
+                  {/* Event/task dots (up to 3 visible, then +N more) */}
+                  {dayItems.length > 0 && (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25, mt: 'auto', pt: 0.25 }}>
-                      {dayEvents.slice(0, 3).map(ev => (
-                        <Box
-                          key={ev.id}
-                          title={ev.title}
-                          sx={{
-                            width: { xs: 5, sm: 6 },
-                            height: { xs: 5, sm: 6 },
-                            borderRadius: '50%',
-                            bgcolor: ev.isAllDay ? '#10b981' : '#3b82f6',
-                            flexShrink: 0,
-                          }}
-                        />
+                      {dayItems.slice(0, 3).map(item => (
+                        <Tooltip key={item.id} title={`${item.type === 'task' ? '📋 ' : '📅 '}${item.title}`}>
+                          <Box
+                            sx={{
+                              width: { xs: 5, sm: 6 },
+                              height: { xs: 5, sm: 6 },
+                              borderRadius: '50%',
+                              bgcolor: item.type === 'task' ? '#8b5cf6' : item.isAllDay ? '#10b981' : '#3b82f6',
+                              flexShrink: 0,
+                            }}
+                          />
+                        </Tooltip>
                       ))}
-                      {dayEvents.length > 3 && (
+                      {dayItems.length > 3 && (
                         <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', lineHeight: '6px' }}>
-                          +{dayEvents.length - 3}
+                          +{dayItems.length - 3}
                         </Typography>
                       )}
                     </Box>
                   )}
 
-                  {/* Show first event title on larger screens */}
-                  {dayEvents.length > 0 && (
+                  {/* Show first item title on larger screens */}
+                  {dayItems.length > 0 && (
                     <Box sx={{ display: { xs: 'none', md: 'block' }, mt: 'auto' }}>
                       <Typography
                         sx={{
@@ -260,11 +305,11 @@ export function CalendarPage() {
                           maxWidth: '100%',
                         }}
                       >
-                        {dayEvents[0].title}
+                        {dayItems[0].title}
                       </Typography>
-                      {!dayEvents[0].isAllDay && (
+                      {dayItems[0].type === 'event' && !dayItems[0].isAllDay && (
                         <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', lineHeight: 1.2 }}>
-                          {new Date(dayEvents[0].startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          {new Date(dayItems[0].startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                         </Typography>
                       )}
                     </Box>
@@ -275,6 +320,61 @@ export function CalendarPage() {
           </Box>
         </Box>
       )}
+
+      {/* Add Event/Task Modal */}
+      <Modal open={eventForm.open} onClose={() => setEventForm({ ...eventForm, open: false })} title={eventForm.type === 'event' ? 'Add Event' : 'Add Task'} icon={eventForm.type === 'event' ? <Clock size={20} /> : <CheckSquare size={20} />}
+        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setEventForm({ ...eventForm, open: false })}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={saving || !eventForm.title || !eventForm.date} onClick={saveEvent}>
+            {saving ? <CircularProgress size={14} /> : 'Save'}
+          </GradientButton></>}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField size="small" label="Title" value={eventForm.title} onChange={e => setEventForm({ ...eventForm, title: e.target.value })}
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          <DatePicker label="Date" format="dd/MM/yyyy" value={eventForm.date ? new Date(eventForm.date) : null}
+            onChange={(date) => setEventForm({ ...eventForm, date: date ? format(date, 'yyyy-MM-dd') : '' })}
+            slotProps={{ textField: { size: 'small', sx: { input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
+          {eventForm.type === 'event' && (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField size="small" label="Start Time" type="time" value={eventForm.startTime} onChange={e => setEventForm({ ...eventForm, startTime: e.target.value })}
+                sx={{ flex: 1, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+              <TextField size="small" label="End Time" type="time" value={eventForm.endTime} onChange={e => setEventForm({ ...eventForm, endTime: e.target.value })}
+                sx={{ flex: 1, input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            </Box>
+          )}
+          {eventForm.type === 'task' && (
+            <>
+              <FormControl size="small">
+                <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Assigned To</InputLabel>
+                <Select value={eventForm.assignedTo} label="Assigned To" onChange={e => setEventForm({ ...eventForm, assignedTo: e.target.value })}
+                  sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                  <MenuItem value=""><em>Unassigned</em></MenuItem>
+                  {assignableUsers.map(u => (
+                    <MenuItem key={u.email} value={u.name}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar sx={{ width: 22, height: 22, fontSize: 9, bgcolor: 'var(--vm-primary-600)' }}>{u.name[0]}</Avatar>
+                        <Box>
+                          <Typography sx={{ fontSize: 13, lineHeight: 1.2 }}>{u.name}</Typography>
+                          <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', lineHeight: 1.2 }}>{u.email}</Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small">
+                <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Status</InputLabel>
+                <Select value="pending" label="Status" sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="in_progress">In Progress</MenuItem>
+                  <MenuItem value="done">Done</MenuItem>
+                </Select>
+              </FormControl>
+            </>
+          )}
+          <TextField size="small" label="Description" multiline rows={2} value={eventForm.description} onChange={e => setEventForm({ ...eventForm, description: e.target.value })}
+            sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+        </Box>
+      </Modal>
 
       <Modal open={showConnForm} onClose={() => setShowConnForm(false)} title="Connect Calendar" icon={<Calendar size={20} />}
         actions={<><GradientButton variant="ghost" size="sm" onClick={() => setShowConnForm(false)}>Cancel</GradientButton>

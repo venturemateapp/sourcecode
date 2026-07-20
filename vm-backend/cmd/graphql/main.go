@@ -177,6 +177,62 @@ func downloadHandler(container *app.Container) http.HandlerFunc {
 	}
 }
 
+func pdfDownloadHandler(container *app.Container) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+
+		pdfType := r.URL.Query().Get("type")
+		id := r.URL.Query().Get("id")
+		if pdfType == "" || id == "" {
+			http.Error(w, `{"error":"type and id required"}`, http.StatusBadRequest)
+			return
+		}
+
+		var s3Key string
+		var fileName string
+
+		switch pdfType {
+		case "invoice":
+			inv, err := container.InvoiceRepo.GetByID(r.Context(), id)
+			if err != nil || inv == nil {
+				http.Error(w, `{"error":"invoice not found"}`, http.StatusNotFound)
+				return
+			}
+			if inv.UserID != userID {
+				http.Error(w, `{"error":"access denied"}`, http.StatusForbidden)
+				return
+			}
+			s3Key = fmt.Sprintf("invoices/%s.pdf", inv.InvoiceNumber)
+			fileName = fmt.Sprintf("invoice_%s.pdf", inv.InvoiceNumber)
+		case "expense":
+			exp, err := container.ExpenditureRepo.GetByID(r.Context(), id)
+			if err != nil || exp == nil {
+				http.Error(w, `{"error":"expense not found"}`, http.StatusNotFound)
+				return
+			}
+			s3Key = fmt.Sprintf("expenses/%s.pdf", exp.ID)
+			fileName = fmt.Sprintf("expense_%s.pdf", exp.ID[:8])
+		default:
+			http.Error(w, `{"error":"invalid type, use 'invoice' or 'expense'"}`, http.StatusBadRequest)
+			return
+		}
+
+		data, contentType, err := container.S3.Download(r.Context(), s3Key)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"download failed: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, fileName))
+		w.Write(data)
+	}
+}
+
 func oauthHandler(manager *oauth.OAuthManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
@@ -333,6 +389,7 @@ func main() {
 	http.Handle("/api/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, uploadHandler(container)))))
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))
 	http.Handle("/api/documents/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, downloadHandler(container)))))
+	http.Handle("/api/pdf/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, pdfDownloadHandler(container)))))
 	http.HandleFunc("/api/public-sites/allow-domain", publicSites.AllowDomain)
 	http.HandleFunc("/api/public-sites/subdomain-availability", publicSites.SubdomainAvailability)
 	http.HandleFunc("/api/public-sites/contact", publicSites.SubmitContact)

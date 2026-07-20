@@ -1,6 +1,9 @@
 package graph
 
-import "github.com/graphql-go/graphql"
+import (
+	"github.com/graphql-go/graphql"
+	"github.com/venturemate/vmbackend/internal/aichat"
+)
 
 var aiChatSessionType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "AiChatSession",
@@ -117,18 +120,32 @@ func init() {
 	rootMutation.AddFieldConfig("saveAiChatMessage", &graphql.Field{
 		Type: aiChatMessageType,
 		Args: graphql.FieldConfigArgument{
-			"sessionId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"role":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"content":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"sessionId":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"role":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"content":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"inputTokens":  &graphql.ArgumentConfig{Type: graphql.Int},
+			"outputTokens": &graphql.ArgumentConfig{Type: graphql.Int},
+			"model":        &graphql.ArgumentConfig{Type: graphql.String},
+			"provider":     &graphql.ArgumentConfig{Type: graphql.String},
+			"durationMs":   &graphql.ArgumentConfig{Type: graphql.Int},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil || AppContainer.AiChatRepo == nil {
 				return nil, nil
 			}
+			var opts []aichat.AddMessageOption
+			if v, ok := p.Args["inputTokens"].(int); ok && v > 0 {
+				inputTokens := v
+				outputTokens, _ := p.Args["outputTokens"].(int)
+				model, _ := p.Args["model"].(string)
+				provider, _ := p.Args["provider"].(string)
+				durationMs, _ := p.Args["durationMs"].(int)
+				opts = append(opts, aichat.WithTokenUsage(inputTokens, outputTokens, model, provider, int64(durationMs)))
+			}
 			m, err := AppContainer.AiChatRepo.AddMessage(p.Context,
 				p.Args["sessionId"].(string),
 				p.Args["role"].(string),
-				p.Args["content"].(string))
+				p.Args["content"].(string), opts...)
 			if err != nil {
 				return nil, err
 			}

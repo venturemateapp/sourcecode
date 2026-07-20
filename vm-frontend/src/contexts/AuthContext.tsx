@@ -65,7 +65,7 @@ function mapApiUserToUser(apiUser: ApiUser): User {
     website: apiUser.website || '',
     onboarded: apiUser.onboarded,
     status: apiUser.status || 'active',
-    preferredCurrency: apiUser.preferredCurrency || 'USD',
+    preferredCurrency: apiUser.preferredCurrency || '',
   isAdmin: apiUser.isAdmin ?? false,
   createdAt: new Date().toISOString(),
   lastActive: new Date().toISOString(),

@@ -48,12 +48,21 @@ interface ChatMessage {
   content: string;
   operations?: AgentOperation[];
   attachments?: Attachment[];
+  inputTokens?: number;
+  outputTokens?: number;
+  model?: string;
+  provider?: string;
 }
 
 interface AgentResponse {
   executeAgentQuery: {
     message: string;
     operations?: AgentOperation[];
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    model?: string;
+    provider?: string;
   };
 }
 
@@ -254,9 +263,10 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
     lastSaveRef.current = now;
     const last = messages[messages.length - 1];
     if (!last.id.startsWith('hist-') && !last.id.startsWith('saving-')) {
-      q('mutation M($s:ID!,$r:String!,$c:String!){saveAiChatMessage(sessionId:$s role:$r content:$c){id}}', {
-        s: sessionId, r: last.role, c: last.content,
-      }).catch(() => {});
+      const vars: Record<string, unknown> = { s: sessionId, r: last.role, c: last.content };
+      if (last.inputTokens) { vars.it = last.inputTokens; vars.ot = last.outputTokens; vars.m = last.model; vars.p = last.provider; }
+      q(`mutation M($s:ID!,$r:String!,$c:String!${last.inputTokens ? ',$it:Int,$ot:Int,$m:String,$p:String' : ''}){saveAiChatMessage(sessionId:$s role:$r content:$c${last.inputTokens ? ' inputTokens:$it outputTokens:$ot model:$m provider:$p' : ''}){id}}`, vars)
+        .catch(() => {});
     }
   }, [messages, sessionId, historyLoaded, q]);
 
@@ -390,6 +400,10 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
           role: 'assistant',
           content: response.message,
           operations: response.operations || [],
+          inputTokens: response.inputTokens,
+          outputTokens: response.outputTokens,
+          model: response.model,
+          provider: response.provider,
         }]);
 
         if ((response.operations || []).some(operation => operation.success)) {

@@ -181,11 +181,15 @@ export function InvoicesPage() {
   };
 
   const downloadPdf = async (inv: Invoice) => {
-    if (inv.pdfUrl) { window.open(inv.pdfUrl, '_blank'); return; }
+    const token = (await import('../../lib/auth')).getToken();
+    if (inv.pdfUrl) {
+      window.open(`/api/pdf/download?type=invoice&id=${inv.id}&token=${token}`, '_blank');
+      return;
+    }
     if (!bizId) return;
     try {
-      const d = await q<{ generateInvoicePdf: string }>('mutation M($i:ID!,$b:ID!){generateInvoicePdf(id:$i businessId:$b)}', { i: inv.id, b: bizId });
-      if (d.generateInvoicePdf) window.open(d.generateInvoicePdf, '_blank');
+      await q<{ generateInvoicePdf: string }>('mutation M($i:ID!,$b:ID!){generateInvoicePdf(id:$i businessId:$b)}', { i: inv.id, b: bizId });
+      window.open(`/api/pdf/download?type=invoice&id=${inv.id}&token=${token}`, '_blank');
     } catch (err) {
       console.error('Failed to generate PDF:', err);
       toast.error('Failed to generate PDF', { description: 'Please try again.' });

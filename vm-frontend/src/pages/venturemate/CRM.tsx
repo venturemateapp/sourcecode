@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Box, Typography, Card, Tabs, Tab, Chip, Avatar, Dialog, DialogTitle, DialogContent,
-  TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Tooltip, CircularProgress,
+  TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Tooltip, CircularProgress, ListSubheader,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Users, TrendingUp, Phone, Mail, Plus, CheckCircle, Calendar, X,
   Trash2, Edit3, Building2, DollarSign, ListChecks,
@@ -47,9 +48,15 @@ function formatDate(s: string | null | undefined) {
 
 export function CRMPage() {
   const { selectedBusiness } = useBusiness();
+  const { user } = useAuth();
   const { format } = useCurrency();
   const toast = useToast();
   const bizId = selectedBusiness?.id;
+
+  const assignableUsers = [
+    ...(user ? [{ name: `${user.firstName} ${user.lastName}`.trim() || user.email, email: user.email }] : []),
+    ...(selectedBusiness?.team?.filter(m => m.status === 'active').map(m => ({ name: m.name, email: m.email })) || []),
+  ].filter((v, i, a) => a.findIndex(x => x.email === v.email) === i);
 
   const [tab, setTab] = useState(0);
   const [contacts, setContacts] = useState<CrmContact[]>([]);
@@ -677,8 +684,25 @@ export function CRMPage() {
                 {['pending', 'in_progress', 'done'].map(s => <MenuItem key={s} value={s} sx={{ textTransform: 'capitalize' }}>{s.replace('_', ' ')}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField size="small" label="Assigned To" value={taskForm?.assignedTo || ''} onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <FormControl size="small">
+              <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Assigned To</InputLabel>
+              <Select value={taskForm?.assignedTo || ''} label="Assigned To" onChange={e => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
+                sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                <MenuItem value=""><em>Unassigned</em></MenuItem>
+                {assignableUsers.length > 0 && [
+                  <ListSubheader key="header" sx={{ bgcolor: 'var(--vm-bg-secondary)', color: 'var(--vm-text-muted)', fontSize: 10, lineHeight: '24px' }}>TEAM MEMBERS</ListSubheader>,
+                  ...assignableUsers.map(u => (
+                    <MenuItem key={u.email} value={u.name} sx={{ gap: 1 }}>
+                      <Avatar sx={{ width: 22, height: 22, fontSize: 9, bgcolor: 'var(--vm-primary-600)' }}>{u.name[0]}</Avatar>
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography sx={{ fontSize: 13, lineHeight: 1.2 }}>{u.name}</Typography>
+                        <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', lineHeight: 1.2 }}>{u.email}</Typography>
+                      </Box>
+                    </MenuItem>
+                  )),
+                ]}
+              </Select>
+            </FormControl>
             <DatePicker label="Due Date" format="dd/MM/yyyy" value={taskForm?.dueDate ? new Date(taskForm.dueDate) : null}
               onChange={(date) => setTaskForm({ ...taskForm, dueDate: date ? date.toISOString().split('T')[0] : '' })}
               slotProps={{ textField: { size: 'small', sx: { input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />

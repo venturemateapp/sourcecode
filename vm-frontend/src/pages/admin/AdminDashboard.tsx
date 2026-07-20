@@ -1308,7 +1308,7 @@ export function AdminDashboard() {
             </Box>
             <Box sx={{ flex: 1, overflow: 'auto', p: 1.5 }}>
               {supportMessages.map(m => (
-                <Box key={m.id} sx={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', mb: 1.5 }}>
+                <Box key={m.id} sx={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-start' : 'flex-end', mb: 1.5 }}>
                   <Box sx={{ maxWidth: '80%', p: 1.25, borderRadius: 2.5, fontSize: 13, lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
                     bgcolor: m.role === 'user' ? '#f59e0b' : 'rgba(255,255,255,.06)',
                     color: m.role === 'user' ? '#000' : 'rgba(255,255,255,.87)',

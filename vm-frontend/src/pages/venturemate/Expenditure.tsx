@@ -123,12 +123,9 @@ export function ExpenditurePage() {
   const downloadPdf = async (exp: Expenditure) => {
     if (!bizId) return;
     try {
-      const d = await q<{ generateExpensePdf: string }>('mutation M($i:ID!,$b:ID!){generateExpensePdf(id:$i businessId:$b)}', { i: exp.id, b: bizId });
-      if (d.generateExpensePdf) {
-        window.open(d.generateExpensePdf, '_blank');
-      } else {
-        toast.error('Failed to generate PDF', { description: 'The server returned an empty response.' });
-      }
+      const token = (await import('../../lib/auth')).getToken();
+      await q<{ generateExpensePdf: string }>('mutation M($i:ID!,$b:ID!){generateExpensePdf(id:$i businessId:$b)}', { i: exp.id, b: bizId });
+      window.open(`/api/pdf/download?type=expense&id=${exp.id}&token=${token}`, '_blank');
     } catch (err) {
       console.error('Failed to generate expense PDF:', err);
       toast.error('Failed to generate PDF', { description: 'Please try again.' });
