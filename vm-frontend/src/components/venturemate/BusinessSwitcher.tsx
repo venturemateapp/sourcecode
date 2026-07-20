@@ -4,6 +4,7 @@ import {
   Typography,
   Menu,
   MenuItem,
+  Avatar,
 } from '@mui/material';
 import { ChevronDown, Plus } from 'lucide-react';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -50,17 +51,21 @@ export function BusinessSwitcher({ onViewChange }: BusinessSwitcherProps) {
       >
         {selectedBusiness ? (
           <>
-            <Box
-              sx={{
-                width: 24, height: 24, borderRadius: 1,
-                background: `linear-gradient(135deg, ${selectedBusiness.brandKit.primaryColor} 0%, ${selectedBusiness.brandKit.secondaryColor} 100%)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}
-            >
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'white' }}>
-                {selectedBusiness.name[0]}
-              </Typography>
-            </Box>
+            {selectedBusiness.brandKit.logo && (selectedBusiness.brandKit.logo.startsWith('data:') || selectedBusiness.brandKit.logo.startsWith('http')) ? (
+              <Avatar src={selectedBusiness.brandKit.logo} sx={{ width: 24, height: 24, borderRadius: 1 }} />
+            ) : (
+              <Box
+                sx={{
+                  width: 24, height: 24, borderRadius: 1,
+                  background: `linear-gradient(135deg, ${selectedBusiness.brandKit.primaryColor} 0%, ${selectedBusiness.brandKit.secondaryColor} 100%)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'white' }}>
+                  {selectedBusiness.name[0]}
+                </Typography>
+              </Box>
+            )}
             <Typography
               sx={{
                 fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)',
@@ -115,22 +120,26 @@ export function BusinessSwitcher({ onViewChange }: BusinessSwitcherProps) {
               '&:hover': { bgcolor: 'var(--vm-bg-hover)' },
             }}
           >
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: 1,
-                background: `linear-gradient(135deg, ${business.brandKit.primaryColor} 0%, ${business.brandKit.secondaryColor} 100%)`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'white' }}>
-                {business.name[0]}
-              </Typography>
-            </Box>
+            {business.brandKit.logo && (business.brandKit.logo.startsWith('data:') || business.brandKit.logo.startsWith('http')) ? (
+              <Avatar src={business.brandKit.logo} sx={{ width: 32, height: 32, borderRadius: 1 }} />
+            ) : (
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 1,
+                  background: `linear-gradient(135deg, ${business.brandKit.primaryColor} 0%, ${business.brandKit.secondaryColor} 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'white' }}>
+                  {business.name[0]}
+                </Typography>
+              </Box>
+            )}
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                 {business.name}
