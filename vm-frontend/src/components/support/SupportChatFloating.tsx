@@ -274,7 +274,7 @@ export function SupportChatFloating() {
         right: { xs: 12, sm: 24 },
         bottom: open ? { xs: 0, sm: 24 } : { xs: 72, sm: 24 },
         left: 'auto',
-        zIndex: 1450,
+        zIndex: 1100,
       }}
     >
       {open ? panel : (

@@ -664,7 +664,7 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
         right: { xs: 12, sm: 24 },
         bottom: { xs: 12, sm: 24 },
         left: 'auto',
-        zIndex: 1400,
+        zIndex: 1100,
       }}
     >
       {open ? panel : (
