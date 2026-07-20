@@ -174,6 +174,7 @@ func generateJWT(user *users.User, secret string) (string, error) {
 		"user_id":    user.ID,
 		"first_name": user.FirstName,
 		"surname":    user.Surname,
+		"picture":    user.Picture,
 		"onboarded":  user.Onboarded,
 		"status":     user.Status,
 		"is_admin":   user.IsAdmin,
