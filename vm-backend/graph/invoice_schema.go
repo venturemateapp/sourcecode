@@ -359,20 +359,48 @@ func init() {
 				if err != nil {
 					biz = &businesses.Business{Name: "VentureMate"}
 				}
-				emailBody := fmt.Sprintf(`
+				// Build line items table
+			var items []invoices.InvoiceItem
+			json.Unmarshal([]byte(inv.Items), &items)
+			itemsHTML := ""
+			for _, item := range items {
+				lineTotal := float64(item.Quantity) * item.UnitPrice
+				itemsHTML += fmt.Sprintf(`<tr><td style="padding:6px;border-bottom:1px solid #eee;">%s</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center;">%d</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">%s %.2f</td></tr>`, item.Description, item.Quantity, inv.Currency, lineTotal)
+			}
+			if len(items) == 0 {
+				itemsHTML = fmt.Sprintf(`<tr><td style="padding:6px;border-bottom:1px solid #eee;" colspan="3">%s</td></tr>`, inv.Notes)
+			}
+
+			// Build totals section
+			totalsHTML := fmt.Sprintf(`<tr style="font-weight:bold;"><td style="padding:6px;" colspan="2">Subtotal</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, inv.Subtotal)
+			if inv.Discount > 0 {
+				totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Discount</td><td style="padding:6px;text-align:right;">-%s %.2f</td></tr>`, inv.Currency, inv.Discount)
+			}
+			if inv.TaxRate > 0 {
+				totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Tax (%.1f%%)</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.TaxRate, inv.Currency, inv.TaxAmount)
+			}
+			if inv.ShippingCost > 0 {
+				totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Shipping</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, inv.ShippingCost)
+			}
+			grandTotal := inv.Subtotal - inv.Discount + inv.TaxAmount + inv.ShippingCost
+			totalsHTML += fmt.Sprintf(`<tr style="font-weight:bold;background:#10b981;color:#fff;"><td style="padding:8px;" colspan="2">TOTAL</td><td style="padding:8px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, grandTotal)
+
+			emailBody := fmt.Sprintf(`
 <h2>Invoice from %s</h2>
 <p>Dear %s,</p>
 <p>Please find your invoice <strong>#%s</strong> attached below.</p>
 <table style="width:100%%;border-collapse:collapse;margin:16px 0;">
 <tr style="background:#10b981;color:#fff;"><th style="padding:8px;text-align:left;">Description</th><th style="padding:8px;text-align:center;">Qty</th><th style="padding:8px;text-align:right;">Amount</th></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;" colspan="3">%s</td></tr>
-<tr style="font-weight:bold;"><td style="padding:8px;" colspan="2">Total</td><td style="padding:8px;text-align:right;">%s %.2f</td></tr>
+%s
+</table>
+<table style="width:100%%;border-collapse:collapse;margin:16px 0;max-width:300px;margin-left:auto;">
+%s
 </table>
 <p><a href="%s" style="display:inline-block;padding:10px 20px;background:#10b981;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Invoice PDF</a></p>
 <p style="color:#64748b;font-size:12px;">Due date: %s<br>Payment terms: %s</p>
 <hr>
 <p style="color:#64748b;font-size:12px;">Thank you for your business!</p>
-`, biz.Name, inv.CustomerName, inv.InvoiceNumber, inv.Notes, inv.Currency, inv.Amount, inv.PdfURL, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
+`, biz.Name, inv.CustomerName, inv.InvoiceNumber, itemsHTML, totalsHTML, inv.PdfURL, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
 
 				if err := AppContainer.Email.SendTemplatedEmail(
 					[]string{custEmail},
