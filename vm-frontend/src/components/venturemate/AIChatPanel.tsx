@@ -661,11 +661,10 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
     <Box
       sx={{
         position: 'fixed',
-        right: { xs: 0, sm: 24 },
-        bottom: { xs: 0, sm: 24 },
-        left: { xs: 0, sm: 'auto' },
+        right: { xs: 12, sm: 24 },
+        bottom: { xs: 12, sm: 24 },
+        left: 'auto',
         zIndex: 1400,
-        p: { xs: 1, sm: 0 },
       }}
     >
       {open ? panel : (
