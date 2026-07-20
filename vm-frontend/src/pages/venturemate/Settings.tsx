@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import {
-  User, Lock, Bell, Palette, CreditCard, Link as LinkIcon, Shield,
+  User, Lock, Bell, Palette, CreditCard, Shield,
   Globe, Mail, Eye, EyeOff, CheckCircle, Save, Upload, LogOut, X, Plus,
 } from 'lucide-react';
 import { graphqlRequest } from '../../lib/api';
@@ -27,12 +27,6 @@ const MY_SETTINGS_QUERY = `
 const UPDATE_SETTINGS_MUTATION = `
   mutation UpdateSettings($userId: ID!, $settings: String!) {
     updateSettings(userId: $userId, settings: $settings)
-  }
-`;
-
-const DISCONNECT_OAUTH_MUTATION = `
-  mutation DisconnectOAuth($provider: String!, $userId: ID!) {
-    disconnectOAuth(provider: $provider, userId: $userId)
   }
 `;
 
@@ -64,20 +58,11 @@ const defaultNotifications = [
   { id: '6', label: 'Marketing Updates', description: 'Product updates and tips', email: false, push: false, inApp: false },
 ];
 
-const defaultConnectedApps = [
-  { id: '1', name: 'Google Calendar', icon: 'calendar', connected: false, lastSync: '' },
-  { id: '2', name: 'Slack', icon: 'slack', connected: false, lastSync: '' },
-  { id: '3', name: 'GitHub', icon: 'github', connected: false, lastSync: '' },
-  { id: '4', name: 'LinkedIn', icon: 'linkedin', connected: false, lastSync: '' },
-  { id: '5', name: 'Stripe', icon: 'stripe', connected: false, lastSync: '' },
-];
-
 interface SettingsData {
   language: string;
   timezone: string;
   dateFormat: string;
   notifications: typeof defaultNotifications;
-  connectedApps: typeof defaultConnectedApps;
   apiKey: string;
 }
 
@@ -94,7 +79,6 @@ export function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>({
     language: 'en', timezone: 'UTC', dateFormat: 'DD/MM/YYYY',
     notifications: defaultNotifications,
-    connectedApps: defaultConnectedApps,
     apiKey: '',
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -142,7 +126,6 @@ export function SettingsPage() {
           timezone: parsed.timezone || 'UTC',
           dateFormat: parsed.dateFormat || 'DD/MM/YYYY',
           notifications: parsed.notifications || defaultNotifications,
-          connectedApps: parsed.connectedApps || defaultConnectedApps,
           apiKey: parsed.apiKey || '',
         });
         setTwoFactorEnabled(parsed.twoFactorEnabled || false);
@@ -238,38 +221,6 @@ export function SettingsPage() {
     }));
   };
 
-  const appIdToProvider: Record<string, string> = {
-    '1': 'google-calendar', '2': 'slack', '3': 'github', '4': 'linkedin', '5': 'stripe',
-  };
-
-  const handleConnectApp = async (appId: string) => {
-    const app = settings.connectedApps.find(a => a.id === appId);
-    if (!app || !user) return;
-
-    if (app.connected) {
-      const provider = appIdToProvider[appId];
-      if (!provider) return;
-      const res = await graphqlRequest<{ disconnectOAuth: boolean }>(
-        DISCONNECT_OAUTH_MUTATION,
-        { provider, userId: user.id }
-      );
-      if (res.disconnectOAuth) {
-        const updated = {
-          ...settings,
-          connectedApps: settings.connectedApps.map(a =>
-            a.id === appId ? { ...a, connected: false, lastSync: '' } : a
-          ),
-        };
-        setSettings(updated);
-        await saveSettingsToBackend(updated);
-      }
-    } else {
-      const provider = appIdToProvider[appId];
-      if (!provider) return;
-      window.location.href = `/auth/oauth/${provider}/login?userId=${user.id}`;
-    }
-  };
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || file.size > 2 * 1024 * 1024) return;
@@ -301,17 +252,8 @@ export function SettingsPage() {
     { label: 'Security', icon: Lock },
     { label: 'Notifications', icon: Bell },
     { label: 'Preferences', icon: Palette },
-    { label: 'Integrations', icon: LinkIcon },
     { label: 'Billing', icon: CreditCard },
   ];
-
-  const appIcons: Record<string, React.ReactNode> = {
-    calendar: <Globe size={20} />,
-    slack: <Bell size={20} />,
-    github: <Globe size={20} />,
-    linkedin: <Globe size={20} />,
-    stripe: <CreditCard size={20} />,
-  };
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
@@ -556,35 +498,6 @@ export function SettingsPage() {
           )}
 
           {activeTab === 4 && (
-            <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, px: { xs: 0, md: 3 }, p: { xs: 3, md: 4 } }}>
-              <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 3 }}>Connected Apps</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {settings.connectedApps.map((app) => (
-                  <Box key={app.id} sx={{ display: 'flex', alignItems: { xs: 'center', md: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 0 }, p: 3, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 2, border: '1px solid var(--vm-border-subtle)' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'var(--vm-bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--vm-primary-400)' }}>
-                        {appIcons[app.icon] || <Globe size={20} />}
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'var(--vm-text-primary)' }}>{app.name}</Typography>
-                        {app.connected ? (
-                          <Typography sx={{ fontSize: 13, color: '#22c55e' }}>Connected{app.lastSync ? ` • Last synced ${app.lastSync}` : ''}</Typography>
-                        ) : (
-                          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>Not connected</Typography>
-                        )}
-                      </Box>
-                    </Box>
-                    <GradientButton variant={app.connected ? 'outline' : 'primary'} size="sm" onClick={() => handleConnectApp(app.id)}>
-                      {app.connected ? 'Disconnect' : 'Connect'}
-                    </GradientButton>
-                  </Box>
-                ))}
-              </Box>
-              <Divider sx={{ my: 4, borderColor: 'var(--vm-border-subtle)' }} />
-            </Card>
-          )}
-
-          {activeTab === 5 && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, px: { xs: 0, md: 3 }, p: { xs: 3, md: 4 } }}>
                 <Typography sx={{ fontSize: 20, fontWeight: 600, color: 'var(--vm-text-primary)', mb: 3 }}>Current Plan</Typography>
