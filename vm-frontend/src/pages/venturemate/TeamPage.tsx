@@ -61,6 +61,7 @@ export function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const maxTeamMembers = subscription?.plan?.limits?.maxTeamMembers;
@@ -121,6 +122,7 @@ export function TeamPage() {
 
   const handleEdit = () => {
     if (selectedMember) {
+      setEditingMemberId(selectedMember.id);
       setIsEditing(true);
       setFormData({ ...selectedMember });
       setModalOpen(true);
@@ -142,10 +144,10 @@ export function TeamPage() {
 
     let updatedTeam: TeamMember[];
 
-    if (isEditing && selectedMember) {
+    if (isEditing && editingMemberId) {
       // Update existing member
       updatedTeam = teamMembers.map(m =>
-        m.id === selectedMember.id
+        m.id === editingMemberId
           ? { ...m, ...formData } as TeamMember
           : m
       );
@@ -168,6 +170,7 @@ export function TeamPage() {
 
     setTeamMembers(updatedTeam);
     updateBusiness(business.id, { team: updatedTeam });
+    setEditingMemberId(null);
     setModalOpen(false);
   };
 
@@ -543,7 +546,7 @@ export function TeamPage() {
               }}
               fullWidth
               inputProps={{ min: 0, max: 100, step: 0.1 }}
-              helperText={`Total allocated: ${totalEquity}%${formData.equity ? ` → ${isEditing ? totalEquity : totalEquity + formData.equity}%` : ''}`}
+              helperText={`Total allocated: ${totalEquity}%${formData.equity ? ` → ${isEditing && editingMemberId ? totalEquity - (teamMembers.find(m => m.id === editingMemberId)?.equity || 0) + formData.equity : totalEquity + formData.equity}%` : ''}`}
               sx={{
                 '& .MuiInputBase-root': {
                   bgcolor: 'var(--vm-bg-primary)',
