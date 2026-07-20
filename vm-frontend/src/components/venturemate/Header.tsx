@@ -44,13 +44,15 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
 
   return (
     <Box sx={{
-      px: { xs: 1.25, sm: 2 }, py: 1,
-      display: 'flex', alignItems: 'center', gap: 1.5,
+      px: { xs: 0.75, sm: 2 }, py: 1,
+      display: 'flex', alignItems: 'center', gap: { xs: 0.75, sm: 1.5 },
       borderBottom: '1px solid rgba(255,255,255,.06)',
       bgcolor: 'rgba(7,17,15,.6)',
       backdropFilter: 'blur(16px)',
       minHeight: 56,
       position: 'sticky', top: 0, zIndex: 100,
+      overflow: 'hidden',
+      minWidth: 0,
     }}>
       {/* Mobile menu */}
       <IconButton onClick={onMenuClick} size="small" sx={{ color: 'var(--vm-text-muted)', display: { md: 'none' } }}>
@@ -58,12 +60,12 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
       </IconButton>
 
       {/* Title */}
-      <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 14, sm: 16 }, fontWeight: 800, whiteSpace: 'nowrap' }}>
+      <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 13, sm: 16 }, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 80, sm: 160, md: 240 }, flexShrink: 1, display: { xs: 'none', sm: 'block' } }}>
         {viewTitles[activeView] || 'VentureMate'}
       </Typography>
 
       {/* BusinessSwitcher */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 1, minWidth: 0, overflow: 'hidden' }}>
         <BusinessSwitcher onViewChange={onViewChange} />
       </Box>
 
@@ -72,7 +74,7 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
 
       {/* Notifications */}
       <Tooltip title="Notifications">
-        <IconButton size="small" onClick={e => setNotifAnchor(e.currentTarget)} sx={{ color: 'var(--vm-text-muted)', position: 'relative' }}>
+        <IconButton size="small" onClick={e => setNotifAnchor(e.currentTarget)} sx={{ color: 'var(--vm-text-muted)', position: 'relative', display: { xs: 'none', sm: 'flex' } }}>
           <Badge badgeContent={unreadCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: 9, minWidth: 16, height: 16 } }}>
             {unreadCount > 0 ? <BellRing size={18} /> : <Bell size={18} />}
           </Badge>

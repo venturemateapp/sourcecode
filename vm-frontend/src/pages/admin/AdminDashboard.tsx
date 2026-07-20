@@ -331,7 +331,7 @@ export function AdminDashboard() {
               <Menu size={20} />
             </IconButton>
           )}
-          <Typography sx={{ fontSize: { xs: 16, sm: 22 }, fontWeight: 800, color: '#fff', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 160, sm: 300 } }}>{title}</Typography>
+          <Typography sx={{ fontSize: { xs: 16, sm: 22 }, fontWeight: 800, color: '#fff', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 160, sm: 300 }, display: { xs: 'none', sm: 'block' } }}>{title}</Typography>
           <Chip label="Admin" size="small" sx={{ bgcolor: 'rgba(245,158,11,.15)', color: '#f59e0b', fontWeight: 700, fontSize: 9, height: 20 }} />
         </Box>
         {subtitle && <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 12, mt: 0.25 }}>{subtitle}</Typography>}
