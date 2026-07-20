@@ -280,6 +280,16 @@ export function InvoicesPage() {
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" label="Payment Terms" value={form?.paymentTerms || 'net30'} onChange={e => setForm({ ...form, paymentTerms: e.target.value })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Subtotal" type="number" value={form?.subtotal || ''} onChange={e => setForm({ ...form, subtotal: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Tax Rate (%)" type="number" value={form?.taxRate || ''} onChange={e => setForm({ ...form, taxRate: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Tax Amount" type="number" value={form?.taxAmount || ''} onChange={e => setForm({ ...form, taxAmount: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Discount" type="number" value={form?.discount || ''} onChange={e => setForm({ ...form, discount: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Shipping Cost" type="number" value={form?.shippingCost || ''} onChange={e => setForm({ ...form, shippingCost: parseFloat(e.target.value) || 0 })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
           </Box>
 
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', mt: 1 }}>Line Items</Typography>

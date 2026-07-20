@@ -6,12 +6,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/jung-kurt/gofpdf"
+	"github.com/srwiley/oksvg"
+	"github.com/srwiley/rasterx"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/expenditure"
 )
@@ -46,14 +50,8 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 	if biz.BrandKit != "" {
 		json.Unmarshal([]byte(biz.BrandKit), &brand)
 	}
-	primary := "#10b981"
-	dark := "#0a1f16"
-	if brand.PrimaryColor != "" {
-		primary = brand.PrimaryColor
-	}
-	if brand.DarkColor != "" {
-		dark = brand.DarkColor
-	}
+	primary := "#000000"
+	dark := "#000000"
 	pr, pg, pb := parseHex(primary)
 	dr, dg, db := parseHex(dark)
 
@@ -62,24 +60,10 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 	pdf.AddPage()
 
 	if brand.Logo != "" {
-		supported := false
-		if strings.HasPrefix(brand.Logo, "data:") {
-			supported = strings.HasPrefix(brand.Logo, "data:image/png") ||
-				strings.HasPrefix(brand.Logo, "data:image/jpeg") ||
-				strings.HasPrefix(brand.Logo, "data:image/gif")
-		} else if strings.HasPrefix(brand.Logo, "http") {
-			lower := strings.ToLower(brand.Logo)
-			supported = strings.HasSuffix(lower, ".png") ||
-				strings.HasSuffix(lower, ".jpg") ||
-				strings.HasSuffix(lower, ".jpeg") ||
-				strings.HasSuffix(lower, ".gif")
-		}
-		if supported {
-			logoReader := g.logoReader(brand.Logo)
-			if logoReader != nil {
-				pdf.RegisterImageReader("logo", "logo", logoReader)
-				pdf.Image("logo", 20, 15, 30, 0, false, "", 0, "")
-			}
+		logoReader, imgType := g.logoReader(brand.Logo)
+		if logoReader != nil && imgType != "" {
+			pdf.RegisterImageReader("logo", imgType, logoReader)
+			pdf.Image("logo", 20, 15, 30, 0, false, "", 0, "")
 		}
 	}
 
@@ -212,27 +196,83 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 	return buf.Bytes(), nil
 }
 
-func (g *Generator) logoReader(logo string) io.Reader {
-	if strings.HasPrefix(logo, "data:image/svg+xml;base64,") {
-		b, err := base64.StdEncoding.DecodeString(strings.SplitN(logo, ",", 2)[1])
-		if err != nil {
-			return nil
+func svgToPNG(svgData []byte) ([]byte, error) {
+	icon, err := oksvg.ReadIconStream(bytes.NewReader(svgData))
+	if err != nil {
+		return nil, err
+	}
+	w := int(icon.ViewBox.W)
+	h := int(icon.ViewBox.H)
+	if w == 0 || h == 0 {
+		w, h = 200, 200
+	}
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	scanner := rasterx.NewScannerGV(w, h, img, img.Bounds())
+	raster := rasterx.NewDasher(w, h, scanner)
+	icon.SetTarget(0, 0, float64(w), float64(h))
+	icon.Draw(raster, 1)
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (g *Generator) logoReader(logo string) (io.Reader, string) {
+	if strings.HasPrefix(logo, "data:image/") {
+		rest := strings.TrimPrefix(logo, "data:image/")
+		parts := strings.SplitN(rest, ";", 2)
+		if len(parts) < 2 || !strings.HasPrefix(parts[1], "base64,") {
+			return nil, ""
 		}
-		return bytes.NewReader(b)
+		ext := parts[0]
+		b64 := parts[1][7:]
+		b, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return nil, ""
+		}
+		if ext == "svg+xml" || ext == "svg" {
+			pngData, err := svgToPNG(b)
+			if err != nil {
+				return nil, ""
+			}
+			return bytes.NewReader(pngData), "png"
+		}
+		return bytes.NewReader(b), ext
 	}
 	if strings.HasPrefix(logo, "http") {
+		lower := strings.ToLower(logo)
+		var ext string
+		switch {
+		case strings.HasSuffix(lower, ".png"):
+			ext = "png"
+		case strings.HasSuffix(lower, ".jpg"), strings.HasSuffix(lower, ".jpeg"):
+			ext = "jpg"
+		case strings.HasSuffix(lower, ".gif"):
+			ext = "gif"
+		default:
+			return nil, ""
+		}
 		resp, err := g.http.Get(logo)
 		if err != nil || resp.StatusCode != http.StatusOK {
-			return nil
+			return nil, ""
 		}
 		defer resp.Body.Close()
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil
+			return nil, ""
 		}
-		return bytes.NewReader(data)
+		return bytes.NewReader(data), ext
 	}
-	return nil
+	// Handle raw SVG string (<svg>...</svg>)
+	if strings.HasPrefix(strings.TrimSpace(logo), "<svg") {
+		pngData, err := svgToPNG([]byte(logo))
+		if err != nil {
+			return nil, ""
+		}
+		return bytes.NewReader(pngData), "png"
+	}
+	return nil, ""
 }
 
 func parseHex(hex string) (int, int, int) {
