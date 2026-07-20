@@ -168,7 +168,9 @@ export function EmailSettingsPage() {
           <TextField size="small" label="Email Address" value={form?.email || ''} onChange={e => setForm({ ...form, email: e.target.value })}
             sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
           <TextField size="small" label="IMAP Password / App Password" type="password" value={form?.imapPassword || ''} onChange={e => setForm({ ...form, imapPassword: e.target.value, imapUsername: form?.imapUsername || form?.email || '' })}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}
+            helperText={form?.provider === 'gmail' ? 'Generate an App Password at myaccount.google.com/apppasswords (requires 2-Step Verification)' : form?.provider === 'outlook' ? 'Use your Microsoft account password or create an App Password' : form?.provider === 'yahoo' ? 'Generate an App Password at login.yahoo.com/account/security' : 'Contact your email provider for IMAP credentials'}
+            FormHelperTextProps={{ sx: { color: 'var(--vm-text-muted)', fontSize: 11 } }} />
           {form?.provider === 'imap' && (
             <>
               <TextField size="small" label="IMAP Host" value={form?.imapHost || ''} onChange={e => setForm({ ...form, imapHost: e.target.value })}
