@@ -396,11 +396,11 @@ func init() {
 <table style="width:100%%;border-collapse:collapse;margin:16px 0;max-width:300px;margin-left:auto;">
 %s
 </table>
-<p><a href="%s" style="display:inline-block;padding:10px 20px;background:#10b981;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Invoice PDF</a></p>
+<p><a href="https://venturemate.net/api/pdf/download?type=invoice&id=%s" style="display:inline-block;padding:10px 20px;background:#10b981;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Invoice PDF</a></p>
 <p style="color:#64748b;font-size:12px;">Due date: %s<br>Payment terms: %s</p>
 <hr>
 <p style="color:#64748b;font-size:12px;">Thank you for your business!</p>
-`, biz.Name, inv.CustomerName, inv.InvoiceNumber, itemsHTML, totalsHTML, inv.PdfURL, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
+`, biz.Name, inv.CustomerName, inv.InvoiceNumber, itemsHTML, totalsHTML, inv.ID, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
 
 				if err := AppContainer.Email.SendTemplatedEmail(
 					[]string{custEmail},
