@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ledongthuc/pdf"
 	"github.com/venturemate/vmbackend/internal/businesses"
+	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/s3"
 )
 
@@ -39,14 +40,16 @@ type DocumentInfo struct {
 type FileHandler struct {
 	s3        *s3.Service
 	bizRepo   *businesses.Repository
+	invRepo   *invoices.Repository
 	GeminiKey string
 	Providers *ProviderManager
 }
 
-func NewFileHandler(s3Svc *s3.Service, bizRepo *businesses.Repository, geminiKey string) *FileHandler {
+func NewFileHandler(s3Svc *s3.Service, bizRepo *businesses.Repository, invRepo *invoices.Repository, geminiKey string) *FileHandler {
 	return &FileHandler{
 		s3:        s3Svc,
 		bizRepo:   bizRepo,
+		invRepo:   invRepo,
 		GeminiKey: geminiKey,
 		Providers: NewProviderManagerFromEnv(),
 	}
@@ -60,17 +63,24 @@ func (fh *FileHandler) CalculateTotalStorage(ctx context.Context, userID string)
 
 	var total int64
 	for _, biz := range businesses {
-		if biz.Documents == "" || biz.Documents == "[]" {
-			continue
-		}
-		var docs []DocumentInfo
-		if err := json.Unmarshal([]byte(biz.Documents), &docs); err != nil {
-			continue
-		}
-		for _, d := range docs {
-			total += d.SizeBytes
+		if biz.Documents != "" && biz.Documents != "[]" {
+			var docs []DocumentInfo
+			if err := json.Unmarshal([]byte(biz.Documents), &docs); err == nil {
+				for _, d := range docs {
+					total += d.SizeBytes
+				}
+			}
 		}
 	}
+
+	// Include invoice PDF sizes
+	if fh.invRepo != nil {
+		invoiceSize, err := fh.invRepo.GetTotalPdfSize(ctx, userID)
+		if err == nil {
+			total += invoiceSize
+		}
+	}
+
 	return total, nil
 }
 

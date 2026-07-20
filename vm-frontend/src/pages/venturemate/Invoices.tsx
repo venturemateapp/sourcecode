@@ -105,13 +105,20 @@ export function InvoicesPage() {
     const next = [...lineItems];
     next[idx] = { ...next[idx], [field]: value };
     setLineItems(next);
+    setForm(f => ({ ...f, subtotal: calcTotal(next) }));
   };
 
-  const addLineItem = () => setLineItems([...lineItems, { ...EMPTY_ITEM }]);
+  const addLineItem = () => {
+    const next = [...lineItems, { ...EMPTY_ITEM }];
+    setLineItems(next);
+    setForm(f => ({ ...f, subtotal: calcTotal(next) }));
+  };
 
   const removeLineItem = (idx: number) => {
     if (lineItems.length <= 1) return;
-    setLineItems(lineItems.filter((_, i) => i !== idx));
+    const next = lineItems.filter((_, i) => i !== idx);
+    setLineItems(next);
+    setForm(f => ({ ...f, subtotal: calcTotal(next) }));
   };
 
   const save = async () => {
@@ -125,7 +132,7 @@ export function InvoicesPage() {
         e: form.customerEmail || '',
         a: total, d: form.dueDate || new Date().toISOString().split('T')[0],
         idate: form.issueDate || new Date().toISOString().split('T')[0],
-        s: form.subtotal || 0, t: form.taxRate || 0, x: form.taxAmount || 0,
+        s: calcTotal(lineItems), t: form.taxRate || 0, x: form.taxAmount || 0,
         di: form.discount || 0, sc: form.shippingCost || 0, cu: form.currency || 'USD', i: itemsJson,
         o: form.notes || '', ca: form.customerAddress || '',
         ba: form.billingAddress || '', po: form.poNumber || '',
@@ -280,13 +287,16 @@ export function InvoicesPage() {
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" label="Payment Terms" value={form?.paymentTerms || 'net30'} onChange={e => setForm({ ...form, paymentTerms: e.target.value })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Subtotal" type="number" value={form?.subtotal || ''} onChange={e => setForm({ ...form, subtotal: parseFloat(e.target.value) || 0 })}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, gridColumn: { xs: '1', sm: '1 / -1' } }}>
+              <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Subtotal: <strong>{form?.currency || 'USD'} {calcTotal(lineItems).toLocaleString()}</strong></Typography>
+            </Box>
+            <TextField size="small" label="Tax Rate (%)" type="number" value={form?.taxRate || ''} onChange={e => {
+                const rate = parseFloat(e.target.value) || 0;
+                const subtotal = calcTotal(lineItems);
+                setForm(f => ({ ...f, taxRate: rate, taxAmount: subtotal * rate / 100 }));
+              }}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Tax Rate (%)" type="number" value={form?.taxRate || ''} onChange={e => setForm({ ...form, taxRate: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Tax Amount" type="number" value={form?.taxAmount || ''} onChange={e => setForm({ ...form, taxAmount: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-            <TextField size="small" label="Discount" type="number" value={form?.discount || ''} onChange={e => setForm({ ...form, discount: parseFloat(e.target.value) || 0 })}
+            <TextField size="small" label="Discount (Amount)" type="number" value={form?.discount || ''} onChange={e => setForm({ ...form, discount: parseFloat(e.target.value) || 0 })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" label="Shipping Cost" type="number" value={form?.shippingCost || ''} onChange={e => setForm({ ...form, shippingCost: parseFloat(e.target.value) || 0 })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />

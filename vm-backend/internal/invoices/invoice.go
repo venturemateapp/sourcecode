@@ -33,6 +33,7 @@ type Invoice struct {
 	PONumber        string     `json:"poNumber"`
 	PaymentTerms    string     `json:"paymentTerms"`
 	PdfURL          string     `json:"pdfUrl"`
+	PdfSizeBytes    int64      `json:"pdfSizeBytes"`
 	PdfGeneratedAt  *time.Time `json:"pdfGeneratedAt"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	UpdatedAt       time.Time  `json:"updatedAt"`

@@ -3,11 +3,13 @@ package graph
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/invoices"
+	"github.com/venturemate/vmbackend/internal/subscriptions"
 )
 
 var invoiceItemType = graphql.NewObject(graphql.ObjectConfig{
@@ -302,6 +304,10 @@ func init() {
 			if existing.PaymentTerms == "" {
 				existing.PaymentTerms = "net30"
 			}
+			// Clear cached PDF on invoice edit so it regenerates on next download/send
+			existing.PdfURL = ""
+			existing.PdfSizeBytes = 0
+			existing.PdfGeneratedAt = nil
 			err = AppContainer.InvoiceRepo.Update(p.Context, existing)
 			return existing, err
 		},
@@ -333,14 +339,21 @@ func init() {
 				if err != nil {
 					return nil, fmt.Errorf("pdf upload failed: %w", err)
 				}
-				if err := AppContainer.InvoiceRepo.UpdatePdfURL(p.Context, inv.ID, pdfURL); err != nil {
-					return nil, fmt.Errorf("save pdf url failed: %w", err)
-				}
-				inv.PdfURL = pdfURL
+			if err := AppContainer.InvoiceRepo.UpdatePdfURLWithSize(p.Context, inv.ID, pdfURL, int64(len(pdfData))); err != nil {
+				return nil, fmt.Errorf("save pdf url failed: %w", err)
 			}
+			inv.PdfURL = pdfURL
 
-			// Send email to customer
-			if inv.CustomerEmail != "" {
+			// Update storage usage
+			if AppContainer.UsageRepo != nil && AppContainer.FileHandler != nil {
+				if totalStorage, err := AppContainer.FileHandler.CalculateTotalStorage(p.Context, inv.UserID); err == nil {
+					AppContainer.UsageRepo.UpdateStorage(p.Context, inv.UserID, subscriptions.BillingPeriod(time.Now()), totalStorage)
+				}
+			}
+		}
+
+		// Send email to customer
+			if inv.CustomerEmail != "" && strings.Contains(inv.CustomerEmail, "@") {
 				biz, err := AppContainer.BusinessRepo.GetByID(p.Context, p.Args["businessId"].(string))
 				if err != nil {
 					biz = &businesses.Business{Name: "VentureMate"}
@@ -406,9 +419,17 @@ func init() {
 			}
 
 			// Save PDF URL to invoice
-			if err := AppContainer.InvoiceRepo.UpdatePdfURL(p.Context, inv.ID, pdfURL); err != nil {
+			if err := AppContainer.InvoiceRepo.UpdatePdfURLWithSize(p.Context, inv.ID, pdfURL, int64(len(pdfData))); err != nil {
 				return "", fmt.Errorf("save pdf url failed: %w", err)
 			}
+
+			// Update storage usage
+			if AppContainer.UsageRepo != nil && AppContainer.FileHandler != nil {
+				if totalStorage, err := AppContainer.FileHandler.CalculateTotalStorage(p.Context, inv.UserID); err == nil {
+					AppContainer.UsageRepo.UpdateStorage(p.Context, inv.UserID, subscriptions.BillingPeriod(time.Now()), totalStorage)
+				}
+			}
+
 			return pdfURL, nil
 		},
 	})

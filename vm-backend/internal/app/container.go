@@ -195,7 +195,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	oauthManager := oauth.NewOAuthManager(oauthRepo, userRepo, jwtSecret, frontendURL, redirectBase)
 
 	// 8. File handler
-	fileHandler := ai.NewFileHandler(s3Svc, bizRepo, geminiKey)
+	fileHandler := ai.NewFileHandler(s3Svc, bizRepo, invoiceRepo, geminiKey)
 	fileHandler.Providers = aiManager
 
 	return &Container{
