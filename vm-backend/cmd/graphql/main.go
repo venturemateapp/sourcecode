@@ -214,17 +214,18 @@ func teamAvatarUploadHandler(container *app.Container) http.HandlerFunc {
 		}
 
 		fileName := fmt.Sprintf("team-avatars/%s/%d", userID, time.Now().UnixNano())
-		url, err := container.S3.Upload(r.Context(), fileName, fileData, contentType)
+		_, err = container.S3.Upload(r.Context(), fileName, fileData, contentType)
 		if err != nil {
 			http.Error(w, fmt.Sprintf(`{"error":"upload failed: %s"}`, err.Error()), http.StatusInternalServerError)
 			return
 		}
-		container.S3.SetPublicRead(r.Context(), fileName)
+		// Return API URL instead of direct S3 URL
+		apiURL := fmt.Sprintf("/api/team-avatar/public?file=%s", fileName)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
-			"url":     url,
+			"url":     apiURL,
 		})
 	}
 }
@@ -546,6 +547,22 @@ func main() {
 			return
 		}
 		key := fmt.Sprintf("avatars/%s", userID)
+		data, contentType, err := container.S3.Download(r.Context(), key)
+		if err != nil {
+			http.Error(w, `{"error":"avatar not found"}`, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(data)
+	})
+	http.HandleFunc("/api/team-avatar/public", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		key := r.URL.Query().Get("file")
+		if key == "" {
+			http.Error(w, `{"error":"file key required"}`, http.StatusBadRequest)
+			return
+		}
 		data, contentType, err := container.S3.Download(r.Context(), key)
 		if err != nil {
 			http.Error(w, `{"error":"avatar not found"}`, http.StatusNotFound)
