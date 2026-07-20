@@ -239,7 +239,12 @@ export function SettingsPage() {
       const data = await res.json();
       if (data.url) {
         setAvatarData(data.url);
-        toast.success('Avatar uploaded');
+        // Auto-save the avatar immediately
+        const result = await updateProfile({ avatar: data.url });
+        if (result) {
+          setAvatarData(null);
+          toast.success('Avatar updated');
+        }
       } else {
         toast.error('Upload failed', { description: data.error || 'Unknown error' });
       }
@@ -276,9 +281,13 @@ export function SettingsPage() {
         body: formData,
       });
       const data = await res.json();
-      if (data.url) setAvatarData(data.url);
+      if (data.url) {
+        // Auto-save the avatar immediately
+        const result = await updateProfile({ avatar: data.url });
+        if (result) toast.success('Avatar updated');
+      }
     } catch (err) {
-      console.error('Avatar upload failed:', err);
+      toast.error('Avatar upload failed', { description: 'Please try again.' });
     }
     setSaving(false);
   };
