@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { FileText, Plus, Download, Trash2, Send, CheckCircle, XCircle, X, Building2, Edit3 } from 'lucide-react';
 import type { Invoice, InvoiceItem } from '../../types/venturemate';
+import { useToast } from '../../components/shared/toast';
 
 const INVOICE_FIELDS = `id userId businessId invoiceNumber customerName customerEmail amount subtotal taxRate taxAmount discount shippingCost currency status dueDate issueDate paidDate items itemsList { description quantity unitPrice } notes customerAddress billingAddress poNumber paymentTerms pdfUrl pdfGeneratedAt createdAt updatedAt`;
 
@@ -25,6 +26,7 @@ function parseItems(raw: string): InvoiceItem[] {
 export function InvoicesPage() {
   const { user } = useAuth();
   const { selectedBusiness } = useBusiness();
+  const toast = useToast();
   const bizId = selectedBusiness?.id;
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -41,7 +43,9 @@ export function InvoicesPage() {
     try {
       const d = await q<{ invoices: Invoice[] }>(`query Q($b:ID!){invoices(businessId:$b){${INVOICE_FIELDS}}}`, { b: bizId });
       setInvoices(d.invoices);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to load invoices:', err);
+    }
     setLoading(false);
   }, [bizId, q]);
 
@@ -120,41 +124,60 @@ export function InvoicesPage() {
         u: user.id, b: bizId, n: form.invoiceNumber, c: form.customerName,
         e: form.customerEmail || '',
         a: total, d: form.dueDate || new Date().toISOString().split('T')[0],
+        idate: form.issueDate || new Date().toISOString().split('T')[0],
         s: form.subtotal || 0, t: form.taxRate || 0, x: form.taxAmount || 0,
-        sc: form.shippingCost || 0, cu: form.currency || 'USD', i: itemsJson,
+        di: form.discount || 0, sc: form.shippingCost || 0, cu: form.currency || 'USD', i: itemsJson,
         o: form.notes || '', ca: form.customerAddress || '',
         ba: form.billingAddress || '', po: form.poNumber || '',
         pt: form.paymentTerms || 'net30',
         id: form.id || '',
       };
       if (form.id) {
-        await q(`mutation M($id:ID!,$u:ID!,$b:ID!,$n:String!,$c:String!,$e:String,$a:Float!,$d:String!,$s:Float,$t:Float,$x:Float,$sc:Float,$cu:String,$i:String,$o:String,$ca:String,$ba:String,$po:String,$pt:String){
-          updateInvoice(id:$id userId:$u businessId:$b invoiceNumber:$n customerName:$c customerEmail:$e amount:$a dueDate:$d subtotal:$s taxRate:$t taxAmount:$x shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}`, vars);
+        await q(`mutation M($id:ID!,$u:ID!,$b:ID!,$n:String!,$c:String!,$e:String,$a:Float!,$d:String!,$idate:String,$s:Float,$t:Float,$x:Float,$di:Float,$sc:Float,$cu:String,$i:String,$o:String,$ca:String,$ba:String,$po:String,$pt:String){
+          updateInvoice(id:$id userId:$u businessId:$b invoiceNumber:$n customerName:$c customerEmail:$e amount:$a dueDate:$d issueDate:$idate subtotal:$s taxRate:$t taxAmount:$x discount:$di shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}`, vars);
       } else {
-        await q(`mutation M($u:ID!,$b:ID!,$n:String!,$c:String!,$e:String,$a:Float!,$d:String!,$s:Float,$t:Float,$x:Float,$sc:Float,$cu:String,$i:String,$o:String,$ca:String,$ba:String,$po:String,$pt:String){
-          createInvoice(userId:$u businessId:$b invoiceNumber:$n customerName:$c customerEmail:$e amount:$a dueDate:$d subtotal:$s taxRate:$t taxAmount:$x shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}`, vars);
+        await q(`mutation M($u:ID!,$b:ID!,$n:String!,$c:String!,$e:String,$a:Float!,$d:String!,$idate:String,$s:Float,$t:Float,$x:Float,$di:Float,$sc:Float,$cu:String,$i:String,$o:String,$ca:String,$ba:String,$po:String,$pt:String){
+          createInvoice(userId:$u businessId:$b invoiceNumber:$n customerName:$c customerEmail:$e amount:$a dueDate:$d issueDate:$idate subtotal:$s taxRate:$t taxAmount:$x discount:$di shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}`, vars);
       }
       setForm(null);
       load();
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to save invoice:', err);
+      toast.error('Failed to save invoice', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const sendInvoice = async (id: string) => {
     if (!bizId) return;
-    await q('mutation M($i:ID!,$b:ID!){sendInvoice(id:$i businessId:$b){id status}}', { i: id, b: bizId });
-    load();
+    try {
+      await q('mutation M($i:ID!,$b:ID!){sendInvoice(id:$i businessId:$b){id status}}', { i: id, b: bizId });
+      load();
+    } catch (err) {
+      console.error('Failed to send invoice:', err);
+      toast.error('Failed to send invoice', { description: 'Please try again.' });
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await q('mutation M($i:ID!,$s:String!){updateInvoiceStatus(id:$i status:$s){id status}}', { i: id, s: status });
-    load();
+    try {
+      await q('mutation M($i:ID!,$s:String!){updateInvoiceStatus(id:$i status:$s){id status}}', { i: id, s: status });
+      load();
+    } catch (err) {
+      console.error('Failed to update invoice status:', err);
+      toast.error('Failed to update status', { description: 'Please try again.' });
+    }
   };
 
   const deleteInvoice = async (id: string) => {
     if (!user || !confirm('Delete this invoice?')) return;
-    await q('mutation M($i:ID!,$u:ID!){deleteInvoice(id:$i userId:$u)}', { i: id, u: user.id });
-    load();
+    try {
+      await q('mutation M($i:ID!,$u:ID!){deleteInvoice(id:$i userId:$u)}', { i: id, u: user.id });
+      load();
+    } catch (err) {
+      console.error('Failed to delete invoice:', err);
+      toast.error('Failed to delete invoice', { description: 'Please try again.' });
+    }
   };
 
   const downloadPdf = async (inv: Invoice) => {
@@ -163,7 +186,10 @@ export function InvoicesPage() {
     try {
       const d = await q<{ generateInvoicePdf: string }>('mutation M($i:ID!,$b:ID!){generateInvoicePdf(id:$i businessId:$b)}', { i: inv.id, b: bizId });
       if (d.generateInvoicePdf) window.open(d.generateInvoicePdf, '_blank');
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      toast.error('Failed to generate PDF', { description: 'Please try again.' });
+    }
   };
 
   const statusColor: Record<string, string> = { draft: '#94a3b8', sent: '#3b82f6', paid: '#22c55e', overdue: '#ef4444', cancelled: '#6b7280' };

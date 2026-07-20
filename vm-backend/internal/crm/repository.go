@@ -187,10 +187,14 @@ func (r *Repository) ListActivities(ctx context.Context, businessID string) ([]A
 func (r *Repository) CreateActivity(ctx context.Context, a *Activity) error {
 	a.ID = uuid.New().String()
 	a.CreatedAt = time.Now()
+	var contactID interface{} = a.ContactID
+	if a.ContactID == "" {
+		contactID = nil
+	}
 	_, err := r.db.Exec(ctx,
 		`INSERT INTO crm_activities (id, business_id, contact_id, type, description, created_by, created_at)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-		a.ID, a.BusinessID, a.ContactID, a.Type, a.Description, a.CreatedBy, a.CreatedAt)
+		a.ID, a.BusinessID, contactID, a.Type, a.Description, a.CreatedBy, a.CreatedAt)
 	return err
 }
 

@@ -52,12 +52,16 @@ var invoiceType = graphql.NewObject(graphql.ObjectConfig{
 		"itemsList": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(invoiceItemType))),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				inv, ok := p.Source.(*invoices.Invoice)
-				if !ok {
+				var itemsStr string
+				if inv, ok := p.Source.(*invoices.Invoice); ok {
+					itemsStr = inv.Items
+				} else if inv, ok := p.Source.(invoices.Invoice); ok {
+					itemsStr = inv.Items
+				} else {
 					return []map[string]interface{}{}, nil
 				}
 				var items []map[string]interface{}
-				if err := json.Unmarshal([]byte(inv.Items), &items); err != nil {
+				if err := json.Unmarshal([]byte(itemsStr), &items); err != nil {
 					return []map[string]interface{}{}, nil
 				}
 				return items, nil

@@ -325,7 +325,7 @@ func init() {
 			if stage == "" {
 				stage = "prospecting"
 			}
-			prob, _ := p.Args["probability"].(int)
+			prob := getIntArgDef(p.Args, "probability", 10)
 			if prob == 0 {
 				prob = 10
 			}
@@ -587,12 +587,18 @@ func getFloatArgDef(args map[string]interface{}, key string, def float64) float6
 	if v, ok := args[key].(float64); ok {
 		return v
 	}
+	if v, ok := args[key].(int); ok {
+		return float64(v)
+	}
 	return def
 }
 
 func getIntArgDef(args map[string]interface{}, key string, def int) int {
 	if v, ok := args[key].(int); ok {
 		return v
+	}
+	if v, ok := args[key].(float64); ok {
+		return int(v)
 	}
 	return def
 }

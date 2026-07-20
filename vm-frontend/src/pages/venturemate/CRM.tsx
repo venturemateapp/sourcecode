@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { CrmContact, CrmDeal, CrmActivity, CrmTask } from '../../types/venturemate';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useToast } from '../../components/shared/toast';
 
 const CONTACT_TYPES = [
   { value: 'lead', label: 'Lead', color: '#3b82f6' },
@@ -47,6 +48,7 @@ function formatDate(s: string | null | undefined) {
 export function CRMPage() {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
+  const toast = useToast();
   const bizId = selectedBusiness?.id;
 
   const [tab, setTab] = useState(0);
@@ -68,18 +70,20 @@ export function CRMPage() {
   const load = useCallback(async () => {
     if (!bizId) return;
     setLoading(true);
-    try {
-      const [c, d, a, t] = await Promise.all([
-        q<{ crmContacts: CrmContact[] }>('query C($b:ID!){crmContacts(businessId:$b){id businessId name email phone company jobTitle contactType source notes avatar createdAt updatedAt}}', { b: bizId }),
-        q<{ crmDeals: CrmDeal[] }>('query D($b:ID!){crmDeals(businessId:$b){id businessId contactId title value currency stage probability expectedCloseDate createdAt updatedAt}}', { b: bizId }),
-        q<{ crmActivities: CrmActivity[] }>('query A($b:ID!){crmActivities(businessId:$b){id businessId contactId type description createdBy createdAt}}', { b: bizId }),
-        q<{ crmTasks: CrmTask[] }>('query T($b:ID!){crmTasks(businessId:$b){id businessId contactId title description dueDate status assignedTo createdAt updatedAt}}', { b: bizId }),
-      ]);
-      setContacts(c.crmContacts);
-      setDeals(d.crmDeals);
-      setActivities(a.crmActivities);
-      setTasks(t.crmTasks);
-    } catch { /* ignore */ }
+    const results = await Promise.allSettled([
+      q<{ crmContacts: CrmContact[] }>('query C($b:ID!){crmContacts(businessId:$b){id businessId name email phone company jobTitle contactType source notes avatar createdAt updatedAt}}', { b: bizId }),
+      q<{ crmDeals: CrmDeal[] }>('query D($b:ID!){crmDeals(businessId:$b){id businessId contactId title value currency stage probability expectedCloseDate createdAt updatedAt}}', { b: bizId }),
+      q<{ crmActivities: CrmActivity[] }>('query A($b:ID!){crmActivities(businessId:$b){id businessId contactId type description createdBy createdAt}}', { b: bizId }),
+      q<{ crmTasks: CrmTask[] }>('query T($b:ID!){crmTasks(businessId:$b){id businessId contactId title description dueDate status assignedTo createdAt updatedAt}}', { b: bizId }),
+    ]);
+    if (results[0].status === 'fulfilled') setContacts(results[0].value.crmContacts);
+    else console.error('Failed to load contacts:', results[0].reason);
+    if (results[1].status === 'fulfilled') setDeals(results[1].value.crmDeals);
+    else console.error('Failed to load deals:', results[1].reason);
+    if (results[2].status === 'fulfilled') setActivities(results[2].value.crmActivities);
+    else console.error('Failed to load activities:', results[2].reason);
+    if (results[3].status === 'fulfilled') setTasks(results[3].value.crmTasks);
+    else console.error('Failed to load tasks:', results[3].reason);
     setLoading(false);
   }, [bizId, q]);
 
@@ -112,19 +116,31 @@ export function CRMPage() {
       }
       setContactForm(null);
       load();
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to save contact:', err);
+      toast.error('Failed to save contact', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const deleteContact = async (id: string) => {
     if (!bizId || !confirm('Delete this contact?')) return;
-    await q('mutation M($id:ID!,$b:ID!){deleteCrmContact(id:$id businessId:$b)}', { id, b: bizId });
-    load();
+    try {
+      await q('mutation M($id:ID!,$b:ID!){deleteCrmContact(id:$id businessId:$b)}', { id, b: bizId });
+      load();
+    } catch (err) {
+      console.error('Failed to delete contact:', err);
+      toast.error('Failed to delete contact', { description: 'Please try again.' });
+    }
   };
 
   // Create deal
   const saveDeal = async () => {
-    if (!bizId || !dealForm?.title || !dealForm?.contactId) return;
+    if (!bizId || !dealForm?.title) return;
+    if (!dealForm?.contactId) {
+      toast.warning('No contact selected', { description: 'Create a contact first before creating a deal.' });
+      return;
+    }
     setSaving(true);
     try {
       if (dealForm.id) {
@@ -140,20 +156,33 @@ export function CRMPage() {
       }
       setDealForm(null);
       load();
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to save deal:', err);
+      toast.error('Failed to save deal', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const deleteDeal = async (id: string) => {
     if (!bizId || !confirm('Delete this deal?')) return;
-    await q('mutation M($id:ID!,$b:ID!){deleteCrmDeal(id:$id businessId:$b)}', { id, b: bizId });
-    load();
+    try {
+      await q('mutation M($id:ID!,$b:ID!){deleteCrmDeal(id:$id businessId:$b)}', { id, b: bizId });
+      load();
+    } catch (err) {
+      console.error('Failed to delete deal:', err);
+      toast.error('Failed to delete deal', { description: 'Please try again.' });
+    }
   };
 
   const updateDealStage = async (id: string, stage: string) => {
     if (!bizId) return;
-    await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmDeal(id:$id businessId:$b stage:$s){id}}', { id, b: bizId, s: stage });
-    load();
+    try {
+      await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmDeal(id:$id businessId:$b stage:$s){id}}', { id, b: bizId, s: stage });
+      load();
+    } catch (err) {
+      console.error('Failed to update deal stage:', err);
+      toast.error('Failed to update deal stage', { description: 'Please try again.' });
+    }
   };
 
   // Create activity
@@ -166,14 +195,22 @@ export function CRMPage() {
       });
       setActivityForm({ open: false, type: 'note', contactId: '', description: '' });
       load();
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to save activity:', err);
+      toast.error('Failed to save activity', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const deleteActivity = async (id: string) => {
     if (!bizId || !confirm('Delete this activity?')) return;
-    await q('mutation M($id:ID!,$b:ID!){deleteCrmActivity(id:$id businessId:$b)}', { id, b: bizId });
-    load();
+    try {
+      await q('mutation M($id:ID!,$b:ID!){deleteCrmActivity(id:$id businessId:$b)}', { id, b: bizId });
+      load();
+    } catch (err) {
+      console.error('Failed to delete activity:', err);
+      toast.error('Failed to delete activity', { description: 'Please try again.' });
+    }
   };
 
   // Create task
@@ -193,20 +230,33 @@ export function CRMPage() {
       }
       setTaskForm(null);
       load();
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to save task:', err);
+      toast.error('Failed to save task', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const deleteTask = async (id: string) => {
     if (!bizId || !confirm('Delete this task?')) return;
-    await q('mutation M($id:ID!,$b:ID!){deleteCrmTask(id:$id businessId:$b)}', { id, b: bizId });
-    load();
+    try {
+      await q('mutation M($id:ID!,$b:ID!){deleteCrmTask(id:$id businessId:$b)}', { id, b: bizId });
+      load();
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      toast.error('Failed to delete task', { description: 'Please try again.' });
+    }
   };
 
   const updateTaskStatus = async (id: string, status: string) => {
     if (!bizId) return;
-    await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmTask(id:$id businessId:$b status:$s){id}}', { id, b: bizId, s: status });
-    load();
+    try {
+      await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmTask(id:$id businessId:$b status:$s){id}}', { id, b: bizId, s: status });
+      load();
+    } catch (err) {
+      console.error('Failed to update task status:', err);
+      toast.error('Failed to update task status', { description: 'Please try again.' });
+    }
   };
 
   if (!bizId) {
