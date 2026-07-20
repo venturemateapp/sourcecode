@@ -81,46 +81,42 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.Line(20, 38, 190, 38)
 
 	// === FROM / TO section ===
-	pdf.SetY(44)
-	pdf.SetFont("Helvetica", "B", 9)
+	y := float64(42)
+	pdf.SetFont("Helvetica", "B", 8)
 	pdf.SetTextColor(dr, dg, db)
-	pdf.CellFormat(85, 5, "FROM", "", 0, "L", false, 0, "")
-	pdf.SetXY(120, 44)
-	pdf.CellFormat(80, 5, "TO", "", 0, "L", false, 0, "")
+	pdf.SetXY(20, y)
+	pdf.CellFormat(40, 4, "FROM", "", 0, "L", false, 0, "")
+	pdf.SetXY(120, y)
+	pdf.CellFormat(40, 4, "TO", "", 0, "L", false, 0, "")
+	y += 5
 
 	pdf.SetFont("Helvetica", "", 9)
 	pdf.SetTextColor(30, 30, 30)
-
-	// FROM: business name (clipped if too long)
-	pdf.SetXY(20, 50)
+	pdf.SetXY(20, y)
 	pdf.CellFormat(85, 5, truncate(biz.Name, 50), "", 0, "L", false, 0, "")
-
-	// TO: customer name (clipped if too long)
-	pdf.SetXY(120, 50)
+	pdf.SetXY(120, y)
 	pdf.CellFormat(80, 5, truncate(inv.CustomerName, 45), "", 0, "L", false, 0, "")
+	y += 5
 
-	// FROM: location
-	pdf.SetFont("Helvetica", "", 8)
+	pdf.SetFont("Helvetica", "", 7)
 	pdf.SetTextColor(100, 100, 100)
-	pdf.SetXY(20, 56)
-	pdf.CellFormat(85, 4, truncate(biz.Location, 55), "", 0, "L", false, 0, "")
-
-	// TO: address (use billing address if available)
+	pdf.SetXY(20, y)
+	pdf.CellFormat(85, 3, truncate(biz.Location, 60), "", 0, "L", false, 0, "")
 	addrLine := inv.CustomerAddress
 	if inv.BillingAddress != "" {
 		addrLine = inv.BillingAddress
 	}
-	pdf.SetXY(120, 56)
-	pdf.CellFormat(80, 4, truncate(addrLine, 45), "", 0, "L", false, 0, "")
+	pdf.SetXY(120, y)
+	pdf.CellFormat(80, 3, truncate(addrLine, 50), "", 0, "L", false, 0, "")
+	y += 4
 
-	// TO: customer email
 	if inv.CustomerEmail != "" {
-		pdf.SetFont("Helvetica", "", 7)
-		pdf.SetXY(120, 61)
+		pdf.SetXY(120, y)
 		pdf.CellFormat(80, 3, truncate(inv.CustomerEmail, 50), "", 0, "L", false, 0, "")
+		y += 4
 	}
 
-	// === INVOICE DETAILS (right column) ===
+	// === INVOICE DETAILS ===
 	details := []struct{ label, value string }{
 		{"Date:", inv.IssueDate.Format("Jan 02, 2006")},
 		{"Due Date:", inv.DueDate.Format("Jan 02, 2006")},
@@ -131,19 +127,19 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	if inv.PaymentTerms != "" {
 		details = append(details, struct{ label, value string }{"Terms:", inv.PaymentTerms})
 	}
-	y := float64(70)
 	pdf.SetFont("Helvetica", "B", 8)
 	for _, d := range details {
 		pdf.SetTextColor(dr, dg, db)
 		pdf.SetXY(20, y)
-		pdf.CellFormat(35, 4, d.label, "", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 4, d.label, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 8)
 		pdf.SetTextColor(60, 60, 60)
-		pdf.SetX(55)
-		pdf.CellFormat(65, 4, d.value, "", 0, "L", false, 0, "")
+		pdf.SetX(50)
+		pdf.CellFormat(60, 4, d.value, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "B", 8)
-		y += 5
+		y += 4
 	}
+	y += 2
 
 	// === ITEMS TABLE HEADER ===
 	pdf.SetY(y + 4)
