@@ -289,21 +289,25 @@ const statsCards = b ? [
              </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 3 }}>
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 3,
-                  background: `linear-gradient(135deg, ${activeBusiness.brandKit?.primaryColor ?? '#059669'} 0%, ${activeBusiness.brandKit?.secondaryColor ?? '#10b981'} 100%)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-<Typography sx={{ fontSize: 28, fontWeight: 700, color: 'white' }}>
-                   {activeBusiness?.name?.[0] ?? '?'}
-                 </Typography>
-               </Box>
+              {activeBusiness.brandKit?.logo && (activeBusiness.brandKit.logo.startsWith('data:') || activeBusiness.brandKit.logo.startsWith('http')) ? (
+                <Box component="img" src={activeBusiness.brandKit.logo} alt="Logo" sx={{ width: 64, height: 64, borderRadius: 3, objectFit: 'contain' }} />
+              ) : (
+                <Box
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 3,
+                    background: `linear-gradient(135deg, ${activeBusiness.brandKit?.primaryColor ?? '#059669'} 0%, ${activeBusiness.brandKit?.secondaryColor ?? '#10b981'} 100%)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography sx={{ fontSize: 28, fontWeight: 700, color: 'white' }}>
+                    {activeBusiness?.name?.[0] ?? '?'}
+                  </Typography>
+                </Box>
+              )}
                <Box>
 <Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                     {activeBusiness?.name ?? 'Untitled'}
