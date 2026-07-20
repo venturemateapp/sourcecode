@@ -56,14 +56,14 @@ const NAV_SECTIONS: NavSection[] = [
   ]},
 ];
 
-function NavItem({ item, activeView, onNavigate, collapsed }: {
-  item: NavSection['items'][0]; activeView: ViewType; onNavigate: (view: ViewType) => void; collapsed: boolean;
+function NavItem({ item, activeView, onNavigate, collapsed, onClose }: {
+  item: NavSection['items'][0]; activeView: ViewType; onNavigate: (view: ViewType) => void; collapsed: boolean; onClose?: () => void;
 }) {
   const Icon = iconMap[item.icon] || LayoutDashboard;
   const isActive = activeView === item.view;
   return (
     <ListItemButton
-      onClick={() => onNavigate(item.view)}
+      onClick={() => { onNavigate(item.view); onClose?.(); }}
       sx={{
         mx: 0.75, my: 0.25, borderRadius: 1.5, px: collapsed ? 1 : 1.5, py: 0.75,
         minHeight: 36,
@@ -174,7 +174,7 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
                 </ListItemButton>
               )}
               {isExpanded && section.items.map(item => (
-                <NavItem key={item.view} item={item} activeView={activeView} onNavigate={onNavigate} collapsed={collapsed} />
+                <NavItem key={item.view} item={item} activeView={activeView} onNavigate={onNavigate} collapsed={collapsed} onClose={onClose} />
               ))}
             </Box>
           );
@@ -188,7 +188,7 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
         display: 'flex', alignItems: 'center', gap: 1,
         cursor: 'pointer',
         '&:hover': { bgcolor: 'rgba(255,255,255,.03)' },
-      }} onClick={() => onNavigate('settings')}>
+      }} onClick={() => { onNavigate('settings'); onClose?.(); }}>
         <Avatar src={user?.avatar || undefined} sx={{
           width: collapsed ? 28 : 32, height: collapsed ? 28 : 32,
           bgcolor: user?.avatar ? 'transparent' : 'var(--vm-primary-700)', fontSize: 11, fontWeight: 800,
