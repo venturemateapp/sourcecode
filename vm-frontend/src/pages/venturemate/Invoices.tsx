@@ -305,17 +305,21 @@ export function InvoicesPage() {
           <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)', mt: 1 }}>Line Items</Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {lineItems.map((item, idx) => (
-              <Box key={idx} sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <TextField size="small" placeholder="Description" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)}
-                  sx={{ flex: 1, minWidth: 120, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <TextField size="small" type="number" placeholder="Qty" value={item.quantity || ''} onChange={e => updateLineItem(idx, 'quantity', parseInt(e.target.value) || 0)}
-                  sx={{ width: 70, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <TextField size="small" type="number" placeholder="Price" value={item.unitPrice || ''} onChange={e => updateLineItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
-                  sx={{ width: 100, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-                <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)', minWidth: 70, textAlign: 'right', fontWeight: 600 }}>
-                  {(item.quantity * item.unitPrice).toLocaleString()}
-                </Typography>
-                <IconButton size="small" onClick={() => removeLineItem(idx)} disabled={lineItems.length <= 1} sx={{ color: '#ef444488' }}><X size={14} /></IconButton>
+              <Box key={idx} sx={{ p: 1.5, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 2, border: '1px solid var(--vm-border-subtle)' }}>
+                <Box sx={{ display: { xs: 'block', sm: 'flex' }, gap: 1, alignItems: 'center' }}>
+                  <TextField size="small" placeholder="Description" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)}
+                    sx={{ width: { xs: '100%', sm: 'auto' }, mb: { xs: 1, sm: 0 }, flex: { sm: 1 }, minWidth: { sm: 120 }, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
+                    <TextField size="small" type="number" placeholder="Qty" value={item.quantity || ''} onChange={e => updateLineItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                      sx={{ width: { xs: '30%', sm: 70 }, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                    <TextField size="small" type="number" placeholder="Price" value={item.unitPrice || ''} onChange={e => updateLineItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+                      sx={{ width: { xs: '30%', sm: 100 }, '& input': { color: 'var(--vm-text-primary)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                    <Typography sx={{ fontSize: 13, color: 'var(--vm-text-primary)', minWidth: { xs: 50, sm: 70 }, textAlign: 'right', fontWeight: 600 }}>
+                      {(item.quantity * item.unitPrice).toLocaleString()}
+                    </Typography>
+                    <IconButton size="small" onClick={() => removeLineItem(idx)} disabled={lineItems.length <= 1} sx={{ color: '#ef444488' }}><X size={14} /></IconButton>
+                  </Box>
+                </Box>
               </Box>
             ))}
           </Box>
