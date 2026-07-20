@@ -45,7 +45,6 @@ const NAV_SECTIONS: NavSection[] = [
     { label: 'Branding Kit', icon: 'Palette', view: 'branding-kit' as ViewType },
     { label: 'Milestones', icon: 'Target', view: 'milestones' as ViewType },
     { label: 'Investors', icon: 'TrendingUp', view: 'investors' as ViewType },
-    { label: 'Co-Founders', icon: 'UserCircle', view: 'cofounders' as ViewType },
   ]},
   { title: 'AI TOOLS', items: [
   ]},
@@ -187,14 +186,14 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
         p: collapsed ? 1 : 1.5,
         borderTop: '1px solid rgba(255,255,255,.06)',
         display: 'flex', alignItems: 'center', gap: 1,
-      }}>
-        <Avatar sx={{
+        cursor: 'pointer',
+        '&:hover': { bgcolor: 'rgba(255,255,255,.03)' },
+      }} onClick={() => onNavigate('settings')}>
+        <Avatar src={user?.avatar || undefined} sx={{
           width: collapsed ? 28 : 32, height: collapsed ? 28 : 32,
-          bgcolor: 'var(--vm-primary-700)', fontSize: 11, fontWeight: 800,
-          cursor: 'pointer',
-          '&:hover': { opacity: .8 },
-        }} onClick={() => navigate('/vm/settings')}>
-          {initials}
+          bgcolor: user?.avatar ? 'transparent' : 'var(--vm-primary-700)', fontSize: 11, fontWeight: 800,
+        }}>
+          {!user?.avatar && initials}
         </Avatar>
         {!collapsed && (
           <>
@@ -202,7 +201,7 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
               <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 11, fontWeight: 700, lineHeight: 1.3 }}>{userName}</Typography>
               <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 9, textTransform: 'uppercase', letterSpacing: .3 }}>{planName || 'Free'}</Typography>
             </Box>
-            <IconButton size="small" onClick={() => { logout(); navigate('/vm/auth/signin'); }} sx={{ color: 'rgba(255,255,255,.3)', '&:hover': { color: '#ef4444' } }}>
+            <IconButton size="small" onClick={e => { e.stopPropagation(); logout(); navigate('/vm/auth/signin'); }} sx={{ color: 'rgba(255,255,255,.3)', '&:hover': { color: '#ef4444' } }}>
               <LogOut size={14} />
             </IconButton>
           </>
