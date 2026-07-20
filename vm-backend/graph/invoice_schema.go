@@ -200,6 +200,7 @@ func init() {
 		Args: graphql.FieldConfigArgument{
 			"id":              &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"userId":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"businessId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"invoiceNumber":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			"customerName":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			"customerEmail":   &graphql.ArgumentConfig{Type: graphql.String},
