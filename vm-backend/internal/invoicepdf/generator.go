@@ -212,14 +212,13 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 
 	// Notes
 	if inv.Notes != "" {
-		pdf.SetY(248)
+		pdf.Ln(4)
 		pdf.SetFont("Helvetica", "B", 7)
 		pdf.SetTextColor(dr, dg, db)
-		pdf.CellFormat(170, 4, "Notes:", "", 0, "L", false, 0, "")
-		pdf.SetY(253)
+		pdf.CellFormat(170, 3, "Notes:", "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 7)
 		pdf.SetTextColor(100, 100, 100)
-		pdf.MultiCell(170, 3.5, inv.Notes, "", "L", false)
+		pdf.MultiCell(170, 3, inv.Notes, "", "L", false)
 	}
 
 	// Footer

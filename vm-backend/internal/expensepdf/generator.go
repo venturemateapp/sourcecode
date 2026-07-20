@@ -171,14 +171,13 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 	pdf.CellFormat(35, 9, fmt.Sprintf("$%.2f", exp.Amount), "1", 0, "R", true, 0, "")
 
 	if exp.Notes != "" {
-		pdf.SetY(248)
+		pdf.Ln(4)
 		pdf.SetFont("Helvetica", "B", 7)
 		pdf.SetTextColor(dr, dg, db)
-		pdf.CellFormat(170, 4, "Notes:", "", 0, "L", false, 0, "")
-		pdf.SetY(253)
+		pdf.CellFormat(170, 3, "Notes:", "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 7)
 		pdf.SetTextColor(100, 100, 100)
-		pdf.MultiCell(170, 3.5, exp.Notes, "", "L", false)
+		pdf.MultiCell(170, 3, exp.Notes, "", "L", false)
 	}
 
 	pdf.SetY(-12)
