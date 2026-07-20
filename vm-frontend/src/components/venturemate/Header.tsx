@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, TextField, IconButton, Avatar, Badge, Menu, MenuItem, ListItemText, Divider, Tooltip, Button } from '@mui/material';
+import { Box, Typography, IconButton, Avatar, Badge, Menu, MenuItem, ListItemText, Divider, Tooltip, Button } from '@mui/material';
 import { Person, Logout } from '@mui/icons-material';
-import { Menu as MenuIcon, Bell, BellRing, Search, X, CheckCircle } from 'lucide-react';
+import { Menu as MenuIcon, Bell, BellRing, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { BusinessSwitcher } from './BusinessSwitcher';
@@ -33,8 +33,7 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, deleteAllRead } = useNotifications();
   const navigate = useNavigate();
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -59,40 +58,17 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
       </IconButton>
 
       {/* Title */}
-      <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 14, sm: 16 }, fontWeight: 800, whiteSpace: 'nowrap', display: { xs: searchOpen ? 'none' : 'block', sm: 'block' } }}>
+      <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 14, sm: 16 }, fontWeight: 800, whiteSpace: 'nowrap' }}>
         {viewTitles[activeView] || 'VentureMate'}
       </Typography>
 
       {/* BusinessSwitcher */}
-      <Box sx={{ display: { xs: searchOpen ? 'none' : 'flex', sm: 'flex' }, alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <BusinessSwitcher onViewChange={onViewChange} />
       </Box>
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
-
-      {/* Search */}
-      {searchOpen ? (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, maxWidth: 360 }}>
-          <Search size={16} color="var(--vm-text-muted)" />
-          <TextField autoFocus size="small" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
-            onKeyDown={e => { if (e.key === 'Escape') setSearchOpen(false); }}
-            placeholder="Search VentureMate…"
-            variant="standard"
-            sx={{ flex: 1, input: { color: '#fff', fontSize: 13 } }}
-          />
-          <IconButton size="small" onClick={() => { setSearchOpen(false); setSearchQuery(''); }} sx={{ color: 'var(--vm-text-muted)' }}>
-            <X size={14} />
-          </IconButton>
-        </Box>
-      ) : (
-        <Tooltip title="Search">
-          <IconButton size="small" onClick={() => setSearchOpen(true)} sx={{ color: 'var(--vm-text-muted)', display: { xs: 'none', sm: 'flex' } }}>
-            <Search size={18} />
-          </IconButton>
-        </Tooltip>
-      )}
 
       {/* Notifications */}
       <Tooltip title="Notifications">
@@ -106,13 +82,14 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
       {/* User avatar */}
       <Tooltip title={userName}>
         <Avatar
+          src={user?.avatar || undefined}
           onClick={e => setUserMenuAnchor(e.currentTarget)}
           sx={{
-            width: 30, height: 30, bgcolor: 'var(--vm-primary-700)', fontSize: 11, fontWeight: 800,
+            width: 30, height: 30, bgcolor: user?.avatar ? 'transparent' : 'var(--vm-primary-700)', fontSize: 11, fontWeight: 800,
             cursor: 'pointer', transition: 'opacity .2s', '&:hover': { opacity: .8 },
           }}
         >
-          {initials}
+          {!user?.avatar && initials}
         </Avatar>
       </Tooltip>
 
@@ -171,7 +148,7 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }} anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         slotProps={{ paper: { sx: { bgcolor: '#0a1a14', border: '1px solid rgba(255,255,255,.08)', borderRadius: 2.5, minWidth: 200, mt: 1 }}}}
       >
-        <MenuItem onClick={() => { setUserMenuAnchor(null); navigate('/vm/settings'); }} sx={{ gap: 1.5, py: 1 }}>
+        <MenuItem onClick={() => { setUserMenuAnchor(null); onViewChange('settings'); }} sx={{ gap: 1.5, py: 1 }}>
           <Person fontSize="small" sx={{ color: 'rgba(255,255,255,.5)' }} />
           <ListItemText primary="Settings" primaryTypographyProps={{ fontSize: 12, fontWeight: 600 }} />
         </MenuItem>
