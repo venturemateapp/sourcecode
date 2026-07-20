@@ -296,18 +296,6 @@ func (g *Generator) logoReader(logo string) (io.Reader, string) {
 		return bytes.NewReader(b), ext
 	}
 	if strings.HasPrefix(logo, "http") {
-		lower := strings.ToLower(logo)
-		var ext string
-		switch {
-		case strings.HasSuffix(lower, ".png"):
-			ext = "png"
-		case strings.HasSuffix(lower, ".jpg"), strings.HasSuffix(lower, ".jpeg"):
-			ext = "jpg"
-		case strings.HasSuffix(lower, ".gif"):
-			ext = "gif"
-		default:
-			return nil, ""
-		}
 		resp, err := g.http.Get(logo)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			return nil, ""
@@ -316,6 +304,36 @@ func (g *Generator) logoReader(logo string) (io.Reader, string) {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, ""
+		}
+		// Detect image type from Content-Type header
+		ct := resp.Header.Get("Content-Type")
+		var ext string
+		switch {
+		case strings.Contains(ct, "png"):
+			ext = "png"
+		case strings.Contains(ct, "jpeg"), strings.Contains(ct, "jpg"):
+			ext = "jpg"
+		case strings.Contains(ct, "gif"):
+			ext = "gif"
+		case strings.Contains(ct, "svg"):
+			// Convert SVG to PNG
+			if pngData, err := svgToPNG(data); err == nil {
+				return bytes.NewReader(pngData), "png"
+			}
+			return nil, ""
+		default:
+			// Try extension-based fallback
+			lower := strings.ToLower(logo)
+			switch {
+			case strings.HasSuffix(lower, ".png"):
+				ext = "png"
+			case strings.HasSuffix(lower, ".jpg"), strings.HasSuffix(lower, ".jpeg"):
+				ext = "jpg"
+			case strings.HasSuffix(lower, ".gif"):
+				ext = "gif"
+			default:
+				return nil, ""
+			}
 		}
 		return bytes.NewReader(data), ext
 	}

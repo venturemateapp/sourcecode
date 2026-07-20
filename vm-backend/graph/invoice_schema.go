@@ -353,7 +353,8 @@ func init() {
 		}
 
 		// Send email to customer
-			if inv.CustomerEmail != "" && strings.Contains(inv.CustomerEmail, "@") {
+			custEmail := strings.TrimSpace(inv.CustomerEmail)
+			if custEmail != "" && strings.Contains(custEmail, "@") {
 				biz, err := AppContainer.BusinessRepo.GetByID(p.Context, p.Args["businessId"].(string))
 				if err != nil {
 					biz = &businesses.Business{Name: "VentureMate"}
@@ -374,7 +375,7 @@ func init() {
 `, biz.Name, inv.CustomerName, inv.InvoiceNumber, inv.Notes, inv.Currency, inv.Amount, inv.PdfURL, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
 
 				if err := AppContainer.Email.SendTemplatedEmail(
-					[]string{inv.CustomerEmail},
+					[]string{custEmail},
 					fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name),
 					emailBody,
 				); err != nil {
