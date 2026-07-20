@@ -96,15 +96,24 @@ export function TeamPage() {
     responsibilities: [],
   });
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData(prev => ({ ...prev, avatar: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+    const token = (await import('../../lib/auth')).getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/team-avatar/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) setFormData(prev => ({ ...prev, avatar: data.url }));
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    }
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, member: TeamMember) => {

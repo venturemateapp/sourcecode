@@ -177,6 +177,57 @@ func downloadHandler(container *app.Container) http.HandlerFunc {
 	}
 }
 
+func teamAvatarUploadHandler(container *app.Container) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to parse form: %s"}`, err.Error()), http.StatusBadRequest)
+			return
+		}
+
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"file required: %s"}`, err.Error()), http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		if header.Size > 2*1024*1024 {
+			http.Error(w, `{"error":"file too large: max 2MB"}`, http.StatusBadRequest)
+			return
+		}
+
+		fileData, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to read file: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		contentType := header.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+
+		fileName := fmt.Sprintf("team-avatars/%s/%d", userID, time.Now().UnixNano())
+		url, err := container.S3.Upload(r.Context(), fileName, fileData, contentType)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"upload failed: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"url":     url,
+		})
+	}
+}
+
 func avatarHandler(container *app.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
@@ -484,6 +535,7 @@ func main() {
 	http.Handle("/api/documents/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, downloadHandler(container)))))
 	http.Handle("/api/pdf/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, pdfDownloadHandler(container)))))
 	http.Handle("/api/avatar", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, avatarHandler(container)))))
+	http.Handle("/api/team-avatar/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, teamAvatarUploadHandler(container)))))
 	http.HandleFunc("/api/avatar/public", func(w http.ResponseWriter, r *http.Request) {
 		// Public endpoint - no auth needed, serves by userId query param
 		w.Header().Set("Access-Control-Allow-Origin", "*")
