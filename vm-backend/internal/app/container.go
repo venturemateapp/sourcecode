@@ -108,6 +108,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize S3: %w", err)
 	}
+	ai.SetS3Service(s3Svc)
 
 	// 3. Email
 	emailSvc, err := email.New()

@@ -6,12 +6,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/recraft"
+	"github.com/venturemate/vmbackend/internal/s3"
 )
+
+var globalS3 *s3.Service
+
+func SetS3Service(svc *s3.Service) {
+	globalS3 = svc
+}
 
 const (
 	brandingDesignRules = `You are a legendary logo designer at the level of Pentagram, Wolff Olins, and Landor.
@@ -708,6 +717,31 @@ func mergeJSONMap(raw string, fallback string) map[string]interface{} {
 	return out
 }
 
+func reuploadToS3(url, businessID, name string) string {
+	if globalS3 == nil || !strings.HasPrefix(url, "http") {
+		return url
+	}
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return url
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return url
+	}
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "image/png"
+	}
+	key := fmt.Sprintf("brand-logos/%s/%s", businessID, name)
+	permURL, err := globalS3.Upload(context.Background(), key, data, contentType)
+	if err != nil {
+		return url
+	}
+	return permURL
+}
+
 func stringValue(values map[string]interface{}, key, fallback string) string {
 	if value, ok := values[key].(string); ok && strings.TrimSpace(value) != "" {
 		return strings.TrimSpace(value)
@@ -766,11 +800,12 @@ WHAT NOT TO DO:
 Make it unforgettable — a logo people recognize instantly from the shape alone.`, biz.Name, primary, secondary, accent)
 		if result, err := rc.GenerateLogo(prompt); err == nil && len(result.Data) > 0 {
 			rasterURL := result.Data[0].URL
-			brand["logo"] = rasterURL
-			brand["logoIcon"] = rasterURL
-			brand["logoWhite"] = rasterURL
+			// Re-upload external image URLs to permanent S3 location
+			brand["logo"] = reuploadToS3(rasterURL, biz.ID, "logo")
+			brand["logoIcon"] = reuploadToS3(rasterURL, biz.ID, "logoIcon")
+			brand["logoWhite"] = reuploadToS3(rasterURL, biz.ID, "logoWhite")
 			if svgURL, err := rc.VectorizeImage(rasterURL); err == nil {
-				brand["logoWhite"] = svgURL
+				brand["logoWhite"] = reuploadToS3(svgURL, biz.ID, "logoWhite")
 			}
 			recraftUsed = true
 		}
