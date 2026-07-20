@@ -57,7 +57,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.AddPage()
 
 	// === HEADER with logo ===
-	if brand.Logo != "" {
+	if brand.Logo != "" && !strings.HasPrefix(brand.Logo, "data:image/svg") {
 		logoReader := g.logoReader(brand.Logo)
 		if logoReader != nil {
 			pdf.RegisterImageReader("logo", "logo", logoReader)

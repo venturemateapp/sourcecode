@@ -19,6 +19,17 @@ var invoiceItemType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+func formatInvoiceTime(t time.Time) string {
+	return t.Format("2006-01-02T15:04:05Z")
+}
+
+func formatInvoiceTimePtr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("2006-01-02T15:04:05Z")
+}
+
 var invoiceType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Invoice",
 	Fields: graphql.Fields{
@@ -36,9 +47,21 @@ var invoiceType = graphql.NewObject(graphql.ObjectConfig{
 		"shippingCost":    &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
 		"currency":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"status":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"dueDate":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"issueDate":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"paidDate":        &graphql.Field{Type: graphql.String},
+		"dueDate":         &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.DueDate), nil }
+			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.DueDate), nil }
+			return "", nil
+		}},
+		"issueDate": &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.IssueDate), nil }
+			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.IssueDate), nil }
+			return "", nil
+		}},
+		"paidDate": &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PaidDate), nil }
+			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PaidDate), nil }
+			return "", nil
+		}},
 		"items":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"notes":           &graphql.Field{Type: graphql.String},
 		"customerAddress": &graphql.Field{Type: graphql.String},
@@ -46,9 +69,21 @@ var invoiceType = graphql.NewObject(graphql.ObjectConfig{
 		"poNumber":        &graphql.Field{Type: graphql.String},
 		"paymentTerms":    &graphql.Field{Type: graphql.String},
 		"pdfUrl":          &graphql.Field{Type: graphql.String},
-		"pdfGeneratedAt":  &graphql.Field{Type: graphql.String},
-		"createdAt":       &graphql.Field{Type: graphql.String},
-		"updatedAt":       &graphql.Field{Type: graphql.String},
+		"pdfGeneratedAt":  &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PdfGeneratedAt), nil }
+			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PdfGeneratedAt), nil }
+			return "", nil
+		}},
+		"createdAt": &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.CreatedAt), nil }
+			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.CreatedAt), nil }
+			return "", nil
+		}},
+		"updatedAt": &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.UpdatedAt), nil }
+			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.UpdatedAt), nil }
+			return "", nil
+		}},
 		"itemsList": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(invoiceItemType))),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {

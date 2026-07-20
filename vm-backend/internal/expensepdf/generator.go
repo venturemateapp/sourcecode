@@ -61,7 +61,7 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 	pdf.SetMargins(20, 15, 20)
 	pdf.AddPage()
 
-	if brand.Logo != "" {
+	if brand.Logo != "" && !strings.HasPrefix(brand.Logo, "data:image/svg") {
 		logoReader := g.logoReader(brand.Logo)
 		if logoReader != nil {
 			pdf.RegisterImageReader("logo", "logo", logoReader)
