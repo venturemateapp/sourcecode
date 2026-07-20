@@ -25,7 +25,14 @@ export function getStoredUser<T = unknown>(): T | null {
 }
 
 export function setStoredUser<T = unknown>(user: T): void {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  try {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {
+    try {
+      const minimal = { id: (user as Record<string, unknown>).id, email: (user as Record<string, unknown>).email, avatar: (user as Record<string, unknown>).avatar };
+      localStorage.setItem(USER_KEY, JSON.stringify(minimal));
+    } catch { /* ignore */ }
+  }
 }
 
 export function removeStoredUser(): void {

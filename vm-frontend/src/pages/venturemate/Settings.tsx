@@ -221,15 +221,28 @@ export function SettingsPage() {
     }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || file.size > 2 * 1024 * 1024) return;
-    const reader = new FileReader();
-    reader.onload = () => setAvatarData(reader.result as string);
-    reader.readAsDataURL(file);
+    if (!file || file.size > 5 * 1024 * 1024) return;
+    setSaving(true);
+    try {
+      const token = (await import('../../lib/auth')).getToken();
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) setAvatarData(data.url);
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    }
+    setSaving(false);
   };
 
-  const handleGeneratedAvatar = (color: string) => {
+  const handleGeneratedAvatar = async (color: string) => {
     const initials = ((user?.firstName?.[0] || '') + (user?.lastName?.[0] || '')).toUpperCase();
     const canvas = document.createElement('canvas');
     canvas.width = 200; canvas.height = 200;
@@ -243,8 +256,24 @@ export function SettingsPage() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(initials || '?', 100, 100);
-    setAvatarData(canvas.toDataURL('image/png'));
     setShowAvatarPicker(false);
+    setSaving(true);
+    try {
+      const blob = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
+      const token = (await import('../../lib/auth')).getToken();
+      const formData = new FormData();
+      formData.append('file', blob, 'avatar.png');
+      const res = await fetch('/api/avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) setAvatarData(data.url);
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    }
+    setSaving(false);
   };
 
   const tabs = [

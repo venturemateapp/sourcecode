@@ -79,6 +79,15 @@ func (s *Service) GetPublicURL(key string) string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.region, key)
 }
 
+func (s *Service) SetPublicRead(ctx context.Context, key string) error {
+	_, err := s.client.PutObjectAcl(ctx, &s3.PutObjectAclInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+		ACL:    "public-read",
+	})
+	return err
+}
+
 func (s *Service) Delete(ctx context.Context, key string) (bool, error) {
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),

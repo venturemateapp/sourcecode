@@ -177,6 +177,99 @@ func downloadHandler(container *app.Container) http.HandlerFunc {
 	}
 }
 
+func avatarHandler(container *app.Container) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			avatarUploadHandler(container)(w, r)
+			return
+		}
+		// GET: serve avatar image
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			userID = r.URL.Query().Get("userId")
+		}
+		if userID == "" {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+		key := fmt.Sprintf("avatars/%s", userID)
+		data, contentType, err := container.S3.Download(r.Context(), key)
+		if err != nil {
+			http.Error(w, `{"error":"avatar not found"}`, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(data)
+	}
+}
+
+func avatarUploadHandler(container *app.Container) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := r.Header.Get("X-User-ID")
+		if userID == "" {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to parse form: %s"}`, err.Error()), http.StatusBadRequest)
+			return
+		}
+
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"file required: %s"}`, err.Error()), http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		if header.Size > 5*1024*1024 {
+			http.Error(w, `{"error":"file too large: max 5MB"}`, http.StatusBadRequest)
+			return
+		}
+
+		fileData, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to read file: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		contentType := header.Header.Get("Content-Type")
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+
+		fileName := fmt.Sprintf("avatars/%s", userID)
+		url, err := container.S3.Upload(r.Context(), fileName, fileData, contentType)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"upload failed: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		// Also make the object publicly readable so the URL works directly
+		container.S3.SetPublicRead(r.Context(), fileName)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"upload failed: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		if err := container.UserRepo.UpdatePicture(r.Context(), userID, url); err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to update profile: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		// Return the public API URL instead of the direct S3 URL
+		apiURL := fmt.Sprintf("/api/avatar/public?userId=%s", userID)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"url":     apiURL,
+			"s3Url":   url,
+		})
+	}
+}
+
 func pdfDownloadHandler(container *app.Container) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Header.Get("X-User-ID")
@@ -390,6 +483,25 @@ func main() {
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))
 	http.Handle("/api/documents/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, downloadHandler(container)))))
 	http.Handle("/api/pdf/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, pdfDownloadHandler(container)))))
+	http.Handle("/api/avatar", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, avatarHandler(container)))))
+	http.HandleFunc("/api/avatar/public", func(w http.ResponseWriter, r *http.Request) {
+		// Public endpoint - no auth needed, serves by userId query param
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		userID := r.URL.Query().Get("userId")
+		if userID == "" {
+			http.Error(w, `{"error":"userId required"}`, http.StatusBadRequest)
+			return
+		}
+		key := fmt.Sprintf("avatars/%s", userID)
+		data, contentType, err := container.S3.Download(r.Context(), key)
+		if err != nil {
+			http.Error(w, `{"error":"avatar not found"}`, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(data)
+	})
 	http.HandleFunc("/api/public-sites/allow-domain", publicSites.AllowDomain)
 	http.HandleFunc("/api/public-sites/subdomain-availability", publicSites.SubdomainAvailability)
 	http.HandleFunc("/api/public-sites/contact", publicSites.SubmitContact)
