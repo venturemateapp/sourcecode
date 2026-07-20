@@ -25,6 +25,13 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           CURRENCY_API_KEY: ${{ secrets.CURRENCY_API_KEY }}
           RECRAFT_API_KEY: ${{ secrets.RECRAFT_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM_NAME: ${{ secrets.SMTP_FROM_NAME }}
+          SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
+          EMAIL_LOGO_URL: ${{ secrets.EMAIL_LOGO_URL }}
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
