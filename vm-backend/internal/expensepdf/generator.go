@@ -87,35 +87,33 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 	pdf.SetTextColor(dr, dg, db)
 	pdf.CellFormat(85, 5, "FROM", "", 0, "L", false, 0, "")
 
-	pdf.SetY(50)
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont("Helvetica", "", 9)
 	pdf.SetTextColor(30, 30, 30)
-	pdf.CellFormat(85, 5, biz.Name, "", 0, "L", false, 0, "")
+	pdf.SetXY(20, 50)
+	pdf.CellFormat(85, 5, truncate(biz.Name, 50), "", 0, "L", false, 0, "")
 
-	pdf.SetY(56)
 	pdf.SetFont("Helvetica", "", 8)
 	pdf.SetTextColor(100, 100, 100)
-	pdf.CellFormat(85, 4, biz.Location, "", 0, "L", false, 0, "")
+	pdf.SetXY(20, 56)
+	pdf.CellFormat(85, 4, truncate(biz.Location, 55), "", 0, "L", false, 0, "")
 
-	pdf.SetY(44)
-	pdf.SetX(120)
-	pdf.SetFont("Helvetica", "B", 9)
-	pdf.SetTextColor(dr, dg, db)
-
+	// Details on the right
 	details := []struct{ label, value string }{
 		{"Date:", exp.ExpenseDate},
-		{"Vendor:", exp.Vendor},
+		{"Vendor:", truncate(exp.Vendor, 25)},
 		{"Category:", strings.ToUpper(exp.Category)},
 	}
 	y := float64(50)
+	pdf.SetFont("Helvetica", "B", 8)
 	for _, d := range details {
-		pdf.SetXY(120, y)
-		pdf.SetFont("Helvetica", "B", 8)
 		pdf.SetTextColor(dr, dg, db)
+		pdf.SetXY(120, y)
 		pdf.CellFormat(35, 4, d.label, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 8)
 		pdf.SetTextColor(60, 60, 60)
-		pdf.CellFormat(50, 4, d.value, "", 0, "L", false, 0, "")
+		pdf.SetX(155)
+		pdf.CellFormat(45, 4, d.value, "", 0, "L", false, 0, "")
+		pdf.SetFont("Helvetica", "B", 8)
 		y += 5
 	}
 
@@ -125,8 +123,7 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 		items = []expenseItem{{Description: exp.Description, Quantity: 1, UnitPrice: exp.Amount}}
 	}
 
-	tableTop := 75.0
-	pdf.SetY(tableTop)
+	pdf.SetY(y + 4)
 	pdf.SetFillColor(pr, pg, pb)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Helvetica", "B", 8)
@@ -289,6 +286,13 @@ func (g *Generator) logoReader(logo string) (io.Reader, string) {
 		return bytes.NewReader(pngData), "png"
 	}
 	return nil, ""
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen-1] + "…"
+	}
+	return s
 }
 
 func parseHex(hex string) (int, int, int) {

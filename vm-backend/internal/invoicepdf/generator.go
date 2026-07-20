@@ -85,66 +85,73 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.SetFont("Helvetica", "B", 9)
 	pdf.SetTextColor(dr, dg, db)
 	pdf.CellFormat(85, 5, "FROM", "", 0, "L", false, 0, "")
-	pdf.CellFormat(85, 5, "TO", "", 0, "L", false, 0, "")
+	pdf.SetXY(120, 44)
+	pdf.CellFormat(80, 5, "TO", "", 0, "L", false, 0, "")
 
-	pdf.SetY(50)
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont("Helvetica", "", 9)
 	pdf.SetTextColor(30, 30, 30)
-	pdf.CellFormat(85, 5, biz.Name, "", 0, "L", false, 0, "")
-	pdf.CellFormat(85, 5, inv.CustomerName, "", 0, "L", false, 0, "")
 
-	pdf.SetY(56)
+	// FROM: business name (clipped if too long)
+	pdf.SetXY(20, 50)
+	pdf.CellFormat(85, 5, truncate(biz.Name, 50), "", 0, "L", false, 0, "")
+
+	// TO: customer name (clipped if too long)
+	pdf.SetXY(120, 50)
+	pdf.CellFormat(80, 5, truncate(inv.CustomerName, 45), "", 0, "L", false, 0, "")
+
+	// FROM: location
 	pdf.SetFont("Helvetica", "", 8)
 	pdf.SetTextColor(100, 100, 100)
-	pdf.CellFormat(85, 4, biz.Location, "", 0, "L", false, 0, "")
+	pdf.SetXY(20, 56)
+	pdf.CellFormat(85, 4, truncate(biz.Location, 55), "", 0, "L", false, 0, "")
+
+	// TO: address (use billing address if available)
 	addrLine := inv.CustomerAddress
 	if inv.BillingAddress != "" {
 		addrLine = inv.BillingAddress
 	}
-	pdf.CellFormat(85, 4, addrLine, "", 0, "L", false, 0, "")
+	pdf.SetXY(120, 56)
+	pdf.CellFormat(80, 4, truncate(addrLine, 45), "", 0, "L", false, 0, "")
 
+	// TO: customer email
 	if inv.CustomerEmail != "" {
-		pdf.SetY(61)
-		pdf.SetX(105)
-		pdf.CellFormat(85, 4, inv.CustomerEmail, "", 0, "L", false, 0, "")
+		pdf.SetFont("Helvetica", "", 7)
+		pdf.SetXY(120, 61)
+		pdf.CellFormat(80, 3, truncate(inv.CustomerEmail, 50), "", 0, "L", false, 0, "")
 	}
 
-	// === INVOICE DETAILS ===
-	pdf.SetY(44)
-	pdf.SetX(120)
-	pdf.SetFont("Helvetica", "B", 9)
-	pdf.SetTextColor(dr, dg, db)
+	// === INVOICE DETAILS (right column) ===
 	details := []struct{ label, value string }{
 		{"Date:", inv.IssueDate.Format("Jan 02, 2006")},
 		{"Due Date:", inv.DueDate.Format("Jan 02, 2006")},
-		{"Status:", strings.ToUpper(inv.Status)},
 	}
 	if inv.PONumber != "" {
-		details = append(details, struct{ label, value string }{"PO Number:", inv.PONumber})
+		details = append(details, struct{ label, value string }{"PO#:", truncate(inv.PONumber, 20)})
 	}
 	if inv.PaymentTerms != "" {
 		details = append(details, struct{ label, value string }{"Terms:", inv.PaymentTerms})
 	}
-	y := float64(50)
+	y := float64(70)
+	pdf.SetFont("Helvetica", "B", 8)
 	for _, d := range details {
-		pdf.SetXY(120, y)
-		pdf.SetFont("Helvetica", "B", 8)
 		pdf.SetTextColor(dr, dg, db)
+		pdf.SetXY(20, y)
 		pdf.CellFormat(35, 4, d.label, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 8)
 		pdf.SetTextColor(60, 60, 60)
-		pdf.CellFormat(50, 4, d.value, "", 0, "L", false, 0, "")
+		pdf.SetX(55)
+		pdf.CellFormat(65, 4, d.value, "", 0, "L", false, 0, "")
+		pdf.SetFont("Helvetica", "B", 8)
 		y += 5
 	}
 
 	// === ITEMS TABLE HEADER ===
-	tableTop := 75.0
-	pdf.SetY(tableTop)
+	pdf.SetY(y + 4)
 	pdf.SetFillColor(pr, pg, pb)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Helvetica", "B", 8)
-	colW := []float64{76, 18, 28, 28, 28}
-	headers := []string{"Description", "Qty", "Unit Price", "Tax", "Amount"}
+	colW := []float64{96, 22, 32, 40}
+	headers := []string{"Description", "Qty", "Unit Price", "Amount"}
 	for i, h := range headers {
 		pdf.CellFormat(colW[i], 8, h, "1", 0, "C", true, 0, "")
 	}
@@ -162,18 +169,11 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 		y = pdf.GetY()
 		if y+rowH+2 > 260 {
 			pdf.AddPage()
-			tableTop = pdf.GetY()
 		}
-		// Check if description needs multi-cell
 		pdf.CellFormat(colW[0], rowH, item.Description, "1", 0, "L", false, 0, "")
 		pdf.CellFormat(colW[1], rowH, fmt.Sprintf("%d", item.Quantity), "1", 0, "C", false, 0, "")
 		pdf.CellFormat(colW[2], rowH, fmt.Sprintf("%.2f", item.UnitPrice), "1", 0, "R", false, 0, "")
-		taxStr := "-"
-		if inv.TaxRate > 0 {
-			taxStr = fmt.Sprintf("%.1f%%", inv.TaxRate)
-		}
-		pdf.CellFormat(colW[3], rowH, taxStr, "1", 0, "C", false, 0, "")
-		pdf.CellFormat(colW[4], rowH, fmt.Sprintf("%.2f", lineTotal), "1", 0, "R", false, 0, "")
+		pdf.CellFormat(colW[3], rowH, fmt.Sprintf("%.2f", lineTotal), "1", 0, "R", false, 0, "")
 		pdf.Ln(-1)
 	}
 
@@ -204,27 +204,15 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 		pdf.Ln(-1)
 	}
 
-	// Total row
+	// Total row (calculate: subtotal - discount + tax + shipping)
+	grandTotal := inv.Subtotal - inv.Discount + inv.TaxAmount + inv.ShippingCost
 	pdf.Ln(2)
 	pdf.SetFillColor(pr, pg, pb)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Helvetica", "B", 12)
 	pdf.SetX(125)
 	pdf.CellFormat(40, 9, "TOTAL:", "1", 0, "R", true, 0, "")
-	pdf.CellFormat(35, 9, fmt.Sprintf("$%.2f", inv.Amount), "1", 0, "R", true, 0, "")
-
-	// Status badge
-	pdf.SetY(totalStart)
-	pdf.SetX(20)
-	statusColors := map[string][3]int{
-		"draft": {180, 180, 180}, "sent": {59, 130, 246},
-		"paid": {52, 211, 153}, "overdue": {239, 68, 68}, "cancelled": {148, 163, 184},
-	}
-	sc := statusColors[inv.Status]
-	pdf.SetFillColor(sc[0], sc[1], sc[2])
-	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Helvetica", "B", 7)
-	pdf.CellFormat(18, 5, strings.ToUpper(inv.Status), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(35, 9, fmt.Sprintf("$%.2f", grandTotal), "1", 0, "R", true, 0, "")
 
 	// Notes
 	if inv.Notes != "" {
@@ -346,6 +334,13 @@ func (g *Generator) logoReader(logo string) (io.Reader, string) {
 		return bytes.NewReader(pngData), "png"
 	}
 	return nil, ""
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen-1] + "…"
+	}
+	return s
 }
 
 func parseHex(hex string) (int, int, int) {
