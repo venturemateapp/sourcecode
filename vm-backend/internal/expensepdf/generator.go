@@ -61,11 +61,25 @@ func (g *Generator) Generate(ctx context.Context, exp *expenditure.Expenditure, 
 	pdf.SetMargins(20, 15, 20)
 	pdf.AddPage()
 
-	if brand.Logo != "" && !strings.HasPrefix(brand.Logo, "data:image/svg") {
-		logoReader := g.logoReader(brand.Logo)
-		if logoReader != nil {
-			pdf.RegisterImageReader("logo", "logo", logoReader)
-			pdf.Image("logo", 20, 15, 30, 0, false, "", 0, "")
+	if brand.Logo != "" {
+		supported := false
+		if strings.HasPrefix(brand.Logo, "data:") {
+			supported = strings.HasPrefix(brand.Logo, "data:image/png") ||
+				strings.HasPrefix(brand.Logo, "data:image/jpeg") ||
+				strings.HasPrefix(brand.Logo, "data:image/gif")
+		} else if strings.HasPrefix(brand.Logo, "http") {
+			lower := strings.ToLower(brand.Logo)
+			supported = strings.HasSuffix(lower, ".png") ||
+				strings.HasSuffix(lower, ".jpg") ||
+				strings.HasSuffix(lower, ".jpeg") ||
+				strings.HasSuffix(lower, ".gif")
+		}
+		if supported {
+			logoReader := g.logoReader(brand.Logo)
+			if logoReader != nil {
+				pdf.RegisterImageReader("logo", "logo", logoReader)
+				pdf.Image("logo", 20, 15, 30, 0, false, "", 0, "")
+			}
 		}
 	}
 

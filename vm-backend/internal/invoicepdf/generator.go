@@ -57,7 +57,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.AddPage()
 
 	// === HEADER with logo ===
-	if brand.Logo != "" && !strings.HasPrefix(brand.Logo, "data:image/svg") {
+	if brand.Logo != "" && isSupportedLogo(brand.Logo) {
 		logoReader := g.logoReader(brand.Logo)
 		if logoReader != nil {
 			pdf.RegisterImageReader("logo", "logo", logoReader)
@@ -251,6 +251,22 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 		return nil, fmt.Errorf("pdf output: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+func isSupportedLogo(logo string) bool {
+	if strings.HasPrefix(logo, "data:") {
+		return strings.HasPrefix(logo, "data:image/png") ||
+			strings.HasPrefix(logo, "data:image/jpeg") ||
+			strings.HasPrefix(logo, "data:image/gif")
+	}
+	if strings.HasPrefix(logo, "http") {
+		lower := strings.ToLower(logo)
+		return strings.HasSuffix(lower, ".png") ||
+			strings.HasSuffix(lower, ".jpg") ||
+			strings.HasSuffix(lower, ".jpeg") ||
+			strings.HasSuffix(lower, ".gif")
+	}
+	return false
 }
 
 func (g *Generator) logoReader(logo string) io.Reader {
