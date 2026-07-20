@@ -74,7 +74,7 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
 
       {/* Notifications */}
       <Tooltip title="Notifications">
-        <IconButton size="small" onClick={e => setNotifAnchor(e.currentTarget)} sx={{ color: 'var(--vm-text-muted)', position: 'relative', display: { xs: 'none', sm: 'flex' } }}>
+        <IconButton size="small" onClick={e => setNotifAnchor(e.currentTarget)} sx={{ color: 'var(--vm-text-muted)', position: 'relative' }}>
           <Badge badgeContent={unreadCount} color="error" sx={{ '& .MuiBadge-badge': { fontSize: 9, minWidth: 16, height: 16 } }}>
             {unreadCount > 0 ? <BellRing size={18} /> : <Bell size={18} />}
           </Badge>
