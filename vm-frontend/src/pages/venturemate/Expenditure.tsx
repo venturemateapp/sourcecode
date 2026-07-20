@@ -9,6 +9,7 @@ import { useBusiness } from '../../contexts/BusinessContext';
 import { Receipt, Plus, Trash2, Edit3, Building2, DollarSign, Tag, Download, X } from 'lucide-react';
 import type { Expenditure, ExpenditureItem } from '../../types/venturemate';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useToast } from '../../components/shared/toast';
 
 const EXPENSE_CATEGORIES = ['office', 'travel', 'software', 'marketing', 'legal', 'consulting', 'salary', 'equipment', 'utilities', 'rent', 'food', 'transport', 'other'];
 
@@ -33,6 +34,7 @@ const EXPENSE_FIELDS = `id businessId category description amount currency expen
 export function ExpenditurePage() {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
+  const toast = useToast();
   const bizId = selectedBusiness?.id;
 
   const [items, setItems] = useState<Expenditure[]>([]);
@@ -49,7 +51,9 @@ export function ExpenditurePage() {
     try {
       const d = await q<{ expenditures: Expenditure[] }>(`query Q($b:ID!){expenditures(businessId:$b){${EXPENSE_FIELDS}}}`, { b: bizId });
       setItems(d.expenditures);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to load expenses:', err);
+    }
     setLoading(false);
   }, [bizId, q]);
 
@@ -98,22 +102,37 @@ export function ExpenditurePage() {
       }
       setForm(null);
       load();
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to save expense:', err);
+      toast.error('Failed to save expense', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const deleteItem = async (id: string) => {
     if (!bizId || !confirm('Delete this expense?')) return;
-    await q('mutation M($id:ID!,$b:ID!){deleteExpenditure(id:$id businessId:$b)}', { id, b: bizId });
-    load();
+    try {
+      await q('mutation M($id:ID!,$b:ID!){deleteExpenditure(id:$id businessId:$b)}', { id, b: bizId });
+      load();
+    } catch (err) {
+      console.error('Failed to delete expense:', err);
+      toast.error('Failed to delete expense', { description: 'Please try again.' });
+    }
   };
 
   const downloadPdf = async (exp: Expenditure) => {
     if (!bizId) return;
     try {
       const d = await q<{ generateExpensePdf: string }>('mutation M($i:ID!,$b:ID!){generateExpensePdf(id:$i businessId:$b)}', { i: exp.id, b: bizId });
-      if (d.generateExpensePdf) window.open(d.generateExpensePdf, '_blank');
-    } catch { /* ignore */ }
+      if (d.generateExpensePdf) {
+        window.open(d.generateExpensePdf, '_blank');
+      } else {
+        toast.error('Failed to generate PDF', { description: 'The server returned an empty response.' });
+      }
+    } catch (err) {
+      console.error('Failed to generate expense PDF:', err);
+      toast.error('Failed to generate PDF', { description: 'Please try again.' });
+    }
   };
 
   const totalByCategory = items.reduce((acc, e) => {

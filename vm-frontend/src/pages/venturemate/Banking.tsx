@@ -323,9 +323,6 @@ export function BankingPage(_props: BankingProps) {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', width: { xs: '100%', sm: 'auto' } }}>
-          <GradientButton variant="outline" size="md" onClick={() => setShowCreateInvoiceModal(true)} sx={{ flex: { xs: 1, sm: 'none' } }}>
-            <FileText size={18} />
-          </GradientButton>
           <GradientButton variant="primary" size="md" onClick={() => setShowCreateAccountModal(true)} sx={{ flex: { xs: 1, sm: 'none' } }}>
             <Plus size={18} />
           </GradientButton>

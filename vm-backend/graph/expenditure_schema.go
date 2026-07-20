@@ -9,6 +9,24 @@ import (
 	"github.com/venturemate/vmbackend/internal/expenditure"
 )
 
+func getExpenseItems(p graphql.ResolveParams) (interface{}, error) {
+	var itemsStr string
+	if exp, ok := p.Source.(*expenditure.Expenditure); ok {
+		itemsStr = exp.Items
+	} else if m, ok := p.Source.(map[string]interface{}); ok {
+		if s, ok := m["items"].(string); ok {
+			itemsStr = s
+		}
+	} else {
+		return []map[string]interface{}{}, nil
+	}
+	var items []map[string]interface{}
+	if err := json.Unmarshal([]byte(itemsStr), &items); err != nil {
+		return []map[string]interface{}{}, nil
+	}
+	return items, nil
+}
+
 var expenseItemType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "ExpenseItem",
 	Fields: graphql.Fields{
@@ -33,17 +51,7 @@ var expenditureType = graphql.NewObject(graphql.ObjectConfig{
 		"items":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"itemsList": &graphql.Field{
 			Type: graphql.NewList(graphql.NewNonNull(expenseItemType)),
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				exp, ok := p.Source.(*expenditure.Expenditure)
-				if !ok {
-					return []map[string]interface{}{}, nil
-				}
-				var items []map[string]interface{}
-				if err := json.Unmarshal([]byte(exp.Items), &items); err != nil {
-					return []map[string]interface{}{}, nil
-				}
-				return items, nil
-			},
+			Resolve: getExpenseItems,
 		},
 		"notes":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
