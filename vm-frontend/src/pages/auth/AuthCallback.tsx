@@ -21,6 +21,7 @@ export function AuthCallback() {
           firstName: payload.first_name || '',
           lastName: payload.surname || '',
           picture: payload.picture || '',
+          avatar: payload.picture || '',
           onboarded: payload.onboarded || false,
           status: payload.status || 'active',
         }))
