@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Box, Card, Chip, Typography, TextField, MenuItem } from '@mui/material';
 import { Brain, Cpu, Zap, Clock, Filter } from 'lucide-react';
 import { graphqlRequest } from '../../lib/api';
@@ -70,11 +70,7 @@ export function AdminAiUsage() {
   const [domainFilter, setDomainFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await graphqlRequest<{ adminAiUsage: AiUsageResponse }>(`
@@ -90,7 +86,11 @@ export function AdminAiUsage() {
       console.error('Failed to load AI usage:', err);
     }
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const domains = useMemo(() => {
     if (!data) return [];

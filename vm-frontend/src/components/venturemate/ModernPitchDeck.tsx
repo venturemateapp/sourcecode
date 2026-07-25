@@ -1,6 +1,6 @@
-import { useRef } from 'react';
-import { Box, Typography, Avatar, IconButton, Tooltip } from '@mui/material';
-import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign, Download, FileText } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Box, Typography, Avatar, IconButton, Tooltip, Chip } from '@mui/material';
+import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign, Download, FileText, Palette } from 'lucide-react';
 import { AuroraBackground, FloatingOrb } from './AuroraBackground';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -12,6 +12,183 @@ const SLIDE_ICONS: Record<string, typeof Star> = {
   product: Star, 'business-model': DollarSign, traction: TrendingUp, competition: Shield,
   team: Users, financials: DollarSign, ask: Target, closing: Star,
 };
+
+// ---------------------------------------------------------------------------
+// TEMPLATES — same palette as the other VentureMate viewers, so a founder's
+// choice of "Cobalt" or "Bloom" reads the same across deck, plan, and slides.
+// ---------------------------------------------------------------------------
+
+type Decoration =
+  | 'orb' | 'rings' | 'particles' | 'geometric' | 'rays' | 'minimal'
+  | 'facets' | 'pulse-grid' | 'horizon' | 'bokeh' | 'contour' | 'prism';
+
+interface DeckTemplate {
+  id: string; label: string; font: string;
+  accent: string; accent2: string;
+  decoration: Decoration;
+}
+
+const TEMPLATES: DeckTemplate[] = [
+  { id: 'velocity', label: 'Velocity', font: 'Inter', accent: '#6366f1', accent2: '#8b5cf6', decoration: 'orb' },
+  { id: 'ignite', label: 'Ignite', font: 'Poppins', accent: '#f43f5e', accent2: '#e11d48', decoration: 'particles' },
+  { id: 'summit', label: 'Summit', font: 'Inter', accent: '#10b981', accent2: '#34d399', decoration: 'rings' },
+  { id: 'nova', label: 'Nova', font: 'Inter', accent: '#a78bfa', accent2: '#c4b5fd', decoration: 'geometric' },
+  { id: 'catalyst', label: 'Catalyst', font: 'Inter', accent: '#06b6d4', accent2: '#22d3ee', decoration: 'rays' },
+  { id: 'apex', label: 'Apex', font: 'Helvetica', accent: '#f59e0b', accent2: '#fbbf24', decoration: 'minimal' },
+
+  // ---- new, high-end additions -------------------------------------------
+  // Onyx — monochrome, jeweler's-case luxury; light does the talking, not color.
+  { id: 'onyx', label: 'Onyx', font: 'Söhne, Inter', accent: '#e4e4e7', accent2: '#a1a1aa', decoration: 'facets' },
+  // Cobalt — sapphire-on-ink, institutional; for a finance/enterprise narrative.
+  { id: 'cobalt', label: 'Cobalt', font: 'Inter', accent: '#3b82f6', accent2: '#1d4ed8', decoration: 'pulse-grid' },
+  // Solstice — warm sunrise gradient; the one template that isn't a black-box glow.
+  { id: 'solstice', label: 'Solstice', font: 'Poppins', accent: '#fb923c', accent2: '#f472b6', decoration: 'horizon' },
+  // Bloom — soft, editorial, fashion-adjacent; for consumer/lifestyle decks.
+  { id: 'bloom', label: 'Bloom', font: 'Poppins', accent: '#e879f9', accent2: '#f0abfc', decoration: 'bokeh' },
+  // Slate — dry, technical, cartographic; for infra / deep-tech narratives.
+  { id: 'slate', label: 'Slate', font: 'Inter', accent: '#94a3b8', accent2: '#64748b', decoration: 'contour' },
+  // Prism — multi-hue refraction; the boldest of the set, for design-forward founders.
+  { id: 'prism', label: 'Prism', font: 'Inter', accent: '#22d3ee', accent2: '#f472b6', decoration: 'prism' },
+];
+
+function Decoration({ type, accent, accent2 }: { type: Decoration; accent: string; accent2?: string }) {
+  switch (type) {
+    case 'orb':
+      return (
+        <Box sx={{ position: 'absolute', right: 40, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: { xs: 'none', lg: 'block' }, zIndex: 1 }}>
+          <Box sx={{ position: 'relative', width: 260, height: 260 }}>
+            <Box sx={{ position: 'absolute', inset: 0, borderRadius: '50%', bgcolor: `${accent}18`, filter: 'blur(70px)' }} />
+            <Box sx={{ position: 'absolute', inset: 30, borderRadius: '50%', border: '1px solid rgba(255,255,255,.07)' }} />
+          </Box>
+        </Box>
+      );
+    case 'rings':
+      return (
+        <Box sx={{ position: 'absolute', right: -70, bottom: -70, pointerEvents: 'none', zIndex: 1 }}>
+          <Box sx={{ position: 'relative', width: 340, height: 340 }}>
+            <Box sx={{ position: 'absolute', inset: 20, borderRadius: '50%', border: `1.5px solid ${accent}12` }} />
+            <Box sx={{ position: 'absolute', inset: 60, borderRadius: '50%', border: `1px solid ${accent}0e` }} />
+          </Box>
+        </Box>
+      );
+    case 'particles':
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+          {[0, 1, 2, 3, 4].map(i => (
+            <Box key={i} sx={{
+              position: 'absolute', left: `${12 + i * 18}%`, top: `${18 + (i % 3) * 25}%`,
+              width: 4 + i * 2, height: 4 + i * 2, borderRadius: '50%', bgcolor: accent,
+              opacity: 0.1 + i * 0.03, boxShadow: `0 0 ${10 + i * 4}px ${accent}30`,
+            }} />
+          ))}
+        </Box>
+      );
+    case 'geometric':
+      return (
+        <Box sx={{ position: 'absolute', right: -50, top: -50, pointerEvents: 'none', zIndex: 1 }}>
+          <Box sx={{ width: 280, height: 280, border: `1px solid ${accent}0e`, transform: 'rotate(45deg)', borderRadius: 4 }} />
+          <Box sx={{ position: 'absolute', top: 40, left: 40, width: 200, height: 200, border: `1px solid ${accent}08`, transform: 'rotate(45deg)', borderRadius: 3 }} />
+        </Box>
+      );
+    case 'rays':
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+          {[-25, -10, 0, 10, 25].map((a, i) => (
+            <Box key={i} sx={{ position: 'absolute', top: '50%', left: '50%', width: '120%', height: 1, background: `linear-gradient(90deg, transparent, ${accent}08, transparent)`, transform: `translate(-50%,-50%) rotate(${a}deg)` }} />
+          ))}
+        </Box>
+      );
+    case 'facets':
+      // Onyx — a single large faceted gem cut from straight lines only. Quiet, no glow bloom.
+      return (
+        <Box sx={{ position: 'absolute', right: 60, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: { xs: 'none', lg: 'block' }, zIndex: 1 }}>
+          <Box sx={{ position: 'relative', width: 260, height: 260 }}>
+            <Box sx={{
+              position: 'absolute', inset: 0,
+              clipPath: 'polygon(50% 0%, 90% 25%, 100% 65%, 65% 100%, 20% 90%, 0% 45%)',
+              background: `linear-gradient(155deg, rgba(255,255,255,.05) 0%, transparent 45%, ${accent}0d 100%)`,
+              border: '1px solid rgba(255,255,255,.09)',
+            }} />
+            <Box sx={{ position: 'absolute', left: '30%', top: '16%', width: 60, height: 2, bgcolor: 'rgba(255,255,255,.28)', transform: 'rotate(18deg)', filter: 'blur(.5px)' }} />
+          </Box>
+        </Box>
+      );
+    case 'pulse-grid':
+      // Cobalt — a faint blueprint grid with a few instrument-panel nodes. Reads as "systems".
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+          <Box sx={{
+            position: 'absolute', inset: 0, opacity: 0.45,
+            backgroundImage: `linear-gradient(${accent}12 1px, transparent 1px), linear-gradient(90deg, ${accent}12 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+            maskImage: 'radial-gradient(ellipse 65% 55% at 78% 30%, black, transparent 75%)',
+          }} />
+          {[{ l: '70%', t: '22%' }, { l: '84%', t: '40%' }].map((p, i) => (
+            <Box key={i} sx={{ position: 'absolute', left: p.l, top: p.t, width: 5, height: 5, borderRadius: '50%', bgcolor: accent, boxShadow: `0 0 12px 3px ${accent}70` }} />
+          ))}
+        </Box>
+      );
+    case 'horizon':
+      // Solstice — a low sun disc sitting on stacked gradient bands, like a title card at dawn.
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+          <Box sx={{
+            position: 'absolute', left: '78%', top: '50%', transform: 'translate(-50%,-50%)',
+            width: 220, height: 220, borderRadius: '50%',
+            background: `radial-gradient(circle at 50% 35%, ${accent}, ${accent}00 72%)`,
+            opacity: 0.35, filter: 'blur(2px)',
+          }} />
+          {[0, 1, 2].map(i => (
+            <Box key={i} sx={{
+              position: 'absolute', left: 0, right: 0, bottom: `${10 + i * 8}%`, height: 1,
+              background: `linear-gradient(90deg, transparent, ${accent}${i === 1 ? '24' : '14'}, transparent)`,
+            }} />
+          ))}
+        </Box>
+      );
+    case 'bokeh':
+      // Bloom — soft, unevenly sized overlapping discs, editorial rather than "confetti".
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+          {[
+            { l: '76%', t: '14%', s: 90, o: 0.13 },
+            { l: '88%', t: '42%', s: 44, o: 0.18 },
+            { l: '66%', t: '62%', s: 120, o: 0.08 },
+          ].map((c, i) => (
+            <Box key={i} sx={{
+              position: 'absolute', left: c.l, top: c.t, width: c.s, height: c.s, borderRadius: '50%',
+              background: `radial-gradient(circle, ${accent}, transparent 70%)`, opacity: c.o, filter: 'blur(6px)',
+            }} />
+          ))}
+        </Box>
+      );
+    case 'contour':
+      // Slate — topographic contour lines, dry and technical, for infra-flavoured decks.
+      return (
+        <Box sx={{ position: 'absolute', right: -110, bottom: -140, pointerEvents: 'none', zIndex: 1 }}>
+          {[400, 330, 260, 190].map((size, i) => (
+            <Box key={i} sx={{
+              position: 'absolute', right: 0, bottom: 0, width: size, height: size * 0.7,
+              border: `1px solid ${accent}${i % 2 === 0 ? '14' : '0a'}`,
+              borderRadius: '48% 52% 45% 55% / 55% 45% 55% 45%',
+            }} />
+          ))}
+        </Box>
+      );
+    case 'prism':
+      // Prism — refracted triangle shards in three hues, the one deliberately maximal motif.
+      return (
+        <Box sx={{ position: 'absolute', right: 30, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: { xs: 'none', lg: 'block' }, zIndex: 1 }}>
+          <Box sx={{ position: 'relative', width: 280, height: 280 }}>
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(30% 0%, 100% 15%, 70% 100%)', background: `linear-gradient(160deg, ${accent}2b, transparent 70%)` }} />
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(0% 40%, 55% 20%, 40% 100%)', background: `linear-gradient(200deg, ${accent2 || accent}24, transparent 70%)`, mixBlendMode: 'screen' }} />
+          </Box>
+        </Box>
+      );
+    default:
+      return null;
+  }
+}
 
 interface ModernPitchDeckProps {
   slides: Slide[];
@@ -91,12 +268,15 @@ function GlassCard({ children, sx }: { children: React.ReactNode; sx?: Record<st
   );
 }
 
-function CoverSlide({ slide, index, total, logo, businessName, accent }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string;
-}) {
+interface SlideCommon {
+  slide: Slide; index: number; total: number; logo?: string; businessName?: string;
+  accent: string; decoration: Decoration; accent2: string;
+}
+
+function CoverSlide({ slide, index, total, logo, businessName, accent, accent2 }: SlideCommon) {
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-      <AuroraBackground accent={accent} />
+      <AuroraBackground accent={accent} secondary={accent2} />
       <FloatingOrb accent={accent} />
       <SlideHeader logo={logo} businessName={businessName} slideType="Cover" index={index} total={total} />
 
@@ -145,12 +325,11 @@ function CoverSlide({ slide, index, total, logo, businessName, accent }: {
   );
 }
 
-function ProblemSlide({ slide, index, total, logo, businessName, accent }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string;
-}) {
+function ProblemSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
+      <Decoration type={decoration} accent={accent} />
       <SlideHeader logo={logo} businessName={businessName} slideType="The Problem" index={index} total={total} />
 
       <Box sx={{
@@ -221,13 +400,12 @@ function ProblemSlide({ slide, index, total, logo, businessName, accent }: {
   );
 }
 
-function SolutionSlide({ slide, index, total, logo, businessName, accent }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string;
-}) {
+function SolutionSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
   const points = slide.bullets?.length ? slide.bullets : slide.content ? [slide.content] : [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
+      <Decoration type={decoration} accent={accent} />
       <SlideHeader logo={logo} businessName={businessName} slideType="The Solution" index={index} total={total} />
 
       <Box sx={{
@@ -262,13 +440,12 @@ function SolutionSlide({ slide, index, total, logo, businessName, accent }: {
   );
 }
 
-function MarketSlide({ slide, index, total, logo, businessName, accent }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string;
-}) {
+function MarketSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
   const Icon = SLIDE_ICONS[slide.type] || TrendingUp;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
+      <Decoration type={decoration} accent={accent} />
       <SlideHeader logo={logo} businessName={businessName} slideType="Market Opportunity" index={index} total={total} />
 
       <Box sx={{
@@ -331,12 +508,11 @@ function MarketSlide({ slide, index, total, logo, businessName, accent }: {
   );
 }
 
-function TractionSlide({ slide, index, total, logo, businessName, accent }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string;
-}) {
+function TractionSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
+      <Decoration type={decoration} accent={accent} />
       <SlideHeader logo={logo} businessName={businessName} slideType="Traction" index={index} total={total} />
 
       <Box sx={{
@@ -381,13 +557,12 @@ function TractionSlide({ slide, index, total, logo, businessName, accent }: {
   );
 }
 
-function BusinessModelSlide({ slide, index, total, logo, businessName, accent }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string;
-}) {
+function BusinessModelSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
   const items = slide.bullets?.length ? slide.bullets : slide.content ? [slide.content] : [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
+      <Decoration type={decoration} accent={accent} />
       <SlideHeader logo={logo} businessName={businessName} slideType="Business Model" index={index} total={total} />
 
       <Box sx={{
@@ -428,13 +603,12 @@ function BusinessModelSlide({ slide, index, total, logo, businessName, accent }:
   );
 }
 
-function AskSlide({ slide, index, total, logo, businessName, accent, secondary }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string; secondary: string;
-}) {
+function AskSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
   const uses = slide.bullets?.length ? slide.bullets : [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-      <AuroraBackground accent={accent} secondary={secondary} />
+      <AuroraBackground accent={accent} secondary={accent2} />
+      <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType="The Ask" index={index} total={total} />
 
       <Box sx={{
@@ -454,7 +628,7 @@ function AskSlide({ slide, index, total, logo, businessName, accent, secondary }
             <Typography sx={{
               mt: 5, fontSize: { xs: 42, sm: 56, md: 80 }, fontWeight: 600,
               letterSpacing: '-0.07em',
-              background: `linear-gradient(135deg, ${accent}, ${secondary})`,
+              background: `linear-gradient(135deg, ${accent}, ${accent2})`,
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>
               {slide.title.includes('$') ? '' : '$'}XX
@@ -494,13 +668,12 @@ function AskSlide({ slide, index, total, logo, businessName, accent, secondary }
   );
 }
 
-function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
-  slide: Slide; index: number; total: number; logo?: string; businessName?: string; accent: string;
-}) {
+function DefaultSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
   const Icon = SLIDE_ICONS[slide.type] || Star;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
+      <Decoration type={decoration} accent={accent} />
       <SlideHeader logo={logo} businessName={businessName} slideType={slide.type} index={index} total={total} />
 
       <Box sx={{
@@ -552,8 +725,13 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
   );
 }
 
-export function ModernPitchDeck({ slides, title: _title, logo, businessName, accentColor = '#8b5cf6', secondaryColor = '#2563eb' }: ModernPitchDeckProps) {
-  const accent = accentColor;
+export function ModernPitchDeck({ slides, title: _title, logo, businessName, accentColor, secondaryColor }: ModernPitchDeckProps) {
+  const [templateId, setTemplateId] = useState('velocity');
+  const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
+  // explicit accentColor/secondaryColor props (e.g. brand colors) still win when provided;
+  // otherwise the selected template drives the palette, matching the other VentureMate viewers.
+  const accent = accentColor || template.accent;
+  const secondary = secondaryColor || template.accent2;
   const deckRef = useRef<HTMLDivElement>(null);
 
   if (!slides || slides.length === 0) return null;
@@ -589,20 +767,34 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
 
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
-      {/* Download toolbar */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, mb: 1 }}>
-        <Tooltip title="Download PDF">
-          <IconButton size="small" onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}><FileText size={15} /></IconButton>
-        </Tooltip>
-        <Tooltip title="Download PPTX">
-          <IconButton size="small" onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}><Download size={15} /></IconButton>
-        </Tooltip>
+      {/* Template picker + download toolbar */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+          <Palette size={14} color="var(--vm-text-muted)" />
+          {TEMPLATES.map(t => (
+            <Chip key={t.id} label={t.label} size="small" onClick={() => setTemplateId(t.id)}
+              sx={{
+                bgcolor: templateId === t.id ? `${t.accent}20` : 'rgba(255,255,255,.04)',
+                color: templateId === t.id ? t.accent : 'var(--vm-text-secondary)',
+                fontWeight: templateId === t.id ? 700 : 500, cursor: 'pointer', fontSize: 11,
+                border: templateId === t.id ? `1px solid ${t.accent}30` : '1px solid transparent',
+                '&:hover': { bgcolor: `${t.accent}15` },
+              }} />
+          ))}
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Tooltip title="Download PDF">
+            <IconButton size="small" onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}><FileText size={15} /></IconButton>
+          </Tooltip>
+          <Tooltip title="Download PPTX">
+            <IconButton size="small" onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}><Download size={15} /></IconButton>
+          </Tooltip>
+        </Box>
       </Box>
-      <Box ref={deckRef} sx={{ position: 'relative', width: '100%' }}>
+      <Box ref={deckRef} sx={{ position: 'relative', width: '100%' }} style={{ fontFamily: template.font }}>
       {slides.map((slide, index) => {
         const total = slides.length;
-        const common = { slide, index, total, logo, businessName, accent };
-        const withSecondary = { ...common, secondary: secondaryColor };
+        const common: SlideCommon = { slide, index, total, logo, businessName, accent, accent2: secondary, decoration: template.decoration };
 
         let slideContent: React.ReactNode;
         switch (slide.type) {
@@ -626,7 +818,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
             slideContent = <BusinessModelSlide {...common} />;
             break;
           case 'ask':
-            slideContent = <AskSlide {...withSecondary} />;
+            slideContent = <AskSlide {...common} />;
             break;
           default:
             slideContent = <DefaultSlide {...common} />;

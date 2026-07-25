@@ -36,7 +36,7 @@ export function Header({ onMenuClick, activeView, onViewChange }: HeaderProps) {
 
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [_showNotifDot, _setShowNotifDot] = useState(true);
 
   const initials = user ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() : 'VM';

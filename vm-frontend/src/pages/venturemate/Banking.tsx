@@ -121,7 +121,7 @@ const DELETE_INVOICE_MUTATION = `
   }
 `;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function BankingPage(_props: BankingProps) {
   const { format, rates } = useCurrency();
   const { user } = useAuth();
@@ -335,6 +335,7 @@ export function BankingPage(_props: BankingProps) {
         '& .MuiTab-root': { color: 'var(--vm-text-muted)', textTransform: 'none', fontSize: { xs: '0.75rem', sm: '0.875rem' }, minWidth: { xs: 'auto', sm: 90 }, '&.Mui-selected': { color: 'var(--vm-primary-400)' } },
       }}>
         <Tab label="Bank Accounts" />
+        {/* eslint-disable-next-line no-constant-binary-expression -- intentionally disabled */}
         {false && <Tab label="Invoices" />}
       </Tabs>
 
@@ -385,6 +386,7 @@ export function BankingPage(_props: BankingProps) {
       )}
 
       {/* === Invoices Tab === */}
+      {/* eslint-disable-next-line no-constant-binary-expression -- intentionally disabled */}
       {false && activeTab === 1 && (
         invoicesLoading ? (
           <Typography sx={{ color: 'var(--vm-text-muted)', textAlign: 'center', py: 6 }}>Loading invoices...</Typography>

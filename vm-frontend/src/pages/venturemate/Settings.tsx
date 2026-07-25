@@ -248,7 +248,7 @@ export function SettingsPage() {
       } else {
         toast.error('Upload failed', { description: data.error || 'Unknown error' });
       }
-    } catch (err) {
+    } catch {
       toast.error('Upload failed', { description: 'Please try again.' });
     }
     setSaving(false);
@@ -286,7 +286,7 @@ export function SettingsPage() {
         const result = await updateProfile({ avatar: data.url });
         if (result) toast.success('Avatar updated');
       }
-    } catch (err) {
+    } catch {
       toast.error('Avatar upload failed', { description: 'Please try again.' });
     }
     setSaving(false);

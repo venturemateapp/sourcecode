@@ -116,7 +116,7 @@ interface ApplicationData {
   documents: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function CreditScorePage(_props: CreditScoreProps) {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();

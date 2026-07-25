@@ -118,7 +118,7 @@ export function TeamPage() {
       } else {
         toast.error('Upload failed', { description: data.error || 'Unknown error' });
       }
-    } catch (err) {
+    } catch {
       toast.error('Upload failed', { description: 'Please try again.' });
     }
     setAvatarUploading(false);

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { graphqlRequest } from '../lib/api';
 import { useAuth } from './AuthContext';

@@ -39,11 +39,11 @@ export function parseAIResponse(input: string): AIResponse | null {
         return null;
       }
       if (parsed.type && ["text","table","metrics","people","chart","confirmation"].includes(parsed.type)) return parsed as AIResponse;
-    } catch {}
+    } catch { /* ignore JSON parse errors */ }
   }
   const jsonBlock = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (jsonBlock) {
-    try { const parsed = JSON.parse(jsonBlock[1].trim()); if (parsed.type && ["text","table","metrics","people","chart","confirmation"].includes(parsed.type)) return parsed as AIResponse; } catch {}
+    try { const parsed = JSON.parse(jsonBlock[1].trim()); if (parsed.type && ["text","table","metrics","people","chart","confirmation"].includes(parsed.type)) return parsed as AIResponse; } catch { /* ignore JSON parse errors */ }
   }
   return null;
 }

@@ -6,11 +6,15 @@ import jsPDF from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import type { PlanSection } from '../../types/venturemate';
 
+type Decoration =
+  | 'orb' | 'rings' | 'particles' | 'geometric' | 'rays' | 'minimal'
+  | 'facets' | 'pulse-grid' | 'horizon' | 'bokeh' | 'contour' | 'prism';
+
 interface Template {
   id: string; label: string; font: string;
   accent: string; accent2: string;
   baseBg: string;
-  decoration: 'orb' | 'rings' | 'particles' | 'geometric' | 'rays' | 'minimal';
+  decoration: Decoration;
   glass: string; border: string;
 }
 
@@ -45,6 +49,44 @@ const TEMPLATES: Template[] = [
     accent: '#f59e0b', accent2: '#fbbf24', baseBg: '#050505',
     decoration: 'minimal', glass: 'rgba(245,158,11,.1)', border: 'rgba(245,158,11,.15)',
   },
+
+  // ---- new, high-end additions -------------------------------------------
+  {
+    id: 'onyx', label: 'Onyx', font: 'Söhne, Inter',
+    // quiet, monochrome, jeweler's-case luxury — light does the talking, not color
+    accent: '#e4e4e7', accent2: '#a1a1aa', baseBg: '#0a0a0c',
+    decoration: 'facets', glass: 'rgba(228,228,231,.06)', border: 'rgba(228,228,231,.14)',
+  },
+  {
+    id: 'cobalt', label: 'Cobalt', font: 'Inter',
+    // institutional, sapphire-on-ink, for a finance/enterprise narrative
+    accent: '#3b82f6', accent2: '#1d4ed8', baseBg: '#05070f',
+    decoration: 'pulse-grid', glass: 'rgba(59,130,246,.1)', border: 'rgba(59,130,246,.18)',
+  },
+  {
+    id: 'solstice', label: 'Solstice', font: 'Poppins',
+    // warm sunrise gradient — the one template that isn't a black-box glow
+    accent: '#fb923c', accent2: '#f472b6', baseBg: '#160a08',
+    decoration: 'horizon', glass: 'rgba(251,146,60,.12)', border: 'rgba(251,146,60,.2)',
+  },
+  {
+    id: 'bloom', label: 'Bloom', font: 'Poppins',
+    // soft, editorial, fashion-adjacent — for consumer/lifestyle plans
+    accent: '#e879f9', accent2: '#f0abfc', baseBg: '#0e0510',
+    decoration: 'bokeh', glass: 'rgba(232,121,249,.1)', border: 'rgba(232,121,249,.18)',
+  },
+  {
+    id: 'slate', label: 'Slate', font: 'Inter',
+    // dry, technical, cartographic — for infra / deep-tech narratives
+    accent: '#94a3b8', accent2: '#64748b', baseBg: '#0a0d11',
+    decoration: 'contour', glass: 'rgba(148,163,184,.08)', border: 'rgba(148,163,184,.16)',
+  },
+  {
+    id: 'prism', label: 'Prism', font: 'Inter',
+    // multi-hue refraction — the boldest of the set, for design-forward founders
+    accent: '#22d3ee', accent2: '#f472b6', baseBg: '#050508',
+    decoration: 'prism', glass: 'rgba(34,211,238,.1)', border: 'rgba(34,211,238,.18)',
+  },
 ];
 
 function AuroraBg({ accent, baseBg }: { accent: string; baseBg: string }) {
@@ -60,7 +102,7 @@ function AuroraBg({ accent, baseBg }: { accent: string; baseBg: string }) {
   );
 }
 
-function Decoration({ type, accent }: { type: Template['decoration']; accent: string }) {
+function Decoration({ type, accent, accent2 }: { type: Decoration; accent: string; accent2?: string }) {
   switch (type) {
     case 'orb':
       return (
@@ -112,17 +154,116 @@ function Decoration({ type, accent }: { type: Template['decoration']; accent: st
           ))}
         </Box>
       );
+
+    // ---- new decorations ---------------------------------------------
+
+    case 'facets':
+      // Onyx — a single large faceted gem cut from straight lines only. Quiet, no glow bloom.
+      return (
+        <Box sx={{ position: 'absolute', right: 40, top: '42%', pointerEvents: 'none', display: { xs: 'none', lg: 'block' } }}>
+          <Box sx={{ position: 'relative', width: 240, height: 240 }}>
+            <Box sx={{
+              position: 'absolute', inset: 0,
+              clipPath: 'polygon(50% 0%, 90% 25%, 100% 65%, 65% 100%, 20% 90%, 0% 45%)',
+              background: `linear-gradient(155deg, rgba(255,255,255,.06) 0%, transparent 45%, ${accent}0f 100%)`,
+              border: '1px solid rgba(255,255,255,.1)',
+            }} />
+            <Box sx={{
+              position: 'absolute', inset: 30,
+              clipPath: 'polygon(50% 0%, 90% 25%, 100% 65%, 65% 100%, 20% 90%, 0% 45%)',
+              border: '1px solid rgba(255,255,255,.06)',
+            }} />
+            <Box sx={{ position: 'absolute', left: '30%', top: '16%', width: 60, height: 2, bgcolor: 'rgba(255,255,255,.32)', transform: 'rotate(18deg)', filter: 'blur(.5px)' }} />
+          </Box>
+        </Box>
+      );
+    case 'pulse-grid':
+      // Cobalt — a faint blueprint grid with a few instrument-panel nodes. Reads as "systems".
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <Box sx={{
+            position: 'absolute', inset: 0, opacity: 0.5,
+            backgroundImage: `linear-gradient(${accent}14 1px, transparent 1px), linear-gradient(90deg, ${accent}14 1px, transparent 1px)`,
+            backgroundSize: '56px 56px',
+            maskImage: 'radial-gradient(ellipse 70% 60% at 75% 30%, black, transparent 75%)',
+          }} />
+          {[{ l: '70%', t: '22%' }, { l: '82%', t: '38%' }, { l: '60%', t: '42%' }].map((p, i) => (
+            <Box key={i} sx={{ position: 'absolute', left: p.l, top: p.t, width: 5, height: 5, borderRadius: '50%', bgcolor: accent, boxShadow: `0 0 12px 3px ${accent}70` }} />
+          ))}
+        </Box>
+      );
+    case 'horizon':
+      // Solstice — a low sun disc sitting on stacked gradient bands, like a title card at dawn.
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <Box sx={{
+            position: 'absolute', left: '50%', bottom: '16%', transform: 'translateX(-50%)',
+            width: 200, height: 200, borderRadius: '50%',
+            background: `radial-gradient(circle at 50% 35%, ${accent}, ${accent}00 72%)`,
+            opacity: 0.45, filter: 'blur(2px)',
+          }} />
+          {[0, 1, 2, 3].map(i => (
+            <Box key={i} sx={{
+              position: 'absolute', left: 0, right: 0, bottom: `${8 + i * 6}%`, height: 1,
+              background: `linear-gradient(90deg, transparent, ${accent}${i === 1 ? '2a' : '16'}, transparent)`,
+            }} />
+          ))}
+        </Box>
+      );
+    case 'bokeh':
+      // Bloom — soft, unevenly sized overlapping discs, editorial rather than "confetti".
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          {[
+            { l: '72%', t: '16%', s: 80, o: 0.15 },
+            { l: '86%', t: '42%', s: 40, o: 0.2 },
+            { l: '62%', t: '58%', s: 110, o: 0.09 },
+            { l: '90%', t: '70%', s: 26, o: 0.25 },
+          ].map((c, i) => (
+            <Box key={i} sx={{
+              position: 'absolute', left: c.l, top: c.t, width: c.s, height: c.s, borderRadius: '50%',
+              background: `radial-gradient(circle, ${accent}, transparent 70%)`,
+              opacity: c.o, filter: 'blur(6px)',
+            }} />
+          ))}
+        </Box>
+      );
+    case 'contour':
+      // Slate — topographic contour lines, dry and technical, for infra-flavoured plans.
+      return (
+        <Box sx={{ position: 'absolute', right: -100, bottom: -120, pointerEvents: 'none' }}>
+          {[380, 320, 260, 200, 150].map((size, i) => (
+            <Box key={i} sx={{
+              position: 'absolute', right: 0, bottom: 0,
+              width: size, height: size * 0.7,
+              border: `1px solid ${accent}${i % 2 === 0 ? '16' : '0d'}`,
+              borderRadius: '48% 52% 45% 55% / 55% 45% 55% 45%',
+            }} />
+          ))}
+        </Box>
+      );
+    case 'prism':
+      // Prism — refracted triangle shards in three hues, the one deliberately maximal motif.
+      return (
+        <Box sx={{ position: 'absolute', right: 10, top: '40%', pointerEvents: 'none', display: { xs: 'none', lg: 'block' } }}>
+          <Box sx={{ position: 'relative', width: 260, height: 260 }}>
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(30% 0%, 100% 15%, 70% 100%)', background: `linear-gradient(160deg, ${accent}33, transparent 70%)` }} />
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(0% 40%, 55% 20%, 40% 100%)', background: `linear-gradient(200deg, ${accent2 || accent}2b, transparent 70%)`, mixBlendMode: 'screen' }} />
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(20% 70%, 90% 55%, 60% 100%)', background: `linear-gradient(20deg, #a78bfa22, transparent 65%)`, mixBlendMode: 'screen' }} />
+          </Box>
+        </Box>
+      );
     default:
       return null;
   }
 }
 
 function SummarySlide({ summary, template, logo, businessName }: { summary: string; template: Template; logo?: string; businessName?: string }) {
-  const { accent } = template;
+  const { accent, accent2 } = template;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBg accent={accent} baseBg={template.baseBg} />
-      <Decoration type={template.decoration} accent={accent} />
+      <Decoration type={template.decoration} accent={accent} accent2={accent2} />
 
       {logo && (
         <Box sx={{ position: 'absolute', top: 20, left: 24, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -147,11 +288,11 @@ function SummarySlide({ summary, template, logo, businessName }: { summary: stri
 }
 
 function SectionSlide({ section, index, template, logo, businessName }: { section: PlanSection; index: number; template: Template; logo?: string; businessName?: string }) {
-  const { accent, glass, border } = template;
+  const { accent, accent2, glass, border } = template;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBg accent={accent} baseBg={template.baseBg} />
-      <Decoration type={template.decoration} accent={accent} />
+      <Decoration type={template.decoration} accent={accent} accent2={accent2} />
 
       {logo && (
         <Box sx={{ position: 'absolute', top: 16, left: 20, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1 }}>

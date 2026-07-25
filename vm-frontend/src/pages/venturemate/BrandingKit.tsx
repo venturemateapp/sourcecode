@@ -218,7 +218,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
 const BRAND_GUIDE_QUERY = `mutation GenGuide($businessId: ID!) { generateBrandGuide(businessId: $businessId) { id title content order } }`;
 interface BrandGuideSection { id: string; title: string; content: string; order: number; }
 
-export function BrandingKitPage(_props: BrandingKitProps) {
+export function BrandingKitPage(_props: BrandingKitProps): React.ReactElement {
   const { selectedBusiness } = useBusiness();
   const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);

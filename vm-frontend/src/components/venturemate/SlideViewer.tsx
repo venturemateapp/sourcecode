@@ -8,25 +8,30 @@ import type { Slide } from '../../types/venturemate';
 
 interface GlowPos {
   color: string; width: number; height: number; blur: number;
-  top?: number; right?: number; bottom?: number; left?: number;
+  top?: number | string; right?: number | string; bottom?: number | string; left?: number | string;
 }
-
 interface TemplateBg {
   base: string;
   glow1: GlowPos;
   glow2: GlowPos;
   mesh: string;
 }
-
+type Decoration =
+  | 'orb' | 'rings' | 'particles' | 'geometric' | 'rays' | 'minimal'
+  | 'facets' | 'pulse-grid' | 'horizon' | 'bokeh' | 'contour' | 'prism';
 interface Template {
   id: string; label: string; font: string;
   accent: string; accent2: string;
   bg: TemplateBg;
-  decoration: 'orb' | 'rings' | 'particles' | 'geometric' | 'rays' | 'minimal';
+  decoration: Decoration;
   glass: string; border: string;
   titleSize: Record<string, string>;
   layout: 'standard' | 'magazine' | 'minimal';
 }
+
+// ---------------------------------------------------------------------------
+// BACKGROUNDS
+// ---------------------------------------------------------------------------
 
 const TEMPLATE_BGS: Record<string, TemplateBg> = {
   velocity: {
@@ -65,7 +70,56 @@ const TEMPLATE_BGS: Record<string, TemplateBg> = {
     glow2: { color: '#fbbf24', bottom: -140, left: -140, width: 450, height: 450, blur: 120 },
     mesh: 'radial-gradient(circle at 50% 30%, rgba(245,158,11,.06), transparent 40%)',
   },
+
+  // ---- new, high-end additions -------------------------------------------
+
+  onyx: {
+    // quiet, monochrome, jeweler's-case luxury — light does the talking, not color
+    base: '#0a0a0c',
+    glow1: { color: '#f4f4f5', top: -220, right: -100, width: 520, height: 520, blur: 180 },
+    glow2: { color: '#71717a', bottom: -200, left: -220, width: 560, height: 560, blur: 170 },
+    mesh: 'radial-gradient(circle at 75% 15%, rgba(244,244,245,.06), transparent 40%), radial-gradient(circle at 15% 85%, rgba(161,161,170,.05), transparent 40%)',
+  },
+  cobalt: {
+    // institutional, sapphire-on-ink, built for a finance/enterprise narrative
+    base: '#05070f',
+    glow1: { color: '#2563eb', top: -180, left: '50%', width: 700, height: 700, blur: 190 } as GlowPos,
+    glow2: { color: '#1d4ed8', bottom: -260, right: -160, width: 560, height: 560, blur: 150 },
+    mesh: 'radial-gradient(circle at 50% 0%, rgba(37,99,235,.14), transparent 45%), radial-gradient(circle at 85% 90%, rgba(29,78,216,.08), transparent 35%)',
+  },
+  solstice: {
+    // warm sunrise gradient — the one template that isn't a black-box glow
+    base: '#160a08',
+    glow1: { color: '#fb923c', top: -100, left: '50%', width: 780, height: 780, blur: 190 } as GlowPos,
+    glow2: { color: '#f472b6', bottom: -260, right: -140, width: 520, height: 520, blur: 160 },
+    mesh: 'linear-gradient(180deg, rgba(251,146,60,.14) 0%, rgba(20,10,8,0) 55%), radial-gradient(circle at 80% 100%, rgba(244,114,182,.1), transparent 45%)',
+  },
+  bloom: {
+    // soft, editorial, fashion-adjacent — for consumer/lifestyle decks
+    base: '#0e0510',
+    glow1: { color: '#d946ef', top: -180, right: -140, width: 600, height: 600, blur: 175 },
+    glow2: { color: '#f0abfc', bottom: -200, left: -180, width: 560, height: 560, blur: 165 },
+    mesh: 'radial-gradient(circle at 25% 25%, rgba(217,70,239,.1), transparent 40%), radial-gradient(circle at 75% 75%, rgba(240,171,252,.08), transparent 40%)',
+  },
+  slate: {
+    // dry, technical, cartographic — for infra / deep-tech narratives
+    base: '#0a0d11',
+    glow1: { color: '#64748b', top: -160, right: -160, width: 520, height: 520, blur: 150 },
+    glow2: { color: '#334155', bottom: -180, left: -160, width: 520, height: 520, blur: 150 },
+    mesh: 'radial-gradient(circle at 30% 70%, rgba(100,116,139,.08), transparent 40%)',
+  },
+  prism: {
+    // multi-hue refraction — the boldest of the set, for design-forward founders
+    base: '#050508',
+    glow1: { color: '#22d3ee', top: -180, right: -200, width: 560, height: 560, blur: 160 },
+    glow2: { color: '#a78bfa', bottom: -200, left: -180, width: 560, height: 560, blur: 160 },
+    mesh: 'radial-gradient(circle at 25% 20%, rgba(34,211,238,.1), transparent 40%), radial-gradient(circle at 75% 30%, rgba(244,114,182,.08), transparent 40%), radial-gradient(circle at 50% 85%, rgba(167,139,250,.08), transparent 40%)',
+  },
 };
+
+// ---------------------------------------------------------------------------
+// TEMPLATES
+// ---------------------------------------------------------------------------
 
 const TEMPLATES: Template[] = [
   {
@@ -116,14 +170,68 @@ const TEMPLATES: Template[] = [
     glass: 'rgba(245,158,11,.1)', border: 'rgba(245,158,11,.15)',
     titleSize: { xs: '24px', sm: '32px', md: '44px' }, layout: 'minimal',
   },
+
+  // ---- new, high-end additions -------------------------------------------
+  {
+    id: 'onyx', label: 'Onyx', font: 'Söhne, Inter',
+    accent: '#e4e4e7', accent2: '#a1a1aa',
+    bg: TEMPLATE_BGS.onyx,
+    decoration: 'facets',
+    glass: 'rgba(228,228,231,.06)', border: 'rgba(228,228,231,.14)',
+    titleSize: { xs: '22px', sm: '30px', md: '40px' }, layout: 'minimal',
+  },
+  {
+    id: 'cobalt', label: 'Cobalt', font: 'Inter',
+    accent: '#3b82f6', accent2: '#1d4ed8',
+    bg: TEMPLATE_BGS.cobalt,
+    decoration: 'pulse-grid',
+    glass: 'rgba(59,130,246,.1)', border: 'rgba(59,130,246,.18)',
+    titleSize: { xs: '22px', sm: '30px', md: '39px' }, layout: 'standard',
+  },
+  {
+    id: 'solstice', label: 'Solstice', font: 'Poppins',
+    accent: '#fb923c', accent2: '#f472b6',
+    bg: TEMPLATE_BGS.solstice,
+    decoration: 'horizon',
+    glass: 'rgba(251,146,60,.12)', border: 'rgba(251,146,60,.2)',
+    titleSize: { xs: '24px', sm: '32px', md: '43px' }, layout: 'magazine',
+  },
+  {
+    id: 'bloom', label: 'Bloom', font: 'Poppins',
+    accent: '#e879f9', accent2: '#f0abfc',
+    bg: TEMPLATE_BGS.bloom,
+    decoration: 'bokeh',
+    glass: 'rgba(232,121,249,.1)', border: 'rgba(232,121,249,.18)',
+    titleSize: { xs: '23px', sm: '31px', md: '41px' }, layout: 'magazine',
+  },
+  {
+    id: 'slate', label: 'Slate', font: 'Inter',
+    accent: '#94a3b8', accent2: '#64748b',
+    bg: TEMPLATE_BGS.slate,
+    decoration: 'contour',
+    glass: 'rgba(148,163,184,.08)', border: 'rgba(148,163,184,.16)',
+    titleSize: { xs: '21px', sm: '29px', md: '37px' }, layout: 'minimal',
+  },
+  {
+    id: 'prism', label: 'Prism', font: 'Inter',
+    accent: '#22d3ee', accent2: '#f472b6',
+    bg: TEMPLATE_BGS.prism,
+    decoration: 'prism',
+    glass: 'rgba(34,211,238,.1)', border: 'rgba(34,211,238,.18)',
+    titleSize: { xs: '23px', sm: '31px', md: '41px' }, layout: 'magazine',
+  },
 ];
+
+// ---------------------------------------------------------------------------
+// BACKGROUND / DECORATION RENDERERS
+// ---------------------------------------------------------------------------
 
 function AuroraBackground({ bg, accent }: { bg: TemplateBg; accent: string }) {
   return (
     <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', '& > *': { position: 'absolute', pointerEvents: 'none' } }}>
       <Box sx={{ inset: 0, bgcolor: bg.base }} />
-      <Box sx={{ top: bg.glow1.top, right: bg.glow1.right, width: bg.glow1.width, height: bg.glow1.height, borderRadius: '50%', background: `radial-gradient(circle, ${accent}22, transparent 70%)`, filter: `blur(${bg.glow1.blur}px)` }} />
-      <Box sx={{ bottom: bg.glow2.bottom, left: bg.glow2.left, width: bg.glow2.width, height: bg.glow2.height, borderRadius: '50%', background: `radial-gradient(circle, ${accent}15, transparent 70%)`, filter: `blur(${bg.glow2.blur}px)` }} />
+      <Box sx={{ top: bg.glow1.top, right: bg.glow1.right, left: bg.glow1.left, width: bg.glow1.width, height: bg.glow1.height, transform: bg.glow1.left === '50%' ? 'translateX(-50%)' : undefined, borderRadius: '50%', background: `radial-gradient(circle, ${accent}22, transparent 70%)`, filter: `blur(${bg.glow1.blur}px)` }} />
+      <Box sx={{ bottom: bg.glow2.bottom, left: bg.glow2.left, right: bg.glow2.right, width: bg.glow2.width, height: bg.glow2.height, borderRadius: '50%', background: `radial-gradient(circle, ${accent}15, transparent 70%)`, filter: `blur(${bg.glow2.blur}px)` }} />
       <Box sx={{ inset: 0, opacity: 0.25, background: bg.mesh }} />
       <Box sx={{ inset: 0, opacity: 0.035, backgroundImage: `linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)`, backgroundSize: '48px 48px' }} />
       <Box sx={{ inset: 0, opacity: 0.03, mixBlendMode: 'overlay', backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")` }} />
@@ -131,7 +239,7 @@ function AuroraBackground({ bg, accent }: { bg: TemplateBg; accent: string }) {
   );
 }
 
-function DecorativeElement({ type, accent }: { type: Template['decoration']; accent: string }) {
+function DecorativeElement({ type, accent, accent2 }: { type: Decoration; accent: string; accent2?: string }) {
   switch (type) {
     case 'orb':
       return (
@@ -176,26 +284,9 @@ function DecorativeElement({ type, accent }: { type: Template['decoration']; acc
     case 'geometric':
       return (
         <Box sx={{ position: 'absolute', right: -40, top: -40, pointerEvents: 'none' }}>
-          <Box sx={{
-            width: 300, height: 300,
-            border: `1px solid ${accent}12`,
-            transform: 'rotate(45deg)',
-            borderRadius: 4,
-          }} />
-          <Box sx={{
-            position: 'absolute', top: 40, left: 40,
-            width: 220, height: 220,
-            border: `1px solid ${accent}08`,
-            transform: 'rotate(45deg)',
-            borderRadius: 3,
-          }} />
-          <Box sx={{
-            position: 'absolute', top: 80, left: 80,
-            width: 140, height: 140,
-            bgcolor: `${accent}06`,
-            transform: 'rotate(45deg)',
-            borderRadius: 2,
-          }} />
+          <Box sx={{ width: 300, height: 300, border: `1px solid ${accent}12`, transform: 'rotate(45deg)', borderRadius: 4 }} />
+          <Box sx={{ position: 'absolute', top: 40, left: 40, width: 220, height: 220, border: `1px solid ${accent}08`, transform: 'rotate(45deg)', borderRadius: 3 }} />
+          <Box sx={{ position: 'absolute', top: 80, left: 80, width: 140, height: 140, bgcolor: `${accent}06`, transform: 'rotate(45deg)', borderRadius: 2 }} />
         </Box>
       );
     case 'rays':
@@ -210,6 +301,106 @@ function DecorativeElement({ type, accent }: { type: Template['decoration']; acc
               transformOrigin: 'center',
             }} />
           ))}
+        </Box>
+      );
+
+    // ---- new decorations ---------------------------------------------
+
+    case 'facets':
+      // Onyx — a single large faceted gem, cut from straight lines only. Quiet, no glow bloom.
+      return (
+        <Box sx={{ position: 'absolute', right: 60, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: { xs: 'none', lg: 'block' } }}>
+          <Box sx={{ position: 'relative', width: 280, height: 280 }}>
+            <Box sx={{
+              position: 'absolute', inset: 0,
+              clipPath: 'polygon(50% 0%, 90% 25%, 100% 65%, 65% 100%, 20% 90%, 0% 45%)',
+              background: `linear-gradient(155deg, rgba(255,255,255,.06) 0%, transparent 45%, ${accent}0f 100%)`,
+              border: '1px solid rgba(255,255,255,.1)',
+            }} />
+            <Box sx={{
+              position: 'absolute', inset: 36,
+              clipPath: 'polygon(50% 0%, 90% 25%, 100% 65%, 65% 100%, 20% 90%, 0% 45%)',
+              border: '1px solid rgba(255,255,255,.06)',
+            }} />
+            <Box sx={{ position: 'absolute', left: '32%', top: '18%', width: 70, height: 2, bgcolor: 'rgba(255,255,255,.35)', transform: 'rotate(18deg)', filter: 'blur(.5px)' }} />
+            <Box sx={{ position: 'absolute', left: '55%', top: '55%', width: 40, height: 1, bgcolor: 'rgba(255,255,255,.18)', transform: 'rotate(-30deg)' }} />
+          </Box>
+        </Box>
+      );
+    case 'pulse-grid':
+      // Cobalt — a faint blueprint grid with a few instrument-panel nodes. Reads as "systems", not "party".
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <Box sx={{
+            position: 'absolute', inset: 0, opacity: 0.5,
+            backgroundImage: `linear-gradient(${accent}14 1px, transparent 1px), linear-gradient(90deg, ${accent}14 1px, transparent 1px)`,
+            backgroundSize: '64px 64px',
+            maskImage: 'radial-gradient(ellipse 70% 60% at 70% 30%, black, transparent 75%)',
+          }} />
+          {[{ l: '68%', t: '22%' }, { l: '80%', t: '38%' }, { l: '58%', t: '42%' }].map((p, i) => (
+            <Box key={i} sx={{ position: 'absolute', left: p.l, top: p.t, width: 6, height: 6, borderRadius: '50%', bgcolor: accent, boxShadow: `0 0 14px 3px ${accent}70` }} />
+          ))}
+        </Box>
+      );
+    case 'horizon':
+      // Solstice — a low sun disc sitting on stacked gradient bands, like a title card at dawn.
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          <Box sx={{
+            position: 'absolute', left: '50%', bottom: '18%', transform: 'translateX(-50%)',
+            width: 240, height: 240, borderRadius: '50%',
+            background: `radial-gradient(circle at 50% 35%, ${accent}, ${accent}00 72%)`,
+            opacity: 0.5, filter: 'blur(2px)',
+          }} />
+          {[0, 1, 2, 3].map(i => (
+            <Box key={i} sx={{
+              position: 'absolute', left: 0, right: 0, bottom: `${8 + i * 6}%`, height: 1,
+              background: `linear-gradient(90deg, transparent, ${accent}${i === 1 ? '30' : '18'}, transparent)`,
+            }} />
+          ))}
+        </Box>
+      );
+    case 'bokeh':
+      // Bloom — soft, unevenly sized overlapping discs, editorial rather than "confetti".
+      return (
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+          {[
+            { l: '74%', t: '18%', s: 90, o: 0.16 },
+            { l: '86%', t: '44%', s: 46, o: 0.22 },
+            { l: '64%', t: '58%', s: 130, o: 0.1 },
+            { l: '90%', t: '72%', s: 30, o: 0.28 },
+          ].map((c, i) => (
+            <Box key={i} sx={{
+              position: 'absolute', left: c.l, top: c.t, width: c.s, height: c.s, borderRadius: '50%',
+              background: `radial-gradient(circle, ${accent}, transparent 70%)`,
+              opacity: c.o, filter: 'blur(6px)',
+            }} />
+          ))}
+        </Box>
+      );
+    case 'contour':
+      // Slate — topographic contour lines, dry and technical, for infra-flavoured decks.
+      return (
+        <Box sx={{ position: 'absolute', right: -120, bottom: -140, pointerEvents: 'none' }}>
+          {[420, 360, 300, 240, 180].map((size, i) => (
+            <Box key={i} sx={{
+              position: 'absolute', right: 0, bottom: 0,
+              width: size, height: size * 0.7,
+              border: `1px solid ${accent}${i % 2 === 0 ? '16' : '0d'}`,
+              borderRadius: '48% 52% 45% 55% / 55% 45% 55% 45%',
+            }} />
+          ))}
+        </Box>
+      );
+    case 'prism':
+      // Prism — refracted triangle shards in three hues, the one deliberately maximal motif.
+      return (
+        <Box sx={{ position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: { xs: 'none', lg: 'block' } }}>
+          <Box sx={{ position: 'relative', width: 300, height: 300 }}>
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(30% 0%, 100% 15%, 70% 100%)', background: `linear-gradient(160deg, ${accent}33, transparent 70%)` }} />
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(0% 40%, 55% 20%, 40% 100%)', background: `linear-gradient(200deg, ${accent2 || accent}2b, transparent 70%)`, mixBlendMode: 'screen' }} />
+            <Box sx={{ position: 'absolute', inset: 0, clipPath: 'polygon(20% 70%, 90% 55%, 60% 100%)', background: `linear-gradient(20deg, #a78bfa22, transparent 65%)`, mixBlendMode: 'screen' }} />
+          </Box>
         </Box>
       );
     default:
@@ -252,7 +443,6 @@ function SlideContent({ slide, template, logo, businessName }: {
 }) {
   const { accent, glass, border, layout: L } = template;
   const isTitle = slide.type === 'title' || slide.type === 'closing';
-
   if (isTitle) {
     return (
       <>
@@ -280,7 +470,6 @@ function SlideContent({ slide, template, logo, businessName }: {
       </>
     );
   }
-
   return (
     <>
       <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 1.5, sm: 3 }, py: { xs: 1.5, sm: 2.5 } }}>
@@ -291,22 +480,18 @@ function SlideContent({ slide, template, logo, businessName }: {
         <Chip label={slide.type?.replace(/_/g, ' ') || 'slide'} size="small"
           sx={{ textTransform: 'capitalize', bgcolor: glass, color: accent, fontSize: { xs: 8, sm: 9 }, height: { xs: 18, sm: 22 }, border: `1px solid ${border}`, fontWeight: 600, backdropFilter: 'blur(8px)' }} />
       </Box>
-
       <Box sx={{ position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', px: { xs: 2, sm: 3.5, md: 5 }, pt: { xs: 5, sm: 6, md: 7 }, pb: { xs: 2, sm: 3 } }}>
         <Box sx={{ width: { xs: 24, sm: 32 }, height: 2.5, borderRadius: 2, bgcolor: accent, mb: { xs: 1, sm: 1.5 }, boxShadow: `0 0 12px ${accent}50` }} />
-
         <Typography sx={{
           color: 'white', fontSize: template.titleSize, fontWeight: 900, lineHeight: 1.15,
           mb: { xs: 0.75, sm: 1.25 }, letterSpacing: '-0.02em', maxWidth: '92%',
           overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>{slide.title}</Typography>
-
         {slide.image && (
           <Box sx={{ position: 'absolute', inset: 0, zIndex: 0, '&::after': { content: '""', position: 'absolute', inset: 0, bgcolor: template.bg.base, opacity: 0.7 } }}>
             <Box component="img" src={slide.image} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </Box>
         )}
-
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: L === 'magazine' && slide.bullets?.length ? '1fr 1fr' : '1fr' }, gap: { xs: 1, sm: 2 }, mt: { xs: 0.5, sm: 1 } }}>
           <Box>
             {slide.content && (
@@ -334,7 +519,6 @@ function SlideContent({ slide, template, logo, businessName }: {
             )}
           </Box>
         </Box>
-
         {(slide.type === 'traction' || slide.type === 'financials' || slide.type === 'market') && (
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: { xs: 0.5, sm: 1 }, mt: { xs: 1, sm: 2 }, maxWidth: '70%' }}>
             <MetricCard icon={TrendingUp} label="Growth" value="47%" accent={accent} />
@@ -343,7 +527,6 @@ function SlideContent({ slide, template, logo, businessName }: {
           </Box>
         )}
       </Box>
-
       <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 3 }}>
         <Box sx={{ height: 2, bgcolor: accent, width: '30%', borderRadius: 1, mb: 0.5 }} />
         <Box sx={{ height: 1, bgcolor: `${accent}20`, width: '60%', borderRadius: 1 }} />
@@ -352,17 +535,19 @@ function SlideContent({ slide, template, logo, businessName }: {
   );
 }
 
+// ---------------------------------------------------------------------------
+// VIEWER
+// ---------------------------------------------------------------------------
+
 export function SlideViewer({ slides, title, logo, businessName, primary: propPrimary }: SlideViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [templateId, setTemplateId] = useState('velocity');
   const viewerRef = useRef<HTMLDivElement>(null);
-
   const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
   const slide = slides[currentIndex];
   const total = slides.length;
   const accent = propPrimary || template.accent;
-
   const goTo = useCallback((index: number) => setCurrentIndex(Math.max(0, Math.min(index, total - 1))), [total]);
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); goTo(currentIndex + 1); }
@@ -371,14 +556,12 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     if (e.key === 'f') setFullscreen(p => !p);
     if (e.key === 'g') goTo(0);
   }, [currentIndex, goTo]);
-
   useEffect(() => { window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown); }, [handleKeyDown]);
   useEffect(() => {
     if (fullscreen) { viewerRef.current?.requestFullscreen?.().catch(() => {}); document.body.style.overflow = 'hidden'; }
     else { document.exitFullscreen?.().catch(() => {}); document.body.style.overflow = ''; }
     return () => { document.body.style.overflow = ''; };
   }, [fullscreen]);
-
   const exportPDF = async () => {
     const el = viewerRef.current?.querySelector('[data-slide-container]') as HTMLElement;
     if (!el) return;
@@ -395,7 +578,6 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     }
     pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
   };
-
   const exportPPTX = () => {
     const pptx = new PptxGenJS();
     pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
@@ -410,9 +592,7 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     });
     pptx.writeFile({ fileName: `${title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx` });
   };
-
   if (!slide) return null;
-
   return (
     <Box ref={viewerRef} sx={{ position: 'relative', width: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5, flexWrap: 'wrap', px: { xs: 0.5, sm: 0 } }}>
@@ -422,7 +602,6 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
             sx={{ bgcolor: templateId === t.id ? `${t.accent}20` : 'rgba(255,255,255,.04)', color: templateId === t.id ? t.accent : 'var(--vm-text-secondary)', fontWeight: templateId === t.id ? 700 : 500, cursor: 'pointer', fontSize: 11, border: templateId === t.id ? `1px solid ${t.accent}30` : '1px solid transparent', '&:hover': { bgcolor: `${t.accent}15` } }} />
         ))}
       </Box>
-
       <Box data-slide-container sx={{
         position: 'relative', width: '100%', aspectRatio: '16 / 9',
         maxHeight: fullscreen ? '100vh' : { xs: 250, sm: 370, md: 470 },
@@ -435,19 +614,15 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
       }}>
         <Box data-slide-inner sx={{ position: 'absolute', inset: 0, overflow: 'auto' }}>
         <AuroraBackground bg={template.bg} accent={accent} />
-        <DecorativeElement type={template.decoration} accent={accent} />
-
+        <DecorativeElement type={template.decoration} accent={accent} accent2={template.accent2} />
         <Box sx={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: '50%', height: 160, background: `radial-gradient(ellipse, ${accent}12, transparent 70%)`, zIndex: 1, pointerEvents: 'none' }} />
-
         <Box sx={{ position: 'absolute', bottom: { xs: 8, sm: 12 }, left: { xs: 12, sm: 20 }, zIndex: 4, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography sx={{ color: 'rgba(255,255,255,.15)', fontSize: { xs: 9, sm: 10 }, fontWeight: 600, fontFamily: 'monospace' }}>
             {String(currentIndex + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
           </Typography>
           <Box sx={{ width: 20, height: 1, bgcolor: `${accent}40` }} />
         </Box>
-
         <SlideContent slide={slide} template={template} logo={logo} businessName={businessName} />
-
         <Box className="slide-nav" sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0, transition: 'opacity .25s', zIndex: 6, px: { xs: 0.5, sm: 1 } }}>
           <IconButton onClick={() => goTo(currentIndex - 1)} disabled={currentIndex === 0}
             sx={{ bgcolor: 'rgba(0,0,0,.4)', color: 'white', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,.06)', '&:hover': { bgcolor: 'rgba(0,0,0,.6)' }, '&.Mui-disabled': { opacity: 0.1 } }}>
@@ -461,7 +636,6 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
         <Box onClick={() => goTo(currentIndex + 1)} sx={{ position: 'absolute', inset: 0, cursor: 'pointer', zIndex: 4 }} />
         </Box>
       </Box>
-
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{ fontSize: { xs: 12, sm: 13 }, fontWeight: 700, color: 'var(--vm-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{slide.title}</Typography>
