@@ -45,7 +45,7 @@ type Activity struct {
 type Task struct {
 	ID          string    `json:"id"`
 	BusinessID  string    `json:"businessId"`
-	ContactID   string    `json:"contactId"`
+	ContactID   *string   `json:"contactId"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	DueDate     *string   `json:"dueDate"`

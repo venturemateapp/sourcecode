@@ -661,7 +661,7 @@ export interface CrmActivity {
 export interface CrmTask {
   id: string;
   businessId: string;
-  contactId: string;
+  contactId: string | null;
   title: string;
   description: string;
   dueDate: string | null;

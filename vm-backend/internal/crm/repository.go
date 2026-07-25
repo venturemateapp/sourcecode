@@ -253,9 +253,9 @@ func (r *Repository) CreateTask(ctx context.Context, t *Task) error {
 			dd = &parsed
 		}
 	}
-	var contactID interface{} = t.ContactID
-	if t.ContactID == "" {
-		contactID = nil
+	var contactID interface{}
+	if t.ContactID != nil && *t.ContactID != "" {
+		contactID = *t.ContactID
 	}
 	_, err := r.db.Exec(ctx,
 		`INSERT INTO crm_tasks (id, business_id, contact_id, title, description, due_date, status, assigned_to, created_at, updated_at)
@@ -273,9 +273,9 @@ func (r *Repository) UpdateTask(ctx context.Context, t *Task) error {
 			dd = &parsed
 		}
 	}
-	var contactID interface{} = t.ContactID
-	if t.ContactID == "" {
-		contactID = nil
+	var contactID interface{}
+	if t.ContactID != nil && *t.ContactID != "" {
+		contactID = *t.ContactID
 	}
 	_, err := r.db.Exec(ctx,
 		`UPDATE crm_tasks SET contact_id=$3, title=$4, description=$5, due_date=$6, status=$7, assigned_to=$8, updated_at=$9

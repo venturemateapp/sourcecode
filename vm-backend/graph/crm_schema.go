@@ -115,7 +115,7 @@ var crmTaskType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 		"businessId":  &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"contactId":   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"contactId":   &graphql.Field{Type: graphql.ID},
 		"title":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"description": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"dueDate":     &graphql.Field{Type: graphql.String},
@@ -535,9 +535,10 @@ func init() {
 			if status == "" {
 				status = "pending"
 			}
+			contactID := getStringArg(p.Args, "contactId")
 			t := &crm.Task{
 				BusinessID:  p.Args["businessId"].(string),
-				ContactID:   getStringArg(p.Args, "contactId"),
+				ContactID:   strPtr(contactID),
 				Title:       p.Args["title"].(string),
 				Description: getStringArg(p.Args, "description"),
 				DueDate:     strPtr(getStringArg(p.Args, "dueDate")),
@@ -580,12 +581,16 @@ func init() {
 			t := &crm.Task{
 				ID:          existing.ID,
 				BusinessID:  p.Args["businessId"].(string),
-				ContactID:   getStringArgDef(p.Args, "contactId", existing.ContactID),
 				Title:       getStringArgDef(p.Args, "title", existing.Title),
 				Description: getStringArgDef(p.Args, "description", existing.Description),
 				Status:      getStringArgDef(p.Args, "status", existing.Status),
 				AssignedTo:  getStringArgDef(p.Args, "assignedTo", existing.AssignedTo),
 				CreatedAt:   existing.CreatedAt,
+			}
+			if cid, ok := p.Args["contactId"].(string); ok {
+				t.ContactID = strPtr(cid)
+			} else {
+				t.ContactID = existing.ContactID
 			}
 			if dd, ok := p.Args["dueDate"].(string); ok {
 				t.DueDate = strPtr(dd)
