@@ -272,9 +272,9 @@ export function SupportChatFloating() {
       sx={{
         position: 'fixed',
         right: { xs: 12, sm: 24 },
-        bottom: open ? { xs: 0, sm: 24 } : { xs: 72, sm: 24 },
+        bottom: open ? { xs: 0, sm: 24 } : { xs: 72, sm: 88 },
         left: 'auto',
-        zIndex: 1100,
+        zIndex: open ? 1650 : 1100,
       }}
     >
       {open ? panel : (
