@@ -66,7 +66,7 @@ export function WorkflowsPage() {
       });
       setShowForm(false);
       setForm({ name: '', description: '', triggerType: 'record_created', targetObject: 'crm_deals', conditions: '', actionType: 'send_email', actionConfig: '{"to":"","subject":"","body":""}' });
-      load();
+      await load();
     } catch { /* ignore */ }
     setSaving(false);
   };
@@ -78,13 +78,13 @@ export function WorkflowsPage() {
 
   const toggle = async (id: string, active: boolean) => {
     await q('mutation M($i:ID!,$a:Boolean!){toggleWorkflow(id:$i active:$a)}', { i: id, a: active });
-    load();
+    await load();
   };
 
   const remove = async (id: string) => {
     if (!confirm('Delete this workflow?')) return;
     await q('mutation M($i:ID!){deleteWorkflow(id:$i)}', { i: id });
-    load();
+    await load();
   };
 
   const getActionLabel = (type: string, config: string) => {

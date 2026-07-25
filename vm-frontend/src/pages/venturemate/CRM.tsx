@@ -122,7 +122,7 @@ export function CRMPage() {
         });
       }
       setContactForm(null);
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to save contact:', err);
       toast.error('Failed to save contact', { description: 'Please try again.' });
@@ -134,7 +134,7 @@ export function CRMPage() {
     if (!bizId || !confirm('Delete this contact?')) return;
     try {
       await q('mutation M($id:ID!,$b:ID!){deleteCrmContact(id:$id businessId:$b)}', { id, b: bizId });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to delete contact:', err);
       toast.error('Failed to delete contact', { description: 'Please try again.' });
@@ -162,7 +162,7 @@ export function CRMPage() {
         });
       }
       setDealForm(null);
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to save deal:', err);
       toast.error('Failed to save deal', { description: 'Please try again.' });
@@ -174,7 +174,7 @@ export function CRMPage() {
     if (!bizId || !confirm('Delete this deal?')) return;
     try {
       await q('mutation M($id:ID!,$b:ID!){deleteCrmDeal(id:$id businessId:$b)}', { id, b: bizId });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to delete deal:', err);
       toast.error('Failed to delete deal', { description: 'Please try again.' });
@@ -185,7 +185,7 @@ export function CRMPage() {
     if (!bizId) return;
     try {
       await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmDeal(id:$id businessId:$b stage:$s){id}}', { id, b: bizId, s: stage });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to update deal stage:', err);
       toast.error('Failed to update deal stage', { description: 'Please try again.' });
@@ -201,7 +201,7 @@ export function CRMPage() {
         b: bizId, c: activityForm.contactId || null, t: activityForm.type, d: activityForm.description, u: 'Admin',
       });
       setActivityForm({ open: false, type: 'note', contactId: '', description: '' });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to save activity:', err);
       toast.error('Failed to save activity', { description: 'Please try again.' });
@@ -213,7 +213,7 @@ export function CRMPage() {
     if (!bizId || !confirm('Delete this activity?')) return;
     try {
       await q('mutation M($id:ID!,$b:ID!){deleteCrmActivity(id:$id businessId:$b)}', { id, b: bizId });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to delete activity:', err);
       toast.error('Failed to delete activity', { description: 'Please try again.' });
@@ -252,7 +252,7 @@ export function CRMPage() {
     if (!bizId || !confirm('Delete this task?')) return;
     try {
       await q('mutation M($id:ID!,$b:ID!){deleteCrmTask(id:$id businessId:$b)}', { id, b: bizId });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to delete task:', err);
       toast.error('Failed to delete task', { description: 'Please try again.' });
@@ -263,7 +263,7 @@ export function CRMPage() {
     if (!bizId) return;
     try {
       await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmTask(id:$id businessId:$b status:$s){id}}', { id, b: bizId, s: status });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to update task status:', err);
       toast.error('Failed to update task status', { description: 'Please try again.' });

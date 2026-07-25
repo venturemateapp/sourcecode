@@ -147,7 +147,7 @@ export function InvoicesPage() {
           createInvoice(userId:$u businessId:$b invoiceNumber:$n customerName:$c customerEmail:$e amount:$a dueDate:$d issueDate:$idate subtotal:$s taxRate:$t taxAmount:$x discount:$di shippingCost:$sc currency:$cu items:$i notes:$o customerAddress:$ca billingAddress:$ba poNumber:$po paymentTerms:$pt){id}}`, vars);
       }
       setForm(null);
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to save invoice:', err);
       toast.error('Failed to save invoice', { description: 'Please try again.' });
@@ -159,7 +159,7 @@ export function InvoicesPage() {
     if (!bizId) return;
     try {
       await q('mutation M($i:ID!,$b:ID!){sendInvoice(id:$i businessId:$b){id status}}', { i: id, b: bizId });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to send invoice:', err);
       toast.error('Failed to send invoice', { description: 'Please try again.' });
@@ -169,7 +169,7 @@ export function InvoicesPage() {
   const updateStatus = async (id: string, status: string) => {
     try {
       await q('mutation M($i:ID!,$s:String!){updateInvoiceStatus(id:$i status:$s){id status}}', { i: id, s: status });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to update invoice status:', err);
       toast.error('Failed to update status', { description: 'Please try again.' });
@@ -180,7 +180,7 @@ export function InvoicesPage() {
     if (!user || !confirm('Delete this invoice?')) return;
     try {
       await q('mutation M($i:ID!,$u:ID!){deleteInvoice(id:$i userId:$u)}', { i: id, u: user.id });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to delete invoice:', err);
       toast.error('Failed to delete invoice', { description: 'Please try again.' });

@@ -101,7 +101,7 @@ export function ExpenditurePage() {
         await q('mutation M($b:ID!,$c:String!,$d:String!,$a:Float!,$e:String,$v:String,$n:String,$i:String){createExpenditure(businessId:$b category:$c description:$d amount:$a expenseDate:$e vendor:$v notes:$n items:$i){id}}', vars);
       }
       setForm(null);
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to save expense:', err);
       toast.error('Failed to save expense', { description: 'Please try again.' });
@@ -113,7 +113,7 @@ export function ExpenditurePage() {
     if (!bizId || !confirm('Delete this expense?')) return;
     try {
       await q('mutation M($id:ID!,$b:ID!){deleteExpenditure(id:$id businessId:$b)}', { id, b: bizId });
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to delete expense:', err);
       toast.error('Failed to delete expense', { description: 'Please try again.' });

@@ -112,7 +112,7 @@ export function CalendarPage() {
       });
       setShowConnForm(false);
       setConnEmail(''); setConnUrl(''); setConnUser(''); setConnPass('');
-      loadAll();
+      await loadAll();
     } catch { /* ignore */ }
     setSaving(false);
   };
@@ -120,7 +120,7 @@ export function CalendarPage() {
   const deleteAccount = async (id: string) => {
     if (!user || !confirm('Remove this calendar?')) return;
     await q('mutation M($i:ID!,$u:ID!){deleteCalendarAccount(id:$i userId:$u)}', { i: id, u: user.id });
-    loadAll();
+    await loadAll();
   };
 
   const syncNow = async (id: string) => {
@@ -147,7 +147,7 @@ export function CalendarPage() {
         });
       }
       setEventForm({ open: false, type: 'event', title: '', date: '', startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' });
-      loadAll();
+      await loadAll();
     } catch (err) {
       console.error('Failed to save:', err);
     }

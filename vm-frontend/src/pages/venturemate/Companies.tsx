@@ -72,7 +72,7 @@ export function CompaniesPage() {
         });
       }
       setForm(null);
-      load();
+      await load();
     } catch { /* ignore */ }
     setSaving(false);
   };
@@ -80,7 +80,7 @@ export function CompaniesPage() {
   const deleteCompany = async (id: string) => {
     if (!bizId || !confirm('Delete this company?')) return;
     await q('mutation M($id:ID!,$b:ID!){deleteCrmCompany(id:$id businessId:$b)}', { id, b: bizId });
-    load();
+    await load();
   };
 
   if (!bizId) return <Box sx={{ p: 4, textAlign: 'center', color: 'var(--vm-text-muted)' }}><Building2 size={40} /><Typography sx={{ mt: 1 }}>Select a business</Typography></Box>;

@@ -81,7 +81,7 @@ export function EmailSettingsPage() {
   const deleteAccount = async (id: string) => {
     if (!user || !confirm('Remove this email account?')) return;
     await q('mutation M($i:ID!,$u:ID!){deleteEmailAccount(id:$i userId:$u)}', { i: id, u: user.id });
-    load();
+    await load();
   };
 
   const syncNow = async (id: string) => {
