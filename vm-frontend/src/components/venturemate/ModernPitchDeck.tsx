@@ -558,8 +558,6 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
 
   if (!slides || slides.length === 0) return null;
 
-  const total = slides.length;
-
   const exportPDF = async () => {
     const el = deckRef.current;
     if (!el) return;

@@ -222,7 +222,7 @@ export function BrandingKitPage(_props: BrandingKitProps) {
   const { selectedBusiness } = useBusiness();
   const [guideSections, setGuideSections] = useState<BrandGuideSection[] | null>(null);
   const [guideLoading, setGuideLoading] = useState(false);
-  const [proposedBrand, setProposedBrand] = useState<BrandingFull | null>(null);
+  const [proposedBrand] = useState<BrandingFull | null>(null);
   const [activeTab, setActiveTab] = useState<'mockups' | 'colors' | 'typography'>('mockups');
   const [selectedColorIdx, setSelectedColorIdx] = useState(0);
   const [selectedTypoIdx, setSelectedTypoIdx] = useState(0);
