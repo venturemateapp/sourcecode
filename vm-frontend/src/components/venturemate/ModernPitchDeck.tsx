@@ -1,6 +1,10 @@
-import { Box, Typography, Avatar } from '@mui/material';
-import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign } from 'lucide-react';
+import { useRef } from 'react';
+import { Box, Typography, Avatar, IconButton, Tooltip } from '@mui/material';
+import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign, Download, FileText } from 'lucide-react';
 import { AuroraBackground, FloatingOrb } from './AuroraBackground';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import PptxGenJS from 'pptxgenjs';
 import type { Slide } from '../../types/venturemate';
 
 const SLIDE_ICONS: Record<string, typeof Star> = {
@@ -550,11 +554,53 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent }: {
 
 export function ModernPitchDeck({ slides, title: _title, logo, businessName, accentColor = '#8b5cf6', secondaryColor = '#2563eb' }: ModernPitchDeckProps) {
   const accent = accentColor;
+  const deckRef = useRef<HTMLDivElement>(null);
 
   if (!slides || slides.length === 0) return null;
 
+  const total = slides.length;
+
+  const exportPDF = async () => {
+    const el = deckRef.current;
+    if (!el) return;
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
+    const slideEls = el.querySelectorAll('[data-mp-slide]');
+    for (let i = 0; i < slideEls.length; i++) {
+      const slideEl = slideEls[i] as HTMLElement;
+      const canvas = await html2canvas(slideEl, { scale: 1.5, useCORS: true, backgroundColor: null });
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1920, 1080);
+    }
+    pdf.save(`${(_title || 'pitch_deck').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+  };
+
+  const exportPPTX = () => {
+    const pptx = new PptxGenJS();
+    pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
+    pptx.layout = 'WIDE';
+    slides.forEach((s, i) => {
+      const slide = pptx.addSlide();
+      slide.background = { color: '08080B' };
+      slide.addText(s.title, { x: 0.8, y: 1.5, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Inter', color: 'FFFFFF', bold: true });
+      if (s.content) slide.addText(s.content, { x: 0.8, y: 3.2, w: 11.7, h: 1.5, fontSize: 16, fontFace: 'Inter', color: 'AAAAAA' });
+      if (s.bullets) slide.addText(s.bullets.map(b => `• ${b}`).join('\n'), { x: 0.8, y: 5, w: 11.7, h: 2, fontSize: 14, fontFace: 'Inter', color: 'CCCCCC', lineSpacing: 24 });
+      slide.addText(`${_title || 'Pitch Deck'} · ${i + 1}/${slides.length}`, { x: 0.8, y: 6.8, w: 11.7, h: 0.5, fontSize: 10, fontFace: 'Inter', color: '666666' });
+    });
+    pptx.writeFile({ fileName: `${(_title || 'pitch_deck').replace(/[^a-zA-Z0-9]/g, '_')}.pptx` });
+  };
+
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
+      {/* Download toolbar */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, mb: 1 }}>
+        <Tooltip title="Download PDF">
+          <IconButton size="small" onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}><FileText size={15} /></IconButton>
+        </Tooltip>
+        <Tooltip title="Download PPTX">
+          <IconButton size="small" onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}><Download size={15} /></IconButton>
+        </Tooltip>
+      </Box>
+      <Box ref={deckRef} sx={{ position: 'relative', width: '100%' }}>
       {slides.map((slide, index) => {
         const total = slides.length;
         const common = { slide, index, total, logo, businessName, accent };
@@ -589,7 +635,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
         }
 
         return (
-          <Box key={slide.id || index} sx={{
+          <Box key={slide.id || index} data-mp-slide sx={{
             position: 'relative', width: '100%', aspectRatio: '16 / 9',
             overflow: 'auto', borderBottom: '1px solid rgba(255,255,255,.06)',
             minHeight: { xs: 300, sm: 400, md: 500 },
@@ -598,6 +644,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
           </Box>
         );
       })}
+      </Box>
     </Box>
   );
 }

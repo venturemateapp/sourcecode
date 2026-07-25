@@ -38,21 +38,27 @@ var agentOperationType = graphql.NewObject(graphql.ObjectConfig{
 var agentResponseType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "AgentResponse",
 	Fields: graphql.Fields{
-		"message":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"provider":   &graphql.Field{Type: graphql.String},
-		"model":      &graphql.Field{Type: graphql.String},
-		"operations": &graphql.Field{Type: graphql.NewList(agentOperationType)},
-		"proposals":  &graphql.Field{Type: graphql.NewList(proposedChangeType)},
+		"message":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"provider":     &graphql.Field{Type: graphql.String},
+		"model":        &graphql.Field{Type: graphql.String},
+		"operations":   &graphql.Field{Type: graphql.NewList(agentOperationType)},
+		"proposals":    &graphql.Field{Type: graphql.NewList(proposedChangeType)},
+		"inputTokens":  &graphql.Field{Type: graphql.Int},
+		"outputTokens": &graphql.Field{Type: graphql.Int},
+		"totalTokens":  &graphql.Field{Type: graphql.Int},
 	},
 })
 
 var proposalResponseType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "ProposalResponse",
 	Fields: graphql.Fields{
-		"message":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"provider":  &graphql.Field{Type: graphql.String},
-		"model":     &graphql.Field{Type: graphql.String},
-		"proposals": &graphql.Field{Type: graphql.NewList(proposedChangeType)},
+		"message":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"provider":     &graphql.Field{Type: graphql.String},
+		"model":        &graphql.Field{Type: graphql.String},
+		"proposals":    &graphql.Field{Type: graphql.NewList(proposedChangeType)},
+		"inputTokens":  &graphql.Field{Type: graphql.Int},
+		"outputTokens": &graphql.Field{Type: graphql.Int},
+		"totalTokens":  &graphql.Field{Type: graphql.Int},
 	},
 })
 
@@ -295,7 +301,15 @@ func init() {
 				period := subscriptions.BillingPeriod(time.Now())
 				_ = AppContainer.UsageRepo.IncrementAITokens(p.Context, userID, period, int64(proposal.TotalTokens))
 			}
-			return map[string]interface{}{"message": proposal.Message, "provider": proposal.Provider, "model": proposal.Model, "proposals": proposal.Changes}, nil
+			return map[string]interface{}{
+				"message":      proposal.Message,
+				"provider":     proposal.Provider,
+				"model":        proposal.Model,
+				"proposals":    proposal.Changes,
+				"inputTokens":  proposal.InputTokens,
+				"outputTokens": proposal.OutputTokens,
+				"totalTokens":  proposal.TotalTokens,
+			}, nil
 		},
 	})
 

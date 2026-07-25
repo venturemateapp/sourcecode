@@ -18,9 +18,6 @@ type Client struct {
 
 func NewClient() *Client {
 	apiKey := os.Getenv("RECRAFT_API_KEY")
-	if apiKey == "" {
-		apiKey = os.Getenv("RECRAFT_API_KEY")
-	}
 	return &Client{
 		apiKey:  apiKey,
 		baseURL: "https://external.api.recraft.ai/v1",

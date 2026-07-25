@@ -21,11 +21,16 @@ var aiChatSessionType = graphql.NewObject(graphql.ObjectConfig{
 var aiChatMessageType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "AiChatMessage",
 	Fields: graphql.Fields{
-		"id":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"sessionId": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"role":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"content":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"sessionId":   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"role":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"content":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"inputTokens": &graphql.Field{Type: graphql.Int},
+		"outputTokens": &graphql.Field{Type: graphql.Int},
+		"totalTokens": &graphql.Field{Type: graphql.Int},
+		"model":       &graphql.Field{Type: graphql.String},
+		"provider":    &graphql.Field{Type: graphql.String},
+		"createdAt":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
 
@@ -78,11 +83,17 @@ func init() {
 			}
 			result := make([]interface{}, len(messages))
 			for i, m := range messages {
-				result[i] = map[string]interface{}{
+				item := map[string]interface{}{
 					"id": m.ID, "sessionId": m.SessionID, "role": m.Role,
-					"content": m.Content,
-					"createdAt": m.CreatedAt.Format("2006-01-02T15:04:05Z"),
+					"content":    m.Content,
+					"createdAt":  m.CreatedAt.Format("2006-01-02T15:04:05Z"),
+					"inputTokens":  m.InputTokens,
+					"outputTokens": m.OutputTokens,
+					"totalTokens":  m.TotalTokens,
+					"model":      m.Model,
+					"provider":   m.Provider,
 				}
+				result[i] = item
 			}
 			return result, nil
 		},
@@ -151,8 +162,13 @@ func init() {
 			}
 			return map[string]interface{}{
 				"id": m.ID, "sessionId": m.SessionID, "role": m.Role,
-				"content": m.Content,
-				"createdAt": m.CreatedAt.Format("2006-01-02T15:04:05Z"),
+				"content":      m.Content,
+				"createdAt":    m.CreatedAt.Format("2006-01-02T15:04:05Z"),
+				"inputTokens":  m.InputTokens,
+				"outputTokens": m.OutputTokens,
+				"totalTokens":  m.TotalTokens,
+				"model":        m.Model,
+				"provider":     m.Provider,
 			}, nil
 		},
 	})

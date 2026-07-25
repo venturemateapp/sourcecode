@@ -2,6 +2,7 @@ package crmcalendar
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,20 @@ import (
 	"github.com/emersion/go-webdav/caldav"
 )
 
+// basicAuthTransport adds HTTP Basic Authentication to every request.
+type basicAuthTransport struct {
+	username string
+	password string
+}
+
+func (t *basicAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.username != "" && t.password != "" {
+		auth := base64.StdEncoding.EncodeToString([]byte(t.username + ":" + t.password))
+		req.Header.Set("Authorization", "Basic "+auth)
+	}
+	return http.DefaultTransport.RoundTrip(req)
+}
+
 type SyncService struct {
 	repo *Repository
 }
@@ -21,9 +36,15 @@ func NewSyncService(repo *Repository) *SyncService {
 }
 
 func (s *SyncService) SyncAccount(ctx context.Context, acct *CalendarAccount) error {
-	log.Printf("Syncing calendar for %s", acct.Email)
+	log.Printf("Syncing calendar for %s (provider: %s)", acct.Email, acct.Provider)
 
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &basicAuthTransport{
+			username: acct.CalDAVUsername,
+			password: acct.CalDAVPassword,
+		},
+	}
 	client, err := caldav.NewClient(httpClient, acct.CalDAVURL)
 	if err != nil {
 		return fmt.Errorf("caldav client: %w", err)

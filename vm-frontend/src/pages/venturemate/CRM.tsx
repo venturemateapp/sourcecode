@@ -226,13 +226,17 @@ export function CRMPage() {
     setSaving(true);
     try {
       if (taskForm.id) {
-        await q('mutation M($id:ID!,$b:ID!,$t:String!,$s:String){updateCrmTask(id:$id businessId:$b title:$t status:$s){id}}', {
-          id: taskForm.id, b: bizId, t: taskForm.title, s: taskForm.status || 'pending',
+        await q('mutation M($id:ID!,$b:ID!,$t:String!,$d:String,$due:String,$s:String,$u:String,$c:String){updateCrmTask(id:$id businessId:$b title:$t description:$d dueDate:$due status:$s assignedTo:$u contactId:$c){id}}', {
+          id: taskForm.id, b: bizId, t: taskForm.title,
+          d: taskForm.description || '', due: taskForm.dueDate || null,
+          s: taskForm.status || 'pending', u: taskForm.assignedTo || '',
+          c: taskForm.contactId || null,
         });
       } else {
-        await q('mutation M($b:ID!,$c:String,$t:String!,$d:String,$s:String,$u:String){createCrmTask(businessId:$b contactId:$c title:$t description:$d status:$s assignedTo:$u){id}}', {
+        await q('mutation M($b:ID!,$c:String,$t:String!,$d:String,$s:String,$u:String,$due:String){createCrmTask(businessId:$b contactId:$c title:$t description:$d status:$s assignedTo:$u dueDate:$due){id}}', {
           b: bizId, c: taskForm.contactId || null, t: taskForm.title,
-          d: taskForm.description || '', s: 'pending', u: taskForm.assignedTo || '',
+          d: taskForm.description || '', s: taskForm.status || 'pending',
+          u: taskForm.assignedTo || '', due: taskForm.dueDate || null,
         });
       }
       setTaskForm(null);

@@ -70,7 +70,7 @@ export function BusinessSwitcher({ onViewChange }: BusinessSwitcherProps) {
               sx={{
                 fontSize: 13, fontWeight: 600, color: 'var(--vm-text-primary)',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                maxWidth: { xs: 80, sm: 120, md: 160 },
+                maxWidth: { xs: 60, sm: 120, md: 160 },
               }}
             >
               {selectedBusiness.name}

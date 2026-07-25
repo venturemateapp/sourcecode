@@ -63,16 +63,18 @@ export function EmailSettingsPage() {
     if (!bizId || !user || !form?.email) return;
     setSaving(true);
     try {
-      await q('mutation M($u:ID!,$b:ID!,$e:String!,$p:String,$h:String,$t:Int,$n:String,$w:String,$s:Int,$m:String,$x:String){createEmailAccount(userId:$u businessId:$b email:$e provider:$p imapHost:$h imapPort:$t imapUsername:$n imapPassword:$w smtpHost:$s smtpPort:$m smtpUsername:$x smtpPassword:$x){id}}', {
+      await q('mutation M($u:ID!,$b:ID!,$e:String!,$p:String,$h:String,$t:Int,$n:String,$w:String,$s:String,$m:Int,$x:String,$y:String){createEmailAccount(userId:$u businessId:$b email:$e provider:$p imapHost:$h imapPort:$t imapUsername:$n imapPassword:$w smtpHost:$s smtpPort:$m smtpUsername:$x smtpPassword:$y){id}}', {
         u: user.id, b: bizId, e: form.email, p: form.provider || 'imap',
         h: form.imapHost || '', t: form.imapPort || 993,
         n: form.imapUsername || form.email, w: form.imapPassword || '',
         s: form.smtpHost || '', m: form.smtpPort || 587,
-        x: form.smtpUsername || form.email,
+        x: form.smtpUsername || form.email, y: form.imapPassword || '',
       });
       setForm(null);
       load();
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Failed to connect email account:', err);
+    }
     setSaving(false);
   };
 

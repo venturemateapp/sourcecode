@@ -296,7 +296,7 @@ export function CreditScorePage(_props: CreditScoreProps) {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '300px 1fr' }, gap: 3, alignItems: 'center' }}>
             {/* Speedometer */}
             <Box sx={{ textAlign: 'center', position: 'relative' }}>
-              <svg viewBox="0 0 200 120" style={{ width: '100%', maxWidth: 260, height: 'auto' }}>
+              <svg viewBox="0 0 200 110" style={{ width: '100%', maxWidth: 260, height: 'auto' }}>
                 <defs>
                   <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#ef4444" />
@@ -306,27 +306,31 @@ export function CreditScorePage(_props: CreditScoreProps) {
                     <stop offset="100%" stopColor="#16a34a" />
                   </linearGradient>
                 </defs>
-                {/* Background arc */}
-                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="18" strokeLinecap="round" />
+                {/* Background rings */}
+                <path d="M 12 100 A 88 88 0 0 1 188 100" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="14" strokeLinecap="round" />
+                <path d="M 18 100 A 82 82 0 0 1 182 100" fill="none" stroke="rgba(255,255,255,.04)" strokeWidth="4" />
+                <path d="M 22 100 A 78 78 0 0 1 178 100" fill="none" stroke="rgba(255,255,255,.03)" strokeWidth="2" />
                 {/* Score arc */}
-                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" strokeWidth="18" strokeLinecap="round"
-                  strokeDasharray={`${(creditScore.score / 100) * 230} 230`} />
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray={`${(creditScore.score / 100) * 251.33} 251.33`} />
                 {/* Ticks */}
                 {[0, 25, 50, 75, 100].map(t => {
                   const angle = 180 + (t / 100) * 180;
                   const r = 80; const rad = (angle * Math.PI) / 180;
-                  const x1 = 100 + (r - 8) * Math.cos(rad); const y1 = 100 + (r - 8) * Math.sin(rad);
-                  const x2 = 100 + (r - 18) * Math.cos(rad); const y2 = 100 + (r - 18) * Math.sin(rad);
-                  return <line key={t} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,.3)" strokeWidth="2" />;
+                  const x1 = 100 + (r - 4) * Math.cos(rad); const y1 = 100 + (r - 4) * Math.sin(rad);
+                  const x2 = 100 + (r - 12) * Math.cos(rad); const y2 = 100 + (r - 12) * Math.sin(rad);
+                  return <line key={t} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,.2)" strokeWidth="1.5" />;
                 })}
+                {/* Label under the score */}
+                <text x="100" y="96" textAnchor="middle" fill={getScoreColor(creditScore.score)} fontSize="10" fontWeight="700" fontFamily="Inter,sans-serif">{getScoreGrade(creditScore.score)}</text>
                 {/* Needle */}
-                <line x1="100" y1="100" x2={100 + 55 * Math.cos((180 + (creditScore.score / 100) * 180) * Math.PI / 180)}
-                  y2={100 + 55 * Math.sin((180 + (creditScore.score / 100) * 180) * Math.PI / 180)}
-                  stroke={getScoreColor(creditScore.score)} strokeWidth="3" strokeLinecap="round" />
-                <circle cx="100" cy="100" r="6" fill={getScoreColor(creditScore.score)} />
+                <line x1="100" y1="100" x2={100 + 52 * Math.cos((180 + (creditScore.score / 100) * 180) * Math.PI / 180)}
+                  y2={100 + 52 * Math.sin((180 + (creditScore.score / 100) * 180) * Math.PI / 180)}
+                  stroke={getScoreColor(creditScore.score)} strokeWidth="2.5" strokeLinecap="round" />
+                <circle cx="100" cy="100" r="4.5" fill={getScoreColor(creditScore.score)} />
                 {/* Score text */}
                 <text x="100" y="64" textAnchor="middle" fill={getScoreColor(creditScore.score)} fontSize="28" fontWeight="800" fontFamily="Inter,sans-serif">{creditScore.score}</text>
-                <text x="100" y="78" textAnchor="middle" fill="rgba(255,255,255,.4)" fontSize="10" fontFamily="Inter,sans-serif">/ {creditScore.max_score}</text>
+                <text x="100" y="78" textAnchor="middle" fill="rgba(255,255,255,.35)" fontSize="10" fontFamily="Inter,sans-serif">/ {creditScore.max_score}</text>
               </svg>
               <Chip size="small" label={getRiskLabel(creditScore.risk_level).label}
                 sx={{ mt: 0.5, bgcolor: `${getRiskLabel(creditScore.risk_level).color}20`, color: getRiskLabel(creditScore.risk_level).color, fontSize: 11, fontWeight: 700 }} />
