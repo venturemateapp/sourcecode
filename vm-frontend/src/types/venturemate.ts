@@ -637,7 +637,7 @@ export interface CrmContact {
 export interface CrmDeal {
   id: string;
   businessId: string;
-  contactId: string;
+  contactId: string | null;
   title: string;
   value: number;
   currency: string;

@@ -85,7 +85,7 @@ var crmDealType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id":                &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 		"businessId":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"contactId":         &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"contactId":         &graphql.Field{Type: graphql.ID},
 		"title":             &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"value":             &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
 		"currency":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -375,7 +375,7 @@ func init() {
 			ecd := getStringArg(p.Args, "expectedCloseDate")
 			d := &crm.Deal{
 				BusinessID:        p.Args["businessId"].(string),
-				ContactID:         p.Args["contactId"].(string),
+				ContactID:         strPtr(p.Args["contactId"].(string)),
 				Title:             p.Args["title"].(string),
 				Value:             p.Args["value"].(float64),
 				Currency:          getStringArg(p.Args, "currency"),
@@ -426,13 +426,17 @@ func init() {
 			d := &crm.Deal{
 				ID:        existing.ID,
 				BusinessID: p.Args["businessId"].(string),
-				ContactID:  getStringArgDef(p.Args, "contactId", existing.ContactID),
 				Title:     getStringArgDef(p.Args, "title", existing.Title),
 				Value:     getFloatArgDef(p.Args, "value", existing.Value),
 				Currency:  getStringArgDef(p.Args, "currency", existing.Currency),
 				Stage:     getStringArgDef(p.Args, "stage", existing.Stage),
 				Probability: getIntArgDef(p.Args, "probability", existing.Probability),
 				CreatedAt: existing.CreatedAt,
+			}
+			if cid, ok := p.Args["contactId"].(string); ok {
+				d.ContactID = strPtr(cid)
+			} else {
+				d.ContactID = existing.ContactID
 			}
 			if ecd, ok := p.Args["expectedCloseDate"].(string); ok {
 				d.ExpectedCloseDate = strPtr(ecd)

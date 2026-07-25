@@ -21,7 +21,7 @@ type Contact struct {
 type Deal struct {
 	ID                string    `json:"id"`
 	BusinessID        string    `json:"businessId"`
-	ContactID         string    `json:"contactId"`
+	ContactID         *string   `json:"contactId"`
 	Title             string    `json:"title"`
 	Value             float64   `json:"value"`
 	Currency          string    `json:"currency"`
