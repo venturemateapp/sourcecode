@@ -651,7 +651,7 @@ export interface CrmDeal {
 export interface CrmActivity {
   id: string;
   businessId: string;
-  contactId: string;
+  contactId: string | null;
   type: string;
   description: string;
   createdBy: string;

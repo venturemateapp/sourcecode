@@ -187,9 +187,9 @@ func (r *Repository) ListActivities(ctx context.Context, businessID string) ([]A
 func (r *Repository) CreateActivity(ctx context.Context, a *Activity) error {
 	a.ID = uuid.New().String()
 	a.CreatedAt = time.Now()
-	var contactID interface{} = a.ContactID
-	if a.ContactID == "" {
-		contactID = nil
+	var contactID interface{}
+	if a.ContactID != nil && *a.ContactID != "" {
+		contactID = *a.ContactID
 	}
 	_, err := r.db.Exec(ctx,
 		`INSERT INTO crm_activities (id, business_id, contact_id, type, description, created_by, created_at)

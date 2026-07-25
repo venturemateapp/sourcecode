@@ -35,7 +35,7 @@ type Deal struct {
 type Activity struct {
 	ID          string    `json:"id"`
 	BusinessID  string    `json:"businessId"`
-	ContactID   string    `json:"contactId"`
+	ContactID   *string   `json:"contactId"`
 	Type        string    `json:"type"`
 	Description string    `json:"description"`
 	CreatedBy   string    `json:"createdBy"`

@@ -102,7 +102,7 @@ var crmActivityType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 		"businessId":  &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"contactId":   &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"contactId":   &graphql.Field{Type: graphql.ID},
 		"type":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"description": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"createdBy":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -485,7 +485,7 @@ func init() {
 			}
 			a := &crm.Activity{
 				BusinessID:  p.Args["businessId"].(string),
-				ContactID:   getStringArg(p.Args, "contactId"),
+				ContactID:   strPtr(getStringArg(p.Args, "contactId")),
 				Type:        p.Args["type"].(string),
 				Description: p.Args["description"].(string),
 				CreatedBy:   p.Args["createdBy"].(string),
