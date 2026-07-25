@@ -284,6 +284,7 @@ export function CRMPage() {
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {tab === 0 && <GradientButton variant="primary" size="sm" startIcon={<UserPlus size={14} />} onClick={() => setContactForm({ name: '', contactType: 'lead' })}>Add Contact</GradientButton>}
           {tab === 1 && <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setDealForm({ title: '', contactId: contacts[0]?.id || '', stage: 'prospecting', value: 0, probability: 10 })}>Add Deal</GradientButton>}
+          {tab === 2 && <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setActivityForm({ open: true, type: 'note', contactId: '', description: '' })}>Add Activity</GradientButton>}
           {tab === 3 && <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setTaskForm({ title: '', status: 'pending' })}>Add Task</GradientButton>}
         </Box>
       </Box>
