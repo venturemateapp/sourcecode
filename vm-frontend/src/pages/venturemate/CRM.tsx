@@ -240,7 +240,7 @@ export function CRMPage() {
         });
       }
       setTaskForm(null);
-      load();
+      await load();
     } catch (err) {
       console.error('Failed to save task:', err);
       toast.error('Failed to save task', { description: 'Please try again.' });
