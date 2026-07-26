@@ -539,6 +539,30 @@ func main() {
 	http.Handle("/api/avatar", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, avatarHandler(container)))))
 	http.Handle("/api/team-avatar/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, teamAvatarUploadHandler(container)))))
 	http.HandleFunc("/api/generate", handleGenerateWebsite)
+	http.HandleFunc("/api/pdf/public", func(w http.ResponseWriter, r *http.Request) {
+		// Public PDF download - no auth required (for customers viewing invoices from email)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		pdfType := r.URL.Query().Get("type")
+		id := r.URL.Query().Get("id")
+		if pdfType != "invoice" || id == "" {
+			http.Error(w, `{"error":"invalid request"}`, http.StatusBadRequest)
+			return
+		}
+		inv, err := container.InvoiceRepo.GetByID(r.Context(), id)
+		if err != nil || inv == nil {
+			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
+			return
+		}
+		s3Key := fmt.Sprintf("invoices/%s.pdf", inv.InvoiceNumber)
+		data, contentType, err := container.S3.Download(r.Context(), s3Key)
+		if err != nil {
+			http.Error(w, `{"error":"PDF not available"}`, http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="invoice_%s.pdf"`, inv.InvoiceNumber))
+		w.Write(data)
+	})
 	http.HandleFunc("/api/avatar/public", func(w http.ResponseWriter, r *http.Request) {
 		// Public endpoint - no auth needed, serves by userId query param
 		w.Header().Set("Access-Control-Allow-Origin", "*")
