@@ -87,7 +87,7 @@ export function CalendarPage() {
       const [acctData, evData, taskData] = await Promise.allSettled([
         q<{ calendarAccounts: CalendarAccount[] }>('query Q($b:ID!){calendarAccounts(businessId:$b){id email provider caldavUrl syncEnabled lastSyncedAt}}', { b: bizId }),
         q<{ calendarEvents: CalendarEvent[] }>('query Q($b:ID!,$f:String!,$t:String!){calendarEvents(businessId:$b from:$f to:$t){id title description location startTime endTime isAllDay status contactId}}', { b: bizId, f: from.toISOString(), t: to.toISOString() }),
-        q<{ crmTasks: CrmTask[] }>('query T($b:ID!){crmTasks(businessId:$b){id title description dueDate status}}', { b: bizId }),
+        q<{ crmTasks: CrmTask[] }>('query T($b:ID!){crmTasks(businessId:$b){id title description dueDate status assignedTo}}', { b: bizId }),
       ]);
       if (acctData.status === 'fulfilled') setAccounts(acctData.value.calendarAccounts);
       if (evData.status === 'fulfilled') setEvents(evData.value.calendarEvents);
@@ -234,8 +234,8 @@ export function CalendarPage() {
               const dayEvents = getEventsForDay(day);
               const dayTasks = getTasksForDay(day);
               const dayItems = [
-                ...dayEvents.map(e => ({ id: e.id, type: 'event' as const, title: e.title, startTime: e.startTime, isAllDay: e.isAllDay })),
-                ...dayTasks.map(t => ({ id: t.id, type: 'task' as const, title: t.title, startTime: t.dueDate || '', isAllDay: true })),
+                ...dayEvents.map(e => ({ id: e.id, type: 'event' as const, title: e.title, startTime: e.startTime, isAllDay: e.isAllDay, assignedTo: '' })),
+                ...dayTasks.map(t => ({ id: t.id, type: 'task' as const, title: t.title, startTime: t.dueDate || '', isAllDay: true, assignedTo: t.assignedTo || '' })),
               ].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
               const inMonth = isSameMonth(day, currentMonth);
               const today = isToday(day);
@@ -275,7 +275,7 @@ export function CalendarPage() {
                   {dayItems.length > 0 && (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.25, mt: 'auto', pt: 0.25 }}>
                       {dayItems.slice(0, 3).map(item => (
-                        <Tooltip key={item.id} title={`${item.type === 'task' ? '📋 ' : '📅 '}${item.title}`}>
+                        <Tooltip key={item.id} title={`${item.type === 'task' ? '📋 ' : '📅 '}${item.title}${item.assignedTo ? ` (${item.assignedTo})` : ''}`}>
                           <Box
                             sx={{
                               width: { xs: 5, sm: 6 },
