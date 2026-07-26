@@ -3,6 +3,7 @@ package invoices
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -167,12 +168,16 @@ func (r *Repository) GetTotalPdfSize(ctx context.Context, userID string) (int64,
 func (r *Repository) GetTotalRevenue(ctx context.Context, businessID string) (float64, error) {
 	var total float64
 	err := r.db.QueryRow(ctx, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE business_id=$1", businessID).Scan(&total)
+	if err != nil {
+		log.Printf("GetTotalRevenue error for %s: %v", businessID, err)
+	}
 	return total, err
 }
 
 func (r *Repository) GetRevenueByCurrency(ctx context.Context, businessID string) (map[string]float64, error) {
-	rows, err := r.db.Query(ctx, "SELECT currency, SUM(amount) FROM invoices WHERE business_id=$1 GROUP BY currency", businessID)
+	rows, err := r.db.Query(ctx, "SELECT currency, COALESCE(SUM(amount), 0) FROM invoices WHERE business_id=$1 GROUP BY currency", businessID)
 	if err != nil {
+		log.Printf("GetRevenueByCurrency query error for %s: %v", businessID, err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -181,10 +186,16 @@ func (r *Repository) GetRevenueByCurrency(ctx context.Context, businessID string
 		var currency string
 		var total float64
 		if err := rows.Scan(&currency, &total); err != nil {
+			log.Printf("GetRevenueByCurrency scan error for %s: %v", businessID, err)
 			return nil, err
 		}
 		result[currency] = total
 	}
+	if err := rows.Err(); err != nil {
+		log.Printf("GetRevenueByCurrency rows error for %s: %v", businessID, err)
+		return nil, err
+	}
+	log.Printf("GetRevenueByCurrency for %s: %v results", businessID, len(result))
 	return result, nil
 }
 
