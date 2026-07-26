@@ -17,6 +17,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/app"
 	"github.com/venturemate/vmbackend/internal/auth"
+	"github.com/venturemate/vmbackend/internal/crmcalendar"
 	"github.com/venturemate/vmbackend/internal/migrations"
 	"github.com/venturemate/vmbackend/internal/oauth"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
