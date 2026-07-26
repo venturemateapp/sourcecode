@@ -644,7 +644,7 @@ export function AdminDashboard() {
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={busy} onClick={async () => {
-            await exec(`mutation { adminUpsertInvestor(id:"${invForm.id || crypto.randomUUID()}",name:"${invForm.name.replace(/"/g,'\\"')}",type:"${invForm.type}",location:"${invForm.location.replace(/"/g,'\\"')}",focusIndustries:"${JSON.stringify(invForm.industries.split(',').map(s=>s.trim()))}",thesis:"${invForm.thesis.replace(/"/g,'\\"')}") }`, {});
+            await exec(`mutation { adminUpsertInvestor(id:"${invForm.id || crypto.randomUUID()}",name:"${invForm.name.replace(/"/g,'\\"')}",type:"${invForm.type}",location:"${invForm.location.replace(/"/g,'\\"')}",focusIndustries:"${JSON.stringify(invForm.industries.split(',').map(s=>s.trim())).replace(/"/g,'\\"')}",thesis:"${invForm.thesis.replace(/"/g,'\\"')}") }`, {});
             setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
           }}>Save</GradientButton>
         </DialogActions>
@@ -758,7 +758,7 @@ export function AdminDashboard() {
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={busy || !provForm.name} onClick={async () => {
-            await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim()))}") { id } }`, {});
+            await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim())).replace(/"/g,'\\"')}") { id } }`, {});
             setActiveModal(null); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
           }}>Save</GradientButton>
         </DialogActions>
