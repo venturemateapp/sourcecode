@@ -44,7 +44,7 @@ const viewTitles: Record<ViewType, string> = {
   'financial-forecast': 'Financial Forecast',
   crm: 'CRM',
   companies: 'Companies',
-  invoices: 'Invoices',
+  invoices: 'Income',
   expenditure: 'Expenditure',
   banking: 'Banking',
   social: 'Social Media',

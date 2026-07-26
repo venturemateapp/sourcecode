@@ -30,7 +30,7 @@ const NAV_SECTIONS: NavSection[] = [
   ]},
   { title: 'GROWTH', items: [
     { label: 'CRM', icon: 'Users', view: 'crm' as ViewType },
-    { label: 'Invoices', icon: 'Receipt', view: 'invoices' as ViewType },
+    { label: 'Income', icon: 'Receipt', view: 'invoices' as ViewType },
     { label: 'Expenses', icon: 'Calculator', view: 'expenditure' as ViewType },
     { label: 'Banking', icon: 'Landmark', view: 'banking' as ViewType },
     { label: 'Social', icon: 'Share2', view: 'social' as ViewType },

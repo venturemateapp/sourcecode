@@ -21,7 +21,7 @@ const viewTitles: Record<ViewType, string> = {
   milestones: 'Milestones', documents: 'Documents', team: 'Team', 'business-settings': 'Business Settings',
   network: 'Network', investors: 'Investors', cofounders: 'Co-Founders', messages: 'Messages',
   'ai-tools': 'AI Tools', 'generate-idea': 'Generate Idea', 'market-research': 'Market Research',
-  'financial-forecast': 'Financial Forecast', crm: 'CRM', companies: 'Companies', invoices: 'Invoices',
+  'financial-forecast': 'Financial Forecast', crm: 'CRM', companies: 'Companies', invoices: 'Income',
   expenditure: 'Expenses', banking: 'Banking', social: 'Social', marketplace: 'Marketplace',
   'credit-score': 'Credit Score', 'health-score': 'Health Score', account: 'Account',
   billing: 'Billing', settings: 'Settings', 'email-settings': 'Email Settings', calendar: 'Calendar',
