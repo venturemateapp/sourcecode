@@ -38,6 +38,11 @@ export function InvoicesPage() {
   const [saving, setSaving] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const filteredInvoices = filterStatus === 'all' ? invoices : invoices.filter(inv => {
+    const effStatus = inv.status === 'overdue' || (inv.status === 'sent' && inv.dueDate && new Date(inv.dueDate) < new Date()) ? 'overdue' : inv.status;
+    return effStatus === filterStatus;
+  });
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
@@ -269,28 +274,28 @@ export function InvoicesPage() {
 
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-            {/* Row 1: Count cards */}
+            {/* Row 1: Count cards — clickable to filter */}
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3,1fr)', sm: 'repeat(3,1fr)' }, gap: { xs: 1.5, sm: 2 } }}>
-              <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+              <Card onClick={() => setFilterStatus(filterStatus === 'all' ? 'all' : 'all')} sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: filterStatus === 'all' ? '2px solid #10b981' : '1px solid var(--vm-border-subtle)', borderRadius: 2.5, cursor: 'pointer', transition: 'all .15s', '&:hover': { borderColor: '#10b981' } }}>
                 <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(16,185,129,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
                   <Receipt size={16} color="#10b981" />
                 </Box>
                 <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{totalCount}</Typography>
-                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Total Invoices</Typography>
+                <Typography sx={{ fontSize: 11, color: filterStatus === 'all' ? '#10b981' : 'var(--vm-text-muted)', fontWeight: filterStatus === 'all' ? 700 : 400 }}>All Invoices</Typography>
               </Card>
-              <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+              <Card onClick={() => setFilterStatus(filterStatus === 'paid' ? 'all' : 'paid')} sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: filterStatus === 'paid' ? '2px solid #22c55e' : '1px solid var(--vm-border-subtle)', borderRadius: 2.5, cursor: 'pointer', transition: 'all .15s', '&:hover': { borderColor: '#22c55e' } }}>
                 <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(34,197,94,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
                   <CheckCircle size={16} color="#22c55e" />
                 </Box>
                 <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{paidCount}</Typography>
-                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Paid</Typography>
+                <Typography sx={{ fontSize: 11, color: filterStatus === 'paid' ? '#22c55e' : 'var(--vm-text-muted)', fontWeight: filterStatus === 'paid' ? 700 : 400 }}>Paid</Typography>
               </Card>
-              <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+              <Card onClick={() => setFilterStatus(filterStatus === 'overdue' ? 'all' : 'overdue')} sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: filterStatus === 'overdue' ? '2px solid #ef4444' : '1px solid var(--vm-border-subtle)', borderRadius: 2.5, cursor: 'pointer', transition: 'all .15s', '&:hover': { borderColor: '#ef4444' } }}>
                 <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(239,68,68,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
                   <AlertCircle size={16} color="#ef4444" />
                 </Box>
                 <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{overdueCount}</Typography>
-                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Overdue</Typography>
+                <Typography sx={{ fontSize: 11, color: filterStatus === 'overdue' ? '#ef4444' : 'var(--vm-text-muted)', fontWeight: filterStatus === 'overdue' ? 700 : 400 }}>Overdue</Typography>
               </Card>
             </Box>
 
@@ -319,11 +324,11 @@ export function InvoicesPage() {
       })()}
 
       {/* Invoice list */}
-      {loading ? <CardSkeleton count={4} type='card' /> : invoices.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><FileText size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No invoices yet</Typography></Box>
+      {loading ? <CardSkeleton count={4} type='card' /> : filteredInvoices.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><FileText size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>{filterStatus === 'all' ? 'No invoices yet' : `No ${filterStatus} invoices`}</Typography></Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {invoices.map(inv => (
+          {filteredInvoices.map(inv => (
             <Card key={inv.id} sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5, p: { xs: 1.5, sm: 2 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                 <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: `${statusColor[inv.status] || '#94a3b8'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
