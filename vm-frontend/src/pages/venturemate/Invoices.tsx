@@ -299,24 +299,45 @@ export function InvoicesPage() {
               </Card>
             </Box>
 
-            {/* Row 2: Amount by currency */}
+            {/* Row 2: Three amount cards — Income, Paid, Overdue (per-currency inside) */}
             {Object.keys(byCurrency).length > 0 && (
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: `repeat(${Math.min(Object.keys(byCurrency).length, 3)}, 1fr)` }, gap: { xs: 1.5, sm: 2 } }}>
-                {Object.entries(byCurrency).map(([currency, amounts]) => (
-                  <Card key={currency} sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
-                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'var(--vm-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, mb: 1 }}>{currency}</Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Income</Typography>
-                        <Typography sx={{ fontSize: 14, fontWeight: 800, color: '#22c55e' }}>{amounts.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: { xs: 1.5, sm: 2 } }}>
+                {/* Income card */}
+                <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#10b981', mb: 1 }}>Total Income</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {Object.entries(byCurrency).map(([c, a]) => (
+                      <Box key={c} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{c}</Typography>
+                        <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#22c55e' }}>{a.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Overdue</Typography>
-                        <Typography sx={{ fontSize: 14, fontWeight: 800, color: '#ef4444' }}>{amounts.overdue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                    ))}
+                  </Box>
+                </Card>
+                {/* Paid card */}
+                <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#22c55e', mb: 1 }}>Total Paid</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {Object.entries(byCurrency).map(([c, a]) => (
+                      <Box key={c} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{c}</Typography>
+                        <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#22c55e' }}>{a.paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
                       </Box>
-                    </Box>
-                  </Card>
-                ))}
+                    ))}
+                  </Box>
+                </Card>
+                {/* Overdue card */}
+                <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#ef4444', mb: 1 }}>Total Overdue</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {Object.entries(byCurrency).map(([c, a]) => (
+                      <Box key={c} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>{c}</Typography>
+                        <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#ef4444' }}>{a.overdue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Card>
               </Box>
             )}
           </Box>
