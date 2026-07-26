@@ -41,12 +41,6 @@ export function CalendarPage() {
   const [accounts, setAccounts] = useState<CalendarAccount[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showConnForm, setShowConnForm] = useState(false);
-  const [connEmail, setConnEmail] = useState('');
-  const [connUrl, setConnUrl] = useState('');
-  const [connUser, setConnUser] = useState('');
-  const [connPass, setConnPass] = useState('');
-  const [connProvider, setConnProvider] = useState('caldav');
   const [saving, setSaving] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [syncingId, setSyncingId] = useState<string | null>(null);
@@ -99,32 +93,6 @@ export function CalendarPage() {
   }, [bizId, q, currentMonth]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
-
-  const saveConnection = async () => {
-    if (!user || !bizId || !connEmail) return;
-    setSaving(true);
-    try {
-      let url = connUrl;
-      if (connProvider === 'icloud') url = `https://caldav.icloud.com/`;
-      else if (connProvider === 'fastmail') url = `https://caldav.fastmail.com/`;
-      else if (connProvider === 'gmail') url = `https://apidata.googleusercontent.com/caldav/v2/`;
-      else if (connProvider === 'outlook') url = `https://outlook.office365.com/caldav/`;
-      else if (connProvider === 'yahoo') url = `https://caldav.calendar.yahoo.com/`;
-
-      await q('mutation M($u:ID!,$b:ID!,$e:String!,$p:String!,$c:String!,$n:String!,$w:String!){createCalendarAccount(userId:$u businessId:$b email:$e provider:$p caldavUrl:$c username:$n password:$w){id}}', {
-        u: user.id, b: bizId, e: connEmail, p: connProvider, c: url || connUrl,
-        n: connUser || connEmail, w: connPass,
-      });
-      setShowConnForm(false);
-      setConnEmail(''); setConnUrl(''); setConnUser(''); setConnPass('');
-      await loadAll();
-      toast.success('Calendar connected', { description: 'Calendar account has been added.' });
-    } catch (err) {
-      console.error('Failed to connect calendar:', err);
-      toast.error('Failed to connect calendar', { description: 'Please try again.' });
-    }
-    setSaving(false);
-  };
 
   const deleteAccount = async (id: string) => {
     if (!user) return;
@@ -210,7 +178,6 @@ export function CalendarPage() {
           </GradientButton>
           <GradientButton variant="outline" size="sm" startIcon={<CheckSquare size={14} />} onClick={() => setEventForm({ open: true, type: 'task', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })}>Add Task</GradientButton>
           <GradientButton variant="outline" size="sm" startIcon={<Clock size={14} />} onClick={() => setEventForm({ open: true, type: 'event', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })} disabled={accounts.length === 0} title={accounts.length === 0 ? 'Connect a calendar first' : ''}>Add Event</GradientButton>
-          <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setShowConnForm(true)}>Connect</GradientButton>
           <GradientButton variant="outline" size="sm" startIcon={<Mail size={14} />} onClick={() => { if (user?.id) window.location.href = `/auth/oauth/google-calendar/login?userId=${user.id}`; else toast.warning('Not logged in', { description: 'Please log in first.' }); }}>Google Calendar</GradientButton>
         </Box>
       </Box>
@@ -403,36 +370,6 @@ export function CalendarPage() {
         </Box>
       </Modal>
 
-      <Modal open={showConnForm} onClose={() => setShowConnForm(false)} title="Connect Calendar" icon={<Calendar size={20} />}
-        actions={<><GradientButton variant="ghost" size="sm" onClick={() => setShowConnForm(false)}>Cancel</GradientButton>
-          <GradientButton variant="primary" size="sm" disabled={saving || !connEmail} onClick={saveConnection}>
-            {saving ? <CircularProgress size={14} /> : 'Connect'}
-          </GradientButton></>}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <FormControl size="small" fullWidth>
-            <InputLabel sx={{ color: 'var(--vm-text-muted)' }}>Provider</InputLabel>
-            <Select value={connProvider} label="Provider" onChange={e => setConnProvider(e.target.value)}
-              sx={{ color: 'var(--vm-text-primary)', '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
-              <MenuItem value="gmail">Gmail</MenuItem>
-              <MenuItem value="outlook">Outlook</MenuItem>
-              <MenuItem value="yahoo">Yahoo</MenuItem>
-              <MenuItem value="icloud">iCloud</MenuItem>
-              <MenuItem value="fastmail">FastMail</MenuItem>
-              <MenuItem value="caldav">Custom CalDAV</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField size="small" label="Email" value={connEmail} onChange={e => setConnEmail(e.target.value)}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          {connProvider === 'caldav' && (
-            <TextField size="small" label="CalDAV URL" value={connUrl} onChange={e => setConnUrl(e.target.value)} placeholder="https://example.com/caldav/"
-              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          )}
-          <TextField size="small" label="Username (or app password)" value={connUser} onChange={e => setConnUser(e.target.value)}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-          <TextField size="small" label="Password" type="password" value={connPass} onChange={e => setConnPass(e.target.value)}
-            sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
-        </Box>
-      </Modal>
       {dialog}
     </Box>
   );
