@@ -43,6 +43,8 @@ export function ExpenditurePage() {
   const [lineItems, setLineItems] = useState<ExpenditureItem[]>([{ ...EMPTY_ITEM }]);
   const [customCategory, setCustomCategory] = useState('');
   const [saving, setSaving] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
@@ -50,13 +52,16 @@ export function ExpenditurePage() {
     if (!bizId) return;
     setLoading(true);
     try {
-      const d = await q<{ expenditures: Expenditure[] }>(`query Q($b:ID!){expenditures(businessId:$b){${EXPENSE_FIELDS}}}`, { b: bizId });
+      const vars: Record<string, unknown> = { b: bizId };
+      if (startDate) vars.s = startDate;
+      if (endDate) vars.e = endDate;
+      const d = await q<{ expenditures: Expenditure[] }>(`query Q($b:ID!,$s:String,$e:String){expenditures(businessId:$b startDate:$s endDate:$e){${EXPENSE_FIELDS}}}`, vars);
       setItems(d.expenditures);
     } catch (err) {
       console.error('Failed to load expenses:', err);
     }
     setLoading(false);
-  }, [bizId, q]);
+  }, [bizId, q, startDate, endDate]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -152,9 +157,18 @@ export function ExpenditurePage() {
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Expenditure</Typography>
           <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{items.length} expenses · {format(grandTotal)} total</Typography>
         </Box>
-        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={openCreate}>
-          Add Expense
-        </GradientButton>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <DatePicker label="From" format="dd/MM/yyyy" value={startDate ? new Date(startDate) : null}
+            onChange={(d) => setStartDate(d ? d.toISOString().split('T')[0] : '')}
+            slotProps={{ textField: { size: 'small', sx: { width: 130, input: { color: 'var(--vm-text-primary)', fontSize: 13 }, label: { color: 'var(--vm-text-muted)', fontSize: 12 }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
+          <DatePicker label="To" format="dd/MM/yyyy" value={endDate ? new Date(endDate) : null}
+            onChange={(d) => setEndDate(d ? d.toISOString().split('T')[0] : '')}
+            slotProps={{ textField: { size: 'small', sx: { width: 130, input: { color: 'var(--vm-text-primary)', fontSize: 13 }, label: { color: 'var(--vm-text-muted)', fontSize: 12 }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
+          {(startDate || endDate) && <GradientButton variant="ghost" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>Clear</GradientButton>}
+          <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={openCreate}>
+            Add Expense
+          </GradientButton>
+        </Box>
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', sm: 'repeat(4,1fr)' }, gap: { xs: 1.5, sm: 2 }, mb: 3 }}>

@@ -2,6 +2,7 @@ package invoices
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -60,6 +61,25 @@ func (r *Repository) ListAll(ctx context.Context) ([]Invoice, error) {
 
 func (r *Repository) ListByBusiness(ctx context.Context, businessID string) ([]Invoice, error) {
 	rows, err := r.db.Query(ctx, listQuery+" WHERE business_id = $1 ORDER BY created_at DESC", businessID)
+	if err != nil {
+		return nil, err
+	}
+	return scanInvoices(rows)
+}
+
+func (r *Repository) ListByBusinessDateRange(ctx context.Context, businessID, startDate, endDate string) ([]Invoice, error) {
+	query := listQuery + " WHERE business_id = $1"
+	args := []interface{}{businessID}
+	if startDate != "" {
+		args = append(args, startDate)
+		query += fmt.Sprintf(` AND issue_date >= $%d`, len(args))
+	}
+	if endDate != "" {
+		args = append(args, endDate)
+		query += fmt.Sprintf(` AND issue_date <= $%d`, len(args))
+	}
+	query += " ORDER BY created_at DESC"
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

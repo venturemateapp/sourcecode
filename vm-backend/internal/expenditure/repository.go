@@ -2,6 +2,7 @@ package expenditure
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,6 +33,34 @@ func scanExp(row pgx.Row) (*Expenditure, error) {
 
 func (r *Repository) ListByBusiness(ctx context.Context, businessID string) ([]Expenditure, error) {
 	rows, err := r.db.Query(ctx, `SELECT `+expCols+` FROM expenditures WHERE business_id = $1 ORDER BY expense_date DESC`, businessID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []Expenditure
+	for rows.Next() {
+		e, err := scanExp(rows)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, *e)
+	}
+	return list, nil
+}
+
+func (r *Repository) ListByBusinessDateRange(ctx context.Context, businessID, startDate, endDate string) ([]Expenditure, error) {
+	query := `SELECT ` + expCols + ` FROM expenditures WHERE business_id = $1`
+	args := []interface{}{businessID}
+	if startDate != "" {
+		args = append(args, startDate)
+		query += fmt.Sprintf(` AND expense_date >= $%d`, len(args))
+	}
+	if endDate != "" {
+		args = append(args, endDate)
+		query += fmt.Sprintf(` AND expense_date <= $%d`, len(args))
+	}
+	query += ` ORDER BY expense_date DESC`
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

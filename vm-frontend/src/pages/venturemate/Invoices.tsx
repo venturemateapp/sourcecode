@@ -34,6 +34,8 @@ export function InvoicesPage() {
   const [form, setForm] = useState<Partial<Invoice> | null>(null);
   const [lineItems, setLineItems] = useState<InvoiceItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
@@ -41,13 +43,16 @@ export function InvoicesPage() {
     if (!bizId) return;
     setLoading(true);
     try {
-      const d = await q<{ invoices: Invoice[] }>(`query Q($b:ID!){invoices(businessId:$b){${INVOICE_FIELDS}}}`, { b: bizId });
+      const vars: Record<string, unknown> = { b: bizId };
+      if (startDate) vars.s = startDate;
+      if (endDate) vars.e = endDate;
+      const d = await q<{ invoices: Invoice[] }>(`query Q($b:ID!,$s:String,$e:String){invoices(businessId:$b startDate:$s endDate:$e){${INVOICE_FIELDS}}}`, vars);
       setInvoices(d.invoices);
     } catch (err) {
       console.error('Failed to load invoices:', err);
     }
     setLoading(false);
-  }, [bizId, q]);
+  }, [bizId, q, startDate, endDate]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -215,9 +220,18 @@ export function InvoicesPage() {
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Invoices</Typography>
           <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{invoices.length} invoices · {invoices.filter(i => i.status === 'paid').length} paid</Typography>
         </Box>
-        <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={openCreate}>
-          New Invoice
-        </GradientButton>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <DatePicker label="From" format="dd/MM/yyyy" value={startDate ? new Date(startDate) : null}
+            onChange={(d) => setStartDate(d ? d.toISOString().split('T')[0] : '')}
+            slotProps={{ textField: { size: 'small', sx: { width: 130, input: { color: 'var(--vm-text-primary)', fontSize: 13 }, label: { color: 'var(--vm-text-muted)', fontSize: 12 }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
+          <DatePicker label="To" format="dd/MM/yyyy" value={endDate ? new Date(endDate) : null}
+            onChange={(d) => setEndDate(d ? d.toISOString().split('T')[0] : '')}
+            slotProps={{ textField: { size: 'small', sx: { width: 130, input: { color: 'var(--vm-text-primary)', fontSize: 13 }, label: { color: 'var(--vm-text-muted)', fontSize: 12 }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } } } }} />
+          {(startDate || endDate) && <GradientButton variant="ghost" size="sm" onClick={() => { setStartDate(''); setEndDate(''); }}>Clear</GradientButton>}
+          <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={openCreate}>
+            New Invoice
+          </GradientButton>
+        </Box>
       </Box>
 
       {loading ? <CardSkeleton count={4} type='card' /> : invoices.length === 0 ? (

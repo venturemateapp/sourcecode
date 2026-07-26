@@ -112,10 +112,17 @@ func init() {
 		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(invoiceType))),
 		Args: graphql.FieldConfigArgument{
 			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"startDate":  &graphql.ArgumentConfig{Type: graphql.String},
+			"endDate":    &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil {
 				return []*invoices.Invoice{}, nil
+			}
+			startDate, _ := p.Args["startDate"].(string)
+			endDate, _ := p.Args["endDate"].(string)
+			if startDate != "" || endDate != "" {
+				return AppContainer.InvoiceRepo.ListByBusinessDateRange(p.Context, p.Args["businessId"].(string), startDate, endDate)
 			}
 			return AppContainer.InvoiceRepo.ListByBusiness(p.Context, p.Args["businessId"].(string))
 		},

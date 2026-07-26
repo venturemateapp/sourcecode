@@ -75,12 +75,16 @@ func init() {
 		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(expenditureType))),
 		Args: graphql.FieldConfigArgument{
 			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"startDate":  &graphql.ArgumentConfig{Type: graphql.String},
+			"endDate":    &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil || AppContainer.ExpenditureRepo == nil {
 				return []interface{}{}, nil
 			}
-			exps, err := AppContainer.ExpenditureRepo.ListByBusiness(p.Context, p.Args["businessId"].(string))
+			startDate, _ := p.Args["startDate"].(string)
+			endDate, _ := p.Args["endDate"].(string)
+			exps, err := AppContainer.ExpenditureRepo.ListByBusinessDateRange(p.Context, p.Args["businessId"].(string), startDate, endDate)
 			if err != nil {
 				return nil, err
 			}
