@@ -7,7 +7,7 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { FileText, Plus, Download, Trash2, Send, CheckCircle, XCircle, X, Building2, Edit3 } from 'lucide-react';
+import { FileText, Plus, Download, Trash2, Send, CheckCircle, XCircle, X, Building2, Edit3, AlertCircle, Receipt } from 'lucide-react';
 import type { Invoice, InvoiceItem } from '../../types/venturemate';
 import { useToast } from '../../components/shared/toast';
 import { useConfirm } from '../../components/shared/useConfirm';
@@ -238,6 +238,78 @@ export function InvoicesPage() {
         </Box>
       </Box>
 
+      {/* Stats cards */}
+      {(() => {
+        const totalCount = invoices.length;
+        const paidCount = invoices.filter(i => i.status === 'paid' || i.status === 'completed').length;
+        const overdueCount = invoices.filter(i => i.status === 'overdue').length;
+
+        // Group amounts by currency
+        const byCurrency: Record<string, { income: number; paid: number; overdue: number }> = {};
+        invoices.forEach(inv => {
+          const c = inv.currency || 'USD';
+          if (!byCurrency[c]) byCurrency[c] = { income: 0, paid: 0, overdue: 0 };
+          if (inv.status === 'paid' || inv.status === 'completed') {
+            byCurrency[c].income += inv.amount || 0;
+            byCurrency[c].paid += inv.amount || 0;
+          }
+          if (inv.status === 'overdue') {
+            byCurrency[c].overdue += inv.amount || 0;
+          }
+        });
+
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
+            {/* Row 1: Count cards */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3,1fr)', sm: 'repeat(3,1fr)' }, gap: { xs: 1.5, sm: 2 } }}>
+              <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(16,185,129,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
+                  <Receipt size={16} color="#10b981" />
+                </Box>
+                <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{totalCount}</Typography>
+                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Total Invoices</Typography>
+              </Card>
+              <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(34,197,94,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
+                  <CheckCircle size={16} color="#22c55e" />
+                </Box>
+                <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{paidCount}</Typography>
+                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Paid</Typography>
+              </Card>
+              <Card sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: 1.5, bgcolor: 'rgba(239,68,68,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.75 }}>
+                  <AlertCircle size={16} color="#ef4444" />
+                </Box>
+                <Typography sx={{ fontSize: 20, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{overdueCount}</Typography>
+                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Overdue</Typography>
+              </Card>
+            </Box>
+
+            {/* Row 2: Amount by currency */}
+            {Object.keys(byCurrency).length > 0 && (
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: `repeat(${Math.min(Object.keys(byCurrency).length, 3)}, 1fr)` }, gap: { xs: 1.5, sm: 2 } }}>
+                {Object.entries(byCurrency).map(([currency, amounts]) => (
+                  <Card key={currency} sx={{ p: 2, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5 }}>
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'var(--vm-text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, mb: 1 }}>{currency}</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Income</Typography>
+                        <Typography sx={{ fontSize: 14, fontWeight: 800, color: '#22c55e' }}>{amounts.income.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>Overdue</Typography>
+                        <Typography sx={{ fontSize: 14, fontWeight: 800, color: '#ef4444' }}>{amounts.overdue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Typography>
+                      </Box>
+                    </Box>
+                  </Card>
+                ))}
+              </Box>
+            )}
+          </Box>
+        );
+      })()}
+
+      {/* Invoice list */}
       {loading ? <CardSkeleton count={4} type='card' /> : invoices.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: 'var(--vm-text-muted)' }}><FileText size={36} /><Typography sx={{ mt: 1, fontSize: 14 }}>No invoices yet</Typography></Box>
       ) : (
