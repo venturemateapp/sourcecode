@@ -7,7 +7,7 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Calendar, Plus, Trash2, RefreshCw, Building2, ChevronLeft, ChevronRight, CheckSquare, Clock, Mail } from 'lucide-react';
+import { Calendar, Trash2, RefreshCw, Building2, ChevronLeft, ChevronRight, CheckSquare, Clock, Mail } from 'lucide-react';
 import {
   format,
   startOfMonth,
