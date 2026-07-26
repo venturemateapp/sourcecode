@@ -7,6 +7,7 @@ import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Building2, Plus, Trash2, Edit3, Globe, Users, DollarSign, MapPin } from 'lucide-react';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useConfirm } from '../../components/shared/useConfirm';
 
 interface Company {
   id: string;
@@ -31,6 +32,7 @@ const INDUSTRIES = ['Technology', 'Healthcare', 'Finance', 'Education', 'E-comme
 export function CompaniesPage() {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
+  const { confirmAction, dialog } = useConfirm();
   const bizId = selectedBusiness?.id;
 
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -78,9 +80,11 @@ export function CompaniesPage() {
   };
 
   const deleteCompany = async (id: string) => {
-    if (!bizId || !confirm('Delete this company?')) return;
-    await q('mutation M($id:ID!,$b:ID!){deleteCrmCompany(id:$id businessId:$b)}', { id, b: bizId });
-    await load();
+    if (!bizId) return;
+    confirmAction({ title: 'Delete Company', message: 'Are you sure you want to delete this account? This cannot be undone.' }, async () => {
+      await q('mutation M($id:ID!,$b:ID!){deleteCrmCompany(id:$id businessId:$b)}', { id, b: bizId });
+      await load();
+    });
   };
 
   if (!bizId) return <Box sx={{ p: 4, textAlign: 'center', color: 'var(--vm-text-muted)' }}><Building2 size={40} /><Typography sx={{ mt: 1 }}>Select a business</Typography></Box>;
@@ -161,6 +165,7 @@ export function CompaniesPage() {
             sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
       </Modal>
+      {dialog}
     </Box>
   );
 }

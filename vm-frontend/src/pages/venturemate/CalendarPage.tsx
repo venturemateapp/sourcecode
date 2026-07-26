@@ -22,6 +22,7 @@ import {
   eachDayOfInterval,
 } from 'date-fns';
 import type { CrmTask } from '../../types/venturemate';
+import { useConfirm } from '../../components/shared/useConfirm';
 
 interface CalendarAccount {
   id: string; email: string; provider: string; caldavUrl: string; syncEnabled: boolean; lastSyncedAt: string | null;
@@ -55,6 +56,8 @@ export function CalendarPage() {
     ...(user ? [{ name: `${user.firstName} ${user.lastName}`.trim() || user.email, email: user.email }] : []),
     ...(selectedBusiness?.team?.filter(m => m.status === 'active').map(m => ({ name: m.name, email: m.email })) || []),
   ].filter((v, i, a) => a.findIndex(x => x.email === v.email) === i);
+
+  const { confirmAction, dialog } = useConfirm();
 
   const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -118,9 +121,11 @@ export function CalendarPage() {
   };
 
   const deleteAccount = async (id: string) => {
-    if (!user || !confirm('Remove this calendar?')) return;
-    await q('mutation M($i:ID!,$u:ID!){deleteCalendarAccount(id:$i userId:$u)}', { i: id, u: user.id });
-    await loadAll();
+    if (!user) return;
+    confirmAction({ title: 'Remove Calendar', message: 'Are you sure you want to remove this calendar account?' }, async () => {
+      await q('mutation M($i:ID!,$u:ID!){deleteCalendarAccount(id:$i userId:$u)}', { i: id, u: user.id });
+      await loadAll();
+    });
   };
 
   const syncNow = async (id: string) => {
@@ -406,6 +411,7 @@ export function CalendarPage() {
             sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
       </Modal>
+      {dialog}
     </Box>
   );
 }

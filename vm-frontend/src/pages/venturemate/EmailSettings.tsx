@@ -7,6 +7,7 @@ import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Mail, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Building2 } from 'lucide-react';
+import { useConfirm } from '../../components/shared/useConfirm';
 
 interface EmailAccount {
   id: string;
@@ -44,6 +45,7 @@ export function EmailSettingsPage() {
   const [form, setForm] = useState<Partial<EmailAccount> | null>(null);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const { confirmAction, dialog } = useConfirm();
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
@@ -79,9 +81,11 @@ export function EmailSettingsPage() {
   };
 
   const deleteAccount = async (id: string) => {
-    if (!user || !confirm('Remove this email account?')) return;
-    await q('mutation M($i:ID!,$u:ID!){deleteEmailAccount(id:$i userId:$u)}', { i: id, u: user.id });
-    await load();
+    if (!user) return;
+    confirmAction({ title: 'Remove Email Account', message: 'Are you sure you want to remove this email account?' }, async () => {
+      await q('mutation M($i:ID!,$u:ID!){deleteEmailAccount(id:$i userId:$u)}', { i: id, u: user.id });
+      await load();
+    });
   };
 
   const syncNow = async (id: string) => {
@@ -183,6 +187,7 @@ export function EmailSettingsPage() {
           )}
         </Box>
       </Modal>
+      {dialog}
     </Box>
   );
 }

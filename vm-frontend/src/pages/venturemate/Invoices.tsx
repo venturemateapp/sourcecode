@@ -10,6 +10,7 @@ import { useBusiness } from '../../contexts/BusinessContext';
 import { FileText, Plus, Download, Trash2, Send, CheckCircle, XCircle, X, Building2, Edit3 } from 'lucide-react';
 import type { Invoice, InvoiceItem } from '../../types/venturemate';
 import { useToast } from '../../components/shared/toast';
+import { useConfirm } from '../../components/shared/useConfirm';
 
 const INVOICE_FIELDS = `id userId businessId invoiceNumber customerName customerEmail amount subtotal taxRate taxAmount discount shippingCost currency status dueDate issueDate paidDate items itemsList { description quantity unitPrice } notes customerAddress billingAddress poNumber paymentTerms pdfUrl pdfGeneratedAt createdAt updatedAt`;
 
@@ -27,6 +28,7 @@ export function InvoicesPage() {
   const { user } = useAuth();
   const { selectedBusiness } = useBusiness();
   const toast = useToast();
+  const { confirmAction, dialog } = useConfirm();
   const bizId = selectedBusiness?.id;
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -183,14 +185,16 @@ export function InvoicesPage() {
   };
 
   const deleteInvoice = async (id: string) => {
-    if (!user || !confirm('Delete this invoice?')) return;
-    try {
-      await q('mutation M($i:ID!,$u:ID!){deleteInvoice(id:$i userId:$u)}', { i: id, u: user.id });
-      await load();
-    } catch (err) {
-      console.error('Failed to delete invoice:', err);
-      toast.error('Failed to delete invoice', { description: 'Please try again.' });
-    }
+    if (!user) return;
+    confirmAction({ title: 'Delete Invoice', message: 'Are you sure you want to delete this invoice? This cannot be undone.' }, async () => {
+      try {
+        await q('mutation M($i:ID!,$u:ID!){deleteInvoice(id:$i userId:$u)}', { i: id, u: user.id });
+        await load();
+      } catch (err) {
+        console.error('Failed to delete invoice:', err);
+        toast.error('Failed to delete invoice', { description: 'Please try again.' });
+      }
+    });
   };
 
   const downloadPdf = async (inv: Invoice) => {
@@ -349,6 +353,7 @@ export function InvoicesPage() {
             sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
       </Modal>
+      {dialog}
     </Box>
   );
 }

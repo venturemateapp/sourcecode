@@ -16,6 +16,7 @@ import {
 import type { CrmContact, CrmDeal, CrmActivity, CrmTask } from '../../types/venturemate';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { useToast } from '../../components/shared/toast';
+import { useConfirm } from '../../components/shared/useConfirm';
 
 const CONTACT_TYPES = [
   { value: 'lead', label: 'Lead', color: '#3b82f6' },
@@ -51,6 +52,7 @@ export function CRMPage() {
   const { user } = useAuth();
   const { format } = useCurrency();
   const toast = useToast();
+  const { confirmAction, dialog } = useConfirm();
   const bizId = selectedBusiness?.id;
 
   const assignableUsers = [
@@ -135,14 +137,16 @@ export function CRMPage() {
   };
 
   const deleteContact = async (id: string) => {
-    if (!bizId || !confirm('Delete this contact?')) return;
-    try {
-      await q('mutation M($id:ID!,$b:ID!){deleteCrmContact(id:$id businessId:$b)}', { id, b: bizId });
-      await load();
-    } catch (err) {
-      console.error('Failed to delete contact:', err);
-      toast.error('Failed to delete contact', { description: 'Please try again.' });
-    }
+    if (!bizId) return;
+    confirmAction({ title: 'Delete Contact', message: 'Are you sure you want to delete this contact? This cannot be undone.' }, async () => {
+      try {
+        await q('mutation M($id:ID!,$b:ID!){deleteCrmContact(id:$id businessId:$b)}', { id, b: bizId });
+        await load();
+      } catch (err) {
+        console.error('Failed to delete contact:', err);
+        toast.error('Failed to delete contact', { description: 'Please try again.' });
+      }
+    });
   };
 
   // Create deal
@@ -175,14 +179,16 @@ export function CRMPage() {
   };
 
   const deleteDeal = async (id: string) => {
-    if (!bizId || !confirm('Delete this deal?')) return;
-    try {
-      await q('mutation M($id:ID!,$b:ID!){deleteCrmDeal(id:$id businessId:$b)}', { id, b: bizId });
-      await load();
-    } catch (err) {
-      console.error('Failed to delete deal:', err);
-      toast.error('Failed to delete deal', { description: 'Please try again.' });
-    }
+    if (!bizId) return;
+    confirmAction({ title: 'Delete Deal', message: 'Are you sure you want to delete this deal? This cannot be undone.' }, async () => {
+      try {
+        await q('mutation M($id:ID!,$b:ID!){deleteCrmDeal(id:$id businessId:$b)}', { id, b: bizId });
+        await load();
+      } catch (err) {
+        console.error('Failed to delete deal:', err);
+        toast.error('Failed to delete deal', { description: 'Please try again.' });
+      }
+    });
   };
 
   const updateDealStage = async (id: string, stage: string) => {
@@ -257,14 +263,16 @@ export function CRMPage() {
   };
 
   const deleteActivity = async (id: string) => {
-    if (!bizId || !confirm('Delete this activity?')) return;
-    try {
-      await q('mutation M($id:ID!,$b:ID!){deleteCrmActivity(id:$id businessId:$b)}', { id, b: bizId });
-      await load();
-    } catch (err) {
-      console.error('Failed to delete activity:', err);
-      toast.error('Failed to delete activity', { description: 'Please try again.' });
-    }
+    if (!bizId) return;
+    confirmAction({ title: 'Delete Activity', message: 'Are you sure you want to delete this activity? This cannot be undone.' }, async () => {
+      try {
+        await q('mutation M($id:ID!,$b:ID!){deleteCrmActivity(id:$id businessId:$b)}', { id, b: bizId });
+        await load();
+      } catch (err) {
+        console.error('Failed to delete activity:', err);
+        toast.error('Failed to delete activity', { description: 'Please try again.' });
+      }
+    });
   };
 
   // Create task
@@ -296,14 +304,16 @@ export function CRMPage() {
   };
 
   const deleteTask = async (id: string) => {
-    if (!bizId || !confirm('Delete this task?')) return;
-    try {
-      await q('mutation M($id:ID!,$b:ID!){deleteCrmTask(id:$id businessId:$b)}', { id, b: bizId });
-      await load();
-    } catch (err) {
-      console.error('Failed to delete task:', err);
-      toast.error('Failed to delete task', { description: 'Please try again.' });
-    }
+    if (!bizId) return;
+    confirmAction({ title: 'Delete Task', message: 'Are you sure you want to delete this task? This cannot be undone.' }, async () => {
+      try {
+        await q('mutation M($id:ID!,$b:ID!){deleteCrmTask(id:$id businessId:$b)}', { id, b: bizId });
+        await load();
+      } catch (err) {
+        console.error('Failed to delete task:', err);
+        toast.error('Failed to delete task', { description: 'Please try again.' });
+      }
+    });
   };
 
   const updateTaskStatus = async (id: string, status: string) => {
@@ -826,6 +836,7 @@ export function CRMPage() {
           </GradientButton>
         </Box>
       </Dialog>
+      {dialog}
     </Box>
   );
 }

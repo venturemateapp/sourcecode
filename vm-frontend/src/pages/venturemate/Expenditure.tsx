@@ -10,6 +10,7 @@ import { Receipt, Plus, Trash2, Edit3, Building2, DollarSign, Tag, Download, X }
 import type { Expenditure, ExpenditureItem } from '../../types/venturemate';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { useToast } from '../../components/shared/toast';
+import { useConfirm } from '../../components/shared/useConfirm';
 
 const EXPENSE_CATEGORIES = ['office', 'travel', 'software', 'marketing', 'legal', 'consulting', 'salary', 'equipment', 'utilities', 'rent', 'food', 'transport', 'other'];
 
@@ -35,6 +36,7 @@ export function ExpenditurePage() {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
   const toast = useToast();
+  const { confirmAction, dialog } = useConfirm();
   const bizId = selectedBusiness?.id;
 
   const [items, setItems] = useState<Expenditure[]>([]);
@@ -120,14 +122,16 @@ export function ExpenditurePage() {
   };
 
   const deleteItem = async (id: string) => {
-    if (!bizId || !confirm('Delete this expense?')) return;
-    try {
-      await q('mutation M($id:ID!,$b:ID!){deleteExpenditure(id:$id businessId:$b)}', { id, b: bizId });
-      await load();
-    } catch (err) {
-      console.error('Failed to delete expense:', err);
-      toast.error('Failed to delete expense', { description: 'Please try again.' });
-    }
+    if (!bizId) return;
+    confirmAction({ title: 'Delete Expense', message: 'Are you sure you want to delete this expense? This cannot be undone.' }, async () => {
+      try {
+        await q('mutation M($id:ID!,$b:ID!){deleteExpenditure(id:$id businessId:$b)}', { id, b: bizId });
+        await load();
+      } catch (err) {
+        console.error('Failed to delete expense:', err);
+        toast.error('Failed to delete expense', { description: 'Please try again.' });
+      }
+    });
   };
 
   const downloadPdf = async (exp: Expenditure) => {
@@ -291,6 +295,7 @@ export function ExpenditurePage() {
             sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
         </Box>
       </Modal>
+      {dialog}
     </Box>
   );
 }

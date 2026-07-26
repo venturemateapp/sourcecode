@@ -6,6 +6,7 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Building2, Play, Zap } from 'lucide-react';
+import { useConfirm } from '../../components/shared/useConfirm';
 
 interface WorkflowItem {
   id: string; name: string; description: string; isActive: boolean;
@@ -35,6 +36,7 @@ export function WorkflowsPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { confirmAction, dialog } = useConfirm();
   const [form, setForm] = useState({
     name: '', description: '',
     triggerType: 'record_created', targetObject: 'crm_deals', conditions: '',
@@ -82,9 +84,10 @@ export function WorkflowsPage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Delete this workflow?')) return;
-    await q('mutation M($i:ID!){deleteWorkflow(id:$i)}', { i: id });
-    await load();
+    confirmAction({ title: 'Delete Workflow', message: 'Are you sure you want to delete this workflow? This cannot be undone.' }, async () => {
+      await q('mutation M($i:ID!){deleteWorkflow(id:$i)}', { i: id });
+      await load();
+    });
   };
 
   const getActionLabel = (type: string, config: string) => {
@@ -234,6 +237,7 @@ export function WorkflowsPage() {
           )}
         </Box>
       </Modal>
+      {dialog}
     </Box>
   );
 }
