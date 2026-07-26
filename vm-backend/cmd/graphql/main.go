@@ -533,9 +533,16 @@ func main() {
 
 	http.Handle("/graphql", corsMiddleware(optionalAuthMiddleware(container.JWTSecret, h)))
 	http.HandleFunc("/auth/google", auth.GoogleLoginHandler)
-	http.HandleFunc("/auth/google/callback", auth.GoogleCallbackHandler)
+	http.HandleFunc("/auth/google/callback", func(w http.ResponseWriter, r *http.Request) {
+		state := r.URL.Query().Get("state")
+		if strings.HasPrefix(state, "calendar:") {
+			code := r.URL.Query().Get("code")
+			googleCalOAuth.HandleCallback(w, r, code, state)
+		} else {
+			auth.GoogleCallbackHandler(w, r)
+		}
+	})
 	http.HandleFunc("/auth/google/calendar/login", googleCalOAuth.LoginHandler)
-	http.HandleFunc("/auth/google/calendar/callback", googleCalOAuth.CallbackHandler)
 	http.HandleFunc("/auth/oauth/", oauthHandler(container.OAuthManager))
 	http.Handle("/api/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, uploadHandler(container)))))
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))

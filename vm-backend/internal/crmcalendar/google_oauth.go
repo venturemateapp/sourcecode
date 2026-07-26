@@ -42,7 +42,8 @@ func NewGoogleCalendarOAuth(db *pgxpool.Pool, frontendURL string) *GoogleCalenda
 		log.Printf("Cannot parse google credentials: %v", err)
 		return &GoogleCalendarOAuth{}
 	}
-	redirectURL := "https://venturemate.net/auth/google/calendar/callback"
+	// Use the SAME redirect URI as the signup flow (must match Google Cloud Console)
+	redirectURL := "https://venturemate.net/auth/google/callback"
 	config := &oauth2.Config{
 		ClientID:     creds.Web.ClientID,
 		ClientSecret: creds.Web.ClientSecret,
@@ -63,17 +64,23 @@ func (g *GoogleCalendarOAuth) LoginHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "userId required", http.StatusBadRequest)
 		return
 	}
-	url := g.config.AuthCodeURL(userID, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
+	// State encodes the flow type + userID so the callback can distinguish flows
+	state := "calendar:" + userID
+	url := g.config.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func (g *GoogleCalendarOAuth) CallbackHandler(w http.ResponseWriter, r *http.Request) {
+// HandleCallback is called from the shared /auth/google/callback endpoint
+// when the state starts with "calendar:".
+func (g *GoogleCalendarOAuth) HandleCallback(w http.ResponseWriter, r *http.Request, code, state string) {
 	if g.config == nil {
 		http.Error(w, "Calendar OAuth not configured", http.StatusInternalServerError)
 		return
 	}
-	code := r.URL.Query().Get("code")
-	userID := r.URL.Query().Get("state")
+	userID := state
+	if len(userID) > 9 && userID[:9] == "calendar:" {
+		userID = userID[9:]
+	}
 	if code == "" || userID == "" {
 		http.Error(w, "Missing code or state", http.StatusBadRequest)
 		return
