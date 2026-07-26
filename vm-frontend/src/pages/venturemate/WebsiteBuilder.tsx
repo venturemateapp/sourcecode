@@ -29,13 +29,22 @@ interface WebsiteRecord {
 }
 
 interface WebsiteDraft {
+  name?: string;
+  description?: string;
+  logo?: string;
+  tagline?: string;
   templateId?: string;
   subdomain?: string;
   customDomain?: string;
   pages?: WebsitePage[];
   globalStyles?: Record<string, string>;
+  theme?: Record<string, string>;
   navigation?: { items?: Array<{ label: string; href: string }> };
   footer?: Record<string, unknown>;
+  seo?: { metaDescription?: string; keywords?: string[]; openGraph?: Record<string, string> };
+  analytics?: { googleAnalyticsId?: string; enableTracking?: boolean };
+  darkMode?: boolean;
+  responsiveImage?: boolean;
 }
 
 interface WebsitePage {
@@ -545,19 +554,31 @@ body { background: #fff; display: flex; align-items: center; justify-content: ce
 </body></html>`;
   }, [selectedBusiness]);
 
+  const enrichDraft = useCallback((draft: WebsiteDraft) => ({
+    ...draft,
+    name: draft.name || selectedBusiness?.name,
+    description: draft.description || selectedBusiness?.description,
+    logo: draft.logo || logo,
+    tagline: draft.tagline || selectedBusiness?.tagline,
+    analytics: draft.analytics || undefined,
+    darkMode: draft.darkMode ?? true,
+    responsiveImage: draft.responsiveImage ?? true,
+  }), [selectedBusiness, logo]);
+
   const handleGenerateCode = useCallback(async (draft: WebsiteDraft, previewOnly: boolean = false) => {
     if (!selectedBusiness) return;
     setCodeLoading(true);
     setDeployResult(null);
     if (!previewOnly) setCodeTab('code');
     try {
+      const enrichedDraft = enrichDraft(draft);
       const data = await graphqlRequest<{ generateWebsiteCode: { files: Array<{ path: string; content: string }>; type: string; routes: string[] } }>(
         `mutation GenCode($businessId: ID!, $businessName: String!, $websiteDraft: String!) {
           generateWebsiteCode(businessId: $businessId, businessName: $businessName, websiteDraft: $websiteDraft) {
             files { path content } type routes
           }
         }`,
-        { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(draft) }
+        { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(enrichedDraft) }
       );
       setCodeResult(data.generateWebsiteCode);
       setPreviewHtml(buildPreviewHtml(data.generateWebsiteCode.files));
@@ -567,7 +588,18 @@ body { background: #fff; display: flex; align-items: center; justify-content: ce
     } finally {
       setCodeLoading(false);
     }
-  }, [selectedBusiness, buildPreviewHtml]);
+  }, [selectedBusiness, buildPreviewHtml, enrichDraft]);
+
+  const enrichDraft = useCallback((draft: WebsiteDraft) => ({
+    ...draft,
+    name: draft.name || selectedBusiness?.name,
+    description: draft.description || selectedBusiness?.description,
+    logo: draft.logo || logo,
+    tagline: draft.tagline || selectedBusiness?.tagline,
+    analytics: draft.analytics || undefined,
+    darkMode: draft.darkMode ?? true,
+    responsiveImage: draft.responsiveImage ?? true,
+  }), [selectedBusiness, logo]);
 
   const handleDeploy = useCallback(async (platform: 'github' | 'netlify') => {
     if (!selectedBusiness || !savedDraft) return;
@@ -580,7 +612,7 @@ body { background: #fff; display: flex; align-items: center; justify-content: ce
             platform url success message repoName siteName
           }
         }`,
-        { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(savedDraft), platform }
+        { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(enrichDraft(savedDraft)), platform }
       );
       setDeployResult(data.deployWebsite);
     } catch (err) {
@@ -588,7 +620,7 @@ body { background: #fff; display: flex; align-items: center; justify-content: ce
     } finally {
       setDeployLoading(null);
     }
-  }, [selectedBusiness, savedDraft]);
+  }, [selectedBusiness, savedDraft, enrichDraft]);
 
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate and host its website with AI." />;
 

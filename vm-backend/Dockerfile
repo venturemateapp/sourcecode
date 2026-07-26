@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o server ./cmd/graphql/main.go
+RUN CGO_ENABLED=0 go build -o server ./cmd/graphql/
 
 FROM alpine:latest
 
