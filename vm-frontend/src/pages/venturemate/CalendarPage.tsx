@@ -7,7 +7,7 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { Calendar, Plus, Trash2, RefreshCw, Building2, ChevronLeft, ChevronRight, CheckSquare, Clock } from 'lucide-react';
+import { Calendar, Plus, Trash2, RefreshCw, Building2, ChevronLeft, ChevronRight, CheckSquare, Clock, Mail } from 'lucide-react';
 import {
   format,
   startOfMonth,
@@ -211,6 +211,7 @@ export function CalendarPage() {
           <GradientButton variant="outline" size="sm" startIcon={<CheckSquare size={14} />} onClick={() => setEventForm({ open: true, type: 'task', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })}>Add Task</GradientButton>
           <GradientButton variant="outline" size="sm" startIcon={<Clock size={14} />} onClick={() => setEventForm({ open: true, type: 'event', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })} disabled={accounts.length === 0} title={accounts.length === 0 ? 'Connect a calendar first' : ''}>Add Event</GradientButton>
           <GradientButton variant="primary" size="sm" startIcon={<Plus size={14} />} onClick={() => setShowConnForm(true)}>Connect</GradientButton>
+          <GradientButton variant="outline" size="sm" startIcon={<Mail size={14} />} onClick={() => { if (user?.id) window.location.href = `/auth/google/calendar/login?userId=${user.id}`; else toast.warning('Not logged in', { description: 'Please log in first.' }); }}>Google Calendar</GradientButton>
         </Box>
       </Box>
 
