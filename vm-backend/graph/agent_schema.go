@@ -10,6 +10,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/ai"
+	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
 )
 
@@ -296,6 +297,29 @@ func init() {
 				log.Printf("Propose error for user %s: %v", userID, err)
 				return map[string]interface{}{"message": "I encountered an error processing your request.", "proposals": nil}, nil
 			}
+
+			// Auto-generate code files for website proposals
+			if domain == "website" && proposal != nil {
+				for i, ch := range proposal.Changes {
+					if ch.Field == "websiteDraft" && ch.NewValue != "" {
+						bizName := businessNameForProposal(biz)
+						logo, tagline := brandInfoForProposal(biz)
+						if codeResult, codeErr := ai.GenerateReactProject(ch.NewValue, bizName, logo, tagline); codeErr == nil && len(codeResult.Files) > 0 {
+							filesJSON, _ := json.Marshal(codeResult.Files)
+							proposal.Changes = append(proposal.Changes, ai.ProposedChange{
+								ID:      "code-1",
+								Type:    "update",
+								Field:   "websiteCode",
+								Summary: fmt.Sprintf("Generated %d project files", len(codeResult.Files)),
+								NewValue: string(filesJSON),
+							})
+							_ = i // suppress unused warning
+						}
+						break
+					}
+				}
+			}
+
 			// Track token usage
 			if sub != nil && sub.Plan != nil && proposal != nil && proposal.TotalTokens > 0 {
 				period := subscriptions.BillingPeriod(time.Now())
@@ -338,6 +362,28 @@ func init() {
 			return map[string]interface{}{"success": true, "message": msg}, nil
 		},
 	})
+}
+
+func businessNameForProposal(biz *businesses.Business) string {
+	if biz == nil {
+		return ""
+	}
+	return biz.Name
+}
+
+func brandInfoForProposal(biz *businesses.Business) (logo, tagline string) {
+	if biz == nil {
+		return "", ""
+	}
+	tagline = biz.Tagline
+	type brandKit struct {
+		Logo string `json:"logo"`
+	}
+	var bk brandKit
+	if biz.BrandKit != "" {
+		json.Unmarshal([]byte(biz.BrandKit), &bk)
+	}
+	return bk.Logo, tagline
 }
 
 func aiDomainName(value string) string {
