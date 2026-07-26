@@ -21,11 +21,20 @@ type CodeGenResult struct {
 }
 
 type websiteDraft struct {
-	Pages           []pageDraft     `json:"pages"`
-	GlobalStyles    map[string]any  `json:"globalStyles"`
-	Navigation      map[string]any  `json:"navigation"`
-	Footer          map[string]any  `json:"footer"`
-	DevelopmentCfg  map[string]any  `json:"developmentConfig"`
+	Name           string         `json:"name"`
+	Description    string         `json:"description"`
+	Logo           string         `json:"logo"`
+	Tagline        string         `json:"tagline"`
+	Pages          []pageDraft    `json:"pages"`
+	Theme          map[string]any `json:"theme"`
+	GlobalStyles   map[string]any `json:"globalStyles"`
+	Navigation     map[string]any `json:"navigation"`
+	Footer         map[string]any `json:"footer"`
+	SEO            map[string]any `json:"seo"`
+	Analytics      map[string]any `json:"analytics"`
+	DarkMode       bool           `json:"darkMode"`
+	ResponsiveImg  bool           `json:"responsiveImage"`
+	DevelopmentCfg map[string]any `json:"developmentConfig"`
 }
 
 type pageDraft struct {
@@ -53,13 +62,47 @@ func GenerateReactProject(raw string, bizName, logoURL, tagline string) (*CodeGe
 		return nil, fmt.Errorf("website draft has no pages")
 	}
 
+	// Support both old (globalStyles) and new (theme) field structures
 	styles := draft.GlobalStyles
-	primary := propString(styles, "primaryColor", "#10b981")
-	secondary := propString(styles, "secondaryColor", "#059669")
-	accent := propString(styles, "accentColor", "#34d399")
-	fontHeading := propString(styles, "fontHeading", "Inter")
-	fontBody := propString(styles, "fontBody", "Inter")
+	if styles == nil {
+		styles = draft.Theme
+	}
+	if styles == nil {
+		styles = make(map[string]any)
+	}
+	primary := propString(styles, "primaryColor", propString(styles, "primary", "#10b981"))
+	secondary := propString(styles, "secondaryColor", propString(styles, "secondary", "#059669"))
+	accent := propString(styles, "accentColor", propString(styles, "accent", "#34d399"))
+	darkColor := propString(styles, "dark", "#1f2937")
+	lightColor := propString(styles, "light", "#f9fafb")
+	fontHeading := propString(styles, "fontHeading", propString(styles, "fontHeading", "Inter"))
+	fontBody := propString(styles, "fontBody", propString(styles, "fontBody", "Inter"))
 	radius := propString(styles, "radius", "16px")
+
+	// Use draft-level values if bizName/logoURL/tagline are empty (new format)
+	if bizName == "" {
+		bizName = draft.Name
+	}
+	if logoURL == "" {
+		logoURL = draft.Logo
+	}
+	if tagline == "" {
+		tagline = draft.Tagline
+	}
+
+	seoDesc := ""
+	if draft.SEO != nil {
+		if d, ok := draft.SEO["metaDescription"].(string); ok {
+			seoDesc = d
+		}
+	}
+
+	gaID := ""
+	if draft.Analytics != nil {
+		if g, ok := draft.Analytics["googleAnalyticsId"].(string); ok {
+			gaID = g
+		}
+	}
 
 	navItems := getNavItems(draft.Navigation)
 
@@ -102,12 +145,28 @@ export default defineConfig({
 });`})
 
 	// index.html
+	metaDesc := ""
+	if seoDesc != "" {
+		metaDesc = fmt.Sprintf(`<meta name="description" content="%s" />`, html.EscapeString(seoDesc))
+	}
+	gaSnippet := ""
+	if gaID != "" {
+		gaSnippet = fmt.Sprintf(`<script async src="https://www.googletagmanager.com/gtag/js?id=%s"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','%s');</script>`, html.EscapeString(gaID), html.EscapeString(gaID))
+	}
+	darkModeClass := ""
+	if draft.DarkMode {
+		darkModeClass = `<meta name="color-scheme" content="dark light" />`
+	}
 	files = append(files, ProjectFile{Path: "index.html", Content: fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>%s</title>
+    %s
+    %s
+    %s
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=%s:wght@300;400;500;600;700;800&family=%s:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
@@ -115,7 +174,7 @@ export default defineConfig({
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
-</html>`, html.EscapeString(bizName), urlencodeFont(fontHeading), urlencodeFont(fontBody))})
+</html>`, html.EscapeString(bizName), metaDesc, darkModeClass, gaSnippet, urlencodeFont(fontHeading), urlencodeFont(fontBody))})
 
 	// src/main.jsx
 	files = append(files, ProjectFile{Path: "src/main.jsx", Content: `import React from 'react';
@@ -133,6 +192,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 );`})
 
 	// src/styles/index.css
+	darkModeCSS := ""
+	if draft.DarkMode {
+		darkModeCSS = fmt.Sprintf(`
+@media (prefers-color-scheme: dark) {
+  :root { --bg: %s; --text: #f9fafb; --text-muted: #94a3b8; --section-alt: #1e293b; }
+  body { background: var(--bg); color: var(--text); }
+  .section-alt { background: var(--section-alt); }
+}`,
+			darkColor, lightColor)
+	}
 	cssContent := fmt.Sprintf(`:root {
   --primary: %s;
   --secondary: %s;
@@ -140,25 +209,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   --font-heading: '%s', sans-serif;
   --font-body: '%s', sans-serif;
   --radius: %s;
+  --bg: #ffffff;
+  --text: #1a1a2e;
+  --text-muted: #64748b;
+  --section-alt: #f8fafc;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: var(--font-body); color: #1a1a2e; background: #fff; line-height: 1.6; }
+body { font-family: var(--font-body); color: var(--text); background: var(--bg); line-height: 1.6; }
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); font-weight: 700; line-height: 1.2; }
 a { color: var(--primary); text-decoration: none; }
 img { max-width: 100%%; height: auto; }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 .section { padding: 80px 0; }
-.section-alt { background: #f8fafc; }
+.section-alt { background: var(--section-alt); }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border-radius: var(--radius); font-weight: 600; font-size: 16px; cursor: pointer; border: none; transition: all .2s; }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
 .btn-secondary { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
 .heading { font-size: 36px; margin-bottom: 12px; }
-.subtitle { font-size: 18px; color: #64748b; margin-bottom: 40px; max-width: 600px; }
+.subtitle { font-size: 18px; color: var(--text-muted); margin-bottom: 40px; max-width: 600px; }
 .text-center { text-align: center; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
 @media (max-width: 768px) { .section { padding: 48px 0; } .heading { font-size: 28px; } }
-`, primary, secondary, accent, fontHeading, fontBody, radius)
+%s`, primary, secondary, accent, fontHeading, fontBody, radius, darkModeCSS)
 
 	files = append(files, ProjectFile{Path: "src/styles/index.css", Content: cssContent})
 
@@ -235,14 +308,39 @@ func generateFooter(data map[string]any, bizName, logoURL string) string {
 	if logoURL != "" {
 		logo = fmt.Sprintf(`<img src="%s" alt="%s" style="height:28px;margin-bottom:8px" />`, html.EscapeString(logoURL), html.EscapeString(bizName))
 	}
+
+	// Footer columns
+	columns, _ := data["columns"].([]interface{})
+	colsHTML := ""
+	if len(columns) > 0 {
+		var colBuilder strings.Builder
+		for _, col := range columns {
+			if cm, ok := col.(map[string]interface{}); ok {
+				title, _ := cm["title"].(string)
+				links, _ := cm["links"].([]interface{})
+				colBuilder.WriteString(fmt.Sprintf(`<div style="flex:1;min-width:150px"><h4 style="color:#fff;font-size:14px;margin-bottom:12px;font-weight:700">%s</h4>`, html.EscapeString(title)))
+				for _, l := range links {
+					if lm, ok := l.(map[string]interface{}); ok {
+						label, _ := lm["label"].(string)
+						href, _ := lm["href"].(string)
+						colBuilder.WriteString(fmt.Sprintf(`<a href="%s" style="display:block;color:rgba(255,255,255,.6);font-size:13px;margin-bottom:6px;text-decoration:none">%s</a>`, html.EscapeString(href), html.EscapeString(label)))
+					}
+				}
+				colBuilder.WriteString(`</div>`)
+			}
+		}
+		colsHTML = fmt.Sprintf(`<div style="display:flex;flex-wrap:wrap;gap:24px;max-width:900px;margin:0 auto 24px;text-align:left">%s</div>`, colBuilder.String())
+	}
+
 	return fmt.Sprintf(`export default function Footer() {
   return (
     <footer style={{background:'#1a1a2e',color:'#fff',textAlign:'center',padding:'40px 20px'}}>
       %s
+      %s
       <p style={{fontSize:14,opacity:.7}}>%s</p>
     </footer>
   );
-}`, logo, html.EscapeString(customText))
+}`, logo, colsHTML, html.EscapeString(customText))
 }
 
 func generateSectionRenderer(primary, secondary, accent, fontHeading string) string {

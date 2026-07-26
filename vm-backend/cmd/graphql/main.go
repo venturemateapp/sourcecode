@@ -538,6 +538,7 @@ func main() {
 	http.Handle("/api/pdf/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, pdfDownloadHandler(container)))))
 	http.Handle("/api/avatar", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, avatarHandler(container)))))
 	http.Handle("/api/team-avatar/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, teamAvatarUploadHandler(container)))))
+	http.HandleFunc("/api/generate", handleGenerateWebsite)
 	http.HandleFunc("/api/avatar/public", func(w http.ResponseWriter, r *http.Request) {
 		// Public endpoint - no auth needed, serves by userId query param
 		w.Header().Set("Access-Control-Allow-Origin", "*")
