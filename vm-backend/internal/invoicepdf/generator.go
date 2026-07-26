@@ -47,15 +47,10 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 		json.Unmarshal([]byte(biz.BrandKit), &brand)
 	}
 	primary := "#10b981"
-	dark := "#065f46"
 	if brand.PrimaryColor != "" {
 		primary = brand.PrimaryColor
 	}
-	if brand.DarkColor != "" {
-		dark = brand.DarkColor
-	}
 	pr, pg, pb := parseHex(primary)
-	dr, dg, db := parseHex(dark)
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(20, 12, 20)
@@ -79,7 +74,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	// Invoice title on the right
 	pdf.SetY(15)
 	pdf.SetFont("Helvetica", "B", 20)
-	pdf.SetTextColor(dr, dg, db)
+	pdf.SetTextColor(30, 30, 30)
 	pdf.CellFormat(170, 9, "INVOICE", "", 0, "R", false, 0, "")
 
 	pdf.SetFont("Helvetica", "", 8)
@@ -96,7 +91,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	// === FROM / TO section ===
 	y := float64(36)
 	pdf.SetFont("Helvetica", "B", 8)
-	pdf.SetTextColor(dr, dg, db)
+	pdf.SetTextColor(30, 30, 30)
 	pdf.SetXY(20, y)
 	pdf.CellFormat(80, 4, "FROM", "", 0, "L", false, 0, "")
 	pdf.SetXY(120, y)
@@ -142,7 +137,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	}
 	pdf.SetFont("Helvetica", "B", 8)
 	for _, d := range details {
-		pdf.SetTextColor(dr, dg, db)
+		pdf.SetTextColor(30, 30, 30)
 		pdf.SetXY(20, y)
 		pdf.CellFormat(20, 3.5, d.label, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 8)
