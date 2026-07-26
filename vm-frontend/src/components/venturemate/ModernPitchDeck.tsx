@@ -737,17 +737,36 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
   if (!slides || slides.length === 0) return null;
 
   const captureSlide = async (el: HTMLElement) => {
+    // html2canvas 1.4.1 cannot parse modern CSS color()/color-mix() functions.
+    // Clone the element and strip those from inline styles/style tags before capturing.
+    const clone = el.cloneNode(true) as HTMLElement;
+    ['style', 'background', 'backgroundImage'].forEach(prop => {
+      clone.querySelectorAll(`[${prop}*="color("], [${prop}*="color-mix("]`).forEach(child => {
+        const htmlChild = child as HTMLElement;
+        const val = htmlChild.getAttribute(prop);
+        if (val) htmlChild.setAttribute(prop, val.replace(/color(?:-mix)?\([^)]+\)/g, 'transparent'));
+      });
+    });
+    // Remove color() from <style> tags
+    clone.querySelectorAll('style').forEach(st => {
+      if (st.textContent) st.textContent = st.textContent.replace(/color(?:-mix)?\([^)]+\)/g, '#08080b');
+    });
+
+    // Render offscreen
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'absolute'; wrapper.style.left = '-9999px'; wrapper.style.top = '0';
+    wrapper.style.width = el.offsetWidth + 'px';
+    document.body.appendChild(wrapper);
+    wrapper.appendChild(clone);
+
     try {
-      return await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
+      const canvas = await html2canvas(clone, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
+      document.body.removeChild(wrapper);
+      return canvas;
     } catch (e) {
-      console.warn('html2canvas failed, trying with solid colors:', e);
-      // Retry without CORS and with solid background
-      try {
-        return await html2canvas(el, { scale: 2, useCORS: false, backgroundColor: '#08080b' });
-      } catch (e2) {
-        console.warn('html2canvas retry also failed:', e2);
-        return null;
-      }
+      document.body.removeChild(wrapper);
+      console.warn('html2canvas failed:', e);
+      return null;
     }
   };
 

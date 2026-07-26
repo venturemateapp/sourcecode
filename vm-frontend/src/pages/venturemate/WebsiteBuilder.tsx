@@ -520,7 +520,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [deployLoading, setDeployLoading] = useState<'github' | 'netlify' | null>(null);
   const [deployResult, setDeployResult] = useState<{ platform: string; url: string; success: boolean; message: string } | null>(null);
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+
 
   const enrichDraft = useCallback((draft: WebsiteDraft) => ({
     ...draft,
