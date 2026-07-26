@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 
 import {
   Box,
   Typography,
   Container,
   Grid,
+  Link,
   Card,
   CardContent,
   Chip,
@@ -1057,11 +1058,9 @@ export function LandingPage() {
 
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
             <Box sx={{ display: 'flex', gap: 4 }}>
-              {['Terms', 'Privacy', 'Cookies'].map((item) => (
-                <Typography key={item} variant="body2" sx={{ color: '#64748b', cursor: 'pointer', '&:hover': { color: '#10b981' } }}>
-                  {item}
-                </Typography>
-              ))}
+              <Link component={RouterLink} to="/termsofservice" underline="none" sx={{ color: '#64748b', fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: '#10b981' } }}>Terms</Link>
+              <Link component={RouterLink} to="/policy" underline="none" sx={{ color: '#64748b', fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: '#10b981' } }}>Privacy</Link>
+              <Link component={RouterLink} to="/policy" underline="none" sx={{ color: '#64748b', fontSize: '0.875rem', cursor: 'pointer', '&:hover': { color: '#10b981' } }}>Cookies</Link>
             </Box>
             <Typography variant="body2" sx={{ color: '#64748b' }}>
               &copy; {new Date().getFullYear()} VentureMate. All rights reserved.
