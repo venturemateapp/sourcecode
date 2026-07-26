@@ -7,3 +7,4 @@ dist/
 vm-backend/main
 vm-backend/vm-backend
 vm-backend/config/google-credentials.json
+vm-backend/graphql

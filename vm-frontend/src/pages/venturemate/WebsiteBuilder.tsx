@@ -590,17 +590,6 @@ body { background: #fff; display: flex; align-items: center; justify-content: ce
     }
   }, [selectedBusiness, buildPreviewHtml, enrichDraft]);
 
-  const enrichDraft = useCallback((draft: WebsiteDraft) => ({
-    ...draft,
-    name: draft.name || selectedBusiness?.name,
-    description: draft.description || selectedBusiness?.description,
-    logo: draft.logo || logo,
-    tagline: draft.tagline || selectedBusiness?.tagline,
-    analytics: draft.analytics || undefined,
-    darkMode: draft.darkMode ?? true,
-    responsiveImage: draft.responsiveImage ?? true,
-  }), [selectedBusiness, logo]);
-
   const handleDeploy = useCallback(async (platform: 'github' | 'netlify') => {
     if (!selectedBusiness || !savedDraft) return;
     setDeployLoading(platform);
