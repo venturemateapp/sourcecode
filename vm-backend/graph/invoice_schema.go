@@ -1,12 +1,17 @@
 package graph
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/smtp"
 	"strings"
 	"time"
 
 	"github.com/graphql-go/graphql"
+	jemail "github.com/jordan-wright/email"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
@@ -419,12 +424,19 @@ func init() {
 <p style="margin-top:16px;font-size:13px;">—<br>You can also <a href="https://venturemate.net/signup" style="color:#10b981;font-weight:bold;text-decoration:underline;">try VentureMate now</a> to manage your finances, send invoices, and grow your business.</p>
 `, biz.Name, inv.CustomerName, inv.InvoiceNumber, itemsHTML, totalsHTML, pdfLink, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
 
-				if err := AppContainer.Email.SendTemplatedEmail(
-					[]string{custEmail},
-					fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name),
-					emailBody,
-				); err != nil {
-					return nil, fmt.Errorf("email send failed: %w", err)
+				// Try to use the business's connected email SMTP if available
+				sendErr := sendInvoiceViaBusinessEmail(p.Context, biz.ID, custEmail, fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name), emailBody)
+				if sendErr != nil {
+					// Fall back to default backend email service
+					log.Printf("Business email SMTP failed for %s, falling back to default: %v", biz.ID, sendErr)
+					sendErr = AppContainer.Email.SendTemplatedEmail(
+						[]string{custEmail},
+						fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name),
+						emailBody,
+					)
+				}
+				if sendErr != nil {
+					return nil, fmt.Errorf("email send failed: %w", sendErr)
 				}
 			}
 
@@ -479,6 +491,43 @@ func init() {
 			return pdfURL, nil
 		},
 	})
+}
+
+// sendInvoiceViaBusinessEmail tries to send email using the business's connected email account SMTP.
+// Returns error if no account found (caller should fall back to default email).
+func sendInvoiceViaBusinessEmail(ctx context.Context, businessID, toEmail, subject, body string) error {
+	if AppContainer == nil || AppContainer.EmailSyncRepo == nil {
+		return fmt.Errorf("email sync not available")
+	}
+	accounts, err := AppContainer.EmailSyncRepo.ListAccounts(ctx, businessID)
+	if err != nil || len(accounts) == 0 {
+		return fmt.Errorf("no connected email accounts found for business")
+	}
+	// Use the first account that has SMTP settings
+	for _, acct := range accounts {
+		if acct.SmtpHost == "" || acct.SmtpUsername == "" {
+			continue
+		}
+		// Fetch full account with password
+		fullAcct, err := AppContainer.EmailSyncRepo.GetByID(ctx, acct.ID)
+		if err != nil || fullAcct == nil || fullAcct.SmtpPassword == "" {
+			continue
+		}
+		// Send directly using jordan-wright/email library
+		addr := fmt.Sprintf("%s:%d", fullAcct.SmtpHost, fullAcct.SmtpPort)
+		if fullAcct.SmtpPort == 0 {
+			addr = fmt.Sprintf("%s:587", fullAcct.SmtpHost)
+		}
+		from := fmt.Sprintf("%s <%s>", fullAcct.Email, fullAcct.Email)
+		e := jemail.NewEmail()
+		e.From = from
+		e.To = []string{toEmail}
+		e.Subject = subject
+		e.HTML = []byte(body)
+		auth := smtp.PlainAuth("", fullAcct.SmtpUsername, fullAcct.SmtpPassword, fullAcct.SmtpHost)
+		return e.SendWithStartTLS(addr, auth, &tls.Config{ServerName: fullAcct.SmtpHost})
+	}
+	return fmt.Errorf("no usable email account with SMTP credentials")
 }
 
 
