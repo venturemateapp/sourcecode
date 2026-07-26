@@ -169,7 +169,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		jwtSecret = "super-secret-change-in-prod"
 	}
 
-	err = auth.InitGoogleOAuth(credsPath, userRepo, s3Svc, jwtSecret)
+	err = auth.InitGoogleOAuth(credsPath, userRepo, s3Svc, jwtSecret, dbPool)
 	if err != nil {
 		return nil, err
 	}

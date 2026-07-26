@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/venturemate/vmbackend/internal/s3"
 	"github.com/venturemate/vmbackend/internal/users"
 	"golang.org/x/oauth2"
@@ -23,11 +25,12 @@ type GoogleOAuth struct {
 	userRepo  *users.Repository
 	s3Svc     *s3.Service
 	jwtSecret string
+	db        *pgxpool.Pool
 }
 
 var googleAuth *GoogleOAuth
 
-func InitGoogleOAuth(credsPath string, userRepo *users.Repository, s3Svc *s3.Service, jwtSecret string) error {
+func InitGoogleOAuth(credsPath string, userRepo *users.Repository, s3Svc *s3.Service, jwtSecret string, db *pgxpool.Pool) error {
 	b, err := os.ReadFile(credsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read google credentials: %w", err)
@@ -59,6 +62,7 @@ func InitGoogleOAuth(credsPath string, userRepo *users.Repository, s3Svc *s3.Ser
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile",
+			"https://www.googleapis.com/auth/calendar",
 			"openid",
 		},
 		Endpoint: google.Endpoint,
@@ -69,6 +73,7 @@ func InitGoogleOAuth(credsPath string, userRepo *users.Repository, s3Svc *s3.Ser
 		userRepo:  userRepo,
 		s3Svc:     s3Svc,
 		jwtSecret: jwtSecret,
+		db:        db,
 	}
 	return nil
 }
@@ -154,6 +159,16 @@ func GoogleCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		go sendWelcomeEmail(user)
+	}
+
+	// Save OAuth token for calendar access
+	if googleAuth.db != nil {
+		query := `INSERT INTO oauth_tokens (id, user_id, provider, access_token, refresh_token, token_type, scope, provider_email, created_at, updated_at)
+		          VALUES ($1, $2, 'google-calendar', $3, $4, 'Bearer', 'https://www.googleapis.com/auth/calendar', $5, NOW(), NOW())
+		          ON CONFLICT (user_id, provider) DO UPDATE SET
+		            access_token = $3, refresh_token = $4, updated_at = NOW()`
+		googleAuth.db.Exec(context.Background(), query,
+			uuid.New().String(), user.ID, token.AccessToken, token.RefreshToken, user.Email)
 	}
 
 	// Generate JWT

@@ -21,7 +21,7 @@ func main() {
 	defer container.DB.Close()
 
 	// Initialize Google OAuth with all dependencies
-	if err := auth.InitGoogleOAuth("config/google-credentials.json", container.UserRepo, container.S3, os.Getenv("JWT_SECRET")); err != nil {
+	if err := auth.InitGoogleOAuth("config/google-credentials.json", container.UserRepo, container.S3, os.Getenv("JWT_SECRET"), nil); err != nil {
 		log.Fatal("Failed to init Google OAuth:", err)
 	}
 
