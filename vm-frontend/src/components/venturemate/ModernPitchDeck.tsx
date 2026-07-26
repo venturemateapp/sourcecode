@@ -736,18 +736,36 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
 
   if (!slides || slides.length === 0) return null;
 
+  const captureSlide = async (el: HTMLElement) => {
+    try {
+      return await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
+    } catch (e) {
+      console.warn('html2canvas failed, trying with solid colors:', e);
+      // Retry without CORS and with solid background
+      try {
+        return await html2canvas(el, { scale: 2, useCORS: false, backgroundColor: '#08080b' });
+      } catch (e2) {
+        console.warn('html2canvas retry also failed:', e2);
+        return null;
+      }
+    }
+  };
+
   const exportPDF = async () => {
     const el = deckRef.current;
     if (!el) return;
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
     const slideEls = el.querySelectorAll('[data-mp-slide]');
+    let hasError = false;
     for (let i = 0; i < slideEls.length; i++) {
       const slideEl = slideEls[i] as HTMLElement;
-      const canvas = await html2canvas(slideEl, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
+      const canvas = await captureSlide(slideEl);
+      if (!canvas) { hasError = true; continue; }
       if (i > 0) pdf.addPage();
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1920, 1080);
     }
-    pdf.save(`${_title.replace(/[^a-zA-Z0-9]/g, '_')}_pitchdeck.pdf`);
+    if (slideEls.length > 0) pdf.save(`${_title.replace(/[^a-zA-Z0-9]/g, '_')}_pitchdeck.pdf`);
+    if (hasError) console.warn('Some slides could not be captured');
   };
 
   const exportPPTX = async () => {
@@ -759,11 +777,21 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
     const slideEls = el.querySelectorAll('[data-mp-slide]');
     for (let i = 0; i < slideEls.length; i++) {
       const slideEl = slideEls[i] as HTMLElement;
-      const canvas = await html2canvas(slideEl, { scale: 2, useCORS: true, backgroundColor: null });
-      const imgData = canvas.toDataURL('image/png');
-      const pptSlide = pptx.addSlide();
-      pptSlide.background = { color: '08080B' };
-      pptSlide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
+      const canvas = await captureSlide(slideEl);
+      if (canvas) {
+        const imgData = canvas.toDataURL('image/png');
+        const pptSlide = pptx.addSlide();
+        pptSlide.background = { color: '08080B' };
+        pptSlide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
+      } else {
+        // Fallback: text-only slide
+        const slideData = slides[i];
+        const pptSlide = pptx.addSlide();
+        pptSlide.background = { color: '08080B' };
+        pptSlide.addText(slideData.title, { x: 0.8, y: 1.5, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Inter', color: 'FFFFFF', bold: true });
+        if (slideData.content) pptSlide.addText(slideData.content, { x: 0.8, y: 3.2, w: 11.7, h: 1.5, fontSize: 16, fontFace: 'Inter', color: 'AAAAAA' });
+        if (slideData.bullets) pptSlide.addText(slideData.bullets.map((b: string) => `• ${b}`).join('\n'), { x: 0.8, y: 5, w: 11.7, h: 2, fontSize: 14, fontFace: 'Inter', color: 'CCCCCC', lineSpacing: 24 });
+      }
     }
     pptx.writeFile({ fileName: `${_title.replace(/[^a-zA-Z0-9]/g, '_')}_pitchdeck.pptx` });
   };

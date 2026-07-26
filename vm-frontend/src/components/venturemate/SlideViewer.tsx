@@ -562,6 +562,18 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     else { document.exitFullscreen?.().catch(() => {}); document.body.style.overflow = ''; }
     return () => { document.body.style.overflow = ''; };
   }, [fullscreen]);
+  const captureSlideViewer = async (el: HTMLElement) => {
+    try {
+      return await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
+    } catch {
+      try {
+        return await html2canvas(el, { scale: 2, useCORS: false, backgroundColor: '#08080b' });
+      } catch {
+        return null;
+      }
+    }
+  };
+
   const exportPDF = async () => {
     const el = viewerRef.current?.querySelector('[data-slide-container]') as HTMLElement;
     if (!el) return;
@@ -572,7 +584,8 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
       await new Promise(r => setTimeout(r, 150));
       const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
       if (!el2) continue;
-      const canvas = await html2canvas(el2, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
+      const canvas = await captureSlideViewer(el2);
+      if (!canvas) continue;
       if (i > 0) pdf.addPage();
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
     }
@@ -589,11 +602,21 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
       await new Promise(r => setTimeout(r, 150));
       const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
       if (!el2) continue;
-      const canvas = await html2canvas(el2, { scale: 2, useCORS: true, backgroundColor: '#08080b' });
-      const imgData = canvas.toDataURL('image/png');
-      const pptSlide = pptx.addSlide();
-      pptSlide.background = { color: '08080B' };
-      pptSlide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
+      const canvas = await captureSlideViewer(el2);
+      if (canvas) {
+        const imgData = canvas.toDataURL('image/png');
+        const pptSlide = pptx.addSlide();
+        pptSlide.background = { color: '08080B' };
+        pptSlide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
+      } else {
+        // Fallback: text-only slide
+        const s = slides[i];
+        const pptSlide = pptx.addSlide();
+        pptSlide.background = { color: '08080B' };
+        pptSlide.addText(s.title, { x: 0.8, y: 1.5, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Inter', color: 'FFFFFF', bold: true });
+        if (s.content) pptSlide.addText(s.content, { x: 0.8, y: 3.2, w: 11.7, h: 1.5, fontSize: 16, fontFace: 'Inter', color: 'AAAAAA' });
+        if (s.bullets) pptSlide.addText(s.bullets.map(b => `• ${b}`).join('\n'), { x: 0.8, y: 5, w: 11.7, h: 2, fontSize: 14, fontFace: 'Inter', color: 'CCCCCC', lineSpacing: 24 });
+      }
     }
     pptx.writeFile({ fileName: `${title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx` });
   };
