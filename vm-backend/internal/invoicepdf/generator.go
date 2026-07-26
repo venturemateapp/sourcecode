@@ -45,13 +45,20 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	if biz.BrandKit != "" {
 		json.Unmarshal([]byte(biz.BrandKit), &brand)
 	}
-	primary := "#000000"
-	dark := "#000000"
+	primary := "#10b981"
+	dark := "#065f46"
+	if brand.PrimaryColor != "" {
+		primary = brand.PrimaryColor
+	}
+	if brand.DarkColor != "" {
+		dark = brand.DarkColor
+	}
 	pr, pg, pb := parseHex(primary)
 	dr, dg, db := parseHex(dark)
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetMargins(20, 15, 20)
+	pdf.SetMargins(20, 12, 20)
+	pdf.SetAutoPageBreak(true, 18)
 	pdf.AddPage()
 
 	// === HEADER with logo ===
@@ -59,44 +66,44 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 		logoReader, imgType := g.logoReader(brand.Logo)
 		if logoReader != nil && imgType != "" {
 			pdf.RegisterImageReader("logo", imgType, logoReader)
-			pdf.Image("logo", 20, 15, 30, 0, false, "", 0, "")
+			pdf.Image("logo", 20, 12, 25, 0, false, "", 0, "")
 		}
 	}
 
 	// Invoice title on the right
-	pdf.SetY(18)
-	pdf.SetFont("Helvetica", "B", 22)
+	pdf.SetY(15)
+	pdf.SetFont("Helvetica", "B", 20)
 	pdf.SetTextColor(dr, dg, db)
-	pdf.CellFormat(170, 10, "INVOICE", "", 0, "R", false, 0, "")
+	pdf.CellFormat(170, 9, "INVOICE", "", 0, "R", false, 0, "")
 
 	pdf.SetFont("Helvetica", "", 8)
 	pdf.SetTextColor(100, 100, 100)
-	pdf.SetY(29)
-	pdf.CellFormat(170, 5, fmt.Sprintf("# %s", inv.InvoiceNumber), "", 0, "R", false, 0, "")
+	pdf.SetY(24)
+	pdf.CellFormat(170, 4, fmt.Sprintf("# %s", inv.InvoiceNumber), "", 0, "R", false, 0, "")
 
 	// Divider line
-	pdf.SetY(38)
+	pdf.SetY(32)
 	pdf.SetDrawColor(pr, pg, pb)
 	pdf.SetLineWidth(0.5)
-	pdf.Line(20, 38, 190, 38)
+	pdf.Line(20, 32, 190, 32)
 
 	// === FROM / TO section ===
-	y := float64(42)
+	y := float64(36)
 	pdf.SetFont("Helvetica", "B", 8)
 	pdf.SetTextColor(dr, dg, db)
 	pdf.SetXY(20, y)
-	pdf.CellFormat(40, 4, "FROM", "", 0, "L", false, 0, "")
+	pdf.CellFormat(80, 4, "FROM", "", 0, "L", false, 0, "")
 	pdf.SetXY(120, y)
-	pdf.CellFormat(40, 4, "TO", "", 0, "L", false, 0, "")
-	y += 5
+	pdf.CellFormat(80, 4, "TO", "", 0, "L", false, 0, "")
+	y += 4.5
 
 	pdf.SetFont("Helvetica", "", 9)
 	pdf.SetTextColor(30, 30, 30)
 	pdf.SetXY(20, y)
-	pdf.CellFormat(85, 5, truncate(biz.Name, 50), "", 0, "L", false, 0, "")
+	pdf.CellFormat(85, 4.5, truncate(biz.Name, 50), "", 0, "L", false, 0, "")
 	pdf.SetXY(120, y)
-	pdf.CellFormat(80, 5, truncate(inv.CustomerName, 45), "", 0, "L", false, 0, "")
-	y += 5
+	pdf.CellFormat(80, 4.5, truncate(inv.CustomerName, 45), "", 0, "L", false, 0, "")
+	y += 4.5
 
 	pdf.SetFont("Helvetica", "", 7)
 	pdf.SetTextColor(100, 100, 100)
@@ -108,15 +115,15 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	}
 	pdf.SetXY(120, y)
 	pdf.CellFormat(80, 3, truncate(addrLine, 50), "", 0, "L", false, 0, "")
-	y += 4
+	y += 3.5
 
 	if inv.CustomerEmail != "" {
 		pdf.SetXY(120, y)
 		pdf.CellFormat(80, 3, truncate(inv.CustomerEmail, 50), "", 0, "L", false, 0, "")
-		y += 4
+		y += 3.5
 	}
 
-	// === INVOICE DETAILS ===
+	// === INVOICE DETAILS (2 columns) ===
 	details := []struct{ label, value string }{
 		{"Date:", inv.IssueDate.Format("Jan 02, 2006")},
 		{"Due Date:", inv.DueDate.Format("Jan 02, 2006")},
@@ -131,25 +138,25 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	for _, d := range details {
 		pdf.SetTextColor(dr, dg, db)
 		pdf.SetXY(20, y)
-		pdf.CellFormat(30, 4, d.label, "", 0, "L", false, 0, "")
+		pdf.CellFormat(20, 3.5, d.label, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 8)
 		pdf.SetTextColor(60, 60, 60)
-		pdf.SetX(50)
-		pdf.CellFormat(60, 4, d.value, "", 0, "L", false, 0, "")
+		pdf.SetX(40)
+		pdf.CellFormat(60, 3.5, d.value, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "B", 8)
-		y += 4
+		y += 3.5
 	}
 	y += 2
 
 	// === ITEMS TABLE HEADER ===
-	pdf.SetY(y + 4)
+	pdf.SetY(y + 3)
 	pdf.SetFillColor(pr, pg, pb)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Helvetica", "B", 8)
 	colW := []float64{96, 22, 32, 40}
 	headers := []string{"Description", "Qty", "Unit Price", "Amount"}
 	for i, h := range headers {
-		pdf.CellFormat(colW[i], 8, h, "1", 0, "C", true, 0, "")
+		pdf.CellFormat(colW[i], 7, h, "1", 0, "C", true, 0, "")
 	}
 	pdf.Ln(-1)
 
@@ -158,7 +165,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.SetFont("Helvetica", "", 8)
 	var items []invoices.InvoiceItem
 	json.Unmarshal([]byte(inv.Items), &items)
-	rowH := 6.0
+	rowH := 5.5
 	for _, item := range items {
 		qty := float64(item.Quantity)
 		lineTotal := qty * item.UnitPrice
@@ -174,9 +181,9 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	}
 
 	// === TOTALS ===
-	totalStart := pdf.GetY() + 3
-	pdf.SetY(totalStart)
-	pdf.SetX(130)
+	pdf.SetY(pdf.GetY() + 2)
+	rightX := 120.0
+	pdf.SetX(rightX)
 	pdf.SetFont("Helvetica", "", 9)
 	pdf.SetTextColor(60, 60, 60)
 
@@ -194,25 +201,25 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	}
 
 	for _, t := range totals {
-		pdf.SetX(130)
-		pdf.CellFormat(35, 6, t.label, "", 0, "R", false, 0, "")
-		pdf.CellFormat(35, 6, t.value, "", 0, "R", false, 0, "")
+		pdf.SetX(rightX)
+		pdf.CellFormat(35, 5.5, t.label, "", 0, "R", false, 0, "")
+		pdf.CellFormat(35, 5.5, t.value, "", 0, "R", false, 0, "")
 		pdf.Ln(-1)
 	}
 
 	// Total row (calculate: subtotal - discount + tax + shipping)
 	grandTotal := inv.Subtotal - inv.Discount + inv.TaxAmount + inv.ShippingCost
-	pdf.Ln(2)
+	pdf.Ln(1.5)
 	pdf.SetFillColor(pr, pg, pb)
 	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Helvetica", "B", 12)
-	pdf.SetX(125)
-	pdf.CellFormat(40, 9, "TOTAL:", "1", 0, "R", true, 0, "")
-	pdf.CellFormat(35, 9, fmt.Sprintf("$%.2f", grandTotal), "1", 0, "R", true, 0, "")
+	pdf.SetFont("Helvetica", "B", 11)
+	pdf.SetX(rightX - 5)
+	pdf.CellFormat(40, 8, "TOTAL:", "1", 0, "R", true, 0, "")
+	pdf.CellFormat(35, 8, fmt.Sprintf("$%.2f", grandTotal), "1", 0, "R", true, 0, "")
 
 	// Notes
 	if inv.Notes != "" {
-		pdf.Ln(4)
+		pdf.Ln(3)
 		pdf.SetFont("Helvetica", "B", 7)
 		pdf.SetTextColor(dr, dg, db)
 		pdf.CellFormat(170, 3, "Notes:", "", 0, "L", false, 0, "")
@@ -222,7 +229,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	}
 
 	// Footer
-	pdf.SetY(-12)
+	pdf.SetY(-15)
 	pdf.SetFont("Helvetica", "", 6)
 	pdf.SetTextColor(160, 160, 160)
 	pdf.CellFormat(170, 4, fmt.Sprintf("Generated by VentureMate on %s", time.Now().Format("Jan 02, 2006")), "", 0, "C", false, 0, "")

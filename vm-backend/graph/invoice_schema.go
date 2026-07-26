@@ -339,6 +339,10 @@ func init() {
 				if err != nil {
 					return nil, fmt.Errorf("pdf upload failed: %w", err)
 				}
+				// Make PDF publicly accessible for customers viewing via email
+				if setACLErr := AppContainer.S3.SetPublicRead(p.Context, fileName); setACLErr != nil {
+					// Non-fatal: log but continue
+				}
 			if err := AppContainer.InvoiceRepo.UpdatePdfURLWithSize(p.Context, inv.ID, pdfURL, int64(len(pdfData))); err != nil {
 				return nil, fmt.Errorf("save pdf url failed: %w", err)
 			}
@@ -385,6 +389,11 @@ func init() {
 			grandTotal := inv.Subtotal - inv.Discount + inv.TaxAmount + inv.ShippingCost
 			totalsHTML += fmt.Sprintf(`<tr style="font-weight:bold;background:#10b981;color:#fff;"><td style="padding:8px;" colspan="2">TOTAL</td><td style="padding:8px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, grandTotal)
 
+			pdfLink := inv.PdfURL
+			if pdfLink == "" {
+				pdfLink = fmt.Sprintf("https://venturemate.net/api/pdf/download?type=invoice&id=%s", inv.ID)
+			}
+
 			emailBody := fmt.Sprintf(`
 <h2>Invoice from %s</h2>
 <p>Dear %s,</p>
@@ -396,11 +405,12 @@ func init() {
 <table style="width:100%%;border-collapse:collapse;margin:16px 0;max-width:300px;margin-left:auto;">
 %s
 </table>
-<p><a href="https://venturemate.net/api/pdf/download?type=invoice&id=%s" style="display:inline-block;padding:10px 20px;background:#10b981;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Invoice PDF</a></p>
+<p><a href="%s" style="display:inline-block;padding:10px 20px;background:#10b981;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View Invoice PDF</a></p>
 <p style="color:#64748b;font-size:12px;">Due date: %s<br>Payment terms: %s</p>
 <hr>
 <p style="color:#64748b;font-size:12px;">Thank you for your business!</p>
-`, biz.Name, inv.CustomerName, inv.InvoiceNumber, itemsHTML, totalsHTML, inv.ID, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
+<p style="margin-top:16px;font-size:13px;">—<br>You can also <a href="https://venturemate.net/signup" style="color:#10b981;font-weight:bold;text-decoration:underline;">try VentureMate now</a> to manage your finances, send invoices, and grow your business.</p>
+`, biz.Name, inv.CustomerName, inv.InvoiceNumber, itemsHTML, totalsHTML, pdfLink, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
 
 				if err := AppContainer.Email.SendTemplatedEmail(
 					[]string{custEmail},

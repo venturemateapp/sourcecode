@@ -160,6 +160,7 @@ export function InvoicesPage() {
     try {
       await q('mutation M($i:ID!,$b:ID!){sendInvoice(id:$i businessId:$b){id status}}', { i: id, b: bizId });
       await load();
+      toast.success('Invoice sent!', { description: `Invoice has been sent to the customer.` });
     } catch (err) {
       console.error('Failed to send invoice:', err);
       toast.error('Failed to send invoice', { description: 'Please try again.' });

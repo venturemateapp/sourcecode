@@ -41,6 +41,7 @@ export function ExpenditurePage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Partial<Expenditure> | null>(null);
   const [lineItems, setLineItems] = useState<ExpenditureItem[]>([{ ...EMPTY_ITEM }]);
+  const [customCategory, setCustomCategory] = useState('');
   const [saving, setSaving] = useState(false);
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
@@ -61,13 +62,16 @@ export function ExpenditurePage() {
 
   const openCreate = () => {
     setLineItems([{ ...EMPTY_ITEM }]);
+    setCustomCategory('');
     setForm({ description: '', amount: 0, category: 'other', expenseDate: new Date().toISOString().split('T')[0], vendor: '', notes: '', items: '[]' });
   };
 
   const openEdit = (exp: Expenditure) => {
     const parsed = parseItems(exp.items);
     setLineItems(parsed.length > 0 ? parsed : [{ ...EMPTY_ITEM }]);
-    setForm({ ...exp });
+    const isOther = !EXPENSE_CATEGORIES.includes(exp.category);
+    setCustomCategory(isOther ? exp.category : '');
+    setForm({ ...exp, category: isOther ? 'other' : exp.category });
   };
 
   const updateLineItem = (idx: number, field: keyof ExpenditureItem, value: string | number) => {
@@ -89,8 +93,9 @@ export function ExpenditurePage() {
     try {
       const itemsJson = JSON.stringify(lineItems.filter(i => i.description.trim()));
       const total = calcTotal(lineItems);
+      const effectiveCategory = form.category === 'other' && customCategory.trim() ? customCategory.trim() : (form.category || 'other');
       const vars: Record<string, unknown> = {
-        b: bizId, c: form.category || 'other', d: form.description,
+        b: bizId, c: effectiveCategory, d: form.description,
         a: total || form.amount || 0,
         e: form.expenseDate || new Date().toISOString().split('T')[0],
         v: form.vendor || '', n: form.notes || '', i: itemsJson,
@@ -228,6 +233,11 @@ export function ExpenditurePage() {
                 {EXPENSE_CATEGORIES.map(c => <MenuItem key={c} value={c} sx={{ textTransform: 'capitalize' }}>{c}</MenuItem>)}
               </Select>
             </FormControl>
+            {form?.category === 'other' && (
+              <TextField size="small" label="Custom Category" value={customCategory} onChange={e => setCustomCategory(e.target.value)}
+                placeholder="Type your own category"
+                sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            )}
             <TextField size="small" label="Vendor" value={form?.vendor || ''} onChange={e => setForm({ ...form, vendor: e.target.value })}
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <DatePicker label="Date" format="dd/MM/yyyy" value={form?.expenseDate ? new Date(form.expenseDate) : null}
