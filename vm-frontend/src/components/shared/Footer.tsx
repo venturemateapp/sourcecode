@@ -1,4 +1,11 @@
-import { Box, Typography, Container } from '@mui/material';
+import { Box, Typography, Container, Link } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+
+const links = [
+  { label: 'Terms', href: '/termsofservice' },
+  { label: 'Privacy', href: '/policy' },
+  { label: 'Cookies', href: '/policy' },
+];
 
 export function Footer() {
   return (
@@ -24,9 +31,12 @@ export function Footer() {
           }}
         >
           <Box sx={{ display: 'flex', gap: 3 }}>
-            {['Terms', 'Privacy', 'Cookies'].map((item) => (
-              <Typography
-                key={item}
+            {links.map((item) => (
+              <Link
+                key={item.label}
+                component={RouterLink}
+                to={item.href}
+                underline="none"
                 sx={{
                   fontSize: { xs: 11, sm: 12 },
                   color: 'var(--vm-text-muted)',
@@ -34,8 +44,8 @@ export function Footer() {
                   '&:hover': { color: 'var(--vm-primary-400)' },
                 }}
               >
-                {item}
-              </Typography>
+                {item.label}
+              </Link>
             ))}
           </Box>
           <Typography sx={{ fontSize: { xs: 11, sm: 12 }, color: 'var(--vm-text-muted)' }}>
