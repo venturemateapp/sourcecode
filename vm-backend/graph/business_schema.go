@@ -2,6 +2,7 @@ package graph
 
 import (
 	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -53,15 +54,28 @@ var businessType = graphql.NewObject(graphql.ObjectConfig{
 			Type: graphql.String,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				biz, ok := p.Source.(*businesses.Business)
-				if !ok || AppContainer == nil || AppContainer.InvoiceRepo == nil {
+				if !ok {
+					log.Printf("revenueByCurrency: type assertion failed, Source=%T", p.Source)
 					return "{}", nil
 				}
+				if AppContainer == nil {
+					log.Printf("revenueByCurrency: AppContainer is nil")
+					return "{}", nil
+				}
+				if AppContainer.InvoiceRepo == nil {
+					log.Printf("revenueByCurrency: InvoiceRepo is nil")
+					return "{}", nil
+				}
+				log.Printf("revenueByCurrency: calling GetRevenueByCurrency for biz=%s", biz.ID)
 				result, err := AppContainer.InvoiceRepo.GetRevenueByCurrency(p.Context, biz.ID)
 				if err != nil {
+					log.Printf("revenueByCurrency: GetRevenueByCurrency error: %v", err)
 					return "{}", nil
 				}
+				log.Printf("revenueByCurrency: got result: %v", result)
 				b, jErr := json.Marshal(result)
 				if jErr != nil {
+					log.Printf("revenueByCurrency: json marshal error: %v", jErr)
 					return "{}", nil
 				}
 				return string(b), nil
