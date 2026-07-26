@@ -240,7 +240,7 @@ export function LandingPage() {
               <img
                 src="/VentureMate-logo.png"
                 alt="VentureMate"
-                style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+                style={{ height: 48, width: 'auto', objectFit: 'contain' }}
               />
             </Box>
 
@@ -278,7 +278,7 @@ export function LandingPage() {
             <img
               src="/VentureMate-logo.png"
               alt="VentureMate"
-              style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+                style={{ height: 44, width: 'auto', objectFit: 'contain' }}
             />
           </Box>
           <IconButton onClick={() => setMobileMenuOpen(false)} sx={{ color: 'white' }}>
