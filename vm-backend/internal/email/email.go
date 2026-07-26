@@ -52,15 +52,22 @@ func New() (*Service, error) {
 	fromAddress := fmt.Sprintf("%s <%s>", fromName, username)
 
 	// Logo: prefer public HTTPS URL (reliable across all email clients)
-	// Fall back to embedded base64 if EMAIL_LOGO_URL is not set
+	// Fall back to embedded base64 from local file
 	logo := os.Getenv("EMAIL_LOGO_URL")
 	if logo == "" {
-		logoBytes, err := os.ReadFile("internal/email/assets/VentureMate-logo-email.png")
-		if err != nil {
-			return nil, fmt.Errorf("failed to load logo: %w", err)
+		// Try multiple filenames in order of preference
+		for _, name := range []string{"VentureMate-logo-email.png", "ventureMate-logo2.png", "VentureMate-logo.png"} {
+			logoBytes, err := os.ReadFile("internal/email/assets/" + name)
+			if err == nil {
+				logoBase64 := base64.StdEncoding.EncodeToString(logoBytes)
+				logo = "data:image/png;base64," + logoBase64
+				break
+			}
 		}
-		logoBase64 := base64.StdEncoding.EncodeToString(logoBytes)
-		logo = "data:image/png;base64," + logoBase64
+		// If still no logo, use an inline SVG fallback so emails don't break
+		if logo == "" {
+			logo = "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50"><text x="10" y="35" font-family="Arial,sans-serif" font-size="24" font-weight="bold" fill="#10b981">VentureMate</text></svg>`))
+		}
 	}
 
 	return &Service{
