@@ -189,8 +189,14 @@ func init() {
 			}
 			go func() {
 				acct, err := AppContainer.CalendarRepo.GetByID(context.Background(), p.Args["id"].(string))
-				if err == nil && acct != nil {
-					AppContainer.CalendarSyncService.SyncAccount(context.Background(), acct)
+				if err != nil {
+					log.Printf("syncCalendarAccount: failed to fetch account: %v", err)
+					return
+				}
+				if acct != nil {
+					if err := AppContainer.CalendarSyncService.SyncAccount(context.Background(), acct); err != nil {
+						log.Printf("syncCalendarAccount: sync failed: %v", err)
+					}
 				}
 			}()
 			return true, nil

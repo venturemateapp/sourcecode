@@ -242,8 +242,14 @@ func init() {
 			}
 			go func() {
 				acct, err := AppContainer.EmailSyncRepo.GetByID(context.Background(), p.Args["id"].(string))
-				if err == nil && acct != nil {
-					AppContainer.EmailSyncService.SyncAccount(context.Background(), acct)
+				if err != nil {
+					log.Printf("syncEmailAccount: failed to fetch account: %v", err)
+					return
+				}
+				if acct != nil {
+					if err := AppContainer.EmailSyncService.SyncAccount(context.Background(), acct); err != nil {
+						log.Printf("syncEmailAccount: sync failed for %s: %v", acct.Email, err)
+					}
 				}
 			}()
 			return true, nil

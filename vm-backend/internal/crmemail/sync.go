@@ -1,11 +1,15 @@
 package crmemail
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"log"
+	"mime/quotedprintable"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -88,8 +92,11 @@ func (s *SyncService) syncFolder(ctx context.Context, c *client.Client, acct *Em
 
 	messages := make(chan *imap.Message, 50)
 	done := make(chan error, 1)
+
+	// Fetch both metadata and body content
+	bodySection := &imap.BodySectionName{}
 	go func() {
-		done <- c.Fetch(seqSet, []imap.FetchItem{imap.FetchEnvelope, imap.FetchInternalDate, imap.FetchFlags, imap.FetchBodyStructure, imap.FetchUid}, messages)
+		done <- c.Fetch(seqSet, []imap.FetchItem{bodySection.FetchItem(), imap.FetchEnvelope, imap.FetchInternalDate, imap.FetchFlags, imap.FetchUid}, messages)
 	}()
 
 	for msg := range messages {
@@ -101,6 +108,17 @@ func (s *SyncService) syncFolder(ctx context.Context, c *client.Client, acct *Em
 
 		if msg.Envelope == nil {
 			continue
+		}
+
+		// Extract body text
+		var bodyText, bodyHTML string
+		if body := msg.GetBody(bodySection); body != nil {
+			data, err := io.ReadAll(body)
+			if err == nil && len(data) > 0 {
+				// Try to decode quoted-printable encoding common in emails
+				decoded := tryDecodeBody(data)
+				bodyText, bodyHTML = extractTextFromIMAP(decoded)
+			}
 		}
 
 		email := &Email{
@@ -119,6 +137,8 @@ func (s *SyncService) syncFolder(ctx context.Context, c *client.Client, acct *Em
 			IsStarred:   hasFlag(msg.Flags, "\\Flagged"),
 			Folder:      folder,
 			ThreadID:    msg.Envelope.MessageId,
+			BodyText:    bodyText,
+			BodyHTML:    bodyHTML,
 		}
 		email.ContactID = s.findMatchingContact(ctx, acct.BusinessID, email.FromAddress)
 
@@ -212,4 +232,58 @@ func hasFlag(flags []string, flag string) bool {
 		}
 	}
 	return false
+}
+
+func tryDecodeBody(data []byte) []byte {
+	// Try quoted-printable decoding first (common in email)
+	decoded, err := io.ReadAll(quotedprintable.NewReader(bytes.NewReader(data)))
+	if err == nil && utf8.Valid(decoded) {
+		return decoded
+	}
+	// Fall back to raw data
+	if utf8.Valid(data) {
+		return data
+	}
+	return data
+}
+
+func extractTextFromIMAP(data []byte) (string, string) {
+	s := string(data)
+	s = strings.TrimSpace(s)
+
+	// Simple detection: check if it looks like HTML
+	if strings.Contains(s, "<html") || strings.Contains(s, "<div") || strings.Contains(s, "<p>") || strings.Contains(s, "<body") {
+		// Extract text from HTML for BodyText
+		text := stripHTMLTags(s)
+		return text, s
+	}
+
+	// Plain text
+	return s, ""
+}
+
+func stripHTMLTags(s string) string {
+	var buf bytes.Buffer
+	inTag := false
+	for _, r := range s {
+		switch {
+		case r == '<':
+			inTag = true
+		case r == '>':
+			inTag = false
+		case !inTag:
+			buf.WriteRune(r)
+		}
+	}
+	// Collapse multiple whitespace/newlines
+	result := strings.TrimSpace(buf.String())
+	lines := strings.Split(result, "\n")
+	var cleaned []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			cleaned = append(cleaned, line)
+		}
+	}
+	return strings.Join(cleaned, "\n")
 }

@@ -2,6 +2,7 @@ package crmemail
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -44,7 +45,9 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*EmailAccount, err
 	}
 
 	// Also fetch passwords separately for sync
-	r.db.QueryRow(ctx, `SELECT imap_password, smtp_password FROM crm_email_accounts WHERE id = $1`, id).Scan(&a.ImapPassword, &a.SmtpPassword)
+	if err := r.db.QueryRow(ctx, `SELECT imap_password, smtp_password FROM crm_email_accounts WHERE id = $1`, id).Scan(&a.ImapPassword, &a.SmtpPassword); err != nil {
+		return nil, fmt.Errorf("fetch password: %w", err)
+	}
 	return &a, nil
 }
 

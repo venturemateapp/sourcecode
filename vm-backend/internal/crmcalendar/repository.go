@@ -2,6 +2,7 @@ package crmcalendar
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,7 +53,9 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*CalendarAccount, 
 	if err != nil {
 		return nil, err
 	}
-	r.db.QueryRow(ctx, `SELECT caldav_username, caldav_password FROM crm_calendar_accounts WHERE id = $1`, id).Scan(&a.CalDAVUsername, &a.CalDAVPassword)
+	if err := r.db.QueryRow(ctx, `SELECT caldav_username, caldav_password FROM crm_calendar_accounts WHERE id = $1`, id).Scan(&a.CalDAVUsername, &a.CalDAVPassword); err != nil {
+		return nil, fmt.Errorf("fetch caldav credentials: %w", err)
+	}
 	return &a, nil
 }
 
