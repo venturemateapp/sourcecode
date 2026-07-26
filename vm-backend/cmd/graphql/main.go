@@ -17,6 +17,7 @@ import (
 	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/app"
 	"github.com/venturemate/vmbackend/internal/auth"
+	"github.com/venturemate/vmbackend/internal/crmcalendar"
 	"github.com/venturemate/vmbackend/internal/migrations"
 	"github.com/venturemate/vmbackend/internal/oauth"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
@@ -504,6 +505,8 @@ func main() {
 	}
 	defer container.DB.Close()
 
+	googleCalOAuth := crmcalendar.NewGoogleCalendarOAuth(container.DB, "https://venturemate.net")
+
 	if err := migrations.Run(container.DB, "migrations"); err != nil {
 		log.Printf("Warning: migrations failed: %v", err)
 	}
@@ -531,6 +534,8 @@ func main() {
 	http.Handle("/graphql", corsMiddleware(optionalAuthMiddleware(container.JWTSecret, h)))
 	http.HandleFunc("/auth/google", auth.GoogleLoginHandler)
 	http.HandleFunc("/auth/google/callback", auth.GoogleCallbackHandler)
+	http.HandleFunc("/auth/google/calendar/login", googleCalOAuth.LoginHandler)
+	http.HandleFunc("/auth/google/calendar/callback", googleCalOAuth.CallbackHandler)
 	http.HandleFunc("/auth/oauth/", oauthHandler(container.OAuthManager))
 	http.Handle("/api/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, uploadHandler(container)))))
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))
