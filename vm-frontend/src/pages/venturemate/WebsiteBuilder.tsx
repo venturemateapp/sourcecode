@@ -643,6 +643,13 @@ body { background: #fff; display: flex; align-items: center; justify-content: ce
                     {unpublishing ? 'Unpublishing…' : 'Unpublish'}
                   </Button>
                 )}
+                <Box sx={{ width: 1, height: 1, bgcolor: 'var(--vm-border-subtle)', mx: 0.5 }} />
+                <Button size="small" variant="outlined" startIcon={<GitBranch size={13} />} disabled={deployLoading === 'github' || !savedDraft} onClick={() => handleDeploy('github')} sx={{ whiteSpace: 'nowrap', textTransform: 'none', fontSize: 11 }}>
+                  {deployLoading === 'github' ? <CircularProgress size={12} /> : 'GitHub'}
+                </Button>
+                <Button size="small" variant="outlined" startIcon={<Terminal size={13} />} disabled={deployLoading === 'netlify' || !savedDraft} onClick={() => handleDeploy('netlify')} sx={{ whiteSpace: 'nowrap', textTransform: 'none', fontSize: 11 }}>
+                  {deployLoading === 'netlify' ? <CircularProgress size={12} /> : 'Netlify'}
+                </Button>
               </Box>
             </Box>
           </Card>
