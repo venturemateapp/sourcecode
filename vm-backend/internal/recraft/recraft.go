@@ -37,6 +37,10 @@ type GenerateResponse struct {
 	Data []struct {
 		URL string `json:"url"`
 	} `json:"data"`
+	// Alternative response format
+	Image *struct {
+		URL string `json:"url"`
+	} `json:"image,omitempty"`
 }
 
 func (c *Client) GenerateLogo(prompt string) (*GenerateResponse, error) {
@@ -73,6 +77,17 @@ func (c *Client) GenerateLogo(prompt string) (*GenerateResponse, error) {
 		return nil, fmt.Errorf("recraft parse: %w", err)
 	}
 	return &result, nil
+}
+
+// GetFirstURL returns the first image URL from the response, supporting multiple formats.
+func (r *GenerateResponse) GetFirstURL() string {
+	if len(r.Data) > 0 && r.Data[0].URL != "" {
+		return r.Data[0].URL
+	}
+	if r.Image != nil && r.Image.URL != "" {
+		return r.Image.URL
+	}
+	return ""
 }
 
 func (c *Client) VectorizeImage(imageURL string) (string, error) {

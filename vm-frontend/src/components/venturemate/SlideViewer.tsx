@@ -572,24 +572,29 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
       await new Promise(r => setTimeout(r, 150));
       const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
       if (!el2) continue;
-      const canvas = await html2canvas(el2, { scale: 1.5, useCORS: true, backgroundColor: null });
+      const canvas = await html2canvas(el2, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
       if (i > 0) pdf.addPage();
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
     }
     pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
   };
-  const exportPPTX = () => {
+  const exportPPTX = async () => {
+    const el = viewerRef.current?.querySelector('[data-slide-container]') as HTMLElement;
+    if (!el) return;
     const pptx = new PptxGenJS();
     pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
     pptx.layout = 'WIDE';
-    slides.forEach((s, i) => {
-      const slide = pptx.addSlide();
-      slide.background = { color: '08080B' };
-      slide.addText(s.title, { x: 0.8, y: 1.5, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Inter', color: 'FFFFFF', bold: true });
-      if (s.content) slide.addText(s.content, { x: 0.8, y: 3.2, w: 11.7, h: 1.5, fontSize: 16, fontFace: 'Inter', color: 'AAAAAA' });
-      if (s.bullets) slide.addText(s.bullets.map(b => `• ${b}`).join('\n'), { x: 0.8, y: 5, w: 11.7, h: 2, fontSize: 14, fontFace: 'Inter', color: 'CCCCCC', lineSpacing: 24 });
-      slide.addText(`${title} · ${i + 1}/${slides.length}`, { x: 0.8, y: 6.8, w: 11.7, h: 0.5, fontSize: 10, fontFace: 'Inter', color: '666666' });
-    });
+    for (let i = 0; i < total; i++) {
+      goTo(i);
+      await new Promise(r => setTimeout(r, 150));
+      const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
+      if (!el2) continue;
+      const canvas = await html2canvas(el2, { scale: 2, useCORS: true, backgroundColor: '#08080b' });
+      const imgData = canvas.toDataURL('image/png');
+      const pptSlide = pptx.addSlide();
+      pptSlide.background = { color: '08080B' };
+      pptSlide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
+    }
     pptx.writeFile({ fileName: `${title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx` });
   };
   if (!slide) return null;

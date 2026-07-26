@@ -798,16 +798,18 @@ WHAT NOT TO DO:
 - Do NOT make it monochrome, black and white, or grayscale
 
 Make it unforgettable — a logo people recognize instantly from the shape alone.`, biz.Name, primary, secondary, accent)
-		if result, err := rc.GenerateLogo(prompt); err == nil && len(result.Data) > 0 {
-			rasterURL := result.Data[0].URL
-			// Re-upload external image URLs to permanent S3 location
-			brand["logo"] = reuploadToS3(rasterURL, biz.ID, "logo")
-			brand["logoIcon"] = reuploadToS3(rasterURL, biz.ID, "logoIcon")
-			brand["logoWhite"] = reuploadToS3(rasterURL, biz.ID, "logoWhite")
-			if svgURL, err := rc.VectorizeImage(rasterURL); err == nil {
-				brand["logoWhite"] = reuploadToS3(svgURL, biz.ID, "logoWhite")
+		if result, err := rc.GenerateLogo(prompt); err == nil {
+			rasterURL := result.GetFirstURL()
+			if rasterURL != "" {
+				// Re-upload external image URLs to permanent S3 location
+				brand["logo"] = reuploadToS3(rasterURL, biz.ID, "logo")
+				brand["logoIcon"] = reuploadToS3(rasterURL, biz.ID, "logoIcon")
+				brand["logoWhite"] = reuploadToS3(rasterURL, biz.ID, "logoWhite")
+				if svgURL, err := rc.VectorizeImage(rasterURL); err == nil {
+					brand["logoWhite"] = reuploadToS3(svgURL, biz.ID, "logoWhite")
+				}
+				recraftUsed = true
 			}
-			recraftUsed = true
 		}
 	}
 	if recraftUsed {

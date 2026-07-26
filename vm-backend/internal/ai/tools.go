@@ -295,8 +295,8 @@ WHAT NOT TO DO:
 
 Make it unforgettable — a logo people recognize instantly from the shape alone.`, label, primary, secondary, accent)
 			result, err := rc.GenerateLogo(prompt)
-			if err == nil && len(result.Data) > 0 {
-				logoURL = result.Data[0].URL
+			if err == nil {
+				logoURL = result.GetFirstURL()
 				if svg, err := rc.VectorizeImage(logoURL); err == nil {
 					svgURL = svg
 				}
