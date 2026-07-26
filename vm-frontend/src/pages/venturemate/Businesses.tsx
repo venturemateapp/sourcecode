@@ -323,32 +323,28 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 )}
               </Box>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#22c55e', mb: 0.5 }}>Revenue</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5, mb: 2 }}>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.12)' }}>
+                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#10b981', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3 }}>Revenue</Typography>
                   {(() => {
                     const byCurrency = JSON.parse(business.revenueByCurrency || '{}');
                     const entries = Object.entries(byCurrency) as [string, number][];
                     return entries.length > 0 ? entries.slice(0, 3).map(([c, amt]) => (
-                      <Typography key={c} sx={{ fontSize: 11, color: 'var(--vm-text-primary)', lineHeight: 1.4 }}>
+                      <Typography key={c} sx={{ fontSize: 12, fontWeight: 600, color: 'var(--vm-text-primary)', lineHeight: 1.5 }}>
                         {c} {amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Typography>
-                    )) : <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>—</Typography>;
+                    )) : <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>—</Typography>;
                   })()}
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {business.metrics?.totalUsers ?? 0}
-                  </Typography>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Users</Typography>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {business.team?.length ?? 0}
-                  </Typography>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Team</Typography>
-                </div>
-              </div>
+                </Box>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(59,130,246,.06)', border: '1px solid rgba(59,130,246,.12)' }}>
+                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3 }}>Users</Typography>
+                  <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{business.metrics?.totalUsers ?? 0}</Typography>
+                </Box>
+                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(139,92,246,.06)', border: '1px solid rgba(139,92,246,.12)' }}>
+                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3 }}>Team</Typography>
+                  <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{business.team?.length ?? 0}</Typography>
+                </Box>
+              </Box>
 
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                 <Box
