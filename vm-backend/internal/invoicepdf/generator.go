@@ -83,8 +83,8 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.CellFormat(170, 9, "INVOICE", "", 0, "R", false, 0, "")
 
 	pdf.SetFont("Helvetica", "", 8)
-	pdf.SetTextColor(100, 100, 100)
-	pdf.SetY(24)
+	pdf.SetTextColor(30, 30, 30)
+	pdf.SetY(29)
 	pdf.CellFormat(170, 4, fmt.Sprintf("# %s", inv.InvoiceNumber), "", 0, "R", false, 0, "")
 
 	// Divider line
@@ -112,7 +112,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	y += 4.5
 
 	pdf.SetFont("Helvetica", "", 7)
-	pdf.SetTextColor(100, 100, 100)
+	pdf.SetTextColor(30, 30, 30)
 	pdf.SetXY(20, y)
 	pdf.CellFormat(85, 3, truncate(biz.Location, 60), "", 0, "L", false, 0, "")
 	addrLine := inv.CustomerAddress
@@ -146,7 +146,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 		pdf.SetXY(20, y)
 		pdf.CellFormat(20, 3.5, d.label, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 8)
-		pdf.SetTextColor(60, 60, 60)
+		pdf.SetTextColor(30, 30, 30)
 		pdf.SetX(40)
 		pdf.CellFormat(60, 3.5, d.value, "", 0, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "B", 8)
@@ -167,7 +167,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.Ln(-1)
 
 	// === ITEMS ===
-	pdf.SetTextColor(40, 40, 40)
+	pdf.SetTextColor(30, 30, 30)
 	pdf.SetFont("Helvetica", "", 8)
 	var items []invoices.InvoiceItem
 	json.Unmarshal([]byte(inv.Items), &items)
@@ -191,7 +191,7 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	rightX := 120.0
 	pdf.SetX(rightX)
 	pdf.SetFont("Helvetica", "", 9)
-	pdf.SetTextColor(60, 60, 60)
+	pdf.SetTextColor(30, 30, 30)
 
 	totals := []struct{ label, value string }{
 		{"Subtotal:", fmt.Sprintf("$%.2f", inv.Subtotal)},

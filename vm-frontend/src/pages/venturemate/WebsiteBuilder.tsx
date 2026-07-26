@@ -722,7 +722,14 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
         }}
         renderProposal={(change) => {
           const proposed = proposalDraft(change);
-          return proposed ? <SitePreview draft={proposed} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} proposed /> : <Typography color="error">The AI returned an invalid website preview.</Typography>;
+          if (!proposed) return <Typography color="error">The AI returned an invalid website preview.</Typography>;
+          // Show generated code preview for proposals too
+          if (codeResult && codeResult.files.length > 0) {
+            const cssFile = codeResult.files.find(f => f.path === 'src/styles/index.css');
+            const previewContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${cssFile?.content || ''}</style></head><body style="font-family:system-ui,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px"><div style="text-align:center;max-width:500px;border:2px dashed #10b981;padding:24px;border-radius:12px"><h1 style="color:#10b981">${proposed.name || selectedBusiness?.name || 'Website'}</h1><p style="color:#94a3b8;margin-top:12px">${proposed.tagline || selectedBusiness?.tagline || ''}</p><p style="margin-top:24px;font-size:12px;color:#22c55e">✨ AI Proposal — ${proposed.pages?.length || 0} pages</p></div></body></html>`;
+            return <Box component="iframe" srcDoc={previewContent} title="Proposal Preview" sx={{ width:'100%',height:500,border:'none',borderRadius:2,bgcolor:'#fff' }} sandbox="allow-scripts" />;
+          }
+          return <SitePreview draft={proposed} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} proposed />;
         }}
         onApproved={loadWebsite}
       />
