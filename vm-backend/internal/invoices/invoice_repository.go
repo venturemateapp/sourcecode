@@ -139,7 +139,7 @@ func (r *Repository) Update(ctx context.Context, inv *Invoice) error {
 
 func (r *Repository) UpdateStatus(ctx context.Context, id, status string) error {
 	paidDate := interface{}(nil)
-	if status == "paid" {
+	if status == "paid" || status == "completed" {
 		now := time.Now()
 		paidDate = &now
 	}
@@ -166,7 +166,7 @@ func (r *Repository) GetTotalPdfSize(ctx context.Context, userID string) (int64,
 
 func (r *Repository) GetTotalRevenue(ctx context.Context, businessID string) (float64, error) {
 	var total float64
-	err := r.db.QueryRow(ctx, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE business_id=$1 AND status='paid'", businessID).Scan(&total)
+	err := r.db.QueryRow(ctx, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE business_id=$1 AND (status='paid' OR status='completed')", businessID).Scan(&total)
 	return total, err
 }
 
