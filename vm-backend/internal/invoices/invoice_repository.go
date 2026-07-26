@@ -166,12 +166,12 @@ func (r *Repository) GetTotalPdfSize(ctx context.Context, userID string) (int64,
 
 func (r *Repository) GetTotalRevenue(ctx context.Context, businessID string) (float64, error) {
 	var total float64
-	err := r.db.QueryRow(ctx, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE business_id=$1 AND status='paid'", businessID).Scan(&total)
+	err := r.db.QueryRow(ctx, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE business_id=$1", businessID).Scan(&total)
 	return total, err
 }
 
 func (r *Repository) GetRevenueByCurrency(ctx context.Context, businessID string) (map[string]float64, error) {
-	rows, err := r.db.Query(ctx, "SELECT currency, SUM(amount) FROM invoices WHERE business_id=$1 AND status='paid' GROUP BY currency", businessID)
+	rows, err := r.db.Query(ctx, "SELECT currency, SUM(amount) FROM invoices WHERE business_id=$1 GROUP BY currency", businessID)
 	if err != nil {
 		return nil, err
 	}

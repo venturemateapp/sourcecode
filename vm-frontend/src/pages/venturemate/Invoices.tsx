@@ -263,10 +263,13 @@ export function InvoicesPage() {
           const c = inv.currency || 'USD';
           if (!byCurrency[c]) byCurrency[c] = { income: 0, paid: 0, overdue: 0 };
           const isOverdue = inv.status === 'overdue' || (inv.status === 'sent' && inv.dueDate && new Date(inv.dueDate) < now);
+          // Total Income = ALL invoices (any status)
+          byCurrency[c].income += inv.amount || 0;
+          // Paid count only 'paid' status
           if (inv.status === 'paid') {
-            byCurrency[c].income += inv.amount || 0;
             byCurrency[c].paid += inv.amount || 0;
           }
+          // Overdue dynamically detected
           if (isOverdue) {
             byCurrency[c].overdue += inv.amount || 0;
           }
