@@ -355,7 +355,7 @@ function App() {
         </Route>
         <Route path="/" element={<LandingPage />} />
         <Route path="/policy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/termsofservice" element={<TermsOfService />} />
         <Route path="/signup" element={<ToastProvider><SignUp /></ToastProvider>} />
       </Routes>
     </BrowserRouter>
