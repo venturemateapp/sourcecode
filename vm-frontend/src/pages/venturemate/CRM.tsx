@@ -70,6 +70,8 @@ export function CRMPage() {
   const [dealForm, setDealForm] = useState<Partial<CrmDeal> | null>(null);
   const [activityForm, setActivityForm] = useState<{ open: boolean; type: string; contactId: string; description: string }>({ open: false, type: 'note', contactId: '', description: '' });
   const [taskForm, setTaskForm] = useState<Partial<CrmTask> | null>(null);
+  const [emailForm, setEmailForm] = useState<{ open: boolean; contactId: string; contactName: string; contactEmail: string; subject: string; body: string } | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
@@ -207,6 +209,22 @@ export function CRMPage() {
       toast.error('Failed to save activity', { description: 'Please try again.' });
     }
     setSaving(false);
+  };
+
+  const sendEmail = async () => {
+    if (!bizId || !emailForm) return;
+    setSendingEmail(true);
+    try {
+      await q('mutation M($c:ID!,$b:ID!,$s:String!,$d:String!){sendCrmEmail(contactId:$c businessId:$b subject:$s body:$d)}', {
+        c: emailForm.contactId, b: bizId, s: emailForm.subject, d: emailForm.body,
+      });
+      setEmailForm(null);
+      toast.success('Email sent', { description: `Email sent to ${emailForm.contactName}` });
+    } catch (err) {
+      console.error('Failed to send email:', err);
+      toast.error('Failed to send email', { description: 'Please try again.' });
+    }
+    setSendingEmail(false);
   };
 
   const deleteActivity = async (id: string) => {
@@ -349,7 +367,7 @@ export function CRMPage() {
                     <PhoneCall size={12} style={{ marginRight: 4 }} /> Call
                   </GradientButton>
                   <GradientButton variant="outline" size="sm" sx={{ fontSize: 11, flex: 1, py: 0.5 }}
-                    onClick={() => setActivityForm({ open: true, type: 'email', contactId: c.id, description: '' })}>
+                    onClick={() => c.email ? setEmailForm({ open: true, contactId: c.id, contactName: c.name, contactEmail: c.email, subject: '', body: '' }) : toast.warning('No email address', { description: 'This contact has no email address.' })}>
                     <Mail size={12} style={{ marginRight: 4 }} /> Email
                   </GradientButton>
                 </Box>
@@ -717,6 +735,32 @@ export function CRMPage() {
           <GradientButton variant="ghost" size="sm" onClick={() => setTaskForm(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={saving || !taskForm?.title} onClick={saveTask}>
             {saving ? <CircularProgress size={14} /> : taskForm?.id ? 'Update' : 'Create'}
+          </GradientButton>
+        </Box>
+      </Dialog>
+
+      {/* Email Compose Dialog */}
+      <Dialog open={!!emailForm} onClose={() => setEmailForm(null)} maxWidth="sm" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Mail size={20} color="var(--vm-primary-400)" />
+          <Typography sx={{ fontWeight: 700 }}>Send Email</Typography>
+          <IconButton size="small" onClick={() => setEmailForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 4, mt: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField size="small" label="To" value={emailForm?.contactEmail || ''} InputProps={{ readOnly: true }}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Subject" value={emailForm?.subject || ''} onChange={e => setEmailForm({ ...emailForm!, subject: e.target.value })}
+              sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+            <TextField size="small" label="Message" multiline rows={6} value={emailForm?.body || ''} onChange={e => setEmailForm({ ...emailForm!, body: e.target.value })}
+              sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+          </Box>
+        </DialogContent>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setEmailForm(null)}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={sendingEmail || !emailForm?.subject || !emailForm?.body} onClick={sendEmail}>
+            {sendingEmail ? <CircularProgress size={14} /> : 'Send Email'}
           </GradientButton>
         </Box>
       </Dialog>

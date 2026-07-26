@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/crm"
 )
@@ -616,6 +617,52 @@ func init() {
 				"status": t.Status, "assignedTo": t.AssignedTo,
 				"createdAt": formatTime(t.CreatedAt), "updatedAt": formatTime(t.UpdatedAt),
 			}, nil
+		},
+	})
+
+	rootMutation.AddFieldConfig("sendCrmEmail", &graphql.Field{
+		Type: graphql.Boolean,
+		Args: graphql.FieldConfigArgument{
+			"contactId":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"subject":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"body":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil || AppContainer.Email == nil || AppContainer.CrmRepo == nil {
+				return false, nil
+			}
+			contact, err := AppContainer.CrmRepo.GetContact(p.Context, p.Args["contactId"].(string))
+			if err != nil {
+				return false, fmt.Errorf("contact not found: %w", err)
+			}
+			if contact.Email == "" {
+				return false, fmt.Errorf("contact has no email address")
+			}
+			subject := p.Args["subject"].(string)
+			body := p.Args["body"].(string)
+			if err := AppContainer.Email.SendTemplatedEmail(
+				[]string{contact.Email},
+				subject,
+				fmt.Sprintf("<div style=\"font-family:Arial,sans-serif;padding:16px;line-height:1.6;\">%s</div>", body),
+			); err != nil {
+				return false, fmt.Errorf("email send failed: %w", err)
+			}
+			// Log activity
+			now := time.Now()
+			activity := &crm.Activity{
+				ID:          uuid.New().String(),
+				BusinessID:  p.Args["businessId"].(string),
+				ContactID:   &contact.ID,
+				Type:        "email",
+				Description: fmt.Sprintf("Email sent: %s", subject),
+				CreatedBy:   "System",
+				CreatedAt:   now,
+			}
+			if createErr := AppContainer.CrmRepo.CreateActivity(p.Context, activity); createErr != nil {
+				// Non-fatal: log but don't fail the mutation
+			}
+			return true, nil
 		},
 	})
 
