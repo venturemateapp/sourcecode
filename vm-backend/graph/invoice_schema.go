@@ -403,7 +403,7 @@ func init() {
 
 			pdfLink := inv.PdfURL
 			if pdfLink == "" {
-				pdfLink = fmt.Sprintf("https://venturemate.net/api/pdf/download?type=invoice&id=%s", inv.ID)
+				pdfLink = fmt.Sprintf("https://venturemate.net/api/pdf/public?type=invoice&id=%s", inv.ID)
 			}
 
 			emailBody := fmt.Sprintf(`
