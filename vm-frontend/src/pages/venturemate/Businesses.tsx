@@ -301,19 +301,25 @@ export function Businesses({ onViewChange }: BusinessesProps) {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {format(business.totalRevenue ?? 0)}
-                  </Typography>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Revenue</Typography>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#22c55e', mb: 0.5 }}>Revenue</Typography>
+                  {(() => {
+                    const byCurrency = JSON.parse(business.revenueByCurrency || '{}');
+                    const entries = Object.entries(byCurrency) as [string, number][];
+                    return entries.length > 0 ? entries.slice(0, 3).map(([c, amt]) => (
+                      <Typography key={c} sx={{ fontSize: 11, color: 'var(--vm-text-primary)', lineHeight: 1.4 }}>
+                        {c} {amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Typography>
+                    )) : <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>—</Typography>;
+                  })()}
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
                     {business.metrics?.totalUsers ?? 0}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Users</Typography>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
                     {business.team?.length ?? 0}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Team</Typography>

@@ -23,7 +23,7 @@ const MY_BUSINESSES_QUERY = `
     myBusinesses(userId: $userId) {
       id, userId, name, tagline, description, industry, stage, foundedDate, location, website, status,
       brandKit, pitchDeck, businessPlan, milestones, team, documents, websiteConfig, financials, metrics, aiGenerated,
-      totalRevenue, createdAt, updatedAt
+      totalRevenue, revenueByCurrency, createdAt, updatedAt
     }
   }
 `;
@@ -33,7 +33,7 @@ const CREATE_BUSINESS_MUTATION = `
     createBusiness(userId: $userId, name: $name, tagline: $tagline, description: $description, industry: $industry, stage: $stage, foundedDate: $foundedDate, location: $location, website: $website) {
       id, userId, name, tagline, description, industry, stage, foundedDate, location, website, status,
       brandKit, pitchDeck, businessPlan, milestones, team, documents, websiteConfig, financials, metrics, aiGenerated,
-      totalRevenue, createdAt, updatedAt
+      totalRevenue, revenueByCurrency, createdAt, updatedAt
     }
   }
 `;
@@ -43,7 +43,7 @@ const UPDATE_BUSINESS_MUTATION = `
     updateBusiness(id: $id, userId: $userId, name: $name, tagline: $tagline, description: $description, industry: $industry, stage: $stage, foundedDate: $foundedDate, location: $location, website: $website, status: $status, team: $team, milestones: $milestones, documents: $documents, brandKit: $brandKit, pitchDeck: $pitchDeck, businessPlan: $businessPlan, websiteConfig: $websiteConfig, financials: $financials, metrics: $metrics, aiGenerated: $aiGenerated) {
       id, userId, name, tagline, description, industry, stage, foundedDate, location, website, status,
       brandKit, pitchDeck, businessPlan, milestones, team, documents, websiteConfig, financials, metrics, aiGenerated,
-      totalRevenue, createdAt, updatedAt
+      totalRevenue, revenueByCurrency, createdAt, updatedAt
     }
   }
 `;
@@ -77,6 +77,7 @@ interface ApiBusiness {
   metrics: string;
   aiGenerated: string;
   totalRevenue: number;
+  revenueByCurrency: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -111,6 +112,7 @@ function mapApiToBusiness(api: ApiBusiness): Business {
     metrics: parseJsonField(api.metrics, { totalUsers: 0, activeUsers: 0, retentionRate: 0, churnRate: 0, nps: 0, cac: 0, ltv: 0, customMetrics: [] }),
     aiGenerated: parseJsonField(api.aiGenerated, { ideas: [] }),
     totalRevenue: api.totalRevenue ?? 0,
+    revenueByCurrency: api.revenueByCurrency || '{}',
     createdAt: api.createdAt || now,
   };
 }

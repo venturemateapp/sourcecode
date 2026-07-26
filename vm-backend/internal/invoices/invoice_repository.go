@@ -170,6 +170,24 @@ func (r *Repository) GetTotalRevenue(ctx context.Context, businessID string) (fl
 	return total, err
 }
 
+func (r *Repository) GetRevenueByCurrency(ctx context.Context, businessID string) (map[string]float64, error) {
+	rows, err := r.db.Query(ctx, "SELECT currency, SUM(amount) FROM invoices WHERE business_id=$1 AND status='paid' GROUP BY currency", businessID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make(map[string]float64)
+	for rows.Next() {
+		var currency string
+		var total float64
+		if err := rows.Scan(&currency, &total); err != nil {
+			return nil, err
+		}
+		result[currency] = total
+	}
+	return result, nil
+}
+
 func (r *Repository) Delete(ctx context.Context, id, userID string) error {
 	_, err := r.db.Exec(ctx, "DELETE FROM invoices WHERE id=$1 AND user_id=$2", id, userID)
 	return err

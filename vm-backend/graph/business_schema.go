@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -46,6 +47,24 @@ var businessType = graphql.NewObject(graphql.ObjectConfig{
 					return 0.0, nil
 				}
 				return AppContainer.InvoiceRepo.GetTotalRevenue(p.Context, b.ID)
+			},
+		},
+		"revenueByCurrency": &graphql.Field{
+			Type: graphql.String,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				biz, ok := p.Source.(*businesses.Business)
+				if !ok || AppContainer == nil || AppContainer.InvoiceRepo == nil {
+					return "{}", nil
+				}
+				result, err := AppContainer.InvoiceRepo.GetRevenueByCurrency(p.Context, biz.ID)
+				if err != nil {
+					return "{}", nil
+				}
+				b, jErr := json.Marshal(result)
+				if jErr != nil {
+					return "{}", nil
+				}
+				return string(b), nil
 			},
 		},
 		"metrics":       &graphql.Field{Type: graphql.String},

@@ -55,6 +55,7 @@ export interface Business {
   metrics: Metrics;
   aiGenerated: AIGeneratedContent;
   totalRevenue: number;
+  revenueByCurrency: string;
   status: 'active' | 'archived' | 'acquired';
   createdAt: string;
 }
