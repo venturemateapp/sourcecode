@@ -54,24 +54,10 @@ func init() {
 			"businessId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"businessName": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			"websiteDraft": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"format":       &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			websiteDraft := p.Args["websiteDraft"].(string)
 			businessName := p.Args["businessName"].(string)
-			format, _ := p.Args["format"].(string)
-
-			if format == "standalone-html" {
-				result, err := ai.GenerateStandaloneHTML(websiteDraft, businessName)
-				if err != nil {
-					return nil, err
-				}
-				fileMaps := make([]map[string]interface{}, len(result.Files))
-				for i, f := range result.Files {
-					fileMaps[i] = map[string]interface{}{"path": f.Path, "content": f.Content}
-				}
-				return map[string]interface{}{"files": fileMaps, "type": result.Type, "routes": result.Routes}, nil
-			}
 
 			result, err := ai.GenerateReactProject(websiteDraft, businessName)
 			if err != nil {
