@@ -44,7 +44,7 @@ type sectionDraft struct {
 	Props   map[string]any `json:"props"`
 }
 
-func GenerateReactProject(raw string, bizName string) (*CodeGenResult, error) {
+func GenerateReactProject(raw string, bizName, logoURL, tagline string) (*CodeGenResult, error) {
 	var draft websiteDraft
 	if err := json.Unmarshal([]byte(raw), &draft); err != nil {
 		return nil, fmt.Errorf("invalid website draft: %w", err)
@@ -163,10 +163,10 @@ img { max-width: 100%%; height: auto; }
 	files = append(files, ProjectFile{Path: "src/styles/index.css", Content: cssContent})
 
 	// Components directory
-	headerContent := generateHeader(navItems, bizName, primary)
+	headerContent := generateHeader(navItems, bizName, primary, logoURL)
 	files = append(files, ProjectFile{Path: "src/components/Header.jsx", Content: headerContent})
 
-	footerContent := generateFooter(draft.Footer, bizName)
+	footerContent := generateFooter(draft.Footer, bizName, logoURL)
 	files = append(files, ProjectFile{Path: "src/components/Footer.jsx", Content: footerContent})
 
 	sectionRenderer := generateSectionRenderer(primary, secondary, accent, fontHeading)
@@ -178,7 +178,7 @@ img { max-width: 100%%; height: auto; }
 	}
 
 	// App.jsx with routes
-	appContent := generateAppJSX(draft.Pages, bizName)
+	appContent := generateAppJSX(draft.Pages, bizName, tagline)
 	files = append(files, ProjectFile{Path: "src/App.jsx", Content: appContent})
 
 	return &CodeGenResult{Files: files, Type: "react-vite", Routes: routes}, nil
@@ -203,36 +203,46 @@ func ZipProjectFiles(files []ProjectFile) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func generateHeader(items []navItem, bizName, primary string) string {
+func generateHeader(items []navItem, bizName, primary, logoURL string) string {
 	var links strings.Builder
 	for _, item := range items {
 		links.WriteString(fmt.Sprintf(`<NavLink to="%s" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>{'%s'}</NavLink>`, item.href, item.label))
 	}
 	safe := html.EscapeString(bizName)
+	logo := ""
+	if logoURL != "" {
+		logo = fmt.Sprintf(`<img src="%s" alt="%s" style="height:32px;margin-right:8px" />`, html.EscapeString(logoURL), safe)
+	} else {
+		logo = fmt.Sprintf(`<span style="font-weight:700;font-size:20px;color:'%s'">%s</span>`, primary, safe)
+	}
 	return fmt.Sprintf(`import { NavLink } from 'react-router-dom';
-import './Header.css';
 export default function Header() {
   return (
     <nav className="header">
-      <div className="header-logo" style={{fontWeight:700,fontSize:20,color:'%s'}}>%s</div>
+      <div className="header-logo">%s</div>
       <div className="header-links">%s</div>
     </nav>
   );
-}`, primary, safe, links.String())
+}`, logo, links.String())
 }
 
-func generateFooter(data map[string]any, bizName string) string {
+func generateFooter(data map[string]any, bizName, logoURL string) string {
 	customText, _ := data["customText"].(string)
 	if customText == "" {
 		customText = fmt.Sprintf("© 2026 %s. All rights reserved.", bizName)
 	}
+	logo := ""
+	if logoURL != "" {
+		logo = fmt.Sprintf(`<img src="%s" alt="%s" style="height:28px;margin-bottom:8px" />`, html.EscapeString(logoURL), html.EscapeString(bizName))
+	}
 	return fmt.Sprintf(`export default function Footer() {
   return (
     <footer style={{background:'#1a1a2e',color:'#fff',textAlign:'center',padding:'40px 20px'}}>
+      %s
       <p style={{fontSize:14,opacity:.7}}>%s</p>
     </footer>
   );
-}`, html.EscapeString(customText))
+}`, logo, html.EscapeString(customText))
 }
 
 func generateSectionRenderer(primary, secondary, accent, fontHeading string) string {
@@ -367,7 +377,7 @@ export default function SectionRenderer({ section }) {
 }`, primary, secondary, accent, fontHeading)
 }
 
-func generateAppJSX(pages []pageDraft, bizName string) string {
+func generateAppJSX(pages []pageDraft, bizName, tagline string) string {
 	var routes strings.Builder
 
 	for _, p := range pages {
@@ -393,6 +403,7 @@ func generateAppJSX(pages []pageDraft, bizName string) string {
 		}
 	}
 
+	taglineSafe := html.EscapeString(tagline)
 	return fmt.Sprintf(`import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -400,6 +411,7 @@ import SectionRenderer from './components/SectionRenderer';
 import './styles/index.css';
 
 const pages = [%s];
+const SITE_TAGLINE = '%s';
 
 export default function App() {
   const homePage = pages.find(p => p.isHome) || pages[0];
@@ -411,6 +423,7 @@ export default function App() {
           {pages.map((page, i) => (
             <Route key={i} path={page.slug} element={
               <div>
+                <div style={{display:'none'}}>{SITE_TAGLINE}</div>
                 {page.sections.filter(s => s.visible).sort((a,b) => a.order - b.order).map((s, j) => (
                   <SectionRenderer key={j} section={s} />
                 ))}
@@ -423,7 +436,7 @@ export default function App() {
       <Footer />
     </div>
   );
-}`, routes.String())
+}`, routes.String(), taglineSafe)
 }
 
 func generatePageComponents(pages []pageDraft) string {

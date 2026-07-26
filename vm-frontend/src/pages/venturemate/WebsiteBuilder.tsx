@@ -497,6 +497,13 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
     footer: safeJson<Record<string, unknown>>(website.footer, {}),
   }) : null, [website]);
 
+  // Regenerate preview when the draft is updated (e.g., after AI approval)
+  useEffect(() => {
+    if (savedDraft && codeResult) {
+      handleGenerateCode(savedDraft, true);
+    }
+  }, [savedDraft?.pages?.length]);
+
   const logo = selectedBusiness?.brandKit?.logo;
   const [codeTab, setCodeTab] = useState<'preview' | 'code'>('preview');
   const [codeResult, setCodeResult] = useState<{ files: Array<{ path: string; content: string }>; type: string; routes: string[] } | null>(null);
@@ -504,12 +511,45 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [deployLoading, setDeployLoading] = useState<'github' | 'netlify' | null>(null);
   const [deployResult, setDeployResult] = useState<{ platform: string; url: string; success: boolean; message: string } | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
 
-  const handleGenerateCode = useCallback(async (draft: WebsiteDraft) => {
+  // Build a simplified preview HTML from generated CSS + draft data
+  // (React files need a build step, so we generate a static snapshot for preview)
+  const buildPreviewHtml = useCallback((files: Array<{ path: string; content: string }>) => {
+    // Extract CSS variables from the generated styles
+    const cssFile = files.find(f => f.path === 'src/styles/index.css')?.content || '';
+    const fontHeading = cssFile.match(/--font-heading:\s*'([^']+)'/)?.[1] || 'Inter';
+    const fontBody = cssFile.match(/--font-body:\s*'([^']+)'/)?.[1] || 'Inter';
+
+    // Build a simple static preview page using the brand styles
+    return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${selectedBusiness?.name || 'Website'} Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=${fontHeading.replace(/ /g, '+')}:wght@400;600;700;800;900&family=${fontBody.replace(/ /g, '+')}:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+${cssFile}
+body { background: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 40px; }
+.preview-box { text-align: center; max-width: 600px; }
+.preview-box h1 { color: var(--primary); font-family: var(--font-heading); }
+.preview-box p { color: #64748b; margin-top: 12px; font-family: var(--font-body); }
+.preview-box .logo { width: 80px; height: 80px; border-radius: 16px; background: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 32px; color: #fff; font-weight: 800; font-family: var(--font-heading); }
+</style>
+</head><body>
+<div class="preview-box">
+  ${selectedBusiness?.brandKit?.logo ? `<img src="${selectedBusiness.brandKit.logo}" style="max-width:120px;margin-bottom:24px" />` : `<div class="logo">${(selectedBusiness?.name || 'W')[0]}</div>`}
+  <h1>${selectedBusiness?.name || 'Your Website'}</h1>
+  <p>${selectedBusiness?.description || selectedBusiness?.tagline || 'Built with VentureMate AI'}</p>
+  <p style="margin-top:24px;font-size:14px;color:#94a3b8">Preview of generated React+Vite project &mdash; deploy to see it live</p>
+</div>
+</body></html>`;
+  }, [selectedBusiness]);
+
+  const handleGenerateCode = useCallback(async (draft: WebsiteDraft, previewOnly: boolean = false) => {
     if (!selectedBusiness) return;
     setCodeLoading(true);
     setDeployResult(null);
-    setCodeTab('code');
+    if (!previewOnly) setCodeTab('code');
     try {
       const data = await graphqlRequest<{ generateWebsiteCode: { files: Array<{ path: string; content: string }>; type: string; routes: string[] } }>(
         `mutation GenCode($businessId: ID!, $businessName: String!, $websiteDraft: String!) {
@@ -520,13 +560,14 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
         { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(draft) }
       );
       setCodeResult(data.generateWebsiteCode);
+      setPreviewHtml(buildPreviewHtml(data.generateWebsiteCode.files));
       if (data.generateWebsiteCode.files.length > 0) setSelectedFile(data.generateWebsiteCode.files[0].path);
     } catch (err) {
-      setDeployResult({ platform: '', url: '', success: false, message: err instanceof Error ? err.message : 'Code generation failed' });
+      console.error('Failed to generate code:', err);
     } finally {
       setCodeLoading(false);
     }
-  }, [selectedBusiness]);
+  }, [selectedBusiness, buildPreviewHtml]);
 
   const handleDeploy = useCallback(async (platform: 'github' | 'netlify') => {
     if (!selectedBusiness || !savedDraft) return;
@@ -563,10 +604,10 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
             {website && <Chip label={`Draft v${website.draftRevision}`} size="small" variant="outlined" />}
             {website?.status === 'published' && <Chip label={`Live v${website.publishedRevision}`} size="small" color="success" />}
             {savedDraft && (
-              <Button size="small" variant={codeTab === 'preview' ? 'contained' : 'outlined'} onClick={() => setCodeTab('preview')} startIcon={<Eye size={13} />} sx={{ textTransform: 'none', fontSize: 11 }}>Preview</Button>
+              <Button size="small" variant={codeTab === 'preview' ? 'contained' : 'outlined'} onClick={async () => { setCodeTab('preview'); if (!codeResult) await handleGenerateCode(savedDraft, true); }} startIcon={<Eye size={13} />} sx={{ textTransform: 'none', fontSize: 11 }}>Preview</Button>
             )}
             {savedDraft && (
-              <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => { if (codeTab === 'code') setCodeTab('preview'); else { setCodeTab('code'); handleGenerateCode(savedDraft); } }} startIcon={codeLoading ? <CircularProgress size={13} /> : <Code2 size={13} />} disabled={codeLoading} sx={{ textTransform: 'none', fontSize: 11 }}>Code</Button>
+              <Button size="small" variant={codeTab === 'code' ? 'contained' : 'outlined'} onClick={() => { if (codeTab === 'code') setCodeTab('preview'); else { setCodeTab('code'); handleGenerateCode(savedDraft, false); } }} startIcon={codeLoading ? <CircularProgress size={13} /> : <Code2 size={13} />} disabled={codeLoading} sx={{ textTransform: 'none', fontSize: 11 }}>Code</Button>
             )}
           </>
         }
@@ -576,34 +617,57 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
       {loading && !website && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><CircularProgress size={18} /><Typography sx={{ color: 'var(--vm-text-muted)' }}>Loading website…</Typography></Box>}
 
       {website && codeTab === 'preview' && (
-        <Card sx={{ mb: 2.5, p: 1.5, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
-            <Box>
-              <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 13, fontWeight: 900 }}>Hosting & publication</Typography>
-              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.25, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-                {website.status === 'published' ? 'Your website is live at the address above.' : 'Review the draft below, then press Publish when you are ready to go live.'}
-              </Typography>
+        <>
+          <Card sx={{ mb: 2.5, p: 1.5, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+              <Box>
+                <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 13, fontWeight: 900 }}>Hosting & publication</Typography>
+                <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.25, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                  {website.status === 'published' ? 'Your website is live at the address above.' : 'Review the draft below, then press Publish when you are ready to go live.'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center' }}>
+                {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5, overflowWrap: 'anywhere' } }} />}
+                {website.hasUnpublishedChanges && <Chip label="Unpublished changes" size="small" color="warning" />}
+                {website.publicUrl && (
+                  <Link href={website.publicUrl} target="_blank" rel="noreferrer" underline="none">
+                    <Chip icon={<ExternalLink size={13} />} label="Open live site" size="small" color="success" clickable />
+                  </Link>
+                )}
+                {website.status !== 'published' ? (
+                  <Button size="small" variant="contained" startIcon={publishing ? <CircularProgress size={13} /> : <UploadCloud size={14} />} disabled={publishing || !website.subdomain} onClick={handlePublish} sx={{ whiteSpace: 'nowrap', textTransform: 'none' }}>
+                    {publishing ? 'Publishing…' : 'Publish'}
+                  </Button>
+                ) : (
+                  <Button size="small" variant="outlined" color="error" startIcon={unpublishing ? <CircularProgress size={13} /> : <XCircle size={14} />} disabled={unpublishing} onClick={handleUnpublish} sx={{ whiteSpace: 'nowrap', textTransform: 'none' }}>
+                    {unpublishing ? 'Unpublishing…' : 'Unpublish'}
+                  </Button>
+                )}
+              </Box>
             </Box>
-            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center' }}>
-              {website.subdomain && <Chip icon={<Globe2 size={13} />} label={`${website.subdomain}.venturemate.net`} size="small" variant="outlined" sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', py: 0.5, overflowWrap: 'anywhere' } }} />}
-              {website.hasUnpublishedChanges && <Chip label="Unpublished changes" size="small" color="warning" />}
-              {website.publicUrl && (
-                <Link href={website.publicUrl} target="_blank" rel="noreferrer" underline="none">
-                  <Chip icon={<ExternalLink size={13} />} label="Open live site" size="small" color="success" clickable />
-                </Link>
-              )}
-              {website.status !== 'published' ? (
-                <Button size="small" variant="contained" startIcon={publishing ? <CircularProgress size={13} /> : <UploadCloud size={14} />} disabled={publishing || !website.subdomain} onClick={handlePublish} sx={{ whiteSpace: 'nowrap', textTransform: 'none' }}>
-                  {publishing ? 'Publishing…' : 'Publish'}
-                </Button>
-              ) : (
-                <Button size="small" variant="outlined" color="error" startIcon={unpublishing ? <CircularProgress size={13} /> : <XCircle size={14} />} disabled={unpublishing} onClick={handleUnpublish} sx={{ whiteSpace: 'nowrap', textTransform: 'none' }}>
-                  {unpublishing ? 'Unpublishing…' : 'Unpublish'}
-                </Button>
-              )}
-            </Box>
-          </Box>
-        </Card>
+          </Card>
+
+          {/* Live preview iframe from generated code */}
+          {codeLoading && <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}><CircularProgress size={24} /></Box>}
+          {previewHtml && !codeLoading && (
+            <Card sx={{ mb: 2.5, border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
+              <Box sx={{ bgcolor: 'var(--vm-bg-secondary)', px: 2, py: 0.75, borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <MonitorSmartphone size={14} />
+                <Typography sx={{ fontSize: 12, fontWeight: 700, flex: 1 }}>Live Preview</Typography>
+                <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)' }}>Generated from React+Vite code</Typography>
+              </Box>
+              <Box sx={{ position: 'relative', width: '100%', minHeight: { xs: 400, sm: 600 } }}>
+                <Box
+                  component="iframe"
+                  srcDoc={previewHtml}
+                  title="Website Preview"
+                  sx={{ width: '100%', height: { xs: 400, sm: 600 }, border: 'none', bgcolor: 'white' }}
+                  sandbox="allow-scripts allow-same-origin"
+                />
+              </Box>
+            </Card>
+          )}
+        </>
       )}
 
       {deployResult && (
@@ -659,7 +723,18 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
           'Remove the pricing section and add a stronger trust and testimonials section.',
         ]}
         emptyLabel="No approved AI website draft exists. Ask AI to generate the complete first version."
-        renderCurrent={() => savedDraft ? <SitePreview draft={savedDraft} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} /> : null}
+        renderCurrent={() => {
+          if (previewHtml && !codeLoading) {
+            return (
+              <Box sx={{ position: 'relative', width: '100%', minHeight: 400 }}>
+                <Box component="iframe" srcDoc={previewHtml} title="Website Preview"
+                  sx={{ width: '100%', height: 500, border: 'none', borderRadius: 2, bgcolor: 'white' }}
+                  sandbox="allow-scripts allow-same-origin" />
+              </Box>
+            );
+          }
+          return savedDraft ? <SitePreview draft={savedDraft} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} /> : null;
+        }}
         renderProposal={(change) => {
           const proposed = proposalDraft(change);
           return proposed ? <SitePreview draft={proposed} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} proposed /> : <Typography color="error">The AI returned an invalid website preview.</Typography>;

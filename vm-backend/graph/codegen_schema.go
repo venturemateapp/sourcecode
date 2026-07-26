@@ -58,8 +58,25 @@ func init() {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			websiteDraft := p.Args["websiteDraft"].(string)
 			businessName := p.Args["businessName"].(string)
+			businessID := p.Args["businessId"].(string)
 
-			result, err := ai.GenerateReactProject(websiteDraft, businessName)
+			// Fetch brand kit for logo and colors
+			var logo, tagline string
+			if AppContainer != nil && AppContainer.BusinessRepo != nil {
+				if biz, err := AppContainer.BusinessRepo.GetByID(p.Context, businessID); err == nil && biz != nil {
+					tagline = biz.Tagline
+					type BrandKit struct {
+						Logo string `json:"logo"`
+					}
+					var bk BrandKit
+					if biz.BrandKit != "" {
+						json.Unmarshal([]byte(biz.BrandKit), &bk)
+					}
+					logo = bk.Logo
+				}
+			}
+
+			result, err := ai.GenerateReactProject(websiteDraft, businessName, logo, tagline)
 			if err != nil {
 				return nil, err
 			}
@@ -83,10 +100,27 @@ func init() {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			websiteDraft := p.Args["websiteDraft"].(string)
 			businessName := p.Args["businessName"].(string)
+			businessID := p.Args["businessId"].(string)
 			platform := p.Args["platform"].(string)
 			siteName, _ := p.Args["siteName"].(string)
 
-			result, err := ai.GenerateReactProject(websiteDraft, businessName)
+			// Fetch brand kit for logo and tagline
+			var logo, tagline string
+			if AppContainer != nil && AppContainer.BusinessRepo != nil {
+				if biz, err := AppContainer.BusinessRepo.GetByID(p.Context, businessID); err == nil && biz != nil {
+					tagline = biz.Tagline
+					type BrandKit struct {
+						Logo string `json:"logo"`
+					}
+					var bk BrandKit
+					if biz.BrandKit != "" {
+						json.Unmarshal([]byte(biz.BrandKit), &bk)
+					}
+					logo = bk.Logo
+				}
+			}
+
+			result, err := ai.GenerateReactProject(websiteDraft, businessName, logo, tagline)
 			if err != nil {
 				return okResult(platform, false, "Code generation failed: "+err.Error()), nil
 			}
