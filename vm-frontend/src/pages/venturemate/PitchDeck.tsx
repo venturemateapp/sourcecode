@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Box, Chip, Typography, ToggleButtonGroup, ToggleButton, IconButton } from '@mui/material';
-import { Presentation, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, Lightbulb, Shield, Menu, Star, Sparkles } from 'lucide-react';
+import { Box, Chip, Typography, ToggleButtonGroup, ToggleButton, IconButton, Dialog, DialogTitle, DialogContent, TextField, FormControl, Select, MenuItem, CircularProgress } from '@mui/material';
+import { Presentation, LayoutGrid, Monitor, ChevronDown, ChevronUp, TrendingUp, Users, DollarSign, Target, Lightbulb, Shield, Menu, Star, Sparkles, Plus, X, Edit3, Save } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { SlideViewer } from '../../components/venturemate/SlideViewer';
 import { ModernPitchDeck } from '../../components/venturemate/ModernPitchDeck';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
+import { GradientButton } from '../../components/shared/buttons';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { useToast } from '../../components/shared/toast';
@@ -84,11 +85,14 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
 }
 
 export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) {
-  const { selectedBusiness, businesses } = useBusiness();
+  const { selectedBusiness, businesses, updateBusiness } = useBusiness();
   const { subscription } = useSubscription();
   const toast = useToast();
   const [viewMode, setViewMode] = useState<'grid' | 'slide'>('slide');
   const [designMode, setDesignMode] = useState<'classic' | 'premium'>('premium');
+  const [editSlides, setEditSlides] = useState<Slide[]>([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate its pitch deck with AI." />;
 
   const maxPitchDecks = subscription?.plan?.limits?.maxPitchDecks;
@@ -138,6 +142,10 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
                 <Sparkles size={13} /> Premium
               </ToggleButton>
             </ToggleButtonGroup>
+            <GradientButton variant="outline" size="sm" startIcon={<Edit3 size={12} />}
+              onClick={() => { setEditSlides(JSON.parse(JSON.stringify(currentDeck.slides))); setEditDialogOpen(true); }}>
+              Edit Slides
+            </GradientButton>
           </Box>
           {designMode === 'premium' ? (
             <ModernPitchDeck slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} accentColor={primary} />
@@ -180,6 +188,80 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
           return <DeckPreview deck={proposed} primary={primary} dark={dark} proposed />;
         }}
       />
+
+      {/* Edit Slides Dialog */}
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)', maxHeight: '80vh' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Edit3 size={20} color="var(--vm-primary-400)" />
+          <Typography sx={{ fontWeight: 700 }}>Edit Slides</Typography>
+          <IconButton size="small" onClick={() => setEditDialogOpen(false)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, mt: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {editSlides.map((slide, idx) => (
+              <Box key={idx} sx={{ p: 2, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 2, border: '1px solid var(--vm-border-subtle)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'var(--vm-text-muted)', minWidth: 40 }}>#{idx + 1}</Typography>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: SLIDE_COLORS[slide.type] || primary }} />
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <Select value={slide.type} onChange={e => {
+                      const next = [...editSlides];
+                      next[idx] = { ...next[idx], type: e.target.value as Slide['type'] };
+                      setEditSlides(next);
+                    }} sx={{ color: 'var(--vm-text-primary)', fontSize: 12, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }}>
+                      {Object.keys(SLIDE_COLORS).map(t => <MenuItem key={t} value={t} sx={{ fontSize: 12, textTransform: 'capitalize' }}>{t}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <IconButton size="small" onClick={() => {
+                    const next = editSlides.filter((_, i) => i !== idx);
+                    setEditSlides(next);
+                  }} sx={{ ml: 'auto', color: '#ef444488' }}><X size={14} /></IconButton>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <TextField size="small" label="Title" value={slide.title} onChange={e => {
+                    const next = [...editSlides];
+                    next[idx] = { ...next[idx], title: e.target.value };
+                    setEditSlides(next);
+                  }} sx={{ '& input': { color: 'var(--vm-text-primary)' }, '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                  <TextField size="small" label="Content" multiline rows={2} value={slide.content || ''} onChange={e => {
+                    const next = [...editSlides];
+                    next[idx] = { ...next[idx], content: e.target.value };
+                    setEditSlides(next);
+                  }} sx={{ '& textarea': { color: 'var(--vm-text-primary)' }, '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                  <TextField size="small" label="Bullets (one per line)" multiline rows={2} value={(slide.bullets || []).join('\n')} onChange={e => {
+                    const next = [...editSlides];
+                    next[idx] = { ...next[idx], bullets: e.target.value.split('\n').filter(b => b.trim()) };
+                    setEditSlides(next);
+                  }} sx={{ '& textarea': { color: 'var(--vm-text-primary)' }, '& label': { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+                </Box>
+              </Box>
+            ))}
+            <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => {
+              setEditSlides([...editSlides, { id: `slide-${Date.now()}`, type: 'custom', title: '', content: '', bullets: [], order: editSlides.length, layout: 'default' }]);
+            }}>
+              Add Slide
+            </GradientButton>
+          </Box>
+        </DialogContent>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
+          <GradientButton variant="ghost" size="sm" onClick={() => setEditDialogOpen(false)}>Cancel</GradientButton>
+          <GradientButton variant="primary" size="sm" disabled={savingEdit} onClick={async () => {
+            setSavingEdit(true);
+            try {
+              const updatedDeck = { ...selectedBusiness.pitchDeck, slides: editSlides, lastModified: new Date().toISOString() };
+              await updateBusiness(selectedBusiness.id, { pitchDeck: updatedDeck });
+              setEditDialogOpen(false);
+              toast.success('Deck updated', { description: 'Your pitch deck slides have been saved.' });
+            } catch (err) {
+              toast.error('Failed to save', { description: 'Please try again.' });
+            }
+            setSavingEdit(false);
+          }}>
+            {savingEdit ? <CircularProgress size={14} /> : <><Save size={14} style={{ marginRight: 4 }} /> Save Changes</>}
+          </GradientButton>
+        </Box>
+      </Dialog>
     </Box>
   );
 }
