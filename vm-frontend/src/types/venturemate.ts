@@ -54,6 +54,7 @@ export interface Business {
   financials: Financials;
   metrics: Metrics;
   aiGenerated: AIGeneratedContent;
+  totalRevenue: number;
   status: 'active' | 'archived' | 'acquired';
   createdAt: string;
 }

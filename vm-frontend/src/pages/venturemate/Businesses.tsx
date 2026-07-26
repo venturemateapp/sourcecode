@@ -172,7 +172,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
         {[
           { label: 'Total Businesses', value: businessList.length },
           { label: 'Total Funding Raised', value: format(businessList.reduce((acc, b) => acc + (b.financials?.fundingRaised ?? 0), 0) / 1000000) },
-          { label: 'Combined MRR', value: format(businessList.reduce((acc, b) => acc + (b.financials?.revenue?.currentMRR ?? 0), 0)) },
+          { label: 'Total Revenue', value: format(businessList.reduce((acc, b) => acc + (b.totalRevenue ?? 0), 0)) },
           { label: 'Team Members', value: businessList.reduce((acc, b) => acc + (b.team?.length ?? 0), 0) },
         ].map((stat) => (
           <div key={stat.label}>
@@ -302,9 +302,9 @@ export function Businesses({ onViewChange }: BusinessesProps) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                    {format(business.financials?.revenue?.currentMRR ?? 0)}
+                    {format(business.totalRevenue ?? 0)}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>MRR</Typography>
+                  <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)' }}>Revenue</Typography>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--vm-text-primary)' }}>

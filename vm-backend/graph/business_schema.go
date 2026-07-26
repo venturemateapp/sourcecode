@@ -38,6 +38,16 @@ var businessType = graphql.NewObject(graphql.ObjectConfig{
 		"documents":     &graphql.Field{Type: graphql.String},
 		"websiteConfig": &graphql.Field{Type: graphql.String},
 		"financials":    &graphql.Field{Type: graphql.String},
+		"totalRevenue": &graphql.Field{
+			Type: graphql.Float,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				b, ok := p.Source.(*businesses.Business)
+				if !ok || AppContainer == nil || AppContainer.InvoiceRepo == nil {
+					return 0.0, nil
+				}
+				return AppContainer.InvoiceRepo.GetTotalRevenue(p.Context, b.ID)
+			},
+		},
 		"metrics":       &graphql.Field{Type: graphql.String},
 		"aiGenerated":   &graphql.Field{Type: graphql.String},
 		"createdAt":     &graphql.Field{Type: graphql.String},

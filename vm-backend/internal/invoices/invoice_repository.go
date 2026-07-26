@@ -144,6 +144,12 @@ func (r *Repository) GetTotalPdfSize(ctx context.Context, userID string) (int64,
 	return total, err
 }
 
+func (r *Repository) GetTotalRevenue(ctx context.Context, businessID string) (float64, error) {
+	var total float64
+	err := r.db.QueryRow(ctx, "SELECT COALESCE(SUM(amount), 0) FROM invoices WHERE business_id=$1 AND status='paid'", businessID).Scan(&total)
+	return total, err
+}
+
 func (r *Repository) Delete(ctx context.Context, id, userID string) error {
 	_, err := r.db.Exec(ctx, "DELETE FROM invoices WHERE id=$1 AND user_id=$2", id, userID)
 	return err
