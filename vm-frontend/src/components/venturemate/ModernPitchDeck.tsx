@@ -737,24 +737,38 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
   if (!slides || slides.length === 0) return null;
 
   const captureSlide = async (el: HTMLElement) => {
-    // html2canvas 1.4.1 cannot parse modern CSS color()/color-mix() functions.
-    // Clone the element and strip those from inline styles/style tags before capturing.
+    // Strip any CSS color() functions that html2canvas 1.4.1 can't parse
     const clone = el.cloneNode(true) as HTMLElement;
-    ['style', 'background', 'backgroundImage'].forEach(prop => {
-      clone.querySelectorAll(`[${prop}*="color("], [${prop}*="color-mix("]`).forEach(child => {
-        const htmlChild = child as HTMLElement;
-        const val = htmlChild.getAttribute(prop);
-        if (val) htmlChild.setAttribute(prop, val.replace(/color(?:-mix)?\([^)]+\)/g, 'transparent'));
-      });
+    const allEls = clone.querySelectorAll('*');
+    allEls.forEach((child: Element) => {
+      const htmlChild = child as HTMLElement;
+      if (htmlChild.style) {
+        // Remove known unsupported CSS functions
+        const s = htmlChild.style;
+        if (s.background && s.background.includes('color(')) {
+          s.background = s.background.replace(/color\([^)]+\)/g, 'transparent');
+        }
+        if (s.backgroundImage && s.backgroundImage.includes('color(')) {
+          s.backgroundImage = s.backgroundImage.replace(/color\([^)]+\)/g, 'transparent');
+        }
+        // Replace color() in any inline style string
+        if (htmlChild.getAttribute('style')) {
+          const style = htmlChild.getAttribute('style') || '';
+          htmlChild.setAttribute('style', style.replace(/color\([^)]+\)/g, '#08080b'));
+        }
+      }
     });
-    // Remove color() from <style> tags
-    clone.querySelectorAll('style').forEach(st => {
-      if (st.textContent) st.textContent = st.textContent.replace(/color(?:-mix)?\([^)]+\)/g, '#08080b');
+    // Also remove color() from any <style> blocks in the clone
+    const styleTags = clone.querySelectorAll('style');
+    styleTags.forEach((st: Element) => {
+      st.textContent = (st.textContent || '').replace(/color\([^)]+\)/g, '#08080b');
     });
 
-    // Render offscreen
+    // Temporarily append clone to capture it
     const wrapper = document.createElement('div');
-    wrapper.style.position = 'absolute'; wrapper.style.left = '-9999px'; wrapper.style.top = '0';
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
     wrapper.style.width = el.offsetWidth + 'px';
     document.body.appendChild(wrapper);
     wrapper.appendChild(clone);
