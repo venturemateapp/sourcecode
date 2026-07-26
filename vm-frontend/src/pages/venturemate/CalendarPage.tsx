@@ -178,7 +178,7 @@ export function CalendarPage() {
           </GradientButton>
           <GradientButton variant="outline" size="sm" startIcon={<CheckSquare size={14} />} onClick={() => setEventForm({ open: true, type: 'task', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })}>Add Task</GradientButton>
           <GradientButton variant="outline" size="sm" startIcon={<Clock size={14} />} onClick={() => setEventForm({ open: true, type: 'event', title: '', date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' })} disabled={accounts.length === 0} title={accounts.length === 0 ? 'Connect a calendar first' : ''}>Add Event</GradientButton>
-          <GradientButton variant="outline" size="sm" startIcon={<Mail size={14} />} onClick={() => { if (user?.id) window.location.href = `/auth/oauth/google-calendar/login?userId=${user.id}`; else toast.warning('Not logged in', { description: 'Please log in first.' }); }}>Google Calendar</GradientButton>
+          <GradientButton variant="outline" size="sm" startIcon={<Mail size={14} />} onClick={() => { if (user?.id) window.location.href = `/auth/google/calendar/login?userId=${user.id}`; else toast.warning('Not logged in', { description: 'Please log in first.' }); }}>Google Calendar</GradientButton>
         </Box>
       </Box>
 
