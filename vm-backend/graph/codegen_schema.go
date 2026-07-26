@@ -2,6 +2,9 @@ package graph
 
 import (
 	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/graphql-go/graphql"
@@ -138,9 +141,35 @@ func init() {
 				}, nil
 
 			case "netlify":
-				zipData, err := ai.ZipProjectFiles(result.Files)
-				if err != nil {
-					return okResult("netlify", false, "ZIP creation failed: "+err.Error()), nil
+				// Write files to temp dir, build, then deploy dist/
+				tmpDir, buildErr := os.MkdirTemp("", "vm-netlify-*")
+				if buildErr != nil {
+					return okResult("netlify", false, "Temp dir creation failed: "+buildErr.Error()), nil
+				}
+				for _, f := range result.Files {
+					fp := filepath.Join(tmpDir, f.Path)
+					os.MkdirAll(filepath.Dir(fp), 0755)
+					os.WriteFile(fp, []byte(f.Content), 0644)
+				}
+				// Run npm install && npm run build
+				npmInstall := exec.Command("npm", "install")
+				npmInstall.Dir = tmpDir
+				if out, err := npmInstall.CombinedOutput(); err != nil {
+					os.RemoveAll(tmpDir)
+					return okResult("netlify", false, "npm install failed: "+string(out)), nil
+				}
+				npmBuild := exec.Command("npm", "run", "build")
+				npmBuild.Dir = tmpDir
+				if out, err := npmBuild.CombinedOutput(); err != nil {
+					os.RemoveAll(tmpDir)
+					return okResult("netlify", false, "npm build failed: "+string(out)), nil
+				}
+				// Zip the dist/ folder
+				distDir := filepath.Join(tmpDir, "dist")
+				zipData, zipErr := ai.ZipDirectory(distDir)
+				os.RemoveAll(tmpDir)
+				if zipErr != nil {
+					return okResult("netlify", false, "ZIP creation failed: "+zipErr.Error()), nil
 				}
 				dr, err := ai.DeployToNetlify(p.Context, zipData, siteName)
 				if err != nil {

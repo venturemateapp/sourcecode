@@ -13,7 +13,8 @@ FROM alpine:latest
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+# Install Node.js 20 for building React projects
+RUN apk add --no-cache ca-certificates nodejs npm
 
 COPY --from=builder /app/server .
 COPY --from=builder /app/config ./config

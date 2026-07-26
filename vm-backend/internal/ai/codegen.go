@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -144,6 +146,17 @@ export default defineConfig({
   server: { host: true, port: 5173 }
 });`})
 
+	// netlify.toml - tells Netlify to build the project
+	files = append(files, ProjectFile{Path: "netlify.toml", Content: `[build]
+  command = "npm install && npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+`})
+
 	// index.html
 	metaDesc := ""
 	if seoDesc != "" {
@@ -269,6 +282,41 @@ func ZipProjectFiles(files []ProjectFile) ([]byte, error) {
 		if _, err := fw.Write([]byte(f.Content)); err != nil {
 			return nil, err
 		}
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// ZipDirectory zips an entire directory recursively.
+func ZipDirectory(dir string) ([]byte, error) {
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		fw, err := w.Create(rel)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		_, err = fw.Write(data)
+		return err
+	})
+	if err != nil {
+		return nil, err
 	}
 	if err := w.Close(); err != nil {
 		return nil, err
