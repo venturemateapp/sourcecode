@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/crm"
+	"github.com/venturemate/vmbackend/internal/email"
 )
 
 type teamMember struct {
@@ -623,10 +625,11 @@ func init() {
 	rootMutation.AddFieldConfig("sendCrmEmail", &graphql.Field{
 		Type: graphql.Boolean,
 		Args: graphql.FieldConfigArgument{
-			"contactId":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"subject":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"body":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"contactId":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"businessId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"subject":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"body":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"attachments":  &graphql.ArgumentConfig{Type: graphql.String}, // JSON array of {filename, data(base64), mimeType}
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil || AppContainer.Email == nil || AppContainer.CrmRepo == nil {
@@ -641,13 +644,57 @@ func init() {
 			}
 			subject := p.Args["subject"].(string)
 			body := p.Args["body"].(string)
-			if err := AppContainer.Email.SendTemplatedEmail(
-				[]string{contact.Email},
-				subject,
-				fmt.Sprintf("<div style=\"font-family:Arial,sans-serif;padding:16px;line-height:1.6;\">%s</div>", body),
-			); err != nil {
-				return false, fmt.Errorf("email send failed: %w", err)
+			bodyHTML := fmt.Sprintf("<div style=\"font-family:Arial,sans-serif;padding:16px;line-height:1.6;\">%s</div>", body)
+
+			// Parse attachments
+			var attachments []email.Attach
+			if attStr, ok := p.Args["attachments"].(string); ok && attStr != "" {
+				var attList []struct {
+					Filename string `json:"filename"`
+					Data     string `json:"data"`
+					MimeType string `json:"mimeType"`
+				}
+				if err := json.Unmarshal([]byte(attStr), &attList); err == nil {
+					for _, a := range attList {
+						if a.Filename == "" || a.Data == "" {
+							continue
+						}
+						decoded, err := base64.StdEncoding.DecodeString(a.Data)
+						if err != nil {
+							continue
+						}
+						mime := a.MimeType
+						if mime == "" {
+							mime = "application/octet-stream"
+						}
+						attachments = append(attachments, email.Attach{
+							Filename: a.Filename,
+							Data:     decoded,
+							MimeType: mime,
+						})
+					}
+				}
 			}
+
+			if len(attachments) > 0 {
+				if err := AppContainer.Email.SendWithAttachments(
+					[]string{contact.Email},
+					subject,
+					bodyHTML,
+					attachments,
+				); err != nil {
+					return false, fmt.Errorf("email send failed: %w", err)
+				}
+			} else {
+				if err := AppContainer.Email.SendTemplatedEmail(
+					[]string{contact.Email},
+					subject,
+					bodyHTML,
+				); err != nil {
+					return false, fmt.Errorf("email send failed: %w", err)
+				}
+			}
+
 			// Log activity
 			now := time.Now()
 			activity := &crm.Activity{

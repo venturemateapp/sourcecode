@@ -73,13 +73,33 @@ func New() (*Service, error) {
 	}, nil
 }
 
+// Attach represents an email attachment
+type Attach struct {
+	Filename string
+	Data     []byte
+	MimeType string
+}
+
 // Send sends a raw HTML email.
 func (s *Service) Send(to []string, subject, body string) error {
+	return s.SendWithAttachments(to, subject, body, nil)
+}
+
+// SendWithAttachments sends an HTML email with optional file attachments.
+func (s *Service) SendWithAttachments(to []string, subject, body string, attachments []Attach) error {
 	e := email.NewEmail()
 	e.From = s.from
 	e.To = to
 	e.Subject = subject
 	e.HTML = []byte(body)
+
+	for _, a := range attachments {
+		mime := a.MimeType
+		if mime == "" {
+			mime = "application/octet-stream"
+		}
+		e.Attach(bytes.NewReader(a.Data), a.Filename, mime)
+	}
 
 	addr := fmt.Sprintf("%s:%d", s.host, s.port)
 	auth := smtp.PlainAuth("", s.username, s.password, s.host)

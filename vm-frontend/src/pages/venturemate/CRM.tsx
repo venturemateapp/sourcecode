@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box, Typography, Card, Tabs, Tab, Chip, Avatar, Dialog, DialogTitle, DialogContent,
   TextField, Select, MenuItem, FormControl, InputLabel, IconButton, Tooltip, CircularProgress, ListSubheader,
@@ -70,7 +70,9 @@ export function CRMPage() {
   const [dealForm, setDealForm] = useState<Partial<CrmDeal> | null>(null);
   const [activityForm, setActivityForm] = useState<{ open: boolean; type: string; contactId: string; description: string }>({ open: false, type: 'note', contactId: '', description: '' });
   const [taskForm, setTaskForm] = useState<Partial<CrmTask> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [emailForm, setEmailForm] = useState<{ open: boolean; contactId: string; contactName: string; contactEmail: string; subject: string; body: string } | null>(null);
+  const [emailAttachments, setEmailAttachments] = useState<{ name: string; data: string; mime: string }[]>([]);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -215,16 +217,43 @@ export function CRMPage() {
     if (!bizId || !emailForm) return;
     setSendingEmail(true);
     try {
-      await q('mutation M($c:ID!,$b:ID!,$s:String!,$d:String!){sendCrmEmail(contactId:$c businessId:$b subject:$s body:$d)}', {
-        c: emailForm.contactId, b: bizId, s: emailForm.subject, d: emailForm.body,
+      const attJson = emailAttachments.length > 0 ? JSON.stringify(emailAttachments.map(a => ({ filename: a.name, data: a.data, mimeType: a.mime }))) : '';
+      await q('mutation M($c:ID!,$b:ID!,$s:String!,$d:String!,$a:String){sendCrmEmail(contactId:$c businessId:$b subject:$s body:$d attachments:$a)}', {
+        c: emailForm.contactId, b: bizId, s: emailForm.subject, d: emailForm.body, a: attJson || null,
       });
       setEmailForm(null);
+      setEmailAttachments([]);
       toast.success('Email sent', { description: `Email sent to ${emailForm.contactName}` });
     } catch (err) {
       console.error('Failed to send email:', err);
       toast.error('Failed to send email', { description: 'Please try again.' });
     }
     setSendingEmail(false);
+  };
+
+  const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const data = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove data:...;base64, prefix
+          const base64 = result.split(',')[1] || result;
+          resolve(base64);
+        };
+        reader.readAsDataURL(file);
+      });
+      setEmailAttachments(prev => [...prev, { name: file.name, data, mime: file.type || 'application/octet-stream' }]);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (idx: number) => {
+    setEmailAttachments(prev => prev.filter((_, i) => i !== idx));
   };
 
   const deleteActivity = async (id: string) => {
@@ -357,17 +386,27 @@ export function CRMPage() {
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1.5, mb: 1, flexWrap: 'wrap' }}>
-                  {c.email && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Mail size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.email}</Typography></Box>}
-                  {c.phone && <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Phone size={12} color="var(--vm-text-muted)" /><Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.phone}</Typography></Box>}
+                  {c.email && (
+                    <Box component="a" href={`mailto:${c.email}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, textDecoration: 'none', color: 'inherit', '&:hover': { color: 'var(--vm-primary-400)' } }}>
+                      <Mail size={12} color="var(--vm-text-muted)" />
+                      <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.email}</Typography>
+                    </Box>
+                  )}
+                  {c.phone && (
+                    <Box component="a" href={`tel:${c.phone}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, textDecoration: 'none', color: 'inherit', '&:hover': { color: 'var(--vm-primary-400)' } }}>
+                      <Phone size={12} color="var(--vm-text-muted)" />
+                      <Typography sx={{ fontSize: 12, color: 'var(--vm-text-secondary)', overflowWrap: 'anywhere' }}>{c.phone}</Typography>
+                    </Box>
+                  )}
                 </Box>
                 {c.notes && <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.notes}</Typography>}
                 <Box sx={{ display: 'flex', gap: 0.75, mt: 1.5 }}>
                   <GradientButton variant="outline" size="sm" sx={{ fontSize: 11, flex: 1, py: 0.5 }}
-                    onClick={() => setActivityForm({ open: true, type: 'call', contactId: c.id, description: '' })}>
+                    onClick={() => c.phone ? window.open(`tel:${c.phone}`, '_self') : toast.warning('No phone number', { description: 'This contact has no phone number.' })}>
                     <PhoneCall size={12} style={{ marginRight: 4 }} /> Call
                   </GradientButton>
                   <GradientButton variant="outline" size="sm" sx={{ fontSize: 11, flex: 1, py: 0.5 }}
-                    onClick={() => c.email ? setEmailForm({ open: true, contactId: c.id, contactName: c.name, contactEmail: c.email, subject: '', body: '' }) : toast.warning('No email address', { description: 'This contact has no email address.' })}>
+                    onClick={() => c.email ? (setEmailForm({ open: true, contactId: c.id, contactName: c.name, contactEmail: c.email, subject: '', body: '' }), setEmailAttachments([])) : toast.warning('No email address', { description: 'This contact has no email address.' })}>
                     <Mail size={12} style={{ marginRight: 4 }} /> Email
                   </GradientButton>
                 </Box>
@@ -740,12 +779,12 @@ export function CRMPage() {
       </Dialog>
 
       {/* Email Compose Dialog */}
-      <Dialog open={!!emailForm} onClose={() => setEmailForm(null)} maxWidth="sm" fullWidth
+      <Dialog open={!!emailForm} onClose={() => { setEmailForm(null); setEmailAttachments([]); }} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', borderRadius: 3, border: '1px solid var(--vm-border-subtle)' } }}>
         <DialogTitle sx={{ borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Mail size={20} color="var(--vm-primary-400)" />
           <Typography sx={{ fontWeight: 700 }}>Send Email</Typography>
-          <IconButton size="small" onClick={() => setEmailForm(null)} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
+          <IconButton size="small" onClick={() => { setEmailForm(null); setEmailAttachments([]); }} sx={{ ml: 'auto', color: 'var(--vm-text-muted)' }}><X size={18} /></IconButton>
         </DialogTitle>
         <DialogContent sx={{ pt: 4, mt: 1 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -755,10 +794,33 @@ export function CRMPage() {
               sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
             <TextField size="small" label="Message" multiline rows={6} value={emailForm?.body || ''} onChange={e => setEmailForm({ ...emailForm!, body: e.target.value })}
               sx={{ textarea: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
+
+            {/* Attachment input */}
+            <input ref={fileInputRef} type="file" multiple onChange={handleFileAttach} style={{ display: 'none' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <GradientButton variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Plus size={12} style={{ marginRight: 4 }} /> Attach Files
+              </GradientButton>
+              {emailAttachments.length > 0 && (
+                <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>
+                  {emailAttachments.length} file{emailAttachments.length !== 1 ? 's' : ''} attached
+                </Typography>
+              )}
+            </Box>
+            {emailAttachments.length > 0 && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                {emailAttachments.map((att, i) => (
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 0.75, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 1.5, border: '1px solid var(--vm-border-subtle)' }}>
+                    <Typography sx={{ flex: 1, fontSize: 12, color: 'var(--vm-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</Typography>
+                    <IconButton size="small" onClick={() => removeAttachment(i)} sx={{ color: '#ef444488' }}><X size={14} /></IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Box>
         </DialogContent>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2.5, pt: 0 }}>
-          <GradientButton variant="ghost" size="sm" onClick={() => setEmailForm(null)}>Cancel</GradientButton>
+          <GradientButton variant="ghost" size="sm" onClick={() => { setEmailForm(null); setEmailAttachments([]); }}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={sendingEmail || !emailForm?.subject || !emailForm?.body} onClick={sendEmail}>
             {sendingEmail ? <CircularProgress size={14} /> : 'Send Email'}
           </GradientButton>
