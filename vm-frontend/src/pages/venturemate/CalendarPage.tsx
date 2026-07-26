@@ -23,6 +23,7 @@ import {
 } from 'date-fns';
 import type { CrmTask } from '../../types/venturemate';
 import { useConfirm } from '../../components/shared/useConfirm';
+import { useToast } from '../../components/shared/toast';
 
 interface CalendarAccount {
   id: string; email: string; provider: string; caldavUrl: string; syncEnabled: boolean; lastSyncedAt: string | null;
@@ -57,6 +58,7 @@ export function CalendarPage() {
     ...(selectedBusiness?.team?.filter(m => m.status === 'active').map(m => ({ name: m.name, email: m.email })) || []),
   ].filter((v, i, a) => a.findIndex(x => x.email === v.email) === i);
 
+  const toast = useToast();
   const { confirmAction, dialog } = useConfirm();
 
   const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -116,22 +118,39 @@ export function CalendarPage() {
       setShowConnForm(false);
       setConnEmail(''); setConnUrl(''); setConnUser(''); setConnPass('');
       await loadAll();
-    } catch { /* ignore */ }
+      toast.success('Calendar connected', { description: 'Calendar account has been added.' });
+    } catch (err) {
+      console.error('Failed to connect calendar:', err);
+      toast.error('Failed to connect calendar', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const deleteAccount = async (id: string) => {
     if (!user) return;
     confirmAction({ title: 'Remove Calendar', message: 'Are you sure you want to remove this calendar account?' }, async () => {
-      await q('mutation M($i:ID!,$u:ID!){deleteCalendarAccount(id:$i userId:$u)}', { i: id, u: user.id });
-      await loadAll();
+      try {
+        await q('mutation M($i:ID!,$u:ID!){deleteCalendarAccount(id:$i userId:$u)}', { i: id, u: user.id });
+        await loadAll();
+        toast.success('Calendar removed', { description: 'Calendar account has been removed.' });
+      } catch (err) {
+        console.error('Failed to remove calendar:', err);
+        toast.error('Failed to remove calendar', { description: 'Please try again.' });
+      }
     });
   };
 
   const syncNow = async (id: string) => {
     setSyncingId(id);
-    await q('mutation M($i:ID!){syncCalendarAccount(id:$i)}', { i: id });
-    setTimeout(() => { setSyncingId(null); loadAll(); }, 3000);
+    try {
+      await q('mutation M($i:ID!){syncCalendarAccount(id:$i)}', { i: id });
+      toast.success('Sync started', { description: 'Calendar sync has been triggered.' });
+      setTimeout(() => { setSyncingId(null); loadAll(); }, 3000);
+    } catch (err) {
+      console.error('Failed to sync calendar:', err);
+      toast.error('Failed to sync calendar', { description: 'Please try again.' });
+      setSyncingId(null);
+    }
   };
 
   const saveEvent = async () => {
@@ -153,8 +172,10 @@ export function CalendarPage() {
       }
       setEventForm({ open: false, type: 'event', title: '', date: '', startTime: '09:00', endTime: '10:00', description: '', assignedTo: '' });
       await loadAll();
+      toast.success('Event saved', { description: 'Event has been created.' });
     } catch (err) {
       console.error('Failed to save:', err);
+      toast.error('Failed to save event', { description: 'Please try again.' });
     }
     setSaving(false);
   };

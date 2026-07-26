@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Mail, Plus, Trash2, RefreshCw, CheckCircle, XCircle, Building2 } from 'lucide-react';
 import { useConfirm } from '../../components/shared/useConfirm';
+import { useToast } from '../../components/shared/toast';
 
 interface EmailAccount {
   id: string;
@@ -45,6 +46,7 @@ export function EmailSettingsPage() {
   const [form, setForm] = useState<Partial<EmailAccount> | null>(null);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const toast = useToast();
   const { confirmAction, dialog } = useConfirm();
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
@@ -74,8 +76,10 @@ export function EmailSettingsPage() {
       });
       setForm(null);
       load();
+      toast.success('Email account connected', { description: 'Email account has been added.' });
     } catch (err) {
       console.error('Failed to connect email account:', err);
+      toast.error('Failed to connect email account', { description: 'Please try again.' });
     }
     setSaving(false);
   };
@@ -83,15 +87,28 @@ export function EmailSettingsPage() {
   const deleteAccount = async (id: string) => {
     if (!user) return;
     confirmAction({ title: 'Remove Email Account', message: 'Are you sure you want to remove this email account?' }, async () => {
-      await q('mutation M($i:ID!,$u:ID!){deleteEmailAccount(id:$i userId:$u)}', { i: id, u: user.id });
-      await load();
+      try {
+        await q('mutation M($i:ID!,$u:ID!){deleteEmailAccount(id:$i userId:$u)}', { i: id, u: user.id });
+        await load();
+        toast.success('Email account removed', { description: 'Email account has been removed.' });
+      } catch (err) {
+        console.error('Failed to remove email account:', err);
+        toast.error('Failed to remove email account', { description: 'Please try again.' });
+      }
     });
   };
 
   const syncNow = async (id: string) => {
     setSyncing(id);
-    await q('mutation M($i:ID!){syncEmailAccount(id:$i)}', { i: id });
-    setTimeout(() => { setSyncing(null); load(); }, 3000);
+    try {
+      await q('mutation M($i:ID!){syncEmailAccount(id:$i)}', { i: id });
+      toast.success('Sync started', { description: 'Email sync has been triggered.' });
+      setTimeout(() => { setSyncing(null); load(); }, 3000);
+    } catch (err) {
+      console.error('Failed to sync email:', err);
+      toast.error('Failed to sync email', { description: 'Please try again.' });
+      setSyncing(null);
+    }
   };
 
   const handleProviderChange = (provider: string) => {

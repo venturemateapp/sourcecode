@@ -129,6 +129,7 @@ export function CRMPage() {
       }
       setContactForm(null);
       await load();
+      toast.success('Contact saved', { description: 'Contact has been updated.' });
     } catch (err) {
       console.error('Failed to save contact:', err);
       toast.error('Failed to save contact', { description: 'Please try again.' });
@@ -142,6 +143,7 @@ export function CRMPage() {
       try {
         await q('mutation M($id:ID!,$b:ID!){deleteCrmContact(id:$id businessId:$b)}', { id, b: bizId });
         await load();
+        toast.success('Contact deleted', { description: 'Contact has been removed.' });
       } catch (err) {
         console.error('Failed to delete contact:', err);
         toast.error('Failed to delete contact', { description: 'Please try again.' });
@@ -171,6 +173,7 @@ export function CRMPage() {
       }
       setDealForm(null);
       await load();
+      toast.success('Deal saved', { description: 'Deal has been updated.' });
     } catch (err) {
       console.error('Failed to save deal:', err);
       toast.error('Failed to save deal', { description: 'Please try again.' });
@@ -184,6 +187,7 @@ export function CRMPage() {
       try {
         await q('mutation M($id:ID!,$b:ID!){deleteCrmDeal(id:$id businessId:$b)}', { id, b: bizId });
         await load();
+        toast.success('Deal deleted', { description: 'Deal has been removed.' });
       } catch (err) {
         console.error('Failed to delete deal:', err);
         toast.error('Failed to delete deal', { description: 'Please try again.' });
@@ -196,6 +200,7 @@ export function CRMPage() {
     try {
       await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmDeal(id:$id businessId:$b stage:$s){id}}', { id, b: bizId, s: stage });
       await load();
+      toast.success('Stage updated', { description: 'Deal stage has been changed.' });
     } catch (err) {
       console.error('Failed to update deal stage:', err);
       toast.error('Failed to update deal stage', { description: 'Please try again.' });
@@ -212,6 +217,7 @@ export function CRMPage() {
       });
       setActivityForm({ open: false, type: 'note', contactId: '', description: '' });
       await load();
+      toast.success('Activity logged', { description: 'Activity has been recorded.' });
     } catch (err) {
       console.error('Failed to save activity:', err);
       toast.error('Failed to save activity', { description: 'Please try again.' });
@@ -268,6 +274,7 @@ export function CRMPage() {
       try {
         await q('mutation M($id:ID!,$b:ID!){deleteCrmActivity(id:$id businessId:$b)}', { id, b: bizId });
         await load();
+        toast.success('Activity deleted', { description: 'Activity has been removed.' });
       } catch (err) {
         console.error('Failed to delete activity:', err);
         toast.error('Failed to delete activity', { description: 'Please try again.' });
@@ -296,6 +303,7 @@ export function CRMPage() {
       }
       setTaskForm(null);
       await load();
+      toast.success('Task saved', { description: 'Task has been updated.' });
     } catch (err) {
       console.error('Failed to save task:', err);
       toast.error('Failed to save task', { description: 'Please try again.' });
@@ -309,6 +317,7 @@ export function CRMPage() {
       try {
         await q('mutation M($id:ID!,$b:ID!){deleteCrmTask(id:$id businessId:$b)}', { id, b: bizId });
         await load();
+        toast.success('Task deleted', { description: 'Task has been removed.' });
       } catch (err) {
         console.error('Failed to delete task:', err);
         toast.error('Failed to delete task', { description: 'Please try again.' });
@@ -321,6 +330,7 @@ export function CRMPage() {
     try {
       await q('mutation M($id:ID!,$b:ID!,$s:String!){updateCrmTask(id:$id businessId:$b status:$s){id}}', { id, b: bizId, s: status });
       await load();
+      toast.success('Status updated', { description: 'Task status has been changed.' });
     } catch (err) {
       console.error('Failed to update task status:', err);
       toast.error('Failed to update task status', { description: 'Please try again.' });

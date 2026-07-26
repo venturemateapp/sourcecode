@@ -8,6 +8,7 @@ import { useBusiness } from '../../contexts/BusinessContext';
 import { Building2, Plus, Trash2, Edit3, Globe, Users, DollarSign, MapPin } from 'lucide-react';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { useConfirm } from '../../components/shared/useConfirm';
+import { useToast } from '../../components/shared/toast';
 
 interface Company {
   id: string;
@@ -32,6 +33,7 @@ const INDUSTRIES = ['Technology', 'Healthcare', 'Finance', 'Education', 'E-comme
 export function CompaniesPage() {
   const { selectedBusiness } = useBusiness();
   const { format } = useCurrency();
+  const toast = useToast();
   const { confirmAction, dialog } = useConfirm();
   const bizId = selectedBusiness?.id;
 
@@ -75,15 +77,25 @@ export function CompaniesPage() {
       }
       setForm(null);
       await load();
-    } catch { /* ignore */ }
+      toast.success('Company saved', { description: 'Company has been saved.' });
+    } catch (err) {
+      console.error('Failed to save company:', err);
+      toast.error('Failed to save company', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const deleteCompany = async (id: string) => {
     if (!bizId) return;
     confirmAction({ title: 'Delete Company', message: 'Are you sure you want to delete this account? This cannot be undone.' }, async () => {
-      await q('mutation M($id:ID!,$b:ID!){deleteCrmCompany(id:$id businessId:$b)}', { id, b: bizId });
-      await load();
+      try {
+        await q('mutation M($id:ID!,$b:ID!){deleteCrmCompany(id:$id businessId:$b)}', { id, b: bizId });
+        await load();
+        toast.success('Company deleted', { description: 'Company has been removed.' });
+      } catch (err) {
+        console.error('Failed to delete company:', err);
+        toast.error('Failed to delete company', { description: 'Please try again.' });
+      }
     });
   };
 

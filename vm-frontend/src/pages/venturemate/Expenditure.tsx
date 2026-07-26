@@ -114,6 +114,7 @@ export function ExpenditurePage() {
       }
       setForm(null);
       await load();
+      toast.success('Expense saved', { description: 'Expense has been saved.' });
     } catch (err) {
       console.error('Failed to save expense:', err);
       toast.error('Failed to save expense', { description: 'Please try again.' });
@@ -127,6 +128,7 @@ export function ExpenditurePage() {
       try {
         await q('mutation M($id:ID!,$b:ID!){deleteExpenditure(id:$id businessId:$b)}', { id, b: bizId });
         await load();
+        toast.success('Expense deleted', { description: 'Expense has been removed.' });
       } catch (err) {
         console.error('Failed to delete expense:', err);
         toast.error('Failed to delete expense', { description: 'Please try again.' });
@@ -140,6 +142,7 @@ export function ExpenditurePage() {
       const token = (await import('../../lib/auth')).getToken();
       await q<{ generateExpensePdf: string }>('mutation M($i:ID!,$b:ID!){generateExpensePdf(id:$i businessId:$b)}', { i: exp.id, b: bizId });
       window.open(`/api/pdf/download?type=expense&id=${exp.id}&token=${token}`, '_blank');
+      toast.success('PDF generated', { description: 'Expense PDF has been created.' });
     } catch (err) {
       console.error('Failed to generate expense PDF:', err);
       toast.error('Failed to generate PDF', { description: 'Please try again.' });

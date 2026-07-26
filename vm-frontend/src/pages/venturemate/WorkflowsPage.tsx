@@ -7,6 +7,7 @@ import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Workflow, Plus, Trash2, ToggleLeft, ToggleRight, Building2, Play, Zap } from 'lucide-react';
 import { useConfirm } from '../../components/shared/useConfirm';
+import { useToast } from '../../components/shared/toast';
 
 interface WorkflowItem {
   id: string; name: string; description: string; isActive: boolean;
@@ -36,6 +37,7 @@ export function WorkflowsPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toast = useToast();
   const { confirmAction, dialog } = useConfirm();
   const [form, setForm] = useState({
     name: '', description: '',
@@ -69,24 +71,46 @@ export function WorkflowsPage() {
       setShowForm(false);
       setForm({ name: '', description: '', triggerType: 'record_created', targetObject: 'crm_deals', conditions: '', actionType: 'send_email', actionConfig: '{"to":"","subject":"","body":""}' });
       await load();
-    } catch { /* ignore */ }
+      toast.success('Workflow created', { description: 'Workflow has been created.' });
+    } catch (err) {
+      console.error('Failed to create workflow:', err);
+      toast.error('Failed to create workflow', { description: 'Please try again.' });
+    }
     setSaving(false);
   };
 
   const testRun = async (id: string) => {
     const data = JSON.stringify({ stage: 'closed_won', amount: 50000, customerName: 'Test' });
-    await q('mutation M($w:ID!,$d:String!){executeWorkflow(workflowId:$w triggerData:$d)}', { w: id, d: data });
+    try {
+      await q('mutation M($w:ID!,$d:String!){executeWorkflow(workflowId:$w triggerData:$d)}', { w: id, d: data });
+      toast.success('Test run completed', { description: 'Workflow executed with test data.' });
+    } catch (err) {
+      console.error('Failed to test workflow:', err);
+      toast.error('Failed to test workflow', { description: 'Please try again.' });
+    }
   };
 
   const toggle = async (id: string, active: boolean) => {
-    await q('mutation M($i:ID!,$a:Boolean!){toggleWorkflow(id:$i active:$a)}', { i: id, a: active });
-    await load();
+    try {
+      await q('mutation M($i:ID!,$a:Boolean!){toggleWorkflow(id:$i active:$a)}', { i: id, a: active });
+      await load();
+      toast.success(active ? 'Workflow activated' : 'Workflow deactivated', { description: active ? 'Workflow is now active.' : 'Workflow has been deactivated.' });
+    } catch (err) {
+      console.error('Failed to toggle workflow:', err);
+      toast.error('Failed to update workflow', { description: 'Please try again.' });
+    }
   };
 
   const remove = async (id: string) => {
     confirmAction({ title: 'Delete Workflow', message: 'Are you sure you want to delete this workflow? This cannot be undone.' }, async () => {
-      await q('mutation M($i:ID!){deleteWorkflow(id:$i)}', { i: id });
-      await load();
+      try {
+        await q('mutation M($i:ID!){deleteWorkflow(id:$i)}', { i: id });
+        await load();
+        toast.success('Workflow deleted', { description: 'Workflow has been removed.' });
+      } catch (err) {
+        console.error('Failed to delete workflow:', err);
+        toast.error('Failed to delete workflow', { description: 'Please try again.' });
+      }
     });
   };
 

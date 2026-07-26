@@ -155,6 +155,7 @@ export function InvoicesPage() {
       }
       setForm(null);
       await load();
+      toast.success('Invoice saved', { description: 'Invoice has been saved.' });
     } catch (err) {
       console.error('Failed to save invoice:', err);
       toast.error('Failed to save invoice', { description: 'Please try again.' });
@@ -178,6 +179,7 @@ export function InvoicesPage() {
     try {
       await q('mutation M($i:ID!,$s:String!){updateInvoiceStatus(id:$i status:$s){id status}}', { i: id, s: status });
       await load();
+      toast.success('Status updated', { description: `Invoice status changed to ${status}.` });
     } catch (err) {
       console.error('Failed to update invoice status:', err);
       toast.error('Failed to update status', { description: 'Please try again.' });
@@ -190,6 +192,7 @@ export function InvoicesPage() {
       try {
         await q('mutation M($i:ID!,$u:ID!){deleteInvoice(id:$i userId:$u)}', { i: id, u: user.id });
         await load();
+        toast.success('Invoice deleted', { description: 'Invoice has been removed.' });
       } catch (err) {
         console.error('Failed to delete invoice:', err);
         toast.error('Failed to delete invoice', { description: 'Please try again.' });
@@ -207,6 +210,7 @@ export function InvoicesPage() {
     try {
       await q<{ generateInvoicePdf: string }>('mutation M($i:ID!,$b:ID!){generateInvoicePdf(id:$i businessId:$b)}', { i: inv.id, b: bizId });
       window.open(`/api/pdf/download?type=invoice&id=${inv.id}&token=${token}`, '_blank');
+      toast.success('PDF generated', { description: 'Invoice PDF has been created.' });
     } catch (err) {
       console.error('Failed to generate PDF:', err);
       toast.error('Failed to generate PDF', { description: 'Please try again.' });
