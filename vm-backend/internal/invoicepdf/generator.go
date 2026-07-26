@@ -10,6 +10,7 @@ import (
 	"image/png"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -62,8 +63,13 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.AddPage()
 
 	// === HEADER with logo ===
-	if brand.Logo != "" {
-		logoReader, imgType := g.logoReader(brand.Logo)
+	logoSource := brand.Logo
+	if logoSource == "" {
+		// Fall back to local email logo asset
+		logoSource = loadLocalLogo()
+	}
+	if logoSource != "" {
+		logoReader, imgType := g.logoReader(logoSource)
 		if logoReader != nil && imgType != "" {
 			pdf.RegisterImageReader("logo", imgType, logoReader)
 			pdf.Image("logo", 20, 12, 25, 0, false, "", 0, "")
@@ -343,6 +349,17 @@ func truncate(s string, maxLen int) string {
 		return s[:maxLen-1] + "…"
 	}
 	return s
+}
+
+// loadLocalLogo tries to load the email logo asset as a data URI fallback.
+func loadLocalLogo() string {
+	for _, name := range []string{"VentureMate-logo-email.png", "ventureMate-logo2.png", "VentureMate-logo.png"} {
+		data, err := os.ReadFile("internal/email/assets/" + name)
+		if err == nil {
+			return "data:image/png;base64," + base64.StdEncoding.EncodeToString(data)
+		}
+	}
+	return ""
 }
 
 func parseHex(hex string) (int, int, int) {
