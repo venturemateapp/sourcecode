@@ -168,32 +168,56 @@ export function Businesses({ onViewChange }: BusinessesProps) {
       </Box>
 
       {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: '24px', mb: 4 }}>
-        {[
-          { label: 'Total Businesses', value: businessList.length },
-          { label: 'Total Funding Raised', value: format(businessList.reduce((acc, b) => acc + (b.financials?.fundingRaised ?? 0), 0) / 1000000) },
-          { label: 'Total Revenue', value: format(businessList.reduce((acc, b) => acc + (b.totalRevenue ?? 0), 0)) },
-          { label: 'Team Members', value: businessList.reduce((acc, b) => acc + (b.team?.length ?? 0), 0) },
-        ].map((stat) => (
-          <div key={stat.label}>
-            <Card
-              sx={{
-                bgcolor: 'var(--vm-bg-secondary)',
-                border: '1px solid var(--vm-border-subtle)',
-                borderRadius: 3,
-                p: 3,
-              }}
-            >
-              <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
-                {stat.value}
-              </Typography>
-              <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: 'var(--vm-text-muted)' }}>
-                {stat.label}
-              </Typography>
-            </Card>
-          </div>
-        ))}
-      </Box>
+      {(() => {
+        // Aggregate per-currency revenue across all businesses
+        const allRevenue: Record<string, number> = {};
+        businessList.forEach(b => {
+          try {
+            const byCur = JSON.parse(b.revenueByCurrency || '{}');
+            Object.entries(byCur).forEach(([c, amt]) => {
+              allRevenue[c] = (allRevenue[c] || 0) + (amt as number);
+            });
+          } catch { /* ignore */ }
+        });
+        const revenueEntries = Object.entries(allRevenue);
+
+        return (
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: '24px', mb: 4 }}>
+            <div>
+              <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 3 }}>
+                <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>{businessList.length}</Typography>
+                <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: 'var(--vm-text-muted)' }}>Total Businesses</Typography>
+              </Card>
+            </div>
+            <div>
+              <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 3 }}>
+                <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                  {format(businessList.reduce((acc, b) => acc + (b.financials?.fundingRaised ?? 0), 0) / 1000000)}
+                </Typography>
+                <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: 'var(--vm-text-muted)' }}>Total Funding Raised</Typography>
+              </Card>
+            </div>
+            <div>
+              <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 3 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#22c55e', mb: 1 }}>Total Revenue</Typography>
+                {revenueEntries.length > 0 ? revenueEntries.map(([c, amt]) => (
+                  <Typography key={c} sx={{ fontSize: 12, color: 'var(--vm-text-primary)', lineHeight: 1.5 }}>
+                    {c} {amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Typography>
+                )) : <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>—</Typography>}
+              </Card>
+            </div>
+            <div>
+              <Card sx={{ bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3, p: 3 }}>
+                <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700, color: 'var(--vm-text-primary)' }}>
+                  {businessList.reduce((acc, b) => acc + (b.team?.length ?? 0), 0)}
+                </Typography>
+                <Typography sx={{ fontSize: { xs: 12, sm: 13 }, color: 'var(--vm-text-muted)' }}>Team Members</Typography>
+              </Card>
+            </div>
+          </Box>
+        );
+      })()}
 
       {/* Businesses Grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: '24px' }}>
