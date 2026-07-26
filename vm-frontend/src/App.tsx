@@ -43,6 +43,8 @@ import { MilestonesPage } from './pages/venturemate/MilestonesPage';
 import { SettingsPage } from './pages/venturemate/Settings';
 import { MessagesPage } from './pages/venturemate/Messages';
 import { LandingPage } from './pages/LandingPage';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { TermsOfService } from './pages/TermsOfService';
 import { OnboardingPage } from './pages/onboarding/OnboardingPage';
 import { BusinessProvider, useBusiness } from './contexts/BusinessContext';
 import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
@@ -352,6 +354,8 @@ function App() {
           <Route path="/vm/admin" element={<AdminDashboard />} />
         </Route>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route path="/signup" element={<ToastProvider><SignUp /></ToastProvider>} />
       </Routes>
     </BrowserRouter>
