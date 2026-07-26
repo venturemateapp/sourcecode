@@ -7,7 +7,7 @@ import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
-import { FileText, Plus, Download, Trash2, Send, CheckCircle, XCircle, X, Building2, Edit3, AlertCircle, Receipt } from 'lucide-react';
+import { FileText, Plus, Download, Trash2, Send, CheckCircle, X, Building2, Edit3, AlertCircle, Receipt } from 'lucide-react';
 import type { Invoice, InvoiceItem } from '../../types/venturemate';
 import { useToast } from '../../components/shared/toast';
 import { useConfirm } from '../../components/shared/useConfirm';
@@ -213,7 +213,11 @@ export function InvoicesPage() {
     }
   };
 
-  const statusColor: Record<string, string> = { draft: '#94a3b8', sent: '#3b82f6', paid: '#22c55e', completed: '#22c55e', overdue: '#ef4444', cancelled: '#6b7280' };
+  const statusColor: Record<string, string> = { draft: '#94a3b8', sent: '#3b82f6', paid: '#22c55e', overdue: '#ef4444', cancelled: '#6b7280' };
+  const effectiveStatus = (inv: Invoice) => {
+    if (inv.status === 'overdue' || (inv.status === 'sent' && inv.dueDate && new Date(inv.dueDate) < new Date())) return 'overdue';
+    return inv.status;
+  };
 
   if (!bizId) return <Box sx={{ p: 4, textAlign: 'center', color: 'var(--vm-text-muted)' }}><Building2 size={40} /><Typography sx={{ mt: 1 }}>Select a business</Typography></Box>;
 
@@ -222,7 +226,7 @@ export function InvoicesPage() {
       <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1.5, sm: 0 } }}>
         <Box>
           <Typography sx={{ fontSize: { xs: 20, sm: 24, md: 28 }, fontWeight: 800, color: 'var(--vm-text-primary)' }}>Income</Typography>
-          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{invoices.length} invoices · {invoices.filter(i => i.status === 'paid' || i.status === 'completed').length} paid</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--vm-text-muted)' }}>{invoices.length} invoices · {invoices.filter(i => i.status === 'paid').length} paid</Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
           <DatePicker label="From" format="dd/MM/yyyy" value={startDate ? new Date(startDate) : null}
@@ -240,20 +244,22 @@ export function InvoicesPage() {
 
       {/* Stats cards */}
       {(() => {
+        const now = new Date();
         const totalCount = invoices.length;
-        const paidCount = invoices.filter(i => i.status === 'paid' || i.status === 'completed').length;
-        const overdueCount = invoices.filter(i => i.status === 'overdue').length;
+        const paidCount = invoices.filter(i => i.status === 'paid').length;
+        const overdueCount = invoices.filter(i => i.status === 'overdue' || (i.status === 'sent' && i.dueDate && new Date(i.dueDate) < now)).length;
 
         // Group amounts by currency
         const byCurrency: Record<string, { income: number; paid: number; overdue: number }> = {};
         invoices.forEach(inv => {
           const c = inv.currency || 'USD';
           if (!byCurrency[c]) byCurrency[c] = { income: 0, paid: 0, overdue: 0 };
-          if (inv.status === 'paid' || inv.status === 'completed') {
+          const isOverdue = inv.status === 'overdue' || (inv.status === 'sent' && inv.dueDate && new Date(inv.dueDate) < now);
+          if (inv.status === 'paid') {
             byCurrency[c].income += inv.amount || 0;
             byCurrency[c].paid += inv.amount || 0;
           }
-          if (inv.status === 'overdue') {
+          if (isOverdue) {
             byCurrency[c].overdue += inv.amount || 0;
           }
         });
@@ -323,7 +329,7 @@ export function InvoicesPage() {
                 <Box sx={{ flex: 1, minWidth: 200 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'var(--vm-text-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{inv.invoiceNumber}</Typography>
-                    <Chip label={inv.status.replace('_', ' ')} size="small" sx={{ bgcolor: `${statusColor[inv.status] || '#94a3b8'}18`, color: statusColor[inv.status] || '#94a3b8', fontSize: 9, fontWeight: 700, height: 20 }} />
+                    <Chip label={effectiveStatus(inv).replace('_', ' ')} size="small" sx={{ bgcolor: `${statusColor[effectiveStatus(inv)] || '#94a3b8'}18`, color: statusColor[effectiveStatus(inv)] || '#94a3b8', fontSize: 9, fontWeight: 700, height: 20 }} />
                     {inv.pdfUrl && <Chip label="PDF" size="small" sx={{ bgcolor: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: 9, height: 20 }} />}
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -333,13 +339,18 @@ export function InvoicesPage() {
                     )}
                   </Box>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, alignItems: 'center' }}>
+                  <FormControl size="small" sx={{ minWidth: 90 }}>
+                    <Select value={inv.status} onChange={e => updateStatus(inv.id, e.target.value)}
+                      sx={{ color: statusColor[effectiveStatus(inv)] || 'var(--vm-text-muted)', fontSize: 11, fontWeight: 700, height: 28, '& fieldset': { borderColor: `${statusColor[effectiveStatus(inv)] || '#94a3b8'}30` }, '& .MuiSelect-select': { py: 0.5 }, textTransform: 'capitalize' }}>
+                      {['draft', 'sent', 'paid', 'overdue', 'cancelled'].map(s => (
+                        <MenuItem key={s} value={s} sx={{ fontSize: 12, textTransform: 'capitalize' }}>{s}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   {inv.status === 'draft' && <Tooltip title="Edit"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => openEdit(inv)}><Edit3 size={15} /></IconButton></Tooltip>}
                   <Tooltip title="Download PDF"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(inv)}><Download size={15} /></IconButton></Tooltip>
                   {inv.status === 'draft' && <Tooltip title="Send"><IconButton size="small" sx={{ color: '#3b82f6' }} onClick={() => sendInvoice(inv.id)}><Send size={15} /></IconButton></Tooltip>}
-                  {inv.status === 'sent' && <Tooltip title="Mark Paid"><IconButton size="small" sx={{ color: '#22c55e' }} onClick={() => updateStatus(inv.id, 'paid')}><CheckCircle size={15} /></IconButton></Tooltip>}
-                  {inv.status === 'sent' && <Tooltip title="Mark Overdue"><IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => updateStatus(inv.id, 'overdue')}><XCircle size={15} /></IconButton></Tooltip>}
-                  {(inv.status === 'draft' || inv.status === 'sent') && <Tooltip title="Cancel"><IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => updateStatus(inv.id, 'cancelled')}><X size={15} /></IconButton></Tooltip>}
                   <Tooltip title="Delete"><IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteInvoice(inv.id)}><Trash2 size={15} /></IconButton></Tooltip>
                 </Box>
               </Box>
