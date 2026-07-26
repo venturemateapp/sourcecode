@@ -514,7 +514,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
   }, [savedDraft?.pages?.length]);
 
   const logo = selectedBusiness?.brandKit?.logo;
-  const [codeTab, setCodeTab] = useState<'preview' | 'code'>('preview');
+  const [codeTab, setCodeTab] = useState<'preview' | 'code' | null>(null);
   const [codeResult, setCodeResult] = useState<{ files: Array<{ path: string; content: string }>; type: string; routes: string[] } | null>(null);
   const [codeLoading, setCodeLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -604,7 +604,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {loading && !website && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><CircularProgress size={18} /><Typography sx={{ color: 'var(--vm-text-muted)' }}>Loading website…</Typography></Box>}
 
-      {website && codeTab === 'preview' && (
+      {website && (
         <>
           <Card sx={{ mb: 2.5, p: 1.5, bgcolor: 'var(--vm-bg-secondary)', border: '1px solid var(--vm-border-subtle)', borderRadius: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
@@ -642,8 +642,8 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
             </Box>
           </Card>
 
-          {/* Live preview from draft sections */}
-          {savedDraft && (
+          {/* Preview (only when user clicks Preview button) */}
+          {codeTab === 'preview' && savedDraft && (
             <Card sx={{ mb: 2.5, border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
               <Box sx={{ bgcolor: 'var(--vm-bg-secondary)', px: 2, py: 0.75, borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MonitorSmartphone size={14} />
@@ -711,7 +711,15 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
           'Remove the pricing section and add a stronger trust and testimonials section.',
         ]}
         emptyLabel="No approved AI website draft exists. Ask AI to generate the complete first version."
-        renderCurrent={() => savedDraft ? <SitePreview draft={savedDraft} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} /> : null}
+        renderCurrent={() => {
+          // Show generated code preview if available, else fall back to SitePreview
+          if (codeResult && codeResult.files.length > 0) {
+            const cssFile = codeResult.files.find(f => f.path === 'src/styles/index.css');
+            const previewContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${cssFile?.content || ''}</style></head><body style="font-family:system-ui,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px"><div style="text-align:center;max-width:500px"><h1 style="color:#10b981">${selectedBusiness?.name || 'Website'}</h1><p style="color:#94a3b8;margin-top:12px">${selectedBusiness?.description || selectedBusiness?.tagline || 'Built with VentureMate AI'}</p><p style="margin-top:32px;font-size:13px;color:#64748b">${codeResult.files.length} generated files — preview of React+Vite project</p></div></body></html>`;
+            return <Box component="iframe" srcDoc={previewContent} title="Preview" sx={{ width:'100%',height:500,border:'none',borderRadius:2,bgcolor:'#fff' }} sandbox="allow-scripts" />;
+          }
+          return savedDraft ? <SitePreview draft={savedDraft} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} /> : null;
+        }}
         renderProposal={(change) => {
           const proposed = proposalDraft(change);
           return proposed ? <SitePreview draft={proposed} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} proposed /> : <Typography color="error">The AI returned an invalid website preview.</Typography>;
