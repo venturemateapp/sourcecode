@@ -218,8 +218,6 @@ func (g *Generator) Generate(ctx context.Context, inv *invoices.Invoice, busines
 	pdf.CellFormat(40, 8, "TOTAL:", "1", 0, "R", true, 0, "")
 	pdf.CellFormat(35, 8, fmt.Sprintf("$%.2f", grandTotal), "1", 0, "R", true, 0, "")
 
-
-
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
 		return nil, fmt.Errorf("pdf output: %w", err)
@@ -333,7 +331,7 @@ func truncate(s string, maxLen int) string {
 
 // loadLocalLogo tries to load the email logo asset as a data URI fallback.
 func loadLocalLogo() string {
-	for _, name := range []string{"VentureMate-logo-email.png", "ventureMate-logo2.png", "VentureMate-logo.png"} {
+	for _, name := range []string{"ventureMate-logo2.png", "VentureMate-logo-email.png", "VentureMate-logo.png"} {
 		data, err := os.ReadFile("internal/email/assets/" + name)
 		if err == nil {
 			return "data:image/png;base64," + base64.StdEncoding.EncodeToString(data)

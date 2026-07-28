@@ -36,7 +36,7 @@ export function ForgotPassword() {
       <Box sx={{ textAlign: 'center', mb: 5 }}>
         <Box
           component="img"
-          src="/VentureMate-logo.png"
+          src="/ventureMate-logo2.png"
           alt="VentureMate"
           sx={{ height: { xs: 120, md: 180 }, width: 'auto', objectFit: 'contain', mx: 'auto', display: 'block', mb: 1 }}
         />

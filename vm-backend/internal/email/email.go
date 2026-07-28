@@ -58,7 +58,7 @@ func New() (*Service, error) {
 	logo := os.Getenv("EMAIL_LOGO_URL")
 	if logo == "" {
 		// Try multiple filenames in order of preference
-		for _, name := range []string{"VentureMate-logo-email.png", "ventureMate-logo2.png", "VentureMate-logo.png"} {
+		for _, name := range []string{"ventureMate-logo2.png", "VentureMate-logo-email.png", "VentureMate-logo.png"} {
 			logoBytes, err := os.ReadFile("internal/email/assets/" + name)
 			if err == nil {
 				logoBase64 := base64.StdEncoding.EncodeToString(logoBytes)

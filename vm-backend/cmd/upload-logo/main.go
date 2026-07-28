@@ -16,14 +16,14 @@ func main() {
 		return
 	}
 
-	logoPath := "internal/email/assets/VentureMate-logo.png"
+	logoPath := "internal/email/assets/ventureMate-logo2.png"
 	data, err := os.ReadFile(logoPath)
 	if err != nil {
 		fmt.Println("Read logo error:", err)
 		return
 	}
 
-	key := "assets/VentureMate-logo.png"
+	key := "assets/ventureMate-logo2.png"
 	url, err := s3Svc.Upload(ctx, key, data, "image/png")
 	if err != nil {
 		fmt.Println("Upload error:", err)

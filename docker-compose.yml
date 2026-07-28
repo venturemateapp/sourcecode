@@ -20,7 +20,7 @@ services:
       SMTP_PASSWORD: "${SMTP_PASSWORD}"
       SMTP_FROM_NAME: "${SMTP_FROM_NAME:-VentureMate}"
       SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-noreply@venturemate.net}"
-      EMAIL_LOGO_URL: "${EMAIL_LOGO_URL:-https://venturemate.net/logo.png}"
+      EMAIL_LOGO_URL: "${EMAIL_LOGO_URL:-https://venturemate.net/ventureMate-logo2.png}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

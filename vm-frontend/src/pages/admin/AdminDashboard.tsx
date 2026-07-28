@@ -271,7 +271,7 @@ export function AdminDashboard() {
       position: 'relative',
     }}>
       <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{ width: 36, height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+        <Box component="img" src="/ventureMate-logo2.png" alt="VentureMate" sx={{ width: 36, height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 15, fontWeight: 800, lineHeight: 1.2 }}>Admin</Typography>
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, lineHeight: 1.2 }}>{user?.email}</Typography>

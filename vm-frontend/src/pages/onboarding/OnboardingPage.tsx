@@ -115,7 +115,7 @@ export function OnboardingPage() {
           >
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 1 }}>
               <img
-                src="/VentureMate-logo.png"
+                src="/ventureMate-logo2.png"
                 alt="VentureMate"
                 style={{ height: 36, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
               />

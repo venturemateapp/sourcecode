@@ -119,7 +119,7 @@ export function Sidebar({ activeView, onNavigate, onClose }: {
             <X size={18} />
           </IconButton>
         )}
-        <Box component="img" src="/VentureMate-logo.png" alt="VentureMate" sx={{
+        <Box component="img" src="/ventureMate-logo2.png" alt="VentureMate" sx={{
           width: collapsed ? 28 : 32, height: collapsed ? 28 : 'auto', flexShrink: 0,
           objectFit: 'contain',
         }} />

@@ -43,7 +43,7 @@ export function SignUp() {
   return (
     <Box sx={{ width: '100%', maxWidth: { xs: '100%', sm: 450 }, mx: 'auto' }}>
       <Box sx={{ textAlign: 'center', mb: 5 }}>
-        <Box component="img" src="/VentureMate-logo.png" alt="VentureMate"
+        <Box component="img" src="/ventureMate-logo2.png" alt="VentureMate"
           sx={{ height: { xs: 120, md: 180 }, width: 'auto', objectFit: 'contain', mx: 'auto', display: 'block' }} />
         <Typography variant="h4" sx={{ fontWeight: 800, fontSize: { xs: 22, sm: 26 }, color: '#fff', textAlign: 'center', mt: 2 }}>
           Create Your Account
