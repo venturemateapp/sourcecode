@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { Box, Typography, Avatar, IconButton, Tooltip, Chip, CircularProgress } from '@mui/material';
-import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign, Download, FileText, Palette } from 'lucide-react';
+import { Box, Typography, Avatar, IconButton, Tooltip, CircularProgress } from '@mui/material';
+import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign, Download, FileText } from 'lucide-react';
 import { AuroraBackground, FloatingOrb } from './AuroraBackground';
+import { CreativeTemplatePicker } from './CreativeTemplatePicker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import type { Slide } from '../../types/venturemate';
@@ -831,20 +832,8 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
       {/* Template picker + download toolbar */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-          <Palette size={14} color="var(--vm-text-muted)" />
-          {TEMPLATES.map(t => (
-            <Chip key={t.id} label={t.label} size="small" onClick={() => setTemplateId(t.id)}
-              sx={{
-                bgcolor: templateId === t.id ? `${t.accent}20` : 'rgba(255,255,255,.04)',
-                color: templateId === t.id ? t.accent : 'var(--vm-text-secondary)',
-                fontWeight: templateId === t.id ? 700 : 500, cursor: 'pointer', fontSize: 11,
-                border: templateId === t.id ? `1px solid ${t.accent}30` : '1px solid transparent',
-                '&:hover': { bgcolor: `${t.accent}15` },
-              }} />
-          ))}
-        </Box>
+      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 1.5, mb: 1.5 }}>
+        <CreativeTemplatePicker templates={TEMPLATES} value={templateId} onChange={setTemplateId} />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Tooltip title={pdfExporting ? 'Creating PDF…' : 'Download PDF'}>
             <span><IconButton size="small" disabled={pdfExporting || pptxExporting} onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}>{pdfExporting ? <CircularProgress size={15} /> : <FileText size={15} />}</IconButton></span>

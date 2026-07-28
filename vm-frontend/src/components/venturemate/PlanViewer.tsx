@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Typography, IconButton, Tooltip, Slider, Avatar, Chip, CircularProgress } from '@mui/material';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText, Palette, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText, Eye } from 'lucide-react';
+import { CreativeTemplatePicker } from './CreativeTemplatePicker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
@@ -427,12 +428,8 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
 
   return (
     <Box ref={viewerRef} sx={{ position: 'relative', width: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5, flexWrap: 'wrap' }}>
-        <Palette size={14} color="var(--vm-text-muted)" />
-        {TEMPLATES.map(t => (
-          <Chip key={t.id} label={t.label} size="small" onClick={() => setTemplateId(t.id)}
-            sx={{ bgcolor: templateId === t.id ? `${t.accent}20` : 'rgba(255,255,255,.04)', color: templateId === t.id ? t.accent : 'var(--vm-text-secondary)', fontWeight: templateId === t.id ? 700 : 500, cursor: 'pointer', fontSize: 11, border: templateId === t.id ? `1px solid ${t.accent}30` : '1px solid transparent' }} />
-        ))}
+      <Box sx={{ mb: 1.5 }}>
+        <CreativeTemplatePicker templates={TEMPLATES} value={templateId} onChange={setTemplateId} />
       </Box>
 
       <Box data-plan-container sx={{

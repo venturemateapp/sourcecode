@@ -42,6 +42,7 @@ interface AICreationStudioProps {
   onApproved?: () => Promise<void> | void;
   onBeforeGenerate?: () => boolean | Promise<boolean>;
   builderMode?: boolean;
+  stackedBuilderMode?: boolean;
   rightPanel?: ReactNode;
 }
 
@@ -67,7 +68,7 @@ export function AICreationStudio({
   domain, title: _title, description: _description, placeholder, starterPrompts,
   emptyLabel = 'No approved version yet. Ask AI to create the first one.',
   renderCurrent, renderProposal, onApproved, onBeforeGenerate,
-  builderMode = false, rightPanel,
+  builderMode = false, stackedBuilderMode = false, rightPanel,
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
   const [prompt, setPrompt] = useState('');
@@ -177,17 +178,24 @@ export function AICreationStudio({
 
   return (
     <Box sx={{
-      display: 'flex',
+      display: stackedBuilderMode ? 'grid' : 'flex',
       gap: builderMode ? 0 : 2.5,
-      flexDirection: { xs: 'column', lg: 'row' },
-      minHeight: builderMode ? { lg: 'calc(100vh - 190px)' } : undefined,
+      flexDirection: stackedBuilderMode ? undefined : { xs: 'column', lg: 'row' },
+      gridTemplateColumns: stackedBuilderMode ? { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1fr) 300px' } : undefined,
+      minHeight: builderMode && !stackedBuilderMode ? { lg: 'calc(100vh - 190px)' } : undefined,
       border: builderMode ? '1px solid var(--vm-border-subtle)' : undefined,
       borderRadius: builderMode ? 2.5 : undefined,
       overflow: builderMode ? 'hidden' : undefined,
       bgcolor: builderMode ? 'var(--vm-bg-secondary)' : undefined,
     }}>
       {/* Main content area */}
-      <Box sx={{ flex: 1, minWidth: 0, order: { lg: builderMode ? 2 : 1 }, bgcolor: builderMode ? 'var(--vm-bg-primary)' : undefined }}>
+      <Box sx={{
+        flex: 1,
+        minWidth: 0,
+        order: stackedBuilderMode ? undefined : { lg: builderMode ? 2 : 1 },
+        gridColumn: stackedBuilderMode ? { lg: '1 / -1' } : undefined,
+        bgcolor: builderMode ? 'var(--vm-bg-primary)' : undefined,
+      }}>
         {proposal ? (
           <Card sx={{
             p: { xs: 1.5, md: 2.5 },
@@ -242,7 +250,7 @@ export function AICreationStudio({
 
       {/* Chat panel */}
       <Card sx={{
-        width: { xs: '100%', lg: builderMode ? 340 : 380 },
+        width: stackedBuilderMode ? '100%' : { xs: '100%', lg: builderMode ? 340 : 380 },
         flexShrink: 0,
         bgcolor: 'var(--vm-bg-secondary)',
         border: '1px solid var(--vm-border-subtle)',
@@ -250,10 +258,10 @@ export function AICreationStudio({
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: builderMode ? { lg: 'calc(100vh - 190px)' } : { lg: 600 },
+        maxHeight: stackedBuilderMode ? undefined : builderMode ? { lg: 'calc(100vh - 190px)' } : { lg: 600 },
         position: builderMode ? 'relative' : { lg: 'sticky' },
         top: builderMode ? undefined : { lg: 84 },
-        order: { lg: builderMode ? 1 : 2 },
+        order: stackedBuilderMode ? undefined : { lg: builderMode ? 1 : 2 },
       }}>
         {/* Header */}
         <Box sx={{ p: 1.75, borderBottom: '1px solid var(--vm-border-subtle)', bgcolor: 'var(--vm-bg-tertiary)' }}>
@@ -362,15 +370,15 @@ export function AICreationStudio({
 
       {builderMode && rightPanel && (
         <Box sx={{
-          width: { xs: '100%', lg: 300 },
+          width: stackedBuilderMode ? '100%' : { xs: '100%', lg: 300 },
           flexShrink: 0,
-          order: { lg: 3 },
+          order: stackedBuilderMode ? undefined : { lg: 3 },
           borderLeft: { lg: '1px solid var(--vm-border-subtle)' },
           borderTop: { xs: '1px solid var(--vm-border-subtle)', lg: 0 },
           bgcolor: '#0d1117',
-          minHeight: { lg: 'calc(100vh - 190px)' },
-          maxHeight: { lg: 'calc(100vh - 190px)' },
-          overflow: 'auto',
+          minHeight: stackedBuilderMode ? undefined : { lg: 'calc(100vh - 190px)' },
+          maxHeight: stackedBuilderMode ? undefined : { lg: 'calc(100vh - 190px)' },
+          overflow: stackedBuilderMode ? 'visible' : 'auto',
         }}>
           {rightPanel}
         </Box>

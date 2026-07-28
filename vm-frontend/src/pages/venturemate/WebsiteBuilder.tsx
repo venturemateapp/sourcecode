@@ -762,6 +762,7 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
       <AICreationStudio key={refreshKey}
         domain="website"
         builderMode
+        stackedBuilderMode
         rightPanel={builderRightPanel}
         title="AI Website Studio"
         description="Tell AI what the business website should communicate. It automatically uses the approved logo, colours, business name, tagline, description, location, and other business records."

@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Typography, IconButton, Tooltip, Slider, Avatar, Chip, CircularProgress } from '@mui/material';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText, Palette, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { CreativeTemplatePicker } from './CreativeTemplatePicker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import type { Slide } from '../../types/venturemate';
@@ -636,12 +637,8 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
   if (!slide) return null;
   return (
     <Box ref={viewerRef} sx={{ position: 'relative', width: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5, flexWrap: 'wrap', px: { xs: 0.5, sm: 0 } }}>
-        <Palette size={14} color="var(--vm-text-muted)" />
-        {TEMPLATES.map(t => (
-          <Chip key={t.id} label={t.label} size="small" onClick={() => setTemplateId(t.id)}
-            sx={{ bgcolor: templateId === t.id ? `${t.accent}20` : 'rgba(255,255,255,.04)', color: templateId === t.id ? t.accent : 'var(--vm-text-secondary)', fontWeight: templateId === t.id ? 700 : 500, cursor: 'pointer', fontSize: 11, border: templateId === t.id ? `1px solid ${t.accent}30` : '1px solid transparent', '&:hover': { bgcolor: `${t.accent}15` } }} />
-        ))}
+      <Box sx={{ mb: 1.5, px: { xs: 0.5, sm: 0 } }}>
+        <CreativeTemplatePicker templates={TEMPLATES} value={templateId} onChange={setTemplateId} />
       </Box>
       <Box data-slide-container sx={{
         position: 'relative', width: '100%', aspectRatio: '16 / 9',
