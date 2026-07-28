@@ -1,17 +1,14 @@
 package graph
 
 import (
-	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/smtp"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/graphql-go/graphql"
-	jemail "github.com/jordan-wright/email"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
@@ -40,33 +37,45 @@ func formatInvoiceTimePtr(t *time.Time) string {
 var invoiceType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Invoice",
 	Fields: graphql.Fields{
-		"id":              &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"userId":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"businessId":      &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"invoiceNumber":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"customerName":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"customerEmail":   &graphql.Field{Type: graphql.String},
-		"amount":          &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"subtotal":        &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"taxRate":         &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"taxAmount":       &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"discount":        &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"shippingCost":    &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
-		"currency":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"status":          &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"dueDate":         &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.DueDate), nil }
-			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.DueDate), nil }
+		"id":            &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"userId":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"businessId":    &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"invoiceNumber": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"customerName":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"customerEmail": &graphql.Field{Type: graphql.String},
+		"amount":        &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"subtotal":      &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"taxRate":       &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"taxAmount":     &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"discount":      &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"shippingCost":  &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"currency":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"status":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"dueDate": &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok {
+				return formatInvoiceTime(inv.DueDate), nil
+			}
+			if inv, ok := p.Source.(invoices.Invoice); ok {
+				return formatInvoiceTime(inv.DueDate), nil
+			}
 			return "", nil
 		}},
 		"issueDate": &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.IssueDate), nil }
-			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.IssueDate), nil }
+			if inv, ok := p.Source.(*invoices.Invoice); ok {
+				return formatInvoiceTime(inv.IssueDate), nil
+			}
+			if inv, ok := p.Source.(invoices.Invoice); ok {
+				return formatInvoiceTime(inv.IssueDate), nil
+			}
 			return "", nil
 		}},
 		"paidDate": &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PaidDate), nil }
-			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PaidDate), nil }
+			if inv, ok := p.Source.(*invoices.Invoice); ok {
+				return formatInvoiceTimePtr(inv.PaidDate), nil
+			}
+			if inv, ok := p.Source.(invoices.Invoice); ok {
+				return formatInvoiceTimePtr(inv.PaidDate), nil
+			}
 			return "", nil
 		}},
 		"items":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -76,19 +85,31 @@ var invoiceType = graphql.NewObject(graphql.ObjectConfig{
 		"poNumber":        &graphql.Field{Type: graphql.String},
 		"paymentTerms":    &graphql.Field{Type: graphql.String},
 		"pdfUrl":          &graphql.Field{Type: graphql.String},
-		"pdfGeneratedAt":  &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PdfGeneratedAt), nil }
-			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTimePtr(inv.PdfGeneratedAt), nil }
+		"pdfGeneratedAt": &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if inv, ok := p.Source.(*invoices.Invoice); ok {
+				return formatInvoiceTimePtr(inv.PdfGeneratedAt), nil
+			}
+			if inv, ok := p.Source.(invoices.Invoice); ok {
+				return formatInvoiceTimePtr(inv.PdfGeneratedAt), nil
+			}
 			return "", nil
 		}},
 		"createdAt": &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.CreatedAt), nil }
-			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.CreatedAt), nil }
+			if inv, ok := p.Source.(*invoices.Invoice); ok {
+				return formatInvoiceTime(inv.CreatedAt), nil
+			}
+			if inv, ok := p.Source.(invoices.Invoice); ok {
+				return formatInvoiceTime(inv.CreatedAt), nil
+			}
 			return "", nil
 		}},
 		"updatedAt": &graphql.Field{Type: graphql.String, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if inv, ok := p.Source.(*invoices.Invoice); ok { return formatInvoiceTime(inv.UpdatedAt), nil }
-			if inv, ok := p.Source.(invoices.Invoice); ok { return formatInvoiceTime(inv.UpdatedAt), nil }
+			if inv, ok := p.Source.(*invoices.Invoice); ok {
+				return formatInvoiceTime(inv.UpdatedAt), nil
+			}
+			if inv, ok := p.Source.(invoices.Invoice); ok {
+				return formatInvoiceTime(inv.UpdatedAt), nil
+			}
 			return "", nil
 		}},
 		"itemsList": &graphql.Field{
@@ -355,20 +376,20 @@ func init() {
 				if setACLErr := AppContainer.S3.SetPublicRead(p.Context, fileName); setACLErr != nil {
 					// Non-fatal: log but continue
 				}
-			if err := AppContainer.InvoiceRepo.UpdatePdfURLWithSize(p.Context, inv.ID, pdfURL, int64(len(pdfData))); err != nil {
-				return nil, fmt.Errorf("save pdf url failed: %w", err)
-			}
-			inv.PdfURL = pdfURL
+				if err := AppContainer.InvoiceRepo.UpdatePdfURLWithSize(p.Context, inv.ID, pdfURL, int64(len(pdfData))); err != nil {
+					return nil, fmt.Errorf("save pdf url failed: %w", err)
+				}
+				inv.PdfURL = pdfURL
 
-			// Update storage usage
-			if AppContainer.UsageRepo != nil && AppContainer.FileHandler != nil {
-				if totalStorage, err := AppContainer.FileHandler.CalculateTotalStorage(p.Context, inv.UserID); err == nil {
-					AppContainer.UsageRepo.UpdateStorage(p.Context, inv.UserID, subscriptions.BillingPeriod(time.Now()), totalStorage)
+				// Update storage usage
+				if AppContainer.UsageRepo != nil && AppContainer.FileHandler != nil {
+					if totalStorage, err := AppContainer.FileHandler.CalculateTotalStorage(p.Context, inv.UserID); err == nil {
+						AppContainer.UsageRepo.UpdateStorage(p.Context, inv.UserID, subscriptions.BillingPeriod(time.Now()), totalStorage)
+					}
 				}
 			}
-		}
 
-		// Send email to customer
+			// Send email to customer
 			custEmail := strings.TrimSpace(inv.CustomerEmail)
 			if custEmail != "" && strings.Contains(custEmail, "@") {
 				biz, err := AppContainer.BusinessRepo.GetByID(p.Context, p.Args["businessId"].(string))
@@ -376,37 +397,36 @@ func init() {
 					biz = &businesses.Business{Name: "VentureMate"}
 				}
 				// Build line items table
-			var items []invoices.InvoiceItem
-			json.Unmarshal([]byte(inv.Items), &items)
-			itemsHTML := ""
-			for _, item := range items {
-				lineTotal := float64(item.Quantity) * item.UnitPrice
-				itemsHTML += fmt.Sprintf(`<tr><td style="padding:6px;border-bottom:1px solid #eee;">%s</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center;">%d</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">%s %.2f</td></tr>`, item.Description, item.Quantity, inv.Currency, lineTotal)
-			}
-			if len(items) == 0 {
-				itemsHTML = fmt.Sprintf(`<tr><td style="padding:6px;border-bottom:1px solid #eee;" colspan="3">%s</td></tr>`, inv.Notes)
-			}
+				var items []invoices.InvoiceItem
+				json.Unmarshal([]byte(inv.Items), &items)
+				itemsHTML := ""
+				for _, item := range items {
+					lineTotal := float64(item.Quantity) * item.UnitPrice
+					itemsHTML += fmt.Sprintf(`<tr><td style="padding:6px;border-bottom:1px solid #eee;">%s</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center;">%d</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">%s %.2f</td></tr>`, item.Description, item.Quantity, inv.Currency, lineTotal)
+				}
+				if len(items) == 0 {
+					itemsHTML = fmt.Sprintf(`<tr><td style="padding:6px;border-bottom:1px solid #eee;" colspan="3">%s</td></tr>`, inv.Notes)
+				}
 
-			// Build totals section
-			totalsHTML := fmt.Sprintf(`<tr style="font-weight:bold;"><td style="padding:6px;" colspan="2">Subtotal</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, inv.Subtotal)
-			if inv.Discount > 0 {
-				totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Discount</td><td style="padding:6px;text-align:right;">-%s %.2f</td></tr>`, inv.Currency, inv.Discount)
-			}
-			if inv.TaxRate > 0 {
-				totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Tax (%.1f%%)</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.TaxRate, inv.Currency, inv.TaxAmount)
-			}
-			if inv.ShippingCost > 0 {
-				totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Shipping</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, inv.ShippingCost)
-			}
-			grandTotal := inv.Subtotal - inv.Discount + inv.TaxAmount + inv.ShippingCost
-			totalsHTML += fmt.Sprintf(`<tr style="font-weight:bold;background:#10b981;color:#fff;"><td style="padding:8px;" colspan="2">TOTAL</td><td style="padding:8px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, grandTotal)
+				// Build totals section
+				totalsHTML := fmt.Sprintf(`<tr style="font-weight:bold;"><td style="padding:6px;" colspan="2">Subtotal</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, inv.Subtotal)
+				if inv.Discount > 0 {
+					totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Discount</td><td style="padding:6px;text-align:right;">-%s %.2f</td></tr>`, inv.Currency, inv.Discount)
+				}
+				if inv.TaxRate > 0 {
+					totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Tax (%.1f%%)</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.TaxRate, inv.Currency, inv.TaxAmount)
+				}
+				if inv.ShippingCost > 0 {
+					totalsHTML += fmt.Sprintf(`<tr><td style="padding:6px;" colspan="2">Shipping</td><td style="padding:6px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, inv.ShippingCost)
+				}
+				grandTotal := inv.Subtotal - inv.Discount + inv.TaxAmount + inv.ShippingCost
+				totalsHTML += fmt.Sprintf(`<tr style="font-weight:bold;background:#10b981;color:#fff;"><td style="padding:8px;" colspan="2">TOTAL</td><td style="padding:8px;text-align:right;">%s %.2f</td></tr>`, inv.Currency, grandTotal)
 
-			pdfLink := inv.PdfURL
-			if pdfLink == "" {
-				pdfLink = fmt.Sprintf("https://venturemate.net/api/pdf/public?type=invoice&id=%s", inv.ID)
-			}
+				// Always use the public backend viewer in customer emails. Direct
+				// object URLs can fail when the storage bucket blocks public ACLs.
+				pdfLink := publicInvoiceURL(inv.ID)
 
-			emailBody := fmt.Sprintf(`
+				emailBody := fmt.Sprintf(`
 <h2>Invoice from %s</h2>
 <p>Dear %s,</p>
 <p>Please find your invoice <strong>#%s</strong> attached below.</p>
@@ -424,17 +444,15 @@ func init() {
 <p style="margin-top:16px;font-size:13px;">—<br>You can also <a href="https://venturemate.net/signup" style="color:#10b981;font-weight:bold;text-decoration:underline;">try VentureMate now</a> to manage your finances, send invoices, and grow your business.</p>
 `, biz.Name, inv.CustomerName, inv.InvoiceNumber, itemsHTML, totalsHTML, pdfLink, inv.DueDate.Format("Jan 02, 2006"), inv.PaymentTerms)
 
-				// Try to use the business's connected email SMTP if available
-				sendErr := sendInvoiceViaBusinessEmail(p.Context, biz.ID, custEmail, fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name), emailBody)
-				if sendErr != nil {
-					// Fall back to default backend email service
-					log.Printf("Business email SMTP failed for %s, falling back to default: %v", biz.ID, sendErr)
-					sendErr = AppContainer.Email.SendTemplatedEmail(
-						[]string{custEmail},
-						fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name),
-						emailBody,
-					)
-				}
+				sendErr := AppContainer.Email.SendForBusiness(
+					p.Context,
+					AppContainer.EmailSyncRepo,
+					biz.ID,
+					[]string{custEmail},
+					fmt.Sprintf("Invoice #%s from %s", inv.InvoiceNumber, biz.Name),
+					emailBody,
+					nil,
+				)
 				if sendErr != nil {
 					return nil, fmt.Errorf("email send failed: %w", sendErr)
 				}
@@ -493,41 +511,10 @@ func init() {
 	})
 }
 
-// sendInvoiceViaBusinessEmail tries to send email using the business's connected email account SMTP.
-// Returns error if no account found (caller should fall back to default email).
-func sendInvoiceViaBusinessEmail(ctx context.Context, businessID, toEmail, subject, body string) error {
-	if AppContainer == nil || AppContainer.EmailSyncRepo == nil {
-		return fmt.Errorf("email sync not available")
+func publicInvoiceURL(invoiceID string) string {
+	baseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("PUBLIC_APP_URL")), "/")
+	if baseURL == "" {
+		baseURL = "https://venturemate.net"
 	}
-	accounts, err := AppContainer.EmailSyncRepo.ListAccounts(ctx, businessID)
-	if err != nil || len(accounts) == 0 {
-		return fmt.Errorf("no connected email accounts found for business")
-	}
-	// Use the first account that has SMTP settings
-	for _, acct := range accounts {
-		if acct.SmtpHost == "" || acct.SmtpUsername == "" {
-			continue
-		}
-		// Fetch full account with password
-		fullAcct, err := AppContainer.EmailSyncRepo.GetByID(ctx, acct.ID)
-		if err != nil || fullAcct == nil || fullAcct.SmtpPassword == "" {
-			continue
-		}
-		// Send directly using jordan-wright/email library
-		addr := fmt.Sprintf("%s:%d", fullAcct.SmtpHost, fullAcct.SmtpPort)
-		if fullAcct.SmtpPort == 0 {
-			addr = fmt.Sprintf("%s:587", fullAcct.SmtpHost)
-		}
-		from := fmt.Sprintf("%s <%s>", fullAcct.Email, fullAcct.Email)
-		e := jemail.NewEmail()
-		e.From = from
-		e.To = []string{toEmail}
-		e.Subject = subject
-		e.HTML = []byte(body)
-		auth := smtp.PlainAuth("", fullAcct.SmtpUsername, fullAcct.SmtpPassword, fullAcct.SmtpHost)
-		return e.SendWithStartTLS(addr, auth, &tls.Config{ServerName: fullAcct.SmtpHost})
-	}
-	return fmt.Errorf("no usable email account with SMTP credentials")
+	return fmt.Sprintf("%s/api/pdf/public?type=invoice&id=%s", baseURL, url.QueryEscape(invoiceID))
 }
-
-

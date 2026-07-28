@@ -422,7 +422,7 @@ export function CRMPage() {
                 {c.notes && <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.notes}</Typography>}
                 <Box sx={{ display: 'flex', gap: 0.75, mt: 1.5 }}>
                   <GradientButton variant="outline" size="sm" sx={{ fontSize: 11, flex: 1, py: 0.5 }}
-                    onClick={() => c.phone ? window.open(`tel:${c.phone}`, '_self') : toast.warning('No phone number', { description: 'This contact has no phone number.' })}>
+                    onClick={() => c.phone ? window.location.assign(`tel:${c.phone.replace(/[^\d+*#,;]/g, '')}`) : toast.warning('No phone number', { description: 'This contact has no phone number.' })}>
                     <PhoneCall size={12} style={{ marginRight: 4 }} /> Call
                   </GradientButton>
                   <GradientButton variant="outline" size="sm" sx={{ fontSize: 11, flex: 1, py: 0.5 }}

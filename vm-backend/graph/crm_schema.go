@@ -50,7 +50,7 @@ func notifyTaskAssignment(ctx context.Context, businessID, assignedTo, taskTitle
 </table>
 <p style="color:#64748b;font-size:12px;">Please log in to VentureMate to view and update your tasks.</p>
 `, taskTitle, taskStatus)
-	AppContainer.Email.SendTemplatedEmail([]string{email}, subject, body)
+	_ = AppContainer.Email.SendForBusiness(ctx, AppContainer.EmailSyncRepo, businessID, []string{email}, subject, body, nil)
 }
 
 func formatTime(t time.Time) string {
@@ -177,7 +177,7 @@ func init() {
 					"title": d.Title, "value": d.Value, "currency": d.Currency,
 					"stage": d.Stage, "probability": d.Probability,
 					"expectedCloseDate": formatPtr(d.ExpectedCloseDate),
-					"createdAt": formatTime(d.CreatedAt), "updatedAt": formatTime(d.UpdatedAt),
+					"createdAt":         formatTime(d.CreatedAt), "updatedAt": formatTime(d.UpdatedAt),
 				}
 			}
 			return result, nil
@@ -400,7 +400,7 @@ func init() {
 				"title": d.Title, "value": d.Value, "currency": d.Currency,
 				"stage": d.Stage, "probability": d.Probability,
 				"expectedCloseDate": formatPtr(d.ExpectedCloseDate),
-				"createdAt": formatTime(d.CreatedAt), "updatedAt": formatTime(d.UpdatedAt),
+				"createdAt":         formatTime(d.CreatedAt), "updatedAt": formatTime(d.UpdatedAt),
 			}, nil
 		},
 	})
@@ -427,14 +427,14 @@ func init() {
 				return nil, err
 			}
 			d := &crm.Deal{
-				ID:        existing.ID,
-				BusinessID: p.Args["businessId"].(string),
-				Title:     getStringArgDef(p.Args, "title", existing.Title),
-				Value:     getFloatArgDef(p.Args, "value", existing.Value),
-				Currency:  getStringArgDef(p.Args, "currency", existing.Currency),
-				Stage:     getStringArgDef(p.Args, "stage", existing.Stage),
+				ID:          existing.ID,
+				BusinessID:  p.Args["businessId"].(string),
+				Title:       getStringArgDef(p.Args, "title", existing.Title),
+				Value:       getFloatArgDef(p.Args, "value", existing.Value),
+				Currency:    getStringArgDef(p.Args, "currency", existing.Currency),
+				Stage:       getStringArgDef(p.Args, "stage", existing.Stage),
 				Probability: getIntArgDef(p.Args, "probability", existing.Probability),
-				CreatedAt: existing.CreatedAt,
+				CreatedAt:   existing.CreatedAt,
 			}
 			if cid, ok := p.Args["contactId"].(string); ok {
 				d.ContactID = strPtr(cid)
@@ -457,7 +457,7 @@ func init() {
 				"title": d.Title, "value": d.Value, "currency": d.Currency,
 				"stage": d.Stage, "probability": d.Probability,
 				"expectedCloseDate": formatPtr(d.ExpectedCloseDate),
-				"createdAt": formatTime(d.CreatedAt), "updatedAt": formatTime(d.UpdatedAt),
+				"createdAt":         formatTime(d.CreatedAt), "updatedAt": formatTime(d.UpdatedAt),
 			}, nil
 		},
 	})
@@ -625,11 +625,11 @@ func init() {
 	rootMutation.AddFieldConfig("sendCrmEmail", &graphql.Field{
 		Type: graphql.Boolean,
 		Args: graphql.FieldConfigArgument{
-			"contactId":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"businessId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"subject":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"body":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"attachments":  &graphql.ArgumentConfig{Type: graphql.String}, // JSON array of {filename, data(base64), mimeType}
+			"contactId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"businessId":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"subject":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"body":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"attachments": &graphql.ArgumentConfig{Type: graphql.String}, // JSON array of {filename, data(base64), mimeType}
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil || AppContainer.Email == nil || AppContainer.CrmRepo == nil {
@@ -676,23 +676,16 @@ func init() {
 				}
 			}
 
-			if len(attachments) > 0 {
-				if err := AppContainer.Email.SendWithAttachments(
-					[]string{contact.Email},
-					subject,
-					bodyHTML,
-					attachments,
-				); err != nil {
-					return false, fmt.Errorf("email send failed: %w", err)
-				}
-			} else {
-				if err := AppContainer.Email.SendTemplatedEmail(
-					[]string{contact.Email},
-					subject,
-					bodyHTML,
-				); err != nil {
-					return false, fmt.Errorf("email send failed: %w", err)
-				}
+			if err := AppContainer.Email.SendForBusiness(
+				p.Context,
+				AppContainer.EmailSyncRepo,
+				p.Args["businessId"].(string),
+				[]string{contact.Email},
+				subject,
+				bodyHTML,
+				attachments,
+			); err != nil {
+				return false, fmt.Errorf("email send failed: %w", err)
 			}
 
 			// Log activity

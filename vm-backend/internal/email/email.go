@@ -2,6 +2,7 @@ package email
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jordan-wright/email"
+	"github.com/venturemate/vmbackend/internal/crmemail"
 )
 
 type Service struct {
@@ -122,6 +124,55 @@ func (s *Service) SendWithAttachments(to []string, subject, body string, attachm
 	return e.SendWithStartTLS(addr, auth, &tls.Config{
 		ServerName: s.host,
 	})
+}
+
+// SendForBusiness sends through the first usable SMTP account connected to the
+// business. If no connected account can send, it falls back to the platform
+// mailer so transactional delivery is not lost.
+func (s *Service) SendForBusiness(ctx context.Context, accounts *crmemail.Repository, businessID string, to []string, subject, body string, attachments []Attach) error {
+	if accounts != nil && businessID != "" {
+		if linked, err := accounts.ListAccounts(ctx, businessID); err == nil {
+			for _, summary := range linked {
+				if summary.SmtpHost == "" || summary.SmtpUsername == "" {
+					continue
+				}
+				account, err := accounts.GetByID(ctx, summary.ID)
+				if err != nil || account == nil || account.SmtpPassword == "" {
+					continue
+				}
+				message := email.NewEmail()
+				message.From = fmt.Sprintf("%s <%s>", account.Email, account.Email)
+				message.To = to
+				message.Subject = subject
+				message.HTML = []byte(body)
+				for _, attachment := range attachments {
+					mimeType := attachment.MimeType
+					if mimeType == "" {
+						mimeType = "application/octet-stream"
+					}
+					if _, err := message.Attach(bytes.NewReader(attachment.Data), attachment.Filename, mimeType); err != nil {
+						continue
+					}
+				}
+				port := account.SmtpPort
+				if port == 0 {
+					port = 587
+				}
+				address := fmt.Sprintf("%s:%d", account.SmtpHost, port)
+				auth := smtp.PlainAuth("", account.SmtpUsername, account.SmtpPassword, account.SmtpHost)
+				tlsConfig := &tls.Config{ServerName: account.SmtpHost}
+				if port == 465 {
+					err = message.SendWithTLS(address, auth, tlsConfig)
+				} else {
+					err = message.SendWithStartTLS(address, auth, tlsConfig)
+				}
+				if err == nil {
+					return nil
+				}
+			}
+		}
+	}
+	return s.SendWithAttachments(to, subject, body, attachments)
 }
 
 // SendTemplatedEmail sends an email using the standard VentureMate template.

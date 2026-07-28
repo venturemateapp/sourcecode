@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/venturemate/vmbackend/internal/crmemail"
 	"github.com/venturemate/vmbackend/internal/email"
 )
 
@@ -30,24 +31,25 @@ type Action struct {
 }
 
 type ActionConfig struct {
-	To       string                 `json:"to,omitempty"`
-	Subject  string                 `json:"subject,omitempty"`
-	Body     string                 `json:"body,omitempty"`
-	ObjectName string               `json:"objectName,omitempty"`
-	Fields   map[string]interface{} `json:"fields,omitempty"`
-	RecordID string                 `json:"recordId,omitempty"`
-	URL      string                 `json:"url,omitempty"`
-	Method   string                 `json:"method,omitempty"`
+	To         string                 `json:"to,omitempty"`
+	Subject    string                 `json:"subject,omitempty"`
+	Body       string                 `json:"body,omitempty"`
+	ObjectName string                 `json:"objectName,omitempty"`
+	Fields     map[string]interface{} `json:"fields,omitempty"`
+	RecordID   string                 `json:"recordId,omitempty"`
+	URL        string                 `json:"url,omitempty"`
+	Method     string                 `json:"method,omitempty"`
 }
 
 type Engine struct {
-	repo      *Repository
-	db        *pgxpool.Pool
-	emailSvc  *email.Service
+	repo          *Repository
+	db            *pgxpool.Pool
+	emailSvc      *email.Service
+	emailAccounts *crmemail.Repository
 }
 
-func NewEngine(repo *Repository, db *pgxpool.Pool, emailSvc *email.Service) *Engine {
-	return &Engine{repo: repo, db: db, emailSvc: emailSvc}
+func NewEngine(repo *Repository, db *pgxpool.Pool, emailSvc *email.Service, emailAccounts *crmemail.Repository) *Engine {
+	return &Engine{repo: repo, db: db, emailSvc: emailSvc, emailAccounts: emailAccounts}
 }
 
 func (e *Engine) Execute(ctx context.Context, workflowID string, triggerData map[string]interface{}) error {
@@ -62,8 +64,10 @@ func (e *Engine) Execute(ctx context.Context, workflowID string, triggerData map
 	if err != nil {
 		return fmt.Errorf("list actions: %w", err)
 	}
+	var businessID string
+	_ = e.db.QueryRow(ctx, `SELECT business_id FROM crm_workflows WHERE id = $1`, workflowID).Scan(&businessID)
 	for _, action := range actions {
-		if err := e.executeAction(ctx, action, triggerData); err != nil {
+		if err := e.executeAction(ctx, businessID, action, triggerData); err != nil {
 			log.Printf("Workflow action failed: %v", err)
 			e.repo.LogExecution(ctx, workflowID, trigger.ID, "failed", err.Error())
 			return err
@@ -99,14 +103,14 @@ func (e *Engine) MatchAndExecute(ctx context.Context, businessID, triggerType, t
 	}
 }
 
-func (e *Engine) executeAction(ctx context.Context, action Action, triggerData map[string]interface{}) error {
+func (e *Engine) executeAction(ctx context.Context, businessID string, action Action, triggerData map[string]interface{}) error {
 	var cfg ActionConfig
 	if err := json.Unmarshal([]byte(action.ActionConfig), &cfg); err != nil {
 		return fmt.Errorf("parse config: %w", err)
 	}
 	switch action.ActionType {
 	case "send_email":
-		return e.sendEmail(ctx, cfg)
+		return e.sendEmail(ctx, businessID, cfg)
 	case "update_record":
 		return e.updateRecord(ctx, cfg)
 	case "webhook":
@@ -116,12 +120,12 @@ func (e *Engine) executeAction(ctx context.Context, action Action, triggerData m
 	}
 }
 
-func (e *Engine) sendEmail(ctx context.Context, cfg ActionConfig) error {
+func (e *Engine) sendEmail(ctx context.Context, businessID string, cfg ActionConfig) error {
 	if e.emailSvc == nil {
 		return nil
 	}
 	body := fmt.Sprintf("<p>%s</p>", strings.ReplaceAll(cfg.Body, "\n", "<br>"))
-	return e.emailSvc.SendTemplatedEmail([]string{cfg.To}, cfg.Subject, body)
+	return e.emailSvc.SendForBusiness(ctx, e.emailAccounts, businessID, []string{cfg.To}, cfg.Subject, body, nil)
 }
 
 func (e *Engine) updateRecord(ctx context.Context, cfg ActionConfig) error {

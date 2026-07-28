@@ -144,7 +144,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	calendarSyncSvc := crmcalendar.NewSyncService(calendarRepo)
 	customObjectsRepo := crmobjects.NewRepository(dbPool)
 	workflowRepo := crmworkflow.NewRepository(dbPool)
-	workflowEngine := crmworkflow.NewEngine(workflowRepo, dbPool, emailSvc)
+	workflowEngine := crmworkflow.NewEngine(workflowRepo, dbPool, emailSvc, emailSyncRepo)
 	financingRepo := financing.NewRepository(dbPool)
 	expenditureRepo := expenditure.NewRepository(dbPool)
 	expensePdfGen := expensepdf.NewGenerator(bizRepo)
