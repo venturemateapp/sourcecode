@@ -323,7 +323,7 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                 )}
               </Box>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5, mb: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(100px, 1fr)', gap: 1.5, mb: 2 }}>
                 <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.12)' }}>
                   <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#10b981', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3 }}>Revenue</Typography>
                   {(() => {
@@ -335,10 +335,6 @@ export function Businesses({ onViewChange }: BusinessesProps) {
                       </Typography>
                     )) : <Typography sx={{ fontSize: 12, color: 'var(--vm-text-muted)' }}>—</Typography>;
                   })()}
-                </Box>
-                <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(59,130,246,.06)', border: '1px solid rgba(59,130,246,.12)' }}>
-                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3 }}>Users</Typography>
-                  <Typography sx={{ fontSize: 18, fontWeight: 800, color: 'var(--vm-text-primary)' }}>{business.metrics?.totalUsers ?? 0}</Typography>
                 </Box>
                 <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'rgba(139,92,246,.06)', border: '1px solid rgba(139,92,246,.12)' }}>
                   <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#8b5cf6', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.3 }}>Team</Typography>
