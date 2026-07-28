@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"strings"
@@ -29,6 +30,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition, Content-Length, Content-Type")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -173,7 +175,9 @@ func downloadHandler(container *app.Container) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", contentType)
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, found.Name))
+		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": found.Name}))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Write(data)
 	}
 }
@@ -375,7 +379,9 @@ func pdfDownloadHandler(container *app.Container) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", contentType)
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, fileName))
+		w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Write(data)
 	}
 }

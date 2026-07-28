@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { getToken } from '../../lib/auth';
+import { downloadFile } from '../../lib/download';
 import {
   Box,
   Typography,
@@ -19,6 +20,7 @@ import {
   DialogContent,
   DialogActions,
   Grid,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search,
@@ -106,6 +108,7 @@ export function DocumentsPage(_props: DocumentsProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{type: 'success' | 'error'; message: string} | null>(null);
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+  const [downloadingDocument, setDownloadingDocument] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get documents for selected business
@@ -554,16 +557,23 @@ export function DocumentsPage(_props: DocumentsProps) {
           },
         }}
       >
-        <MenuItem onClick={() => {
+        <MenuItem onClick={async () => {
+          if (downloadingDocument) return;
           if (selectedDoc && selectedBusiness?.id) {
-            const token = getToken();
-            const url = `/api/documents/download?businessId=${selectedBusiness.id}&documentId=${selectedDoc.id}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-            window.open(url, '_blank');
+            const url = `/api/documents/download?businessId=${encodeURIComponent(selectedBusiness.id)}&documentId=${encodeURIComponent(selectedDoc.id)}`;
+            setDownloadingDocument(true);
+            try {
+              await downloadFile(url, selectedDoc.name || 'document');
+            } catch (error) {
+              console.error('Document download failed', error);
+            } finally {
+              setDownloadingDocument(false);
+            }
           }
           handleMenuClose();
-        }} sx={{ color: 'var(--vm-text-primary)' }}>
-          <Download size={16} style={{ marginRight: 8 }} />
-          Download
+        }} disabled={downloadingDocument} sx={{ color: 'var(--vm-text-primary)' }}>
+          {downloadingDocument ? <CircularProgress size={16} sx={{ mr: 1 }} /> : <Download size={16} style={{ marginRight: 8 }} />}
+          {downloadingDocument ? 'Downloading…' : 'Download'}
         </MenuItem>
         <MenuItem onClick={() => {
           if (selectedDoc && selectedBusiness?.id) {

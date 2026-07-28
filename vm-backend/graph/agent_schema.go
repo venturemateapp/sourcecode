@@ -114,6 +114,7 @@ func fullAgentTools() *ai.ToolRegistry {
 		InvestorRepo:    AppContainer.InvestorRepo,
 		FileHandler:     AppContainer.FileHandler,
 		RecraftClient:   AppContainer.RecraftClient,
+		AssetStore:      AppContainer.S3,
 	})
 }
 
@@ -292,7 +293,7 @@ func init() {
 				}
 			}
 
-			proposal, err := ai.ProposeChanges(p.Context, provider, biz, prompt, domain, extraCtx, AppContainer.RecraftClient)
+			proposal, err := ai.ProposeChanges(p.Context, provider, biz, prompt, domain, extraCtx, AppContainer.RecraftClient, AppContainer.S3)
 			if err != nil {
 				log.Printf("Propose error for user %s: %v", userID, err)
 				return map[string]interface{}{"message": "I encountered an error processing your request.", "proposals": nil}, nil
@@ -307,10 +308,10 @@ func init() {
 						if codeResult, codeErr := ai.GenerateReactProject(ch.NewValue, bizName, logo, tagline); codeErr == nil && len(codeResult.Files) > 0 {
 							filesJSON, _ := json.Marshal(codeResult.Files)
 							proposal.Changes = append(proposal.Changes, ai.ProposedChange{
-								ID:      "code-1",
-								Type:    "update",
-								Field:   "websiteCode",
-								Summary: fmt.Sprintf("Generated %d project files", len(codeResult.Files)),
+								ID:       "code-1",
+								Type:     "update",
+								Field:    "websiteCode",
+								Summary:  fmt.Sprintf("Generated %d project files", len(codeResult.Files)),
 								NewValue: string(filesJSON),
 							})
 							_ = i // suppress unused warning
@@ -354,7 +355,7 @@ func init() {
 			if err := json.Unmarshal([]byte(p.Args["changes"].(string)), &changes); err != nil {
 				return map[string]interface{}{"success": false, "message": "Invalid changes format"}, nil
 			}
-			msg, err := ai.ApplyChangesWithDependencies(p.Context, ai.ApplyDependencies{BusinessRepo: AppContainer.BusinessRepo, DomainRepo: AppContainer.DomainRepo, WebsiteRepo: AppContainer.WebsiteRepo}, userID, businessID, changes)
+			msg, err := ai.ApplyChangesWithDependencies(p.Context, ai.ApplyDependencies{BusinessRepo: AppContainer.BusinessRepo, DomainRepo: AppContainer.DomainRepo, WebsiteRepo: AppContainer.WebsiteRepo, AssetStore: AppContainer.S3}, userID, businessID, changes)
 			if err != nil {
 				log.Printf("Apply error for user %s: %v", userID, err)
 				return map[string]interface{}{"success": false, "message": err.Error()}, nil

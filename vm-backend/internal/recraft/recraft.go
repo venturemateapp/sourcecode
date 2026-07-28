@@ -16,6 +16,10 @@ type Client struct {
 	http    *http.Client
 }
 
+func (c *Client) Available() bool {
+	return c != nil && c.apiKey != ""
+}
+
 func NewClient() *Client {
 	apiKey := os.Getenv("RECRAFT_API_KEY")
 	return &Client{
@@ -44,14 +48,23 @@ type GenerateResponse struct {
 }
 
 func (c *Client) GenerateLogo(prompt string) (*GenerateResponse, error) {
+	return c.GenerateImage(prompt, "1024x1024")
+}
+
+// GenerateImage creates a raster image. Callers must copy the returned
+// temporary URL into durable storage before saving it.
+func (c *Client) GenerateImage(prompt, size string) (*GenerateResponse, error) {
 	if c.apiKey == "" {
 		return nil, fmt.Errorf("RECRAFT_API_KEY not set")
+	}
+	if size == "" {
+		size = "1365x1024"
 	}
 	body := GenerateRequest{
 		Prompt: prompt,
 		Model:  "recraftv4_1",
 		N:      1,
-		Size:   "1024x1024",
+		Size:   size,
 	}
 	b, _ := json.Marshal(body)
 	req, err := http.NewRequest("POST", c.baseURL+"/images/generations", bytes.NewReader(b))
@@ -77,6 +90,17 @@ func (c *Client) GenerateLogo(prompt string) (*GenerateResponse, error) {
 		return nil, fmt.Errorf("recraft parse: %w", err)
 	}
 	return &result, nil
+}
+
+func (c *Client) GenerateImageURL(prompt, size string) (string, error) {
+	result, err := c.GenerateImage(prompt, size)
+	if err != nil {
+		return "", err
+	}
+	if imageURL := result.GetFirstURL(); imageURL != "" {
+		return imageURL, nil
+	}
+	return "", fmt.Errorf("recraft returned no image URL")
 }
 
 // GetFirstURL returns the first image URL from the response, supporting multiple formats.

@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, Slider, Avatar, Chip } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Slider, Avatar, Chip, CircularProgress } from '@mui/material';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText, Palette, TrendingUp, Users, DollarSign } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import PptxGenJS from 'pptxgenjs';
 import type { Slide } from '../../types/venturemate';
+import { exportPitchDeckPptx } from '../../lib/pitchDeckExport';
+import { ExportProgress } from '../shared/ExportProgress';
 
 interface GlowPos {
   color: string; width: number; height: number; blur: number;
@@ -543,6 +544,8 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [templateId, setTemplateId] = useState('velocity');
+  const [pptxExporting, setPptxExporting] = useState(false);
+  const [pdfExporting, setPdfExporting] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
   const slide = slides[currentIndex];
@@ -592,49 +595,43 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
 
   const exportPDF = async () => {
     const el = viewerRef.current?.querySelector('[data-slide-container]') as HTMLElement;
-    if (!el) return;
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
-    const pageWidth = 1920; const pageHeight = 1080;
-    for (let i = 0; i < total; i++) {
-      goTo(i);
-      await new Promise(r => setTimeout(r, 150));
-      const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
-      if (!el2) continue;
-      const canvas = await captureSlideViewer(el2);
-      if (!canvas) continue;
-      if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
+    if (!el || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
+      const pageWidth = 1920; const pageHeight = 1080;
+      for (let i = 0; i < total; i++) {
+        goTo(i);
+        await new Promise(r => setTimeout(r, 150));
+        const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
+        if (!el2) continue;
+        const canvas = await captureSlideViewer(el2);
+        if (!canvas) continue;
+        if (i > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
+      }
+      pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('PDF export failed', error);
+      window.alert(error instanceof Error ? error.message : 'PDF export failed. Please try again.');
+    } finally {
+      setPdfExporting(false);
     }
-    pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
   };
   const exportPPTX = async () => {
-    const el = viewerRef.current?.querySelector('[data-slide-container]') as HTMLElement;
-    if (!el) return;
-    const pptx = new PptxGenJS();
-    pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
-    pptx.layout = 'WIDE';
-    for (let i = 0; i < total; i++) {
-      goTo(i);
-      await new Promise(r => setTimeout(r, 150));
-      const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
-      if (!el2) continue;
-      const canvas = await captureSlideViewer(el2);
-      if (canvas) {
-        const imgData = canvas.toDataURL('image/png');
-        const pptSlide = pptx.addSlide();
-        pptSlide.background = { color: '08080B' };
-        pptSlide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
-      } else {
-        // Fallback: text-only slide
-        const s = slides[i];
-        const pptSlide = pptx.addSlide();
-        pptSlide.background = { color: '08080B' };
-        pptSlide.addText(s.title, { x: 0.8, y: 1.5, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Inter', color: 'FFFFFF', bold: true });
-        if (s.content) pptSlide.addText(s.content, { x: 0.8, y: 3.2, w: 11.7, h: 1.5, fontSize: 16, fontFace: 'Inter', color: 'AAAAAA' });
-        if (s.bullets) pptSlide.addText(s.bullets.map(b => `• ${b}`).join('\n'), { x: 0.8, y: 5, w: 11.7, h: 2, fontSize: 14, fontFace: 'Inter', color: 'CCCCCC', lineSpacing: 24 });
-      }
+    if (pptxExporting) return;
+    setPptxExporting(true);
+    try {
+      await exportPitchDeckPptx({
+        slides, title, logo, businessName: businessName || title,
+        primary: accent, secondary: template.accent2, style: 'classic',
+      });
+    } catch (error) {
+      console.error('PPTX export failed', error);
+      window.alert(error instanceof Error ? error.message : 'PowerPoint export failed. Please try again.');
+    } finally {
+      setPptxExporting(false);
     }
-    pptx.writeFile({ fileName: `${title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx` });
   };
   if (!slide) return null;
   return (
@@ -694,9 +691,10 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
         <Tooltip title="Fullscreen (F)"><IconButton size="small" onClick={() => setFullscreen(p => !p)} sx={{ color: 'var(--vm-text-muted)' }}>
           {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
         </IconButton></Tooltip>
-        <Tooltip title="Download PDF"><IconButton size="small" onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}><FileText size={15} /></IconButton></Tooltip>
-        <Tooltip title="Download PPTX"><IconButton size="small" onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}><Download size={15} /></IconButton></Tooltip>
+        <Tooltip title={pdfExporting ? 'Creating PDF…' : 'Download PDF'}><span><IconButton size="small" disabled={pdfExporting || pptxExporting} onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}>{pdfExporting ? <CircularProgress size={15} /> : <FileText size={15} />}</IconButton></span></Tooltip>
+        <Tooltip title={pptxExporting ? 'Creating PowerPoint…' : 'Download editable PowerPoint'}><span><IconButton size="small" disabled={pptxExporting || pdfExporting} onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}>{pptxExporting ? <CircularProgress size={15} /> : <Download size={15} />}</IconButton></span></Tooltip>
       </Box>
+      <ExportProgress open={pdfExporting || pptxExporting} label={pptxExporting ? 'Building editable PowerPoint…' : 'Rendering pitch deck PDF…'} />
     </Box>
   );
 }

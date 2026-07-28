@@ -124,39 +124,32 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
         subtitle="AI-crafted investor story with 11 specialised slides"
         businessName={selectedBusiness.name}
         actions={hasDeck ? (
-          <ToggleButtonGroup size="small" value={viewMode} onChange={(_, v) => v && setViewMode(v)} exclusive sx={{ '& .MuiToggleButton-root': { color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' } } }}>
-            <ToggleButton value="grid"><LayoutGrid size={14} /></ToggleButton>
-            <ToggleButton value="slide"><Monitor size={14} /></ToggleButton>
-          </ToggleButtonGroup>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <ToggleButtonGroup size="small" value={viewMode} onChange={(_, v) => v && setViewMode(v)} exclusive sx={{ '& .MuiToggleButton-root': { color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' } } }}>
+              <ToggleButton value="grid" aria-label="Outline preview"><LayoutGrid size={14} /></ToggleButton>
+              <ToggleButton value="slide" aria-label="Presentation preview"><Monitor size={14} /></ToggleButton>
+            </ToggleButtonGroup>
+            {viewMode === 'slide' && (
+              <ToggleButtonGroup size="small" value={designMode} onChange={(_, v) => v && setDesignMode(v)} exclusive>
+                <ToggleButton value="classic" sx={{ color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' }, fontSize: 11, gap: 0.5 }}>
+                  <Monitor size={13} /> Classic
+                </ToggleButton>
+                <ToggleButton value="premium" sx={{ color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: '#a78bfa', bgcolor: 'rgba(139,92,246,.1)' }, fontSize: 11, gap: 0.5 }}>
+                  <Sparkles size={13} /> Modern
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
+            <GradientButton variant="outline" size="sm" startIcon={<Edit3 size={12} />}
+              onClick={() => { setEditSlides(JSON.parse(JSON.stringify(currentDeck.slides))); setEditDialogOpen(true); }}>
+              Edit
+            </GradientButton>
+          </Box>
         ) : undefined}
       />
 
-      {viewMode === 'slide' && hasDeck && (
-        <GlassCard sx={{ p: { xs: 1.5, sm: 2 }, mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-            <ToggleButtonGroup size="small" value={designMode} onChange={(_, v) => v && setDesignMode(v)} exclusive sx={{ ml: 'auto' }}>
-              <ToggleButton value="classic" sx={{ color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: 'var(--vm-primary-400)', bgcolor: 'rgba(16,185,129,.1)' }, fontSize: 11, gap: 0.5 }}>
-                <Monitor size={13} /> Classic
-              </ToggleButton>
-              <ToggleButton value="premium" sx={{ color: 'var(--vm-text-muted)', borderColor: 'var(--vm-border-subtle)', '&.Mui-selected': { color: '#8b5cf6', bgcolor: 'rgba(139,92,246,.1)' }, fontSize: 11, gap: 0.5 }}>
-                <Sparkles size={13} /> Premium
-              </ToggleButton>
-            </ToggleButtonGroup>
-            <GradientButton variant="outline" size="sm" startIcon={<Edit3 size={12} />}
-              onClick={() => { setEditSlides(JSON.parse(JSON.stringify(currentDeck.slides))); setEditDialogOpen(true); }}>
-              Edit Slides
-            </GradientButton>
-          </Box>
-          {designMode === 'premium' ? (
-            <ModernPitchDeck slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} accentColor={primary} />
-          ) : (
-            <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />
-          )}
-        </GlassCard>
-      )}
-
       <AICreationStudio
         domain="pitch-deck" title="" description=""
+        builderMode
         placeholder="Generate an investor-ready pitch deck from my approved business information."
         starterPrompts={[
           'Generate an investor-ready pitch deck from my business and business plan.',

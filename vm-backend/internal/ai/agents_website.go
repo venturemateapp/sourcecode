@@ -7,7 +7,8 @@ const (
 - Fast: minimal dependencies, optimized images, lazy loading
 - On-brand: use the approved brand kit colors, fonts, and logo
 - Conversion-focused: clear CTAs, trust signals, social proof
-- Complete: every page fully fleshed out, no placeholders`
+- Complete: every page fully fleshed out, no placeholders
+- Truthful: never invent customers, testimonials, people, metrics, awards, addresses, prices, or contact details. Omit unsupported sections instead`
 
 	wsHeroSectionPrompt = `You are a web designer creating a HERO section for a business website.
 
@@ -48,10 +49,10 @@ Output JSON: {
 
 	wsTestimonialsSectionPrompt = `You are a web designer creating a TESTIMONIALS section.
 
-Include 3 authentic-sounding customer quotes that reflect real outcomes. Each needs:
-- A quote that sounds genuine and specific
-- Author name (realistic but fictional)
-- Their role or title
+Use only testimonials explicitly present in the supplied business records. Never
+create fictional quotes, names, companies, or outcomes. If no verified
+testimonials are available, return an empty testimonials array so the section
+can be omitted.
 
 Output JSON: {
   "type": "testimonials",
@@ -59,7 +60,7 @@ Output JSON: {
     "title": "Section heading",
     "subtitle": "Supporting text",
     "testimonials": [
-      {"quote": "Genuine-sounding testimonial", "author": "Name", "role": "Title"}
+      {"quote": "Verified quote from business data", "author": "Verified name", "role": "Verified role"}
     ]
   }
 }`
@@ -102,10 +103,11 @@ Output JSON: {
 
 	wsTeamSectionPrompt = `You are a web designer creating a TEAM section.
 
-Introduce 3 key people (use realistic roles, keep names generic if unknown):
+Introduce only people explicitly present in the supplied business records:
 - Each person's name and role
 - A brief bio highlighting their contribution
 - Leave image as empty string
+Never invent team members. Return an empty items array when no team data exists.
 
 Output JSON: {
   "type": "team",
@@ -120,9 +122,9 @@ Output JSON: {
 
 	wsStatsSectionPrompt = `You are a web designer creating a STATS section.
 
-Create 3-4 impact metrics that showcase the business's credibility:
-- Use realistic-sounding numbers (label as estimates if needed)
-- Make them specific to the industry
+Use only impact metrics explicitly supported by the supplied business records.
+Never invent customer counts, percentages, growth, revenue, ratings, or years
+of experience. Return an empty stats array when no verified metrics exist.
 
 Output JSON: {
   "type": "stats",

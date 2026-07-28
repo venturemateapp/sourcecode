@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -77,6 +78,11 @@ func (s *Service) UploadFromURL(ctx context.Context, sourceURL, key, contentType
 
 func (s *Service) GetPublicURL(key string) string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.region, key)
+}
+
+// IsManagedURL reports whether a URL already points at this service's bucket.
+func (s *Service) IsManagedURL(rawURL string) bool {
+	return s.bucket != "" && strings.HasPrefix(rawURL, fmt.Sprintf("https://%s.s3.%s.amazonaws.com/", s.bucket, s.region))
 }
 
 func (s *Service) SetPublicRead(ctx context.Context, key string) error {

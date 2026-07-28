@@ -6,21 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
-	"io"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/recraft"
-	"github.com/venturemate/vmbackend/internal/s3"
 )
-
-var globalS3 *s3.Service
-
-func SetS3Service(svc *s3.Service) {
-	globalS3 = svc
-}
 
 const (
 	brandingDesignRules = `You are a legendary logo designer at the level of Pentagram, Wolff Olins, and Landor.
@@ -194,18 +185,21 @@ func creativeBusinessContextJSON(biz *businesses.Business, domain string) []byte
 		context["currentBrandKit"] = creativeContextValue(biz.BrandKit, 1200)
 	case "business-plan":
 		context["brandKit"] = creativeContextValue(biz.BrandKit, 650)
-		context["existingBusinessPlan"] = creativeContextValue(biz.BusinessPlan, 1100)
-		context["milestones"] = creativeContextValue(biz.Milestones, 650)
-		context["team"] = creativeContextValue(biz.Team, 650)
-		context["financials"] = creativeContextValue(biz.Financials, 750)
-		context["metrics"] = creativeContextValue(biz.Metrics, 550)
+		context["existingBusinessPlan"] = creativeContextValue(biz.BusinessPlan, 1800)
+		context["milestones"] = creativeContextValue(biz.Milestones, 900)
+		context["team"] = creativeContextValue(biz.Team, 900)
+		context["documents"] = creativeContextValue(biz.Documents, 900)
+		context["financials"] = creativeContextValue(biz.Financials, 1100)
+		context["metrics"] = creativeContextValue(biz.Metrics, 800)
 	case "pitch-deck":
 		context["brandKit"] = creativeContextValue(biz.BrandKit, 550)
-		context["businessPlan"] = creativeContextValue(biz.BusinessPlan, 1300)
-		context["existingPitchDeck"] = creativeContextValue(biz.PitchDeck, 800)
-		context["team"] = creativeContextValue(biz.Team, 550)
-		context["financials"] = creativeContextValue(biz.Financials, 650)
-		context["metrics"] = creativeContextValue(biz.Metrics, 500)
+		context["businessPlan"] = creativeContextValue(biz.BusinessPlan, 2200)
+		context["existingPitchDeck"] = creativeContextValue(biz.PitchDeck, 1100)
+		context["milestones"] = creativeContextValue(biz.Milestones, 800)
+		context["team"] = creativeContextValue(biz.Team, 800)
+		context["documents"] = creativeContextValue(biz.Documents, 700)
+		context["financials"] = creativeContextValue(biz.Financials, 1000)
+		context["metrics"] = creativeContextValue(biz.Metrics, 800)
 	case "website":
 		context["brandKit"] = creativeContextValue(biz.BrandKit, 1200)
 		context["existingWebsiteConfig"] = creativeContextValue(biz.WebsiteConfig, 850)
@@ -275,7 +269,7 @@ func defaultCreativeChange(domain string, biz *businesses.Business) ProposedChan
 	return ProposedChange{ID: "1", Type: "update", Field: field, Summary: summary, CurrentValue: current, NewValue: "{}"}
 }
 
-func 	creativeProposalGuidance(domain string) string {
+func creativeProposalGuidance(domain string) string {
 	switch creativeDomain(domain) {
 	case "branding":
 		return fmt.Sprintf(`
@@ -360,6 +354,9 @@ SECTION 10 — APPENDIX
 Specialist instruction: ` + bpAppendixPrompt + `
 
 GLOBAL RULES:
+- Treat the supplied business context as the authoritative, current database snapshot for this request
+- Prefer the newest supplied facts and dates when existing plan content conflicts with profile, metrics, financials, milestones, team, or documents
+- Never silently carry stale facts forward; omit unverifiable claims or label assumptions clearly
 - Each section must have complete, detailed prose (2-5 paragraphs), not outlines or bullet lists
 - Financial projections must be labelled "Projection — estimate". Never invent precise figures without basis.
 - Use the provided business profile context for specifics
@@ -427,6 +424,9 @@ SLIDE 11 — ASK
 Specialist instruction: ` + pdAskPrompt + `
 
 GLOBAL RULES:
+- Treat the supplied business context as the authoritative, current database snapshot for this request
+- Prefer the newest supplied facts and dates when existing deck or plan content conflicts with profile, metrics, financials, milestones, team, or documents
+- Never silently carry stale facts forward; omit unverifiable claims or label assumptions clearly
 - Build the story from the approved business profile and business plan
 - Do not invent traction, revenue, valuation, customer counts, or funding figures without basis — label projections
 - Every slide type must have real, complete content — no placeholders or "..."
@@ -551,7 +551,7 @@ The newValue must be a COMPLETE JSON object:
 	}
 }
 
-func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, domain string, rc *recraft.Client) error {
+func normalizeCreativeProposal(ctx context.Context, proposal *Proposal, biz *businesses.Business, domain string, rc *recraft.Client, assetStore ApprovedAssetStore) error {
 	if proposal == nil || biz == nil {
 		return nil
 	}
@@ -594,6 +594,10 @@ func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, dom
 			if err != nil {
 				return err
 			}
+			normalized, err = populateWebsiteAssets(ctx, normalized, biz, rc, assetStore)
+			if err != nil {
+				return err
+			}
 			change.NewValue = normalized
 		case "webapp":
 			if strings.Contains(strings.ToLower(change.Summary), "code") || strings.Contains(strings.ToLower(change.Summary), "generate") {
@@ -602,6 +606,10 @@ func normalizeCreativeProposal(proposal *Proposal, biz *businesses.Business, dom
 				change.Field = "websiteDraft"
 			}
 			normalized, err := normalizeWebsiteDraftProposal(change.NewValue, biz)
+			if err != nil {
+				return err
+			}
+			normalized, err = populateWebsiteAssets(ctx, normalized, biz, rc, assetStore)
 			if err != nil {
 				return err
 			}
@@ -633,9 +641,9 @@ Business: %s | Industry: %s | Tagline: %s`, brandingCritiquePrompt, svg, biz.Nam
 	}
 	content := extractJSONObject(resp.Content)
 	var critique struct {
-		Pass        bool     `json:"pass"`
-		Score       float64  `json:"score"`
-		Suggestions string   `json:"suggestions"`
+		Pass        bool    `json:"pass"`
+		Score       float64 `json:"score"`
+		Suggestions string  `json:"suggestions"`
 	}
 	if json.Unmarshal([]byte(content), &critique) != nil || critique.Pass || critique.Score >= 70 {
 		return svg
@@ -717,31 +725,6 @@ func mergeJSONMap(raw string, fallback string) map[string]interface{} {
 	return out
 }
 
-func reuploadToS3(url, businessID, name string) string {
-	if globalS3 == nil || !strings.HasPrefix(url, "http") {
-		return url
-	}
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return url
-	}
-	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return url
-	}
-	contentType := resp.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = "image/png"
-	}
-	key := fmt.Sprintf("brand-logos/%s/%s", businessID, name)
-	permURL, err := globalS3.Upload(context.Background(), key, data, contentType)
-	if err != nil {
-		return url
-	}
-	return permURL
-}
-
 func stringValue(values map[string]interface{}, key, fallback string) string {
 	if value, ok := values[key].(string); ok && strings.TrimSpace(value) != "" {
 		return strings.TrimSpace(value)
@@ -801,12 +784,13 @@ Make it unforgettable — a logo people recognize instantly from the shape alone
 		if result, err := rc.GenerateLogo(prompt); err == nil {
 			rasterURL := result.GetFirstURL()
 			if rasterURL != "" {
-				// Re-upload external image URLs to permanent S3 location
-				brand["logo"] = reuploadToS3(rasterURL, biz.ID, "logo")
-				brand["logoIcon"] = reuploadToS3(rasterURL, biz.ID, "logoIcon")
-				brand["logoWhite"] = reuploadToS3(rasterURL, biz.ID, "logoWhite")
+				// Keep proposal URLs untouched for preview. Approved assets are
+				// copied to durable storage at the approval boundary.
+				brand["logo"] = rasterURL
+				brand["logoIcon"] = rasterURL
+				brand["logoWhite"] = rasterURL
 				if svgURL, err := rc.VectorizeImage(rasterURL); err == nil {
-					brand["logoWhite"] = reuploadToS3(svgURL, biz.ID, "logoWhite")
+					brand["logoWhite"] = svgURL
 				}
 				recraftUsed = true
 			}
@@ -1052,7 +1036,6 @@ func normalizePitchDeckProposal(raw string, biz *businesses.Business) (string, e
 	return string(encoded), err
 }
 
-
 func normalizeMockupProposal(raw string, biz *businesses.Business) (string, error) {
 	var incoming struct {
 		Mockups []MockupResult `json:"mockups"`
@@ -1181,7 +1164,7 @@ func normalizeWebsiteDraftProposal(raw string, biz *businesses.Business) (string
 }
 
 func richWebsiteDraft(biz *businesses.Business, brand map[string]interface{}) map[string]interface{} {
-	
+
 	name := biz.Name
 	tagline := biz.Tagline
 	description := biz.Description
@@ -1199,39 +1182,16 @@ func richWebsiteDraft(biz *businesses.Business, brand map[string]interface{}) ma
 			"id": "page-home", "slug": "/", "title": "Home", "metaDescription": description, "isHome": true, "isPublished": false,
 			"sections": []interface{}{
 				map[string]interface{}{"id": "hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": tagline, "subheadline": homeAboutContent, "ctaPrimary": "Get Started", "secondaryCta": "Learn More", "logo": logo}},
-				map[string]interface{}{"id": "stats", "type": "stats", "order": 1, "visible": true, "props": map[string]interface{}{
-					"title": "Why " + name,
-					"stats": []interface{}{
-						map[string]interface{}{"value": "99%", "label": "Client satisfaction"},
-						map[string]interface{}{"value": "24/7", "label": "Support coverage"},
-						map[string]interface{}{"value": "Fast", "label": "Delivery model"},
-						map[string]interface{}{"value": "Proven", "label": industry + " expertise"},
-					},
-				}},
-				map[string]interface{}{"id": "features", "type": "features", "order": 2, "visible": true, "props": map[string]interface{}{
-					"title": "What we do",
+				map[string]interface{}{"id": "features", "type": "features", "order": 1, "visible": true, "props": map[string]interface{}{
+					"title":    "What we do",
 					"subtitle": "Core capabilities built around your goals",
 					"features": []interface{}{
-						map[string]interface{}{"icon": "Zap", "title": "Fast delivery", "description": "We move quickly without sacrificing quality or reliability."},
-						map[string]interface{}{"icon": "Shield", "title": "Trusted support", "description": "Dedicated assistance and transparent communication at every stage."},
-						map[string]interface{}{"icon": "TrendingUp", "title": "Proven results", "description": "Solutions designed to create measurable impact for " + name + " clients."},
+						map[string]interface{}{"icon": "Briefcase", "title": "Discover", "description": "Start with your priorities, constraints, and desired outcome."},
+						map[string]interface{}{"icon": "Layers", "title": "Plan", "description": "Turn the brief into a clear scope and practical next steps."},
+						map[string]interface{}{"icon": "TrendingUp", "title": "Deliver", "description": "Move from plan to execution with progress kept visible."},
 					},
 				}},
-				map[string]interface{}{"id": "carousel", "type": "carousel", "order": 3, "visible": true, "props": map[string]interface{}{"title": "Highlights", "subtitle": "Recent milestones and client outcomes", "autoplay": true, "interval": 5000, "items": []interface{}{
-					map[string]interface{}{"title": name + " Launch", "description": "Delivered a complete " + industry + " solution with measurable improvements.", "image": "", "cta": "See case study", "href": "/about"},
-					map[string]interface{}{"title": "Ongoing Support", "description": "Continued optimisation and dedicated account management after launch.", "image": "", "cta": "Our process", "href": "/about"},
-					map[string]interface{}{"title": "Client Outcomes", "description": "Clients report faster workflows and stronger growth after onboarding.", "image": "", "cta": "Contact us", "href": "/contact"},
-				}}},
-				map[string]interface{}{"id": "testimonials", "type": "testimonials", "order": 4, "visible": true, "props": map[string]interface{}{
-					"title": "Client feedback",
-					"subtitle": "Trusted by teams and customers across " + location,
-					"testimonials": []interface{}{
-						map[string]interface{}{"quote": "Working with " + name + " transformed how we serve our customers.", "author": "Operations Director", "role": industry + " client"},
-						map[string]interface{}{"quote": "Reliable, responsive, and genuinely invested in our success.", "author": "Product Lead", "role": "SMB partner"},
-						map[string]interface{}{"quote": "The team delivered ahead of schedule without cutting corners.", "author": "CEO", "role": "Startup partner"},
-					},
-				}},
-				map[string]interface{}{"id": "cta", "type": "cta", "order": 5, "visible": true, "props": map[string]interface{}{"headline": "Ready to move forward?", "subheadline": "Tell us your goal and we will show you the fastest path to get there.", "cta": "Contact Us", "href": "/contact"}},
+				map[string]interface{}{"id": "cta", "type": "cta", "order": 2, "visible": true, "props": map[string]interface{}{"headline": "Ready to move forward?", "subheadline": "Tell us what you are working toward and we can discuss the next step.", "cta": "Contact Us", "href": "/contact"}},
 			},
 		},
 		map[string]interface{}{
@@ -1239,17 +1199,7 @@ func richWebsiteDraft(biz *businesses.Business, brand map[string]interface{}) ma
 			"sections": []interface{}{
 				map[string]interface{}{"id": "about-hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": "About " + name, "subheadline": homeAboutContent, "ctaPrimary": "Our services", "secondaryCta": "Contact us", "logo": logo}},
 				map[string]interface{}{"id": "about-content", "type": "about", "order": 1, "visible": true, "props": map[string]interface{}{"title": "Our story", "content": description + " We combine local insight with modern capability so every solution is practical, scalable, and easy to adopt."}},
-				map[string]interface{}{"id": "team", "type": "team", "order": 2, "visible": true, "props": map[string]interface{}{"title": "Leadership", "subtitle": "Experienced operators backing every engagement", "items": []interface{}{
-					map[string]interface{}{"name": "Operations Lead", "role": "Managing Partner", "bio": "Leads delivery and client experience.", "image": ""},
-					map[string]interface{}{"name": "Strategy Lead", "role": "Head of Solutions", "bio": "Aligns offering design with market demand.", "image": ""},
-					map[string]interface{}{"name": "Growth Lead", "role": "Partnerships", "bio": "Expands reach through trusted channels.", "image": ""},
-				}}},
-				map[string]interface{}{"id": "about-stats", "type": "stats", "order": 3, "visible": true, "props": map[string]interface{}{"title": "Our impact", "stats": []interface{}{
-					map[string]interface{}{"value": "3+", "label": "Years delivering outcomes"},
-					map[string]interface{}{"value": "12+", "label": "Markets served"},
-					map[string]interface{}{"value": "98%", "label": "Client retention"},
-				}}},
-				map[string]interface{}{"id": "about-cta", "type": "cta", "order": 4, "visible": true, "props": map[string]interface{}{"headline": "Want to work together?", "subheadline": "Share your priorities and we will propose the right next step.", "cta": "Get in touch", "href": "/contact"}},
+				map[string]interface{}{"id": "about-cta", "type": "cta", "order": 2, "visible": true, "props": map[string]interface{}{"headline": "Want to work together?", "subheadline": "Share your priorities and we can discuss the right next step.", "cta": "Get in touch", "href": "/contact"}},
 			},
 		},
 		map[string]interface{}{
@@ -1257,7 +1207,7 @@ func richWebsiteDraft(biz *businesses.Business, brand map[string]interface{}) ma
 			"sections": []interface{}{
 				map[string]interface{}{"id": "services-hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": "Services", "subheadline": "Designed to create lasting value across " + industry, "ctaPrimary": "Start a project", "logo": logo}},
 				map[string]interface{}{"id": "features", "type": "features", "order": 1, "visible": true, "props": map[string]interface{}{
-					"title": "What we do",
+					"title":    "What we do",
 					"subtitle": "Selected capabilities tailored to your needs",
 					"features": []interface{}{
 						map[string]interface{}{"icon": "Briefcase", "title": "Advisory", "description": "Clear recommendations grounded in real-world execution."},
@@ -1324,17 +1274,17 @@ func richWebsiteDraft(biz *businesses.Business, brand map[string]interface{}) ma
 	}
 
 	footer := map[string]interface{}{
-		"showLogo":    true,
-		"showSocial":  true,
+		"showLogo":   true,
+		"showSocial": true,
 		"customText": fmt.Sprintf("© %d %s. All rights reserved.", time.Now().Year(), name),
 	}
 
 	return map[string]interface{}{
 		"templateId":   "",
-		"subdomain":     strings.ToLower(strings.ReplaceAll(name, " ", "-")),
-		"pages":         pages,
-		"globalStyles":  styles,
-		"navigation":    navigation,
-		"footer":        footer,
+		"subdomain":    strings.ToLower(strings.ReplaceAll(name, " ", "-")),
+		"pages":        pages,
+		"globalStyles": styles,
+		"navigation":   navigation,
+		"footer":       footer,
 	}
 }

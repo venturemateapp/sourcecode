@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Box, Button, Card, Chip, CircularProgress, Link, Typography } from '@mui/material';
-import { Code2, ExternalLink, Eye, FileCode, GitBranch, Globe2, MonitorSmartphone, Terminal, UploadCloud, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Code2, ExternalLink, Eye, FileCode, GitBranch, Globe2, Monitor, MonitorSmartphone, Smartphone, Tablet, Terminal, UploadCloud, XCircle } from 'lucide-react';
 import { AICreationStudio, type ProposedChange } from '../../components/venturemate/AICreationStudio';
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -62,6 +62,20 @@ interface WebsiteSection {
   content?: Record<string, unknown>;
   props?: Record<string, unknown>;
   visible?: boolean;
+}
+
+interface BuildDiagnostic {
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  path: string;
+}
+
+interface BuilderArtifact {
+  files: Array<{ path: string; content: string }>;
+  type: string;
+  routes: string[];
+  diagnostics: BuildDiagnostic[];
+  generatedAt: string;
 }
 
 const WEBSITE_QUERY = `
@@ -243,12 +257,14 @@ function SectionLabel({ label, color }: { label: string; color: string }) {
   );
 }
 
-function SitePreview({ draft, businessName, tagline, logo, proposed = false }: { draft: WebsiteDraft; businessName: string; tagline: string; logo?: string; proposed?: boolean }) {
+function SitePreview({ draft, businessName, tagline, logo, proposed = false, activePath = '/' }: { draft: WebsiteDraft; businessName: string; tagline: string; logo?: string; proposed?: boolean; activePath?: string }) {
   const styles = draft.globalStyles || {};
   const primary = styles.primaryColor || '#0ea5e9';
   const dark = styles.darkColor || '#0f172a';
   const fontBody = styles.fontBody || 'Inter';
-  const page = draft.pages?.find(item => item.isHome || item.slug === '/') || draft.pages?.[0];
+  const page = draft.pages?.find(item => item.slug === activePath)
+    || draft.pages?.find(item => item.isHome || item.slug === '/')
+    || draft.pages?.[0];
   const sections = (page?.sections || []).filter(s => s.visible !== false);
 
   return (
@@ -293,23 +309,25 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
         const renderChildren = () => {
           switch (section.type) {
             case 'hero':
+              const heroImage = text(content, 'image');
               return (
                 <Box sx={{
                   minHeight: { xs: 320, sm: 420 }, p: { xs: 3, sm: 6 },
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                  display: 'grid', gridTemplateColumns: heroImage ? { xs: '1fr', md: 'minmax(0,1.05fr) minmax(260px,.95fr)' } : '1fr', gap: { xs: 3, md: 5 }, alignItems: 'center',
                   background: `radial-gradient(ellipse at 50% 30%, ${primary}30, transparent 60%), radial-gradient(circle at 80% 80%, ${primary}15, transparent 40%), linear-gradient(135deg, ${dark}, #07130f)`,
                   position: 'relative', overflow: 'hidden',
                   '&::before': { content: '""', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,.03), transparent 50%)', pointerEvents: 'none' },
                 }}>
-                  <Box sx={{ maxWidth: 720, position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ maxWidth: 720, position: 'relative', zIndex: 1, textAlign: heroImage ? 'left' : 'center', mx: heroImage ? 0 : 'auto' }}>
                     {logo && <Box component="img" src={logo} alt="" sx={{ width: { xs: 56, sm: 72 }, height: { xs: 56, sm: 72 }, objectFit: 'contain', mb: { xs: 1.5, sm: 2.5 }, mx: 'auto', display: 'block' }} />}
                     <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42, md: 52 }, fontWeight: 950, lineHeight: 1.05, letterSpacing: '-.02em', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading || businessName}</Typography>
-                    {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 14, sm: 17 }, lineHeight: 1.7, mt: { xs: 1.5, sm: 2 }, maxWidth: 580, mx: 'auto', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
-                    <Box sx={{ mt: { xs: 2, sm: 3 }, display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 14, sm: 17 }, lineHeight: 1.7, mt: { xs: 1.5, sm: 2 }, maxWidth: 580, mx: heroImage ? 0 : 'auto', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
+                    <Box sx={{ mt: { xs: 2, sm: 3 }, display: 'flex', gap: 1.5, justifyContent: heroImage ? 'flex-start' : 'center', flexWrap: 'wrap' }}>
                       <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 0.75, sm: 1 }, borderRadius: 999, bgcolor: primary, color: '#fff', fontWeight: 800, fontSize: { xs: 12, sm: 13 } }}>{text(content, 'primaryCta', 'cta') || 'Get Started'}</Box>
                       {text(content, 'secondaryCta') && <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 0.75, sm: 1 }, borderRadius: 999, border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.7)', fontWeight: 600, fontSize: { xs: 12, sm: 13 } }}>{text(content, 'secondaryCta')}</Box>}
                     </Box>
                   </Box>
+                  {heroImage && <Box component="img" src={heroImage} alt={text(content, 'imageAlt')} sx={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', borderRadius: 3, boxShadow: '0 24px 70px rgba(0,0,0,.35)', position: 'relative', zIndex: 1 }} />}
                 </Box>
               );
             case 'features':
@@ -399,6 +417,13 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false }: {
                   <SectionLabel label="About" color={primary} />
                   {heading && <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 30 }, fontWeight: 900, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading}</Typography>}
                   <Typography sx={{ color: 'rgba(255,255,255,.65)', fontSize: { xs: 13, sm: 14 }, mt: 1.5, lineHeight: 1.8, maxWidth: 720, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{content.content ? String(content.content) : body}</Typography>
+                </Box>
+              );
+            case 'image':
+              return (
+                <Box sx={{ px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 }, textAlign: 'center' }}>
+                  {text(content, 'src') && <Box component="img" src={text(content, 'src')} alt={text(content, 'alt')} loading="lazy" sx={{ display: 'block', width: '100%', maxHeight: 560, objectFit: 'cover', borderRadius: 3, boxShadow: '0 22px 60px rgba(0,0,0,.3)' }} />}
+                  {text(content, 'caption') && <Typography sx={{ mt: 1, color: 'rgba(255,255,255,.5)', fontSize: 11 }}>{text(content, 'caption')}</Typography>}
                 </Box>
               );
             default:
@@ -506,18 +531,13 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
     footer: safeJson<Record<string, unknown>>(website.footer, {}),
   }) : null, [website]);
 
-  // Regenerate preview when the draft is updated (e.g., after AI approval)
-  useEffect(() => {
-    if (savedDraft && codeResult) {
-      handleGenerateCode(savedDraft, true);
-    }
-  }, [savedDraft?.pages?.length]);
-
   const logo = selectedBusiness?.brandKit?.logo;
   const [codeTab, setCodeTab] = useState<'preview' | 'code' | null>(null);
-  const [codeResult, setCodeResult] = useState<{ files: Array<{ path: string; content: string }>; type: string; routes: string[] } | null>(null);
+  const [codeResult, setCodeResult] = useState<BuilderArtifact | null>(null);
   const [codeLoading, setCodeLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [activePath, setActivePath] = useState('/');
+  const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [deployLoading, setDeployLoading] = useState<'github' | 'netlify' | null>(null);
   const [deployResult, setDeployResult] = useState<{ platform: string; url: string; success: boolean; message: string } | null>(null);
 
@@ -540,10 +560,10 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
     if (!previewOnly) setCodeTab('code');
     try {
       const enrichedDraft = enrichDraft(draft);
-      const data = await graphqlRequest<{ generateWebsiteCode: { files: Array<{ path: string; content: string }>; type: string; routes: string[] } }>(
+      const data = await graphqlRequest<{ generateWebsiteCode: BuilderArtifact }>(
         `mutation GenCode($businessId: ID!, $businessName: String!, $websiteDraft: String!) {
           generateWebsiteCode(businessId: $businessId, businessName: $businessName, websiteDraft: $websiteDraft) {
-            files { path content } type routes
+            files { path content } type routes diagnostics { severity message path } generatedAt
           }
         }`,
         { businessId: selectedBusiness.id, businessName: selectedBusiness.name, websiteDraft: JSON.stringify(enrichedDraft) }
@@ -556,6 +576,13 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
       setCodeLoading(false);
     }
   }, [selectedBusiness, enrichDraft]);
+
+  // Keep the builder artifact synchronized with the approved draft revision.
+  useEffect(() => {
+    if (savedDraft) {
+      void handleGenerateCode(savedDraft, true);
+    }
+  }, [website?.draftRevision]);
 
   const handleDeploy = useCallback(async (platform: 'github' | 'netlify') => {
     if (!selectedBusiness || !savedDraft) return;
@@ -577,6 +604,86 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
       setDeployLoading(null);
     }
   }, [selectedBusiness, savedDraft, enrichDraft]);
+
+  useEffect(() => {
+    if (codeResult?.routes.length && !codeResult.routes.includes(activePath)) {
+      setActivePath(codeResult.routes[0] || '/');
+    }
+  }, [codeResult?.routes, activePath]);
+
+  const renderWorkspacePreview = (draft: WebsiteDraft, proposed = false) => {
+    const previewWidth = viewport === 'mobile' ? 390 : viewport === 'tablet' ? 820 : '100%';
+    return (
+      <Box sx={{ minHeight: 560, bgcolor: '#111318', borderRadius: 2, overflow: 'hidden' }}>
+        <Box sx={{ minHeight: 46, px: 1.25, display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid rgba(255,255,255,.08)', bgcolor: '#17191f' }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {([
+              ['desktop', <Monitor size={14} />],
+              ['tablet', <Tablet size={14} />],
+              ['mobile', <Smartphone size={14} />],
+            ] as const).map(([mode, icon]) => (
+              <Button key={mode} size="small" onClick={() => setViewport(mode)} sx={{
+                minWidth: 32, width: 32, height: 30, p: 0,
+                color: viewport === mode ? '#fff' : 'rgba(255,255,255,.45)',
+                bgcolor: viewport === mode ? 'rgba(255,255,255,.1)' : 'transparent',
+              }}>{icon}</Button>
+            ))}
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0, maxWidth: 520, mx: 'auto', height: 30, px: 1.5, display: 'flex', alignItems: 'center', gap: 1, borderRadius: 1.5, bgcolor: '#0d0f13', border: '1px solid rgba(255,255,255,.08)' }}>
+            <Globe2 size={12} color="#6b7280" />
+            <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {website?.subdomain ? `${website.subdomain}.venturemate.net${activePath === '/' ? '' : activePath}` : `preview${activePath}`}
+            </Typography>
+          </Box>
+          <Chip size="small" label={proposed ? 'Proposal' : codeLoading ? 'Building…' : 'Draft'} color={proposed ? 'warning' : 'default'} sx={{ height: 24, fontSize: 9 }} />
+        </Box>
+        <Box sx={{ p: { xs: 0.5, md: 1.5 }, overflow: 'auto', minHeight: 514 }}>
+          <Box sx={{ width: previewWidth, maxWidth: '100%', mx: 'auto', transition: 'width .25s ease', bgcolor: '#fff', boxShadow: '0 24px 80px rgba(0,0,0,.35)' }}>
+            <SitePreview draft={draft} businessName={selectedBusiness?.name || ''} tagline={selectedBusiness?.tagline || ''} logo={logo} proposed={proposed} activePath={activePath} />
+          </Box>
+        </Box>
+      </Box>
+    );
+  };
+
+  const builderRightPanel = (
+    <Box sx={{ color: '#e6edf3' }}>
+      <Box sx={{ height: 46, px: 1.5, display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+        <FileCode size={14} />
+        <Typography sx={{ ml: 1, fontSize: 11, fontWeight: 800, flex: 1 }}>PROJECT</Typography>
+        {codeLoading && <CircularProgress size={12} />}
+      </Box>
+      <Box sx={{ p: 1, borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+        <Typography sx={{ px: 0.75, mb: 0.75, color: 'rgba(255,255,255,.4)', fontSize: 9, fontWeight: 800, letterSpacing: 1 }}>ROUTES</Typography>
+        {(codeResult?.routes || ['/']).map(route => (
+          <Box key={route} onClick={() => setActivePath(route)} sx={{ px: 1, py: 0.65, borderRadius: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: activePath === route ? 'rgba(16,185,129,.13)' : 'transparent', color: activePath === route ? '#34d399' : 'rgba(255,255,255,.65)' }}>
+            <Globe2 size={11} /><Typography sx={{ fontSize: 10.5 }}>{route}</Typography>
+          </Box>
+        ))}
+      </Box>
+      <Box sx={{ p: 1, borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+        <Typography sx={{ px: 0.75, mb: 0.75, color: 'rgba(255,255,255,.4)', fontSize: 9, fontWeight: 800, letterSpacing: 1 }}>FILES</Typography>
+        {(codeResult?.files || []).map(file => (
+          <Box key={file.path} onClick={() => { setSelectedFile(file.path); setCodeTab('code'); }} sx={{ px: 1, py: 0.6, borderRadius: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: selectedFile === file.path ? 'rgba(255,255,255,.07)' : 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,.04)' } }}>
+            <Code2 size={10} color="#6b7280" />
+            <Typography sx={{ fontFamily: 'monospace', fontSize: 9.5, color: selectedFile === file.path ? '#fff' : 'rgba(255,255,255,.62)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</Typography>
+          </Box>
+        ))}
+      </Box>
+      <Box sx={{ p: 1 }}>
+        <Typography sx={{ px: 0.75, mb: 0.75, color: 'rgba(255,255,255,.4)', fontSize: 9, fontWeight: 800, letterSpacing: 1 }}>DIAGNOSTICS</Typography>
+        {!codeResult?.diagnostics.length && codeResult && (
+          <Box sx={{ px: 1, py: 0.75, display: 'flex', gap: 0.75, color: '#34d399' }}><CheckCircle2 size={12} /><Typography sx={{ fontSize: 10 }}>Build checks passed</Typography></Box>
+        )}
+        {(codeResult?.diagnostics || []).map((item, index) => (
+          <Box key={`${item.path}-${index}`} sx={{ px: 1, py: 0.75, display: 'flex', alignItems: 'flex-start', gap: 0.75, color: item.severity === 'error' ? '#f87171' : '#fbbf24' }}>
+            <AlertCircle size={12} style={{ marginTop: 2, flexShrink: 0 }} />
+            <Box><Typography sx={{ fontSize: 9.5, lineHeight: 1.4 }}>{item.message}</Typography><Typography sx={{ mt: 0.25, fontFamily: 'monospace', fontSize: 8, opacity: .55 }}>{item.path}</Typography></Box>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
 
   if (!selectedBusiness) return <NoBusinessSelected message="Select a business to generate and host its website with AI." />;
 
@@ -642,19 +749,6 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
             </Box>
           </Card>
 
-          {/* Preview (only when user clicks Preview button) */}
-          {codeTab === 'preview' && savedDraft && (
-            <Card sx={{ mb: 2.5, border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
-              <Box sx={{ bgcolor: 'var(--vm-bg-secondary)', px: 2, py: 0.75, borderBottom: '1px solid var(--vm-border-subtle)', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <MonitorSmartphone size={14} />
-                <Typography sx={{ fontSize: 12, fontWeight: 700, flex: 1 }}>Website Preview</Typography>
-                <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)' }}>From draft data</Typography>
-              </Box>
-              <Box sx={{ maxHeight: 600, overflow: 'auto' }}>
-                <SitePreview draft={savedDraft} businessName={selectedBusiness?.name || ''} tagline={selectedBusiness?.tagline || ''} logo={logo} />
-              </Box>
-            </Card>
-          )}
         </>
       )}
 
@@ -665,42 +759,10 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
         </Alert>
       )}
 
-      {codeTab === 'code' && codeResult && (
-        <Card sx={{ mb: 2.5, border: '1px solid var(--vm-border-subtle)', borderRadius: 3, overflow: 'hidden' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1, bgcolor: 'var(--vm-bg-secondary)', borderBottom: '1px solid var(--vm-border-subtle)' }}>
-            <FileCode size={16} />
-            <Typography sx={{ fontSize: 13, fontWeight: 700, flex: 1 }}>Generated Project ({codeResult.type})</Typography>
-            <Button size="small" variant="outlined" startIcon={<GitBranch size={13} />} disabled={deployLoading === 'github'} onClick={() => handleDeploy('github')} sx={{ textTransform: 'none', fontSize: 11 }}>
-              {deployLoading === 'github' ? <CircularProgress size={12} /> : 'Push to GitHub'}
-            </Button>
-            <Button size="small" variant="outlined" startIcon={<Terminal size={13} />} disabled={deployLoading === 'netlify'} onClick={() => handleDeploy('netlify')} sx={{ textTransform: 'none', fontSize: 11 }}>
-              {deployLoading === 'netlify' ? <CircularProgress size={12} /> : 'Deploy to Netlify'}
-            </Button>
-          </Box>
-          <Box sx={{ display: 'flex', minHeight: 400 }}>
-            <Box sx={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--vm-border-subtle)', overflowY: 'auto', bgcolor: '#0d1117' }}>
-              {codeResult.files.map(f => (
-                <Box key={f.path} onClick={() => setSelectedFile(f.path)} sx={{ px: 1.5, py: 0.75, cursor: 'pointer', fontSize: 12, fontFamily: 'monospace', color: selectedFile === f.path ? 'var(--vm-primary-400)' : 'rgba(255,255,255,.7)', bgcolor: selectedFile === f.path ? 'rgba(255,255,255,.05)' : 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,.03)' } }}>
-                  <Code2 size={11} style={{ marginRight: 6, opacity: .5, display: 'inline' }} />{f.path}
-                </Box>
-              ))}
-            </Box>
-            <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#0d1117', p: 2 }}>
-              {selectedFile && (() => {
-                const file = codeResult.files.find(f => f.path === selectedFile);
-                return file ? (
-                  <Box component="pre" sx={{ m: 0, color: '#e6edf3', fontSize: 11, fontFamily: "'JetBrains Mono','Fira Code',monospace", lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    {file.content}
-                  </Box>
-                ) : <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 12 }}>Select a file</Typography>;
-              })()}
-            </Box>
-          </Box>
-        </Card>
-      )}
-
       <AICreationStudio key={refreshKey}
         domain="website"
+        builderMode
+        rightPanel={builderRightPanel}
         title="AI Website Studio"
         description="Tell AI what the business website should communicate. It automatically uses the approved logo, colours, business name, tagline, description, location, and other business records."
         placeholder="Example: Generate a modern responsive website from my approved business details and brand. Include Home, About, Services, and Contact pages, with a strong hero, trust section, FAQ, and clear calls to action."
@@ -712,24 +774,27 @@ export function WebsiteBuilder(_props: { onViewChange?: (_view: ViewType) => voi
         ]}
         emptyLabel="No approved AI website draft exists. Ask AI to generate the complete first version."
         renderCurrent={() => {
-          // Show generated code preview if available, else fall back to SitePreview
-          if (codeResult && codeResult.files.length > 0) {
-            const cssFile = codeResult.files.find(f => f.path === 'src/styles/index.css');
-            const previewContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${cssFile?.content || ''}</style></head><body style="font-family:system-ui,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px"><div style="text-align:center;max-width:500px"><h1 style="color:#10b981">${selectedBusiness?.name || 'Website'}</h1><p style="color:#94a3b8;margin-top:12px">${selectedBusiness?.description || selectedBusiness?.tagline || 'Built with VentureMate AI'}</p><p style="margin-top:32px;font-size:13px;color:#64748b">${codeResult.files.length} generated files — preview of React+Vite project</p></div></body></html>`;
-            return <Box component="iframe" srcDoc={previewContent} title="Preview" sx={{ width:'100%',height:500,border:'none',borderRadius:2,bgcolor:'#fff' }} sandbox="allow-scripts" />;
+          if (codeTab === 'code' && codeResult && selectedFile) {
+            const file = codeResult.files.find(item => item.path === selectedFile);
+            return file ? (
+              <Box sx={{ minHeight: 560, bgcolor: '#0d1117', borderRadius: 2, overflow: 'hidden' }}>
+                <Box sx={{ height: 46, px: 1.5, display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+                  <Code2 size={13} color="#34d399" />
+                  <Typography sx={{ ml: 1, color: '#e6edf3', fontFamily: 'monospace', fontSize: 10.5, flex: 1 }}>{file.path}</Typography>
+                  <Button size="small" onClick={() => setCodeTab('preview')} startIcon={<Eye size={12} />} sx={{ color: '#9ca3af', fontSize: 10, textTransform: 'none' }}>Preview</Button>
+                </Box>
+                <Box component="pre" sx={{ m: 0, p: 2, maxHeight: 'calc(100vh - 290px)', overflow: 'auto', color: '#e6edf3', fontSize: 11, fontFamily: "'JetBrains Mono','Fira Code',monospace", lineHeight: 1.65, whiteSpace: 'pre', tabSize: 2 }}>
+                  {file.content}
+                </Box>
+              </Box>
+            ) : null;
           }
-          return savedDraft ? <SitePreview draft={savedDraft} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} /> : null;
+          return savedDraft ? renderWorkspacePreview(savedDraft) : null;
         }}
         renderProposal={(change) => {
           const proposed = proposalDraft(change);
           if (!proposed) return <Typography color="error">The AI returned an invalid website preview.</Typography>;
-          // Show generated code preview for proposals too
-          if (codeResult && codeResult.files.length > 0) {
-            const cssFile = codeResult.files.find(f => f.path === 'src/styles/index.css');
-            const previewContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${cssFile?.content || ''}</style></head><body style="font-family:system-ui,sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:40px"><div style="text-align:center;max-width:500px;border:2px dashed #10b981;padding:24px;border-radius:12px"><h1 style="color:#10b981">${proposed.name || selectedBusiness?.name || 'Website'}</h1><p style="color:#94a3b8;margin-top:12px">${proposed.tagline || selectedBusiness?.tagline || ''}</p><p style="margin-top:24px;font-size:12px;color:#22c55e">✨ AI Proposal — ${proposed.pages?.length || 0} pages</p></div></body></html>`;
-            return <Box component="iframe" srcDoc={previewContent} title="Proposal Preview" sx={{ width:'100%',height:500,border:'none',borderRadius:2,bgcolor:'#fff' }} sandbox="allow-scripts" />;
-          }
-          return <SitePreview draft={proposed} businessName={selectedBusiness.name} tagline={selectedBusiness.tagline} logo={logo} proposed />;
+          return renderWorkspacePreview(proposed, true);
         }}
         onApproved={loadWebsite}
       />

@@ -7,24 +7,24 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/venturemate/vmbackend/internal/ai"
+	"github.com/venturemate/vmbackend/internal/aichat"
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/banking"
-	"github.com/venturemate/vmbackend/internal/aichat"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/chat"
-	"github.com/venturemate/vmbackend/internal/crmemail"
 	"github.com/venturemate/vmbackend/internal/crm"
 	"github.com/venturemate/vmbackend/internal/crmcalendar"
+	"github.com/venturemate/vmbackend/internal/crmemail"
 	"github.com/venturemate/vmbackend/internal/crmobjects"
 	"github.com/venturemate/vmbackend/internal/crmworkflow"
 	"github.com/venturemate/vmbackend/internal/db"
-	"github.com/venturemate/vmbackend/internal/financing"
-	"github.com/venturemate/vmbackend/internal/expenditure"
-	"github.com/venturemate/vmbackend/internal/expensepdf"
-	"github.com/venturemate/vmbackend/internal/invoicepdf"
 	"github.com/venturemate/vmbackend/internal/domains"
 	"github.com/venturemate/vmbackend/internal/email"
+	"github.com/venturemate/vmbackend/internal/expenditure"
+	"github.com/venturemate/vmbackend/internal/expensepdf"
+	"github.com/venturemate/vmbackend/internal/financing"
 	"github.com/venturemate/vmbackend/internal/investors"
+	"github.com/venturemate/vmbackend/internal/invoicepdf"
 	"github.com/venturemate/vmbackend/internal/invoices"
 	"github.com/venturemate/vmbackend/internal/marketplace"
 	"github.com/venturemate/vmbackend/internal/metricool"
@@ -78,19 +78,19 @@ type Container struct {
 	MarketplaceRepo     *marketplace.Repository
 	SupportRepo         *support.Repository
 	SupportService      *support.Service
-	CrmRepo              *crm.Repository
-	MetricoolService     *metricool.Service
-	ExpenditureRepo      *expenditure.Repository
-	ExpensePdfGenerator  *expensepdf.Generator
-	InvoicePdfGenerator  *invoicepdf.Generator
-	EmailSyncRepo        *crmemail.Repository
-	EmailSyncService     *crmemail.SyncService
-	CalendarRepo         *crmcalendar.Repository
-	CalendarSyncService  *crmcalendar.SyncService
-	CustomObjectsRepo    *crmobjects.Repository
-	WorkflowRepo         *crmworkflow.Repository
-	WorkflowEngine       *crmworkflow.Engine
-	FinancingRepo        *financing.Repository
+	CrmRepo             *crm.Repository
+	MetricoolService    *metricool.Service
+	ExpenditureRepo     *expenditure.Repository
+	ExpensePdfGenerator *expensepdf.Generator
+	InvoicePdfGenerator *invoicepdf.Generator
+	EmailSyncRepo       *crmemail.Repository
+	EmailSyncService    *crmemail.SyncService
+	CalendarRepo        *crmcalendar.Repository
+	CalendarSyncService *crmcalendar.SyncService
+	CustomObjectsRepo   *crmobjects.Repository
+	WorkflowRepo        *crmworkflow.Repository
+	WorkflowEngine      *crmworkflow.Engine
+	FinancingRepo       *financing.Repository
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
 	AiChatRepo          *aichat.Repository
@@ -108,8 +108,6 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize S3: %w", err)
 	}
-	ai.SetS3Service(s3Svc)
-
 	// 3. Email
 	emailSvc, err := email.New()
 	if err != nil {
@@ -235,19 +233,19 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		RegistrationRepo:    registrationRepo,
 		SupportRepo:         supportRepo,
 		SupportService:      supportSvc,
-		CrmRepo:              crmRepo,
-		MetricoolService:     metricoolSvc,
-		ExpenditureRepo:      expenditureRepo,
-		ExpensePdfGenerator:  expensePdfGen,
-		InvoicePdfGenerator:  invoicePdfGen,
-		EmailSyncRepo:        emailSyncRepo,
-		EmailSyncService:     emailSyncSvc,
-		CalendarRepo:         calendarRepo,
-		CalendarSyncService:  calendarSyncSvc,
-		CustomObjectsRepo:    customObjectsRepo,
-		WorkflowRepo:         workflowRepo,
-		WorkflowEngine:       workflowEngine,
-		FinancingRepo:        financingRepo,
+		CrmRepo:             crmRepo,
+		MetricoolService:    metricoolSvc,
+		ExpenditureRepo:     expenditureRepo,
+		ExpensePdfGenerator: expensePdfGen,
+		InvoicePdfGenerator: invoicePdfGen,
+		EmailSyncRepo:       emailSyncRepo,
+		EmailSyncService:    emailSyncSvc,
+		CalendarRepo:        calendarRepo,
+		CalendarSyncService: calendarSyncSvc,
+		CustomObjectsRepo:   customObjectsRepo,
+		WorkflowRepo:        workflowRepo,
+		WorkflowEngine:      workflowEngine,
+		FinancingRepo:       financingRepo,
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,
 		AiChatRepo:          aiChatRepo,

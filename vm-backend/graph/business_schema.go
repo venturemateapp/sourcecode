@@ -42,58 +42,48 @@ var businessType = graphql.NewObject(graphql.ObjectConfig{
 		"totalRevenue": &graphql.Field{
 			Type: graphql.Float,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				b, ok := p.Source.(*businesses.Business)
+				businessID, ok := businessIDFromSource(p.Source)
 				if !ok || AppContainer == nil || AppContainer.InvoiceRepo == nil {
 					return 0.0, nil
 				}
-				return AppContainer.InvoiceRepo.GetTotalRevenue(p.Context, b.ID)
+				return AppContainer.InvoiceRepo.GetTotalRevenue(p.Context, businessID)
 			},
 		},
 		"revenueByCurrency": &graphql.Field{
 			Type: graphql.String,
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				biz, ok := p.Source.(*businesses.Business)
+				businessID, ok := businessIDFromSource(p.Source)
 				if !ok || AppContainer == nil || AppContainer.InvoiceRepo == nil {
 					return "{}", nil
 				}
-				// Direct SQL query — guaranteed to work
-				type row struct {
-					Currency string  `json:"currency"`
-					Total    float64 `json:"total"`
-				}
-				var rows []row
-				sql := "SELECT currency, SUM(amount) FROM invoices WHERE business_id=$1 GROUP BY currency"
-				db := AppContainer.DB
-				if db == nil {
-					return "{}", nil
-				}
-				r, err := db.Query(p.Context, sql, biz.ID)
+				result, err := AppContainer.InvoiceRepo.GetRevenueByCurrency(p.Context, businessID)
 				if err != nil {
 					return "{}", nil
-				}
-				defer r.Close()
-				for r.Next() {
-					var cur string
-					var tot float64
-					if err := r.Scan(&cur, &tot); err != nil {
-						continue
-					}
-					rows = append(rows, row{Currency: cur, Total: tot})
-				}
-				result := make(map[string]float64)
-				for _, row := range rows {
-					result[row.Currency] = row.Total
 				}
 				b, _ := json.Marshal(result)
 				return string(b), nil
 			},
 		},
-		"metrics":       &graphql.Field{Type: graphql.String},
-		"aiGenerated":   &graphql.Field{Type: graphql.String},
-		"createdAt":     &graphql.Field{Type: graphql.String},
-		"updatedAt":     &graphql.Field{Type: graphql.String},
+		"metrics":     &graphql.Field{Type: graphql.String},
+		"aiGenerated": &graphql.Field{Type: graphql.String},
+		"createdAt":   &graphql.Field{Type: graphql.String},
+		"updatedAt":   &graphql.Field{Type: graphql.String},
 	},
 })
+
+func businessIDFromSource(source interface{}) (string, bool) {
+	switch business := source.(type) {
+	case *businesses.Business:
+		if business == nil {
+			return "", false
+		}
+		return business.ID, business.ID != ""
+	case businesses.Business:
+		return business.ID, business.ID != ""
+	default:
+		return "", false
+	}
+}
 
 func init() {
 	rootQuery.AddFieldConfig("myBusinesses", &graphql.Field{
@@ -302,5 +292,3 @@ func parseDatePtr(s string) *time.Time {
 	}
 	return &t
 }
-
-

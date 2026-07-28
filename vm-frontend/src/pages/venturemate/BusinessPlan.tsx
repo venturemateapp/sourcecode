@@ -140,6 +140,7 @@ export function BusinessPlan() {
 
       <AICreationStudio
         domain="business-plan" title="" description=""
+        builderMode
         placeholder="Generate a complete investor-ready business plan from my business details."
         starterPrompts={[
           'Generate a complete business plan from everything known about my business.',

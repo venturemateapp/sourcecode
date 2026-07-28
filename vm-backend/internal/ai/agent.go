@@ -281,7 +281,7 @@ func UserPlanProvider(planName string, keys *AIKeySet, bizRepo *businesses.Repos
 	return provider, NewToolRegistry(bizRepo, fh), nil
 }
 
-func ProposeChanges(ctx context.Context, provider Provider, biz *businesses.Business, prompt, domain string, extraContext map[string]string, rc *recraft.Client) (*Proposal, error) {
+func ProposeChanges(ctx context.Context, provider Provider, biz *businesses.Business, prompt, domain string, extraContext map[string]string, rc *recraft.Client, assetStore ApprovedAssetStore) (*Proposal, error) {
 	domain = normalizeDomain(domain)
 	TrackGeneration(biz.ID)
 	UpdateGeneration(biz.ID, StepThinking, "Analyzing business profile...", 5)
@@ -395,7 +395,7 @@ Rules:
 			proposal.Changes[i].Domain = domain
 		}
 	}
-	if err := normalizeCreativeProposal(&proposal, biz, domain, rc); err != nil {
+	if err := normalizeCreativeProposal(ctx, &proposal, biz, domain, rc, assetStore); err != nil {
 		return nil, err
 	}
 	kind := creativeDomain(domain)
@@ -510,6 +510,7 @@ type ApplyDependencies struct {
 	BusinessRepo *businesses.Repository
 	DomainRepo   *domains.Repository
 	WebsiteRepo  *websites.Repository
+	AssetStore   ApprovedAssetStore
 }
 
 func ApplyChanges(ctx context.Context, repo *businesses.Repository, userID, businessID string, changes []ProposedChange) (string, error) {
@@ -539,6 +540,10 @@ func ApplyChangesWithDependencies(ctx context.Context, deps ApplyDependencies, u
 			if changeType == "delete" {
 				return "", fmt.Errorf("website deletion requires explicit confirmation through the AI assistant")
 			}
+			durableDraft, err := populateWebsiteAssets(ctx, ch.NewValue, biz, nil, deps.AssetStore)
+			if err != nil {
+				return "", fmt.Errorf("could not secure website assets: %w", err)
+			}
 			var draft struct {
 				TemplateID   string          `json:"templateId"`
 				Subdomain    string          `json:"subdomain"`
@@ -548,7 +553,7 @@ func ApplyChangesWithDependencies(ctx context.Context, deps ApplyDependencies, u
 				Navigation   json.RawMessage `json:"navigation"`
 				Footer       json.RawMessage `json:"footer"`
 			}
-			if err := json.Unmarshal([]byte(ch.NewValue), &draft); err != nil {
+			if err := json.Unmarshal([]byte(durableDraft), &draft); err != nil {
 				return "", fmt.Errorf("website draft is invalid JSON: %w", err)
 			}
 			w, err := deps.WebsiteRepo.GetWebsiteByBusiness(ctx, businessID)
@@ -650,7 +655,11 @@ func ApplyChangesWithDependencies(ctx context.Context, deps ApplyDependencies, u
 		case "status":
 			biz.Status = ch.NewValue
 		case "brandKit":
-			biz.BrandKit = ch.NewValue
+			persisted, err := persistApprovedBrandKit(ctx, deps.AssetStore, businessID, ch.NewValue)
+			if err != nil {
+				return "", fmt.Errorf("could not secure approved logo: %w", err)
+			}
+			biz.BrandKit = persisted
 		case "pitchDeck":
 			biz.PitchDeck = ch.NewValue
 		case "businessPlan":

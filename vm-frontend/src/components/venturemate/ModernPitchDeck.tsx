@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
-import { Box, Typography, Avatar, IconButton, Tooltip, Chip } from '@mui/material';
+import { Box, Typography, Avatar, IconButton, Tooltip, Chip, CircularProgress } from '@mui/material';
 import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign, Download, FileText, Palette } from 'lucide-react';
 import { AuroraBackground, FloatingOrb } from './AuroraBackground';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import PptxGenJS from 'pptxgenjs';
 import type { Slide } from '../../types/venturemate';
+import { exportPitchDeckPptx } from '../../lib/pitchDeckExport';
+import { ExportProgress } from '../shared/ExportProgress';
 
 const SLIDE_ICONS: Record<string, typeof Star> = {
   title: Star, cover: Star, problem: Lightbulb, solution: Target, market: TrendingUp,
@@ -727,6 +728,8 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent, decorat
 
 export function ModernPitchDeck({ slides, title: _title, logo, businessName, accentColor, secondaryColor }: ModernPitchDeckProps) {
   const [templateId, setTemplateId] = useState('velocity');
+  const [pptxExporting, setPptxExporting] = useState(false);
+  const [pdfExporting, setPdfExporting] = useState(false);
   const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
   // explicit accentColor/secondaryColor props (e.g. brand colors) still win when provided;
   // otherwise the selected template drives the palette, matching the other VentureMate viewers.
@@ -786,47 +789,43 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
 
   const exportPDF = async () => {
     const el = deckRef.current;
-    if (!el) return;
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
-    const slideEls = el.querySelectorAll('[data-mp-slide]');
-    let hasError = false;
-    for (let i = 0; i < slideEls.length; i++) {
-      const slideEl = slideEls[i] as HTMLElement;
-      const canvas = await captureSlide(slideEl);
-      if (!canvas) { hasError = true; continue; }
-      if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1920, 1080);
+    if (!el || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
+      const slideEls = el.querySelectorAll('[data-mp-slide]');
+      let hasError = false;
+      for (let i = 0; i < slideEls.length; i++) {
+        const slideEl = slideEls[i] as HTMLElement;
+        const canvas = await captureSlide(slideEl);
+        if (!canvas) { hasError = true; continue; }
+        if (i > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1920, 1080);
+      }
+      if (slideEls.length > 0) pdf.save(`${_title.replace(/[^a-zA-Z0-9]/g, '_')}_pitchdeck.pdf`);
+      if (hasError) console.warn('Some slides could not be captured');
+    } catch (error) {
+      console.error('PDF export failed', error);
+      window.alert(error instanceof Error ? error.message : 'PDF export failed. Please try again.');
+    } finally {
+      setPdfExporting(false);
     }
-    if (slideEls.length > 0) pdf.save(`${_title.replace(/[^a-zA-Z0-9]/g, '_')}_pitchdeck.pdf`);
-    if (hasError) console.warn('Some slides could not be captured');
   };
 
   const exportPPTX = async () => {
-    const el = deckRef.current;
-    if (!el) return;
-    const pptx = new PptxGenJS();
-    pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
-    pptx.layout = 'WIDE';
-    const slideEls = el.querySelectorAll('[data-mp-slide]');
-    for (let i = 0; i < slideEls.length; i++) {
-      const slideEl = slideEls[i] as HTMLElement;
-      const canvas = await captureSlide(slideEl);
-      if (canvas) {
-        const imgData = canvas.toDataURL('image/png');
-        const pptSlide = pptx.addSlide();
-        pptSlide.background = { color: '08080B' };
-        pptSlide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
-      } else {
-        // Fallback: text-only slide
-        const slideData = slides[i];
-        const pptSlide = pptx.addSlide();
-        pptSlide.background = { color: '08080B' };
-        pptSlide.addText(slideData.title, { x: 0.8, y: 1.5, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Inter', color: 'FFFFFF', bold: true });
-        if (slideData.content) pptSlide.addText(slideData.content, { x: 0.8, y: 3.2, w: 11.7, h: 1.5, fontSize: 16, fontFace: 'Inter', color: 'AAAAAA' });
-        if (slideData.bullets) pptSlide.addText(slideData.bullets.map((b: string) => `• ${b}`).join('\n'), { x: 0.8, y: 5, w: 11.7, h: 2, fontSize: 14, fontFace: 'Inter', color: 'CCCCCC', lineSpacing: 24 });
-      }
+    if (pptxExporting) return;
+    setPptxExporting(true);
+    try {
+      await exportPitchDeckPptx({
+        slides, title: _title, logo, businessName: businessName || _title,
+        primary: accent, secondary, style: 'premium',
+      });
+    } catch (error) {
+      console.error('PPTX export failed', error);
+      window.alert(error instanceof Error ? error.message : 'PowerPoint export failed. Please try again.');
+    } finally {
+      setPptxExporting(false);
     }
-    pptx.writeFile({ fileName: `${_title.replace(/[^a-zA-Z0-9]/g, '_')}_pitchdeck.pptx` });
   };
 
   return (
@@ -847,14 +846,15 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
           ))}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Tooltip title="Download PDF">
-            <IconButton size="small" onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}><FileText size={15} /></IconButton>
+          <Tooltip title={pdfExporting ? 'Creating PDF…' : 'Download PDF'}>
+            <span><IconButton size="small" disabled={pdfExporting || pptxExporting} onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}>{pdfExporting ? <CircularProgress size={15} /> : <FileText size={15} />}</IconButton></span>
           </Tooltip>
-          <Tooltip title="Download PPTX">
-            <IconButton size="small" onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}><Download size={15} /></IconButton>
+          <Tooltip title={pptxExporting ? 'Creating PowerPoint…' : 'Download editable PowerPoint'}>
+            <span><IconButton size="small" disabled={pptxExporting || pdfExporting} onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}>{pptxExporting ? <CircularProgress size={15} /> : <Download size={15} />}</IconButton></span>
           </Tooltip>
         </Box>
       </Box>
+      <ExportProgress open={pdfExporting || pptxExporting} label={pptxExporting ? 'Building editable PowerPoint…' : 'Rendering pitch deck PDF…'} />
       <Box ref={deckRef} sx={{ position: 'relative', width: '100%' }} style={{ fontFamily: template.font }}>
       {slides.map((slide, index) => {
         const total = slides.length;

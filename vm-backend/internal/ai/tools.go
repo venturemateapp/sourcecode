@@ -36,6 +36,7 @@ type ToolDependencies struct {
 	InvestorRepo    *investors.Repository
 	FileHandler     *FileHandler
 	RecraftClient   *recraft.Client
+	AssetStore      ApprovedAssetStore
 }
 
 type ToolRegistry struct {
@@ -53,7 +54,7 @@ func NewFullToolRegistry(deps ToolDependencies) *ToolRegistry {
 		tr.register(getBusinessInfoTool(deps.BusinessRepo))
 		tr.register(updateBusinessFieldTool(deps.BusinessRepo))
 		tr.register(listBusinessesTool(deps.BusinessRepo))
-		tr.register(generateSVGLogoTool(deps.BusinessRepo, deps.RecraftClient))
+		tr.register(generateSVGLogoTool(deps.BusinessRepo, deps.RecraftClient, deps.AssetStore))
 		tr.register(deleteBusinessTool(deps.BusinessRepo))
 	}
 	if deps.DomainRepo != nil && deps.BusinessRepo != nil {
@@ -236,7 +237,7 @@ func deleteBusinessTool(repo *businesses.Repository) Tool {
 	}}
 }
 
-func generateSVGLogoTool(repo *businesses.Repository, rc *recraft.Client) Tool {
+func generateSVGLogoTool(repo *businesses.Repository, rc *recraft.Client, assetStore ApprovedAssetStore) Tool {
 	return Tool{Def: ToolDef{Name: "generateSVGLogo", Description: "Generate a logo. Uses Recraft AI for high-quality logos. Save it only when the user explicitly approved this exact version.", Parameters: rawSchema(`{
 		"type":"object","properties":{
 			"businessId":{"type":"string"},"label":{"type":"string"},"primaryColor":{"type":"string"},"secondaryColor":{"type":"string"},"shape":{"type":"string","enum":["rounded","circle","square"]},"confirmed":{"type":"boolean"}
@@ -256,8 +257,12 @@ func generateSVGLogoTool(repo *businesses.Repository, rc *recraft.Client) Tool {
 		if biz.BrandKit != "" {
 			var bk map[string]interface{}
 			if json.Unmarshal([]byte(biz.BrandKit), &bk) == nil {
-				if s, ok := bk["secondaryColor"].(string); ok { secondary = s }
-				if a, ok := bk["accentColor"].(string); ok { accent = a }
+				if s, ok := bk["secondaryColor"].(string); ok {
+					secondary = s
+				}
+				if a, ok := bk["accentColor"].(string); ok {
+					accent = a
+				}
 			}
 		}
 
@@ -333,7 +338,11 @@ Make it unforgettable — a logo people recognize instantly from the shape alone
 			return jsonValue(map[string]interface{}{"success": true, "preview": true, "saved": false, "logo": logoURL, "brandKit": brand, "message": "Logo proposal generated but not saved. The user must approve this exact version."}), nil
 		}
 		brandBytes, _ := json.Marshal(brand)
-		biz.BrandKit = string(brandBytes)
+		persisted, err := persistApprovedBrandKit(ctx, assetStore, biz.ID, string(brandBytes))
+		if err != nil {
+			return jsonError(fmt.Errorf("could not secure approved logo: %w", err)), nil
+		}
+		biz.BrandKit = persisted
 		if err := repo.Update(ctx, biz); err != nil {
 			return jsonError(err), nil
 		}

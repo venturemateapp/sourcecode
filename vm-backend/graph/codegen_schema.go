@@ -19,12 +19,23 @@ var projectFileType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var buildDiagnosticType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "BuildDiagnostic",
+	Fields: graphql.Fields{
+		"severity": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"message":  &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"path":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+	},
+})
+
 var codeGenResultType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "CodeGenResult",
 	Fields: graphql.Fields{
-		"files":  &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(projectFileType)))},
-		"type":   &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"routes": &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String)))},
+		"files":       &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(projectFileType)))},
+		"type":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"routes":      &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String)))},
+		"diagnostics": &graphql.Field{Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(buildDiagnosticType)))},
+		"generatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
 
@@ -62,6 +73,9 @@ func init() {
 			websiteDraft := p.Args["websiteDraft"].(string)
 			businessName := p.Args["businessName"].(string)
 			businessID := p.Args["businessId"].(string)
+			if _, err := requireOwnedBusiness(p, businessID); err != nil {
+				return nil, err
+			}
 
 			// Fetch brand kit for logo and colors
 			var logo, tagline string
@@ -87,7 +101,10 @@ func init() {
 			for i, f := range result.Files {
 				fileMaps[i] = map[string]interface{}{"path": f.Path, "content": f.Content}
 			}
-			return map[string]interface{}{"files": fileMaps, "type": result.Type, "routes": result.Routes}, nil
+			return map[string]interface{}{
+				"files": fileMaps, "type": result.Type, "routes": result.Routes,
+				"diagnostics": result.Diagnostics, "generatedAt": result.GeneratedAt,
+			}, nil
 		},
 	})
 
@@ -106,6 +123,9 @@ func init() {
 			businessID := p.Args["businessId"].(string)
 			platform := p.Args["platform"].(string)
 			siteName, _ := p.Args["siteName"].(string)
+			if _, err := requireOwnedBusiness(p, businessID); err != nil {
+				return okResult(platform, false, err.Error()), nil
+			}
 
 			// Fetch brand kit for logo and tagline
 			var logo, tagline string

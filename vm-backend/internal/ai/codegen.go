@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type ProjectFile struct {
@@ -17,9 +18,17 @@ type ProjectFile struct {
 }
 
 type CodeGenResult struct {
-	Files  []ProjectFile `json:"files"`
-	Type   string        `json:"type"` // react-vite or standalone-html
-	Routes []string      `json:"routes"`
+	Files       []ProjectFile     `json:"files"`
+	Type        string            `json:"type"` // react-vite or standalone-html
+	Routes      []string          `json:"routes"`
+	Diagnostics []BuildDiagnostic `json:"diagnostics"`
+	GeneratedAt string            `json:"generatedAt"`
+}
+
+type BuildDiagnostic struct {
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+	Path     string `json:"path"`
 }
 
 type websiteDraft struct {
@@ -40,18 +49,18 @@ type websiteDraft struct {
 }
 
 type pageDraft struct {
-	ID          string         `json:"id"`
-	Slug        string         `json:"slug"`
-	Title       string         `json:"title"`
-	IsHome      bool           `json:"isHome"`
-	Sections    []sectionDraft `json:"sections"`
+	ID       string         `json:"id"`
+	Slug     string         `json:"slug"`
+	Title    string         `json:"title"`
+	IsHome   bool           `json:"isHome"`
+	Sections []sectionDraft `json:"sections"`
 }
 
 type sectionDraft struct {
 	ID      string         `json:"id"`
 	Type    string         `json:"type"`
 	Order   int            `json:"order"`
-	Visible bool           `json:"visible"`
+	Visible *bool          `json:"visible,omitempty"`
 	Props   map[string]any `json:"props"`
 }
 
@@ -63,6 +72,7 @@ func GenerateReactProject(raw string, bizName, logoURL, tagline string) (*CodeGe
 	if len(draft.Pages) == 0 {
 		return nil, fmt.Errorf("website draft has no pages")
 	}
+	diagnostics := validateWebsiteProject(&draft)
 
 	// Support both old (globalStyles) and new (theme) field structures
 	styles := draft.GlobalStyles
@@ -76,7 +86,6 @@ func GenerateReactProject(raw string, bizName, logoURL, tagline string) (*CodeGe
 	secondary := propString(styles, "secondaryColor", propString(styles, "secondary", "#059669"))
 	accent := propString(styles, "accentColor", propString(styles, "accent", "#34d399"))
 	darkColor := propString(styles, "dark", "#1f2937")
-	lightColor := propString(styles, "light", "#f9fafb")
 	fontHeading := propString(styles, "fontHeading", propString(styles, "fontHeading", "Inter"))
 	fontBody := propString(styles, "fontBody", propString(styles, "fontBody", "Inter"))
 	radius := propString(styles, "radius", "16px")
@@ -213,7 +222,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   body { background: var(--bg); color: var(--text); }
   .section-alt { background: var(--section-alt); }
 }`,
-			darkColor, lightColor)
+			darkColor)
 	}
 	cssContent := fmt.Sprintf(`:root {
   --primary: %s;
@@ -232,18 +241,28 @@ body { font-family: var(--font-body); color: var(--text); background: var(--bg);
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); font-weight: 700; line-height: 1.2; }
 a { color: var(--primary); text-decoration: none; }
 img { max-width: 100%%; height: auto; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-.section { padding: 80px 0; }
+.container { width: min(1180px, calc(100%% - 40px)); margin: 0 auto; }
+.header { position: sticky; top: 0; z-index: 50; min-height: 72px; padding: 0 max(20px, calc((100vw - 1180px) / 2)); display: flex; align-items: center; justify-content: space-between; gap: 32px; background: color-mix(in srgb, var(--bg) 88%%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--text) 10%%, transparent); backdrop-filter: blur(18px); }
+.header-logo { display: flex; align-items: center; min-width: 0; }
+.header-links { display: flex; align-items: center; gap: 28px; }
+.nav-link { color: var(--text-muted); font-size: 14px; font-weight: 650; transition: color .2s ease; }
+.nav-link:hover, .nav-link.active { color: var(--primary); }
+.section { padding: clamp(64px, 9vw, 112px) 0; }
 .section-alt { background: var(--section-alt); }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border-radius: var(--radius); font-weight: 600; font-size: 16px; cursor: pointer; border: none; transition: all .2s; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 24px; border-radius: var(--radius); font-weight: 700; font-size: 15px; cursor: pointer; border: none; transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease; }
 .btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+.btn-primary:hover { opacity: .92; transform: translateY(-2px); box-shadow: 0 14px 35px color-mix(in srgb, var(--primary) 30%%, transparent); }
 .btn-secondary { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
-.heading { font-size: 36px; margin-bottom: 12px; }
+.heading { font-size: clamp(32px, 5vw, 56px); letter-spacing: -.035em; margin-bottom: 16px; text-wrap: balance; }
 .subtitle { font-size: 18px; color: var(--text-muted); margin-bottom: 40px; max-width: 600px; }
 .text-center { text-align: center; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-@media (max-width: 768px) { .section { padding: 48px 0; } .heading { font-size: 28px; } }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%%), 1fr)); gap: 24px; }
+@media (max-width: 768px) {
+  .header { min-height: 64px; }
+  .header-links { max-width: 65vw; overflow-x: auto; gap: 18px; scrollbar-width: none; }
+  .nav-link { white-space: nowrap; font-size: 13px; }
+  .container { width: min(100%% - 32px, 1180px); }
+}
 %s`, primary, secondary, accent, fontHeading, fontBody, radius, darkModeCSS)
 
 	files = append(files, ProjectFile{Path: "src/styles/index.css", Content: cssContent})
@@ -259,7 +278,11 @@ img { max-width: 100%%; height: auto; }
 	files = append(files, ProjectFile{Path: "src/components/SectionRenderer.jsx", Content: sectionRenderer})
 
 	routes := make([]string, 0, len(draft.Pages))
-	for _, p := range draft.Pages {
+	for i := range draft.Pages {
+		if strings.TrimSpace(draft.Pages[i].Slug) == "" {
+			draft.Pages[i].Slug = "/"
+		}
+		p := draft.Pages[i]
 		routes = append(routes, p.Slug)
 	}
 
@@ -267,9 +290,52 @@ img { max-width: 100%%; height: auto; }
 	appContent := generateAppJSX(draft.Pages, bizName, tagline)
 	files = append(files, ProjectFile{Path: "src/App.jsx", Content: appContent})
 
-	return &CodeGenResult{Files: files, Type: "react-vite", Routes: routes}, nil
+	return &CodeGenResult{
+		Files: files, Type: "react-vite", Routes: routes,
+		Diagnostics: diagnostics, GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+	}, nil
 }
 
+func validateWebsiteProject(draft *websiteDraft) []BuildDiagnostic {
+	var diagnostics []BuildDiagnostic
+	seenRoutes := map[string]bool{}
+	hasHome := false
+	supported := map[string]bool{
+		"hero": true, "features": true, "testimonials": true, "pricing": true,
+		"contact": true, "cta": true, "stats": true, "faq": true,
+		"carousel": true, "team": true, "about": true,
+	}
+	for pageIndex, page := range draft.Pages {
+		slug := strings.TrimSpace(page.Slug)
+		if slug == "" {
+			slug = "/"
+		}
+		path := fmt.Sprintf("pages[%d]", pageIndex)
+		if seenRoutes[slug] {
+			diagnostics = append(diagnostics, BuildDiagnostic{Severity: "error", Path: path, Message: "Duplicate route " + slug})
+		}
+		seenRoutes[slug] = true
+		if page.IsHome || slug == "/" {
+			hasHome = true
+		}
+		if len(page.Sections) == 0 {
+			diagnostics = append(diagnostics, BuildDiagnostic{Severity: "warning", Path: path, Message: "Page has no sections"})
+		}
+		for sectionIndex, section := range page.Sections {
+			if !supported[section.Type] {
+				diagnostics = append(diagnostics, BuildDiagnostic{
+					Severity: "warning",
+					Path:     fmt.Sprintf("%s.sections[%d]", path, sectionIndex),
+					Message:  "Unknown section type " + section.Type + " will use the generic renderer",
+				})
+			}
+		}
+	}
+	if !hasHome {
+		diagnostics = append(diagnostics, BuildDiagnostic{Severity: "error", Path: "pages", Message: "Project requires a home route at /"})
+	}
+	return diagnostics
+}
 
 func ZipProjectFiles(files []ProjectFile) ([]byte, error) {
 	var buf bytes.Buffer
@@ -399,14 +465,17 @@ export default function SectionRenderer({ section }) {
   switch (section.type) {
     case 'hero':
       return <section className="section" style={{background:'linear-gradient(135deg,'+vars.primary+','+vars.secondary+')',color:'#fff',padding:'120px 0'}}>
-        <div className="container text-center">
-          {p.logo && <img src={p.logo} alt="" style={{height:64,marginBottom:16}}/>}
-          <h1 className="heading" style={{fontSize:48,marginBottom:16}}>{p.headline||'Welcome'}</h1>
-          <p style={{fontSize:20,opacity:.9,marginBottom:32,maxWidth:600,margin:'0 auto 32px'}}>{p.subheadline||''}</p>
-          <div style={{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap'}}>
-            {p.ctaPrimary && <a className="btn btn-primary" style={{background:'#fff',color:vars.primary}} href="#contact">{p.ctaPrimary} <ArrowRight size={18}/></a>}
-            {p.secondaryCta && <a className="btn btn-secondary" style={{borderColor:'#fff',color:'#fff'}} href="#about">{p.secondaryCta}</a>}
+        <div className="container" style={{display:'grid',gridTemplateColumns:p.image?'minmax(0,1.05fr) minmax(300px,.95fr)':'1fr',gap:56,alignItems:'center'}}>
+          <div className={p.image?'':'text-center'}>
+            {p.logo && <img src={p.logo} alt="" style={{height:64,marginBottom:16}}/>}
+            <h1 className="heading" style={{fontSize:48,marginBottom:16}}>{p.headline||'Welcome'}</h1>
+            <p style={{fontSize:20,opacity:.9,marginBottom:32,maxWidth:640,margin:p.image?'0 0 32px':'0 auto 32px'}}>{p.subheadline||''}</p>
+            <div style={{display:'flex',gap:12,justifyContent:p.image?'flex-start':'center',flexWrap:'wrap'}}>
+              {p.ctaPrimary && <a className="btn btn-primary" style={{background:'#fff',color:vars.primary}} href="#contact">{p.ctaPrimary} <ArrowRight size={18}/></a>}
+              {p.secondaryCta && <a className="btn btn-secondary" style={{borderColor:'#fff',color:'#fff'}} href="#about">{p.secondaryCta}</a>}
+            </div>
           </div>
+          {p.image && <img src={p.image} alt={p.imageAlt||''} width="1365" height="1024" fetchPriority="high" style={{width:'100%%',aspectRatio:'4/3',objectFit:'cover',borderRadius:28,boxShadow:'0 28px 70px rgba(0,0,0,.24)'}}/>}
         </div>
       </section>;
     case 'features':
@@ -454,9 +523,9 @@ export default function SectionRenderer({ section }) {
         <h2 className="heading">{p.title||'Contact'}</h2>
         {p.subtitle && <p className="subtitle" style={{margin:'0 auto 40px'}}>{p.subtitle}</p>}
         <div style={{display:'flex',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
-          {p.showCompany && <div style={{display:'flex',alignItems:'center',gap:8,color:'#475569'}}><MapPin size={18}/> Main Office</div>}
-          <div style={{display:'flex',alignItems:'center',gap:8,color:'#475569'}}><Mail size={18}/> contact@example.com</div>
-          <div style={{display:'flex',alignItems:'center',gap:8,color:'#475569'}}><Phone size={18}/> +1 (555) 000-0000</div>
+          {p.location && <div style={{display:'flex',alignItems:'center',gap:8,color:'#475569'}}><MapPin size={18}/> {p.location}</div>}
+          {p.email && <a href={'mailto:'+p.email} style={{display:'flex',alignItems:'center',gap:8,color:'#475569'}}><Mail size={18}/> {p.email}</a>}
+          {p.phone && <a href={'tel:'+p.phone} style={{display:'flex',alignItems:'center',gap:8,color:'#475569'}}><Phone size={18}/> {p.phone}</a>}
         </div>
       </div></section>;
     case 'cta':
@@ -489,7 +558,7 @@ export default function SectionRenderer({ section }) {
         {p.subtitle && <p className="subtitle text-center" style={{margin:'0 auto 40px'}}>{p.subtitle}</p>}
         <div style={{display:'flex',gap:16,overflowX:'auto',paddingBottom:16,scrollSnapType:'x mandatory'}}>
           {(p.items||[]).map((item,i) => <div key={i} style={{flex:'0 0 320px',padding:24,borderRadius:16,border:'1px solid #e2e8f0',scrollSnapAlign:'start'}}>
-            {item.image && <img src={item.image} alt="" style={{width:'100%%',height:160,objectFit:'cover',borderRadius:8,marginBottom:12}}/>}
+            {item.image && <img src={item.image} alt={item.alt||''} loading="lazy" decoding="async" width="640" height="400" style={{width:'100%%',height:160,objectFit:'cover',borderRadius:8,marginBottom:12}}/>}
             <h3 style={{marginBottom:8}}>{item.title||''}</h3>
             <p style={{color:'#64748b',fontSize:14,marginBottom:12}}>{item.description||''}</p>
             {item.cta && <a href={item.href||'#'} style={{color:vars.primary,fontWeight:600,fontSize:14}}>{item.cta} <ChevronRight size={14} style={{display:'inline'}}/></a>}
@@ -514,6 +583,11 @@ export default function SectionRenderer({ section }) {
         <h2 className="heading">{p.title||'About'}</h2>
         <p style={{color:'#475569',fontSize:16,maxWidth:800,lineHeight:1.8}}>{p.content||''}</p>
       </div></section>;
+    case 'image':
+      return <section className="section"><figure className="container text-center">
+        {p.src && <img src={p.src} alt={p.alt||''} loading="lazy" decoding="async" width="1365" height="1024" style={{width:'100%%',maxHeight:760,objectFit:'cover',borderRadius:24,boxShadow:'0 24px 64px rgba(15,23,42,.14)'}}/>}
+        {p.caption && <figcaption style={{marginTop:12,color:'#64748b',fontSize:14}}>{p.caption}</figcaption>}
+      </figure></section>;
     default:
       return <section className="section"><div className="container text-center">
         <h2 className="heading">{p.title||section.type}</h2>
@@ -524,40 +598,22 @@ export default function SectionRenderer({ section }) {
 }
 
 func generateAppJSX(pages []pageDraft, bizName, tagline string) string {
-	var routes strings.Builder
-
-	for _, p := range pages {
-		slug := p.Slug
-		if slug == "" {
-			slug = "/"
-		}
-		isHome := p.IsHome
-		for _, s := range p.Sections {
-			propsJSON, _ := json.Marshal(s.Props)
-			slugSafe := strings.ReplaceAll(strings.TrimLeft(slug, "/"), "/", "_")
-			if slugSafe == "" {
-				slugSafe = "home"
-			}
-			routes.WriteString(fmt.Sprintf(`          {
-            slug: '%s',
-            isHome: %v,
-            sections: [
-              {id: '%s', type: '%s', props: %s, order: %d, visible: %v},
-            ],
-          },
-`, slug, isHome, s.ID, s.Type, string(propsJSON), s.Order, s.Visible))
+	for i := range pages {
+		if strings.TrimSpace(pages[i].Slug) == "" {
+			pages[i].Slug = "/"
 		}
 	}
+	pagesJSON, _ := json.Marshal(pages)
+	taglineJSON, _ := json.Marshal(tagline)
 
-	taglineSafe := html.EscapeString(tagline)
 	return fmt.Sprintf(`import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import SectionRenderer from './components/SectionRenderer';
 import './styles/index.css';
 
-const pages = [%s];
-const SITE_TAGLINE = '%s';
+const pages = %s;
+const SITE_TAGLINE = %s;
 
 export default function App() {
   const homePage = pages.find(p => p.isHome) || pages[0];
@@ -570,7 +626,7 @@ export default function App() {
             <Route key={i} path={page.slug} element={
               <div>
                 <div style={{display:'none'}}>{SITE_TAGLINE}</div>
-                {page.sections.filter(s => s.visible).sort((a,b) => a.order - b.order).map((s, j) => (
+                {(page.sections || []).filter(s => s.visible !== false).sort((a,b) => a.order - b.order).map((s, j) => (
                   <SectionRenderer key={j} section={s} />
                 ))}
               </div>
@@ -582,7 +638,7 @@ export default function App() {
       <Footer />
     </div>
   );
-}`, routes.String(), taglineSafe)
+}`, string(pagesJSON), string(taglineJSON))
 }
 
 func generatePageComponents(pages []pageDraft) string {

@@ -5,6 +5,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
+import { downloadFile } from '../../lib/download';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { FileText, Plus, Download, Trash2, Send, CheckCircle, X, Building2, Edit3, AlertCircle, Receipt } from 'lucide-react';
@@ -26,7 +27,7 @@ function parseItems(raw: string): InvoiceItem[] {
 
 export function InvoicesPage() {
   const { user } = useAuth();
-  const { selectedBusiness } = useBusiness();
+  const { selectedBusiness, refreshBusiness } = useBusiness();
   const toast = useToast();
   const { confirmAction, dialog } = useConfirm();
   const bizId = selectedBusiness?.id;
@@ -36,6 +37,7 @@ export function InvoicesPage() {
   const [form, setForm] = useState<Partial<Invoice> | null>(null);
   const [lineItems, setLineItems] = useState<InvoiceItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -160,6 +162,7 @@ export function InvoicesPage() {
       }
       setForm(null);
       await load();
+      await refreshBusiness();
       toast.success('Invoice saved', { description: 'Invoice has been saved.' });
     } catch (err) {
       console.error('Failed to save invoice:', err);
@@ -184,6 +187,7 @@ export function InvoicesPage() {
     try {
       await q('mutation M($i:ID!,$s:String!){updateInvoiceStatus(id:$i status:$s){id status}}', { i: id, s: status });
       await load();
+      await refreshBusiness();
       toast.success('Status updated', { description: `Invoice status changed to ${status}.` });
     } catch (err) {
       console.error('Failed to update invoice status:', err);
@@ -197,6 +201,7 @@ export function InvoicesPage() {
       try {
         await q('mutation M($i:ID!,$u:ID!){deleteInvoice(id:$i userId:$u)}', { i: id, u: user.id });
         await load();
+        await refreshBusiness();
         toast.success('Invoice deleted', { description: 'Invoice has been removed.' });
       } catch (err) {
         console.error('Failed to delete invoice:', err);
@@ -206,19 +211,20 @@ export function InvoicesPage() {
   };
 
   const downloadPdf = async (inv: Invoice) => {
-    const token = (await import('../../lib/auth')).getToken();
-    if (inv.pdfUrl) {
-      window.open(`/api/pdf/download?type=invoice&id=${inv.id}&token=${token}`, '_blank');
-      return;
-    }
-    if (!bizId) return;
+    if (downloadingId) return;
+    setDownloadingId(inv.id);
     try {
-      await q<{ generateInvoicePdf: string }>('mutation M($i:ID!,$b:ID!){generateInvoicePdf(id:$i businessId:$b)}', { i: inv.id, b: bizId });
-      window.open(`/api/pdf/download?type=invoice&id=${inv.id}&token=${token}`, '_blank');
-      toast.success('PDF generated', { description: 'Invoice PDF has been created.' });
+      if (!inv.pdfUrl) {
+        if (!bizId) return;
+        await q<{ generateInvoicePdf: string }>('mutation M($i:ID!,$b:ID!){generateInvoicePdf(id:$i businessId:$b)}', { i: inv.id, b: bizId });
+      }
+      await downloadFile(`/api/pdf/download?type=invoice&id=${encodeURIComponent(inv.id)}`, `invoice-${inv.invoiceNumber || inv.id}.pdf`);
+      toast.success('Invoice downloaded', { description: 'The PDF is ready in your downloads.' });
     } catch (err) {
       console.error('Failed to generate PDF:', err);
       toast.error('Failed to generate PDF', { description: 'Please try again.' });
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -381,7 +387,7 @@ export function InvoicesPage() {
                     </Select>
                   </FormControl>
                   {inv.status === 'draft' && <Tooltip title="Edit"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => openEdit(inv)}><Edit3 size={15} /></IconButton></Tooltip>}
-                  <Tooltip title="Download PDF"><IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(inv)}><Download size={15} /></IconButton></Tooltip>
+                  <Tooltip title={downloadingId === inv.id ? 'Preparing PDF…' : 'Download PDF'}><span><IconButton size="small" disabled={Boolean(downloadingId)} sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(inv)}>{downloadingId === inv.id ? <CircularProgress size={15} /> : <Download size={15} />}</IconButton></span></Tooltip>
                   {inv.status === 'draft' && <Tooltip title="Send"><IconButton size="small" sx={{ color: '#3b82f6' }} onClick={() => sendInvoice(inv.id)}><Send size={15} /></IconButton></Tooltip>}
                   <Tooltip title="Delete"><IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteInvoice(inv.id)}><Trash2 size={15} /></IconButton></Tooltip>
                 </Box>

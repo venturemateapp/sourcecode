@@ -1,6 +1,6 @@
 import { useState, type ReactNode, useRef, useEffect } from 'react';
 import { Alert, Box, Card, Chip, TextField, Typography } from '@mui/material';
-import { Bot, Check, Sparkles, X } from 'lucide-react';
+import { Bot, Check, RefreshCw, Sparkles, X } from 'lucide-react';
 import { GenerationProgress } from './GenerationProgress';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
@@ -41,6 +41,8 @@ interface AICreationStudioProps {
   renderProposal: (change: ProposedChange) => ReactNode;
   onApproved?: () => Promise<void> | void;
   onBeforeGenerate?: () => boolean | Promise<boolean>;
+  builderMode?: boolean;
+  rightPanel?: ReactNode;
 }
 
 const PROPOSE_MUTATION = `
@@ -65,6 +67,7 @@ export function AICreationStudio({
   domain, title: _title, description: _description, placeholder, starterPrompts,
   emptyLabel = 'No approved version yet. Ask AI to create the first one.',
   renderCurrent, renderProposal, onApproved, onBeforeGenerate,
+  builderMode = false, rightPanel,
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
   const [prompt, setPrompt] = useState('');
@@ -73,6 +76,8 @@ export function AICreationStudio({
   const [proposalMessage, setProposalMessage] = useState('');
   const [proposal, setProposal] = useState<ProposedChange | null>(null);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -103,6 +108,12 @@ export function AICreationStudio({
     const userMsg: StudioMessage = { role: 'user', content: instruction.trim(), id: `m-${++msgCounter}` };
     setMessages(current => [...current, userMsg]);
     try {
+      // Keep the visible approved version aligned with the same authoritative
+      // database record the backend reads when it builds the AI context.
+      setSyncing(true);
+      await refreshBusiness();
+      setLastSyncedAt(new Date());
+      setSyncing(false);
       const data = await graphqlRequest<ProposalResponse>(PROPOSE_MUTATION, {
         userId, businessId: selectedBusiness.id, prompt: contextualPrompt, domain,
       });
@@ -117,7 +128,23 @@ export function AICreationStudio({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI generation failed. Please try rephrasing your request.');
     } finally {
+      setSyncing(false);
       setLoading(false);
+    }
+  };
+
+  const syncLatestData = async () => {
+    if (syncing || loading || applying) return;
+    setSyncing(true);
+    setError(null);
+    try {
+      await refreshBusiness();
+      setLastSyncedAt(new Date());
+      setSuccess('Latest business data synced. Your next generation will use the current database record.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not sync the latest business data.');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -149,15 +176,25 @@ export function AICreationStudio({
   };
 
   return (
-    <Box sx={{ display: 'flex', gap: 2.5, flexDirection: { xs: 'column', lg: 'row' } }}>
+    <Box sx={{
+      display: 'flex',
+      gap: builderMode ? 0 : 2.5,
+      flexDirection: { xs: 'column', lg: 'row' },
+      minHeight: builderMode ? { lg: 'calc(100vh - 190px)' } : undefined,
+      border: builderMode ? '1px solid var(--vm-border-subtle)' : undefined,
+      borderRadius: builderMode ? 2.5 : undefined,
+      overflow: builderMode ? 'hidden' : undefined,
+      bgcolor: builderMode ? 'var(--vm-bg-secondary)' : undefined,
+    }}>
       {/* Main content area */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box sx={{ flex: 1, minWidth: 0, order: { lg: builderMode ? 2 : 1 }, bgcolor: builderMode ? 'var(--vm-bg-primary)' : undefined }}>
         {proposal ? (
           <Card sx={{
             p: { xs: 1.5, md: 2.5 },
             bgcolor: 'var(--vm-bg-secondary)',
             border: '1px solid var(--vm-primary-600)',
-            borderRadius: 3,
+            borderRadius: builderMode ? 0 : 3,
+            height: builderMode ? '100%' : undefined,
             position: 'relative',
             overflow: 'hidden',
             '&::before': { content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: 2, bgcolor: 'var(--vm-primary-500)' },
@@ -182,7 +219,8 @@ export function AICreationStudio({
             p: { xs: 1.5, md: 2.5 },
             bgcolor: 'var(--vm-bg-secondary)',
             border: '1px solid var(--vm-border-subtle)',
-            borderRadius: 3,
+            borderRadius: builderMode ? 0 : 3,
+            height: builderMode ? '100%' : undefined,
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
               <Box sx={{ width: 32, height: 32, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#22c55e20' }}>
@@ -204,17 +242,18 @@ export function AICreationStudio({
 
       {/* Chat panel */}
       <Card sx={{
-        width: { xs: '100%', lg: 380 },
+        width: { xs: '100%', lg: builderMode ? 340 : 380 },
         flexShrink: 0,
         bgcolor: 'var(--vm-bg-secondary)',
         border: '1px solid var(--vm-border-subtle)',
-        borderRadius: 3,
+        borderRadius: builderMode ? 0 : 3,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: { lg: 600 },
-        position: { lg: 'sticky' },
-        top: { lg: 84 },
+        maxHeight: builderMode ? { lg: 'calc(100vh - 190px)' } : { lg: 600 },
+        position: builderMode ? 'relative' : { lg: 'sticky' },
+        top: builderMode ? undefined : { lg: 84 },
+        order: { lg: builderMode ? 1 : 2 },
       }}>
         {/* Header */}
         <Box sx={{ p: 1.75, borderBottom: '1px solid var(--vm-border-subtle)', bgcolor: 'var(--vm-bg-tertiary)' }}>
@@ -224,8 +263,15 @@ export function AICreationStudio({
             </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 14, fontWeight: 900 }}>AI Studio</Typography>
-              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10 }}>Describe · Review · Approve</Typography>
+              <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10 }}>
+                {syncing ? 'Syncing latest business data…' : lastSyncedAt ? `Data synced ${lastSyncedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Fresh data · Review · Approve'}
+              </Typography>
             </Box>
+            <AnimatedButton variant="ghost" size="sm" icon={<RefreshCw size={13} />}
+              disabled={syncing || loading || applying} onClick={() => void syncLatestData()}
+              sx={{ minWidth: 0, px: 1 }}>
+              Sync
+            </AnimatedButton>
           </Box>
           {loading && selectedBusiness && <GenerationProgress businessId={selectedBusiness.id} />}
         </Box>
@@ -313,6 +359,22 @@ export function AICreationStudio({
           )}
         </Box>
       </Card>
+
+      {builderMode && rightPanel && (
+        <Box sx={{
+          width: { xs: '100%', lg: 300 },
+          flexShrink: 0,
+          order: { lg: 3 },
+          borderLeft: { lg: '1px solid var(--vm-border-subtle)' },
+          borderTop: { xs: '1px solid var(--vm-border-subtle)', lg: 0 },
+          bgcolor: '#0d1117',
+          minHeight: { lg: 'calc(100vh - 190px)' },
+          maxHeight: { lg: 'calc(100vh - 190px)' },
+          overflow: 'auto',
+        }}>
+          {rightPanel}
+        </Box>
+      )}
     </Box>
   );
 }

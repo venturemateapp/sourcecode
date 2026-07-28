@@ -1,10 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, Slider, Avatar, Chip } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Slider, Avatar, Chip, CircularProgress } from '@mui/material';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText, Palette, Eye } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import type { PlanSection } from '../../types/venturemate';
+import { safeDownloadName } from '../../lib/pitchDeckExport';
+import { ExportProgress } from '../shared/ExportProgress';
 
 type Decoration =
   | 'orb' | 'rings' | 'particles' | 'geometric' | 'rays' | 'minimal'
@@ -336,6 +338,8 @@ function SectionSlide({ section, index, template, logo, businessName }: { sectio
 }
 
 export function PlanViewer({ title, summary, sections, version, logo, businessName }: PlanViewerProps) {
+  const [pptxExporting, setPptxExporting] = useState(false);
+  const [pdfExporting, setPdfExporting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [templateId, setTemplateId] = useState('velocity');
@@ -366,42 +370,59 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
 
   const exportPDF = async () => {
     const el = viewerRef.current?.querySelector('[data-plan-container]') as HTMLElement;
-    if (!el) return;
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
-    const pageWidth = 1920; const pageHeight = 1080;
-    for (let i = 0; i < totalSlides; i++) {
-      goTo(i);
-      await new Promise(r => setTimeout(r, 150));
-      const el2 = viewerRef.current?.querySelector('[data-plan-inner]') as HTMLElement;
-      if (!el2) continue;
-      const canvas = await html2canvas(el2, { scale: 1.5, useCORS: true, backgroundColor: null });
-      if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
+    if (!el || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
+      const pageWidth = 1920; const pageHeight = 1080;
+      for (let i = 0; i < totalSlides; i++) {
+        goTo(i);
+        await new Promise(r => setTimeout(r, 150));
+        const el2 = viewerRef.current?.querySelector('[data-plan-inner]') as HTMLElement;
+        if (!el2) continue;
+        const canvas = await html2canvas(el2, { scale: 1.5, useCORS: true, backgroundColor: null });
+        if (i > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
+      }
+      pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+    } catch (error) {
+      console.error('Business plan PDF export failed', error);
+      window.alert(error instanceof Error ? error.message : 'PDF export failed. Please try again.');
+    } finally {
+      setPdfExporting(false);
     }
-    pdf.save(`${title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
   };
 
-  const exportPPTX = () => {
-    const pptx = new PptxGenJS();
-    pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
-    pptx.layout = 'WIDE';
-    if (hasSummary) {
-      const slide = pptx.addSlide();
-      slide.background = { color: '08080B' };
-      slide.addText('Executive Summary', { x: 0.8, y: 1, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Inter', color: 'FFFFFF', bold: true });
-      slide.addText(summary, { x: 0.8, y: 2.5, w: 11.7, h: 4, fontSize: 14, fontFace: 'Inter', color: 'AAAAAA' });
-    }
-    sections.forEach((s, i) => {
-      const slide = pptx.addSlide();
-      slide.background = { color: '08080B' };
-      slide.addText(s.title, { x: 0.8, y: 0.8, w: 11.7, h: 1, fontSize: 30, fontFace: 'Inter', color: 'FFFFFF', bold: true });
-      slide.addText(s.content, { x: 0.8, y: 2.2, w: 11.7, h: 4, fontSize: 13, fontFace: 'Inter', color: 'CCCCCC' });
-      if (s.subsections?.length) {
-        slide.addText(s.subsections.map(sub => `${sub.title}\n${sub.content}`).join('\n\n'), { x: 0.8, y: 5, w: 11.7, h: 2, fontSize: 11, fontFace: 'Inter', color: '999999' });
+  const exportPPTX = async () => {
+    if (pptxExporting) return;
+    setPptxExporting(true);
+    try {
+      const pptx = new PptxGenJS();
+      pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
+      pptx.layout = 'WIDE';
+      if (hasSummary) {
+        const slide = pptx.addSlide();
+        slide.background = { color: '08080B' };
+        slide.addText('Executive Summary', { x: 0.8, y: 1, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Aptos Display', color: 'FFFFFF', bold: true });
+        slide.addText(summary, { x: 0.8, y: 2.5, w: 11.7, h: 4, fontSize: 14, fontFace: 'Aptos', color: 'CBD5E1', fit: 'shrink' });
       }
-      slide.addText(`${title} · v${version} · ${i + 1}/${sections.length}`, { x: 0.8, y: 6.8, w: 11.7, h: 0.5, fontSize: 10, fontFace: 'Inter', color: '666666' });
-    });
-    pptx.writeFile({ fileName: `${title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx` });
+      sections.forEach((s, i) => {
+        const slide = pptx.addSlide();
+        slide.background = { color: '08080B' };
+        slide.addText(s.title, { x: 0.8, y: 0.8, w: 11.7, h: 1, fontSize: 30, fontFace: 'Aptos Display', color: 'FFFFFF', bold: true, fit: 'shrink' });
+        slide.addText(s.content, { x: 0.8, y: 2.2, w: 11.7, h: 2.5, fontSize: 13, fontFace: 'Aptos', color: 'CBD5E1', fit: 'shrink' });
+        if (s.subsections?.length) {
+          slide.addText(s.subsections.map(sub => `${sub.title}\n${sub.content}`).join('\n\n'), { x: 0.8, y: 4.9, w: 11.7, h: 1.65, fontSize: 11, fontFace: 'Aptos', color: '94A3B8', fit: 'shrink' });
+        }
+        slide.addText(`${title} · v${version} · ${i + 1}/${sections.length}`, { x: 0.8, y: 6.8, w: 11.7, h: 0.5, fontSize: 10, fontFace: 'Aptos', color: '64748B' });
+      });
+      await pptx.writeFile({ fileName: `${safeDownloadName(title, 'business-plan')}.pptx`, compression: true });
+    } catch (error) {
+      console.error('Business plan PPTX export failed', error);
+      window.alert(error instanceof Error ? error.message : 'PowerPoint export failed. Please try again.');
+    } finally {
+      setPptxExporting(false);
+    }
   };
 
   return (
@@ -470,9 +491,10 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
           <IconButton size="small" onClick={() => goTo(currentIndex + 1)} disabled={currentIndex >= totalSlides - 1} sx={{ color: 'var(--vm-text-muted)' }}><ChevronRight size={16} /></IconButton>
         </Box>
         <Tooltip title="Fullscreen (F)"><IconButton size="small" onClick={() => setFullscreen(p => !p)} sx={{ color: 'var(--vm-text-muted)' }}>{fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}</IconButton></Tooltip>
-        <Tooltip title="Download PDF"><IconButton size="small" onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}><FileText size={15} /></IconButton></Tooltip>
-        <Tooltip title="Download PPTX"><IconButton size="small" onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}><Download size={15} /></IconButton></Tooltip>
+        <Tooltip title={pdfExporting ? 'Creating PDF…' : 'Download PDF'}><span><IconButton size="small" disabled={pdfExporting || pptxExporting} onClick={exportPDF} sx={{ color: 'var(--vm-text-muted)' }}>{pdfExporting ? <CircularProgress size={15} /> : <FileText size={15} />}</IconButton></span></Tooltip>
+        <Tooltip title={pptxExporting ? 'Creating PowerPoint…' : 'Download PowerPoint'}><span><IconButton size="small" disabled={pptxExporting || pdfExporting} onClick={exportPPTX} sx={{ color: 'var(--vm-text-muted)' }}>{pptxExporting ? <CircularProgress size={15} /> : <Download size={15} />}</IconButton></span></Tooltip>
       </Box>
+      <ExportProgress open={pdfExporting || pptxExporting} label={pptxExporting ? 'Building business plan PowerPoint…' : 'Rendering business plan PDF…'} />
     </Box>
   );
 }

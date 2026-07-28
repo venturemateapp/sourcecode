@@ -5,6 +5,7 @@ import { AICreationStudio, type ProposedChange } from '../../components/venturem
 import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
+import { saveBlob } from '../../lib/download';
 import { PageHeader } from '../../components/shared';
 import type { BrandKit, BrandingFull, ViewType } from '../../types/venturemate';
 
@@ -15,18 +16,18 @@ const DEFAULT_BRAND_KIT: BrandKit = {
   accentColor: '#34d399', darkColor: '#052e24', fontHeading: 'Inter', fontBody: 'Inter', patterns: [], socialBanners: [],
 };
 
-function downloadSvg(svg: string, filename: string) {
+async function downloadSvg(svg: string, filename: string) {
   if (svg.startsWith('http')) {
-    // Raster/URL logo - open in new tab or download via fetch
-    fetch(svg).then(r => r.blob()).then(blob => {
-      const ext = blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : 'png';
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename.replace('.svg', `.${ext}`); a.click(); URL.revokeObjectURL(a.href);
-    }).catch(() => window.open(svg, '_blank'));
+    const response = await fetch(svg);
+    if (!response.ok) throw new Error(`Logo download failed with HTTP ${response.status}.`);
+    const blob = await response.blob();
+    const ext = blob.type.includes('webp') ? 'webp' : blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : 'img';
+    saveBlob(blob, filename.replace('.svg', `.${ext}`));
     return;
   }
   const content = svg.startsWith('data:') ? atob(svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : svg;
   const blob = new Blob([content], { type: 'image/svg+xml' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+  saveBlob(blob, filename);
 }
 
 function isLightColor(hex: string): boolean {
@@ -116,8 +117,21 @@ function FontPreview({ name, label }: { name: string; label: string }) {
 
 
 function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandingFull; businessName: string; proposed?: boolean }) {
+  const [downloadingLogo, setDownloadingLogo] = useState(false);
   const { primaryColor, secondaryColor, accentColor, darkColor, fontHeading, fontBody } = brand;
   const gradient = `linear-gradient(135deg, ${darkColor}, ${primaryColor})`;
+  const handleLogoDownload = async () => {
+    if (downloadingLogo) return;
+    setDownloadingLogo(true);
+    try {
+      await downloadSvg(brand.logo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.svg`);
+    } catch (error) {
+      console.error('Logo download failed', error);
+      window.alert(error instanceof Error ? error.message : 'Logo download failed.');
+    } finally {
+      setDownloadingLogo(false);
+    }
+  };
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{
@@ -127,9 +141,9 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
         '&::after': { content: '""', position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${accentColor}25, transparent 70%)`, pointerEvents: 'none' },
       }}>
         {!proposed && brand.logo && (
-          <IconButton onClick={() => downloadSvg(brand.logo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.svg`)}
+          <IconButton disabled={downloadingLogo} onClick={handleLogoDownload}
             sx={{ position: 'absolute', top: 12, right: 12, zIndex: 2, bgcolor: 'rgba(255,255,255,.08)', backdropFilter: 'blur(8px)', color: 'rgba(255,255,255,.6)', '&:hover': { bgcolor: 'rgba(255,255,255,.15)', color: 'white' } }}>
-            <Download size={18} />
+            {downloadingLogo ? <CircularProgress size={18} /> : <Download size={18} />}
           </IconButton>
         )}
         <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, alignItems: { xs: 'center', sm: 'flex-start' } }}>
@@ -142,9 +156,9 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
           }}>
             {brand.logo ? <LogoDisplay logo={brand.logo} size={90} contrast /> : <Sparkles size={40} color="rgba(255,255,255,.3)" />}
             {brand.logo && brand.logo.includes('<svg') && (
-              <IconButton size="small" onClick={() => downloadSvg(brand.logo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.svg`)}
+              <IconButton size="small" disabled={downloadingLogo} onClick={handleLogoDownload}
                 sx={{ position: 'absolute', bottom: -8, right: -8, bgcolor: 'rgba(0,0,0,.5)', color: 'white', width: 28, height: 28, '&:hover': { bgcolor: 'rgba(0,0,0,.7)' } }}>
-                <Download size={13} />
+                {downloadingLogo ? <CircularProgress size={13} /> : <Download size={13} />}
               </IconButton>
             )}
           </Box>

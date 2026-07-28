@@ -5,6 +5,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
+import { downloadFile } from '../../lib/download';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { Receipt, Plus, Trash2, Edit3, Building2, DollarSign, Tag, Download, X } from 'lucide-react';
 import type { Expenditure, ExpenditureItem } from '../../types/venturemate';
@@ -45,6 +46,7 @@ export function ExpenditurePage() {
   const [lineItems, setLineItems] = useState<ExpenditureItem[]>([{ ...EMPTY_ITEM }]);
   const [customCategory, setCustomCategory] = useState('');
   const [saving, setSaving] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -137,15 +139,17 @@ export function ExpenditurePage() {
   };
 
   const downloadPdf = async (exp: Expenditure) => {
-    if (!bizId) return;
+    if (!bizId || downloadingId) return;
+    setDownloadingId(exp.id);
     try {
-      const token = (await import('../../lib/auth')).getToken();
       await q<{ generateExpensePdf: string }>('mutation M($i:ID!,$b:ID!){generateExpensePdf(id:$i businessId:$b)}', { i: exp.id, b: bizId });
-      window.open(`/api/pdf/download?type=expense&id=${exp.id}&token=${token}`, '_blank');
-      toast.success('PDF generated', { description: 'Expense PDF has been created.' });
+      await downloadFile(`/api/pdf/download?type=expense&id=${encodeURIComponent(exp.id)}`, `expense-${exp.id}.pdf`);
+      toast.success('Expense downloaded', { description: 'The PDF is ready in your downloads.' });
     } catch (err) {
       console.error('Failed to generate expense PDF:', err);
       toast.error('Failed to generate PDF', { description: 'Please try again.' });
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -229,7 +233,7 @@ export function ExpenditurePage() {
                   </Box>
                 </Box>
                 <Typography sx={{ fontSize: 16, fontWeight: 800, color: '#ef4444', flexShrink: 0, overflowWrap: 'anywhere' }}>-{format(e.amount)}</Typography>
-                <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(e)}><Download size={14} /></IconButton>
+                <IconButton size="small" disabled={Boolean(downloadingId)} sx={{ color: 'var(--vm-text-muted)' }} onClick={() => downloadPdf(e)}>{downloadingId === e.id ? <CircularProgress size={14} /> : <Download size={14} />}</IconButton>
                 <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }} onClick={() => openEdit(e)}><Edit3 size={14} /></IconButton>
                 <IconButton size="small" sx={{ color: '#ef444488' }} onClick={() => deleteItem(e.id)}><Trash2 size={14} /></IconButton>
               </Box>
