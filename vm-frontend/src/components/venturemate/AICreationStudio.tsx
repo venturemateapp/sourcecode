@@ -2,6 +2,7 @@ import { useState, type ReactNode, useRef, useEffect } from 'react';
 import { Alert, Box, Card, Chip, TextField, Typography } from '@mui/material';
 import { Bot, Check, RefreshCw, Sparkles, X } from 'lucide-react';
 import { GenerationProgress } from './GenerationProgress';
+import { LogoQuestionnaire } from './LogoQuestionnaire';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
 import { AnimatedButton } from '../shared/AnimatedButton';
@@ -44,6 +45,7 @@ interface AICreationStudioProps {
   builderMode?: boolean;
   stackedBuilderMode?: boolean;
   rightPanel?: ReactNode;
+  showLogoQuestionnaire?: boolean;
 }
 
 const PROPOSE_MUTATION = `
@@ -68,7 +70,7 @@ export function AICreationStudio({
   domain, title: _title, description: _description, placeholder, starterPrompts,
   emptyLabel = 'No approved version yet. Ask AI to create the first one.',
   renderCurrent, renderProposal, onApproved, onBeforeGenerate,
-  builderMode = false, stackedBuilderMode = false, rightPanel,
+  builderMode = false, stackedBuilderMode = false, rightPanel, showLogoQuestionnaire = false,
 }: AICreationStudioProps) {
   const { selectedBusiness, userId, refreshBusiness } = useBusiness();
   const [prompt, setPrompt] = useState('');
@@ -196,7 +198,21 @@ export function AICreationStudio({
         gridColumn: stackedBuilderMode ? { lg: '1 / -1' } : undefined,
         bgcolor: builderMode ? 'var(--vm-bg-primary)' : undefined,
       }}>
-        {proposal ? (
+        {showLogoQuestionnaire && !proposal && !loading ? (
+          <Card sx={{
+            p: { xs: 1.5, md: 2.5 },
+            bgcolor: 'var(--vm-bg-secondary)',
+            border: '1px solid var(--vm-border-subtle)',
+            borderRadius: builderMode ? 0 : 3,
+          }}>
+            <LogoQuestionnaire
+              defaultBrandName={selectedBusiness?.name}
+              defaultTagline={selectedBusiness?.tagline}
+              disabled={loading}
+              onSubmit={(prompt) => void requestProposal(prompt)}
+            />
+          </Card>
+        ) : proposal ? (
           <Card sx={{
             p: { xs: 1.5, md: 2.5 },
             bgcolor: 'var(--vm-bg-secondary)',

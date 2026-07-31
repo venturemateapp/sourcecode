@@ -363,6 +363,7 @@ svg{max-width:100%;height:auto}
         <Box sx={{ borderRadius: 3.5, overflow: 'hidden', border: '1px solid rgba(255,255,255,.06)', bgcolor: 'rgba(255,255,255,.02)' }}>
           <AICreationStudio
             domain="branding" title="" description=""
+            showLogoQuestionnaire
             placeholder="Describe the brand feel you want (e.g., 'Modern, trustworthy edtech brand with green tones')"
             starterPrompts={[
               'Generate a complete brand identity from my business details.',
