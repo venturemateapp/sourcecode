@@ -9,6 +9,11 @@ export interface PlanLimits {
   maxPitchDecks: number
   maxBusinessPlans: number
   storageGb: number
+  maxAiProjects: number
+  recraftImagesMonthly: number
+  aiBuildsMonthly: number
+  aiExportsMonthly: number
+  aiDeploymentsMonthly: number
   isAdvanced: boolean
 }
 
@@ -42,6 +47,11 @@ export interface Subscription {
 export interface UsageLog {
   aiTokensUsed: number
   storageBytes: number
+  recraftImagesUsed: number
+  aiBuildsUsed: number
+  aiExportsUsed: number
+  aiDeploymentsUsed: number
+  aiProjectBytes: number
   billingPeriod: string
 }
 
@@ -97,6 +107,11 @@ const PLANS_QUERY = `
         maxPitchDecks
         maxBusinessPlans
         storageGb
+        maxAiProjects
+        recraftImagesMonthly
+        aiBuildsMonthly
+        aiExportsMonthly
+        aiDeploymentsMonthly
         isAdvanced
       }
       sortOrder
@@ -144,6 +159,11 @@ const MY_USAGE_QUERY = `
     myUsage(userId: $userId) {
       aiTokensUsed
       storageBytes
+      recraftImagesUsed
+      aiBuildsUsed
+      aiExportsUsed
+      aiDeploymentsUsed
+      aiProjectBytes
       billingPeriod
     }
   }

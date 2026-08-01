@@ -73,7 +73,7 @@ func NewProviderManagerFromEnv() *ProviderManager {
 				Name:     "deepseek",
 				APIKey:   strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
 				Endpoint: envOr("DEEPSEEK_ENDPOINT", "https://api.deepseek.com/v1/chat/completions"),
-				Model:    envOr("DEEPSEEK_MODEL", "deepseek-chat"),
+				Model:    envOr("DEEPSEEK_MODEL", "deepseek-v4-flash"),
 			},
 		},
 	}

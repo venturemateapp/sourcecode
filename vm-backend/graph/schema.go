@@ -2,6 +2,7 @@ package graph
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -14,13 +15,18 @@ import (
 var planLimitsType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "PlanLimits",
 	Fields: graphql.Fields{
-		"aiTokensMonthly":  &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"maxBusinesses":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"maxTeamMembers":   &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"maxPitchDecks":    &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"maxBusinessPlans": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"storageGb":        &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"isAdvanced":       &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
+		"aiTokensMonthly":      &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxBusinesses":        &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxTeamMembers":       &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxPitchDecks":        &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxBusinessPlans":     &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"storageGb":            &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"maxAiProjects":        &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"recraftImagesMonthly": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"aiBuildsMonthly":      &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"aiExportsMonthly":     &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"aiDeploymentsMonthly": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
+		"isAdvanced":           &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 	},
 })
 
@@ -134,9 +140,14 @@ var authPayloadType = graphql.NewObject(graphql.ObjectConfig{
 var usageLogType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "UsageLog",
 	Fields: graphql.Fields{
-		"aiTokensUsed": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"storageBytes": &graphql.Field{Type: graphql.NewNonNull(graphql.Int)},
-		"billingPeriod": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"aiTokensUsed":      &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"storageBytes":      &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"recraftImagesUsed": &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"aiBuildsUsed":      &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"aiExportsUsed":     &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"aiDeploymentsUsed": &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"aiProjectBytes":    &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"billingPeriod":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	},
 })
 
@@ -215,11 +226,20 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 				if AppContainer == nil {
 					return nil, nil
 				}
-				userID := p.Args["userId"].(string)
+				userID, ok := auth.UserIDFromContext(p.Context)
+				if !ok || userID == "" {
+					return nil, errors.New("authentication required")
+				}
+				if requested := p.Args["userId"].(string); requested != userID {
+					return nil, errors.New("access denied")
+				}
 				period := subscriptions.BillingPeriod(time.Now())
 				usage, err := AppContainer.UsageRepo.GetUsage(p.Context, userID, period)
 				if err != nil {
-					return map[string]interface{}{"aiTokensUsed": 0, "storageBytes": 0, "billingPeriod": period}, nil
+					return map[string]interface{}{
+						"aiTokensUsed": 0, "storageBytes": 0, "recraftImagesUsed": 0, "aiBuildsUsed": 0,
+						"aiExportsUsed": 0, "aiDeploymentsUsed": 0, "aiProjectBytes": 0, "billingPeriod": period,
+					}, nil
 				}
 				return usage, nil
 			},
@@ -298,11 +318,11 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 		"signup": &graphql.Field{
 			Type: authPayloadType,
 			Args: graphql.FieldConfigArgument{
-				"firstName":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"surname":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"email":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"password":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"referralCode":  &graphql.ArgumentConfig{Type: graphql.String},
+				"firstName":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"surname":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"email":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"password":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"referralCode": &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if AppContainer == nil {
@@ -379,11 +399,11 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 		"purchaseAddon": &graphql.Field{
 			Type: addonPurchaseType,
 			Args: graphql.FieldConfigArgument{
-				"userId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"userId":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 				"addonType": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"label":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"price":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
-				"quantity": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
+				"label":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"price":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
+				"quantity":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Int)},
 			},
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if AppContainer == nil {
@@ -587,26 +607,36 @@ func timeParse(s string) (time.Time, error) {
 
 func defaultPlanLimits() map[string]interface{} {
 	return map[string]interface{}{
-		"aiTokensMonthly":  0,
-		"maxBusinesses":    0,
-		"maxTeamMembers":   0,
-		"maxPitchDecks":    0,
-		"maxBusinessPlans": 0,
-		"storageGb":        0,
-		"isAdvanced":       false,
+		"aiTokensMonthly":      0,
+		"maxBusinesses":        0,
+		"maxTeamMembers":       0,
+		"maxPitchDecks":        0,
+		"maxBusinessPlans":     0,
+		"storageGb":            0,
+		"maxAiProjects":        -1,
+		"recraftImagesMonthly": -1,
+		"aiBuildsMonthly":      -1,
+		"aiExportsMonthly":     -1,
+		"aiDeploymentsMonthly": -1,
+		"isAdvanced":           false,
 	}
 }
 
 func mapKeysToCamel(raw map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{}, len(raw))
 	snakeToCamel := map[string]string{
-		"ai_tokens_monthly":  "aiTokensMonthly",
-		"max_businesses":     "maxBusinesses",
-		"max_team_members":   "maxTeamMembers",
-		"max_pitch_decks":    "maxPitchDecks",
-		"max_business_plans": "maxBusinessPlans",
-		"storage_gb":         "storageGb",
-		"is_advanced":        "isAdvanced",
+		"ai_tokens_monthly":      "aiTokensMonthly",
+		"max_businesses":         "maxBusinesses",
+		"max_team_members":       "maxTeamMembers",
+		"max_pitch_decks":        "maxPitchDecks",
+		"max_business_plans":     "maxBusinessPlans",
+		"storage_gb":             "storageGb",
+		"max_ai_projects":        "maxAiProjects",
+		"recraft_images_monthly": "recraftImagesMonthly",
+		"ai_builds_monthly":      "aiBuildsMonthly",
+		"ai_exports_monthly":     "aiExportsMonthly",
+		"ai_deployments_monthly": "aiDeploymentsMonthly",
+		"is_advanced":            "isAdvanced",
 	}
 	for k, v := range raw {
 		if camel, ok := snakeToCamel[k]; ok {
@@ -619,6 +649,11 @@ func mapKeysToCamel(raw map[string]interface{}) map[string]interface{} {
 	for _, camel := range []string{"aiTokensMonthly", "maxBusinesses", "maxTeamMembers", "maxPitchDecks", "maxBusinessPlans", "storageGb"} {
 		if _, ok := out[camel]; !ok {
 			out[camel] = 0
+		}
+	}
+	for _, camel := range []string{"maxAiProjects", "recraftImagesMonthly", "aiBuildsMonthly", "aiExportsMonthly", "aiDeploymentsMonthly"} {
+		if _, ok := out[camel]; !ok {
+			out[camel] = -1
 		}
 	}
 	if _, ok := out["isAdvanced"]; !ok {

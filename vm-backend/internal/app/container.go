@@ -8,6 +8,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/aichat"
+	"github.com/venturemate/vmbackend/internal/aijobs"
+	"github.com/venturemate/vmbackend/internal/aistudio"
+	"github.com/venturemate/vmbackend/internal/appruntime"
+	"github.com/venturemate/vmbackend/internal/assetstudio"
 	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/banking"
 	"github.com/venturemate/vmbackend/internal/businesses"
@@ -94,6 +98,10 @@ type Container struct {
 	ChatRepo            *chat.Repository
 	ChatHub             *chat.Hub
 	AiChatRepo          *aichat.Repository
+	AIStudioRepo        *aistudio.Repository
+	AIJobRepo           *aijobs.Repository
+	AssetStudio         *assetstudio.Service
+	AppRuntime          *appruntime.Repository
 }
 
 func NewContainer(ctx context.Context) (*Container, error) {
@@ -138,6 +146,9 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	chatRepo := chat.NewRepository(dbPool)
 	chatHub := chat.NewHub(chatRepo)
 	aiChatRepo := aichat.NewRepository(dbPool)
+	aiStudioRepo := aistudio.NewRepository(dbPool)
+	aiJobRepo := aijobs.NewRepository(dbPool)
+	appRuntime := appruntime.NewRepository(dbPool)
 	emailSyncRepo := crmemail.NewRepository(dbPool)
 	emailSyncSvc := crmemail.NewSyncService(emailSyncRepo)
 	calendarRepo := crmcalendar.NewRepository(dbPool)
@@ -154,6 +165,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 	currencyAPIKey := os.Getenv("CURRENCY_API_KEY")
 	rateService := rates.NewService(currencyAPIKey)
 	recraftClient := recraft.NewClient()
+	assetStudio := assetstudio.NewService(recraftClient, s3Svc, aiStudioRepo)
 
 	notificationSvc := notifications.NewService(notificationRepo, emailSvc)
 
@@ -249,5 +261,9 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		ChatRepo:            chatRepo,
 		ChatHub:             chatHub,
 		AiChatRepo:          aiChatRepo,
+		AIStudioRepo:        aiStudioRepo,
+		AIJobRepo:           aiJobRepo,
+		AssetStudio:         assetStudio,
+		AppRuntime:          appRuntime,
 	}, nil
 }

@@ -26,17 +26,43 @@ import (
 )
 
 func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition, Content-Length, Content-Type")
+	allowedOrigins := map[string]bool{}
+	for _, value := range strings.Split(os.Getenv("CORS_ALLOWED_ORIGINS"), ",") {
+		value = strings.TrimSpace(strings.TrimSuffix(value, "/"))
+		if value != "" {
+			allowedOrigins[value] = true
+		}
+	}
+	if frontend := strings.TrimSpace(strings.TrimSuffix(os.Getenv("FRONTEND_URL"), "/")); frontend != "" {
+		allowedOrigins[frontend] = true
+	}
+	allowAny := allowedOrigins["*"]
 
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := strings.TrimSpace(strings.TrimSuffix(r.Header.Get("Origin"), "/"))
+		allowed := origin == "" || allowAny || allowedOrigins[origin]
+		if origin != "" && allowed {
+			w.Header().Set("Access-Control-Allow-Origin", map[bool]string{true: "*", false: origin}[allowAny])
+			w.Header().Add("Vary", "Origin")
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-VM-Runtime-Key, Last-Event-ID")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition, Content-Length, Content-Type")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+
+		if r.Method == http.MethodOptions {
+			if !allowed {
+				http.Error(w, `{"error":"origin not allowed"}`, http.StatusForbidden)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-
+		if !allowed {
+			http.Error(w, `{"error":"origin not allowed"}`, http.StatusForbidden)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -514,17 +540,18 @@ func main() {
 	googleCalOAuth := crmcalendar.NewGoogleCalendarOAuth(container.DB, "https://venturemate.net")
 
 	if err := migrations.Run(container.DB, "migrations"); err != nil {
-		log.Printf("Warning: migrations failed: %v", err)
+		log.Fatal("Database migrations failed: ", err)
 	}
 
 	graph.SetContainer(container)
 
 	schema := graph.Schema
 
+	graphiqlEnabled := strings.EqualFold(strings.TrimSpace(os.Getenv("GRAPHIQL_ENABLED")), "true")
 	h := handler.New(&handler.Config{
 		Schema:   &schema,
-		Pretty:   true,
-		GraphiQL: true,
+		Pretty:   graphiqlEnabled,
+		GraphiQL: graphiqlEnabled,
 	})
 
 	publicSiteDomain := os.Getenv("PUBLIC_SITE_BASE_DOMAIN")
@@ -537,6 +564,11 @@ func main() {
 	}
 	publicSites := websites.NewPublicHandler(container.WebsiteRepo, publicSiteDomain, customDomainTarget)
 
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
 	http.Handle("/graphql", corsMiddleware(optionalAuthMiddleware(container.JWTSecret, h)))
 	http.HandleFunc("/auth/google", auth.GoogleLoginHandler)
 	http.HandleFunc("/auth/google/callback", func(w http.ResponseWriter, r *http.Request) {
@@ -556,6 +588,10 @@ func main() {
 	http.Handle("/api/pdf/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, pdfDownloadHandler(container)))))
 	http.Handle("/api/avatar", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, avatarHandler(container)))))
 	http.Handle("/api/team-avatar/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, teamAvatarUploadHandler(container)))))
+	http.Handle("/api/ai/jobs/", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, aiJobEventsHandler(container)))))
+	http.Handle("/api/ai/projects/", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, aiProjectSourceHandler(container)))))
+	http.Handle("/api/ai/builds/", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, aiBuildDownloadHandler(container)))))
+	http.Handle("/api/runtime/", corsMiddleware(aiRuntimeHandler(container)))
 	http.HandleFunc("/api/generate", handleGenerateWebsite)
 	http.HandleFunc("/api/pdf/public", func(w http.ResponseWriter, r *http.Request) {
 		// Public PDF download - no auth required (for customers viewing invoices from email)

@@ -1,6 +1,6 @@
 import { useState, type ReactNode, useRef, useEffect } from 'react';
-import { Alert, Box, Card, Chip, TextField, Typography } from '@mui/material';
-import { Bot, Check, RefreshCw, Sparkles, X } from 'lucide-react';
+import { Alert, Box, Card, Chip, IconButton, TextField, Typography } from '@mui/material';
+import { Bot, Check, ChevronLeft, ChevronRight, RefreshCw, Sparkles, X } from 'lucide-react';
 import { GenerationProgress } from './GenerationProgress';
 import { LogoQuestionnaire } from './LogoQuestionnaire';
 import { useBusiness } from '../../contexts/BusinessContext';
@@ -18,7 +18,16 @@ export interface ProposedChange {
 }
 
 interface ProposalResponse {
-  proposeAgentAction: { message: string; proposals: ProposedChange[]; };
+  proposeAgentAction: {
+    message: string;
+    proposals: ProposedChange[];
+    batchId?: string;
+    provider?: string;
+    model?: string;
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  };
 }
 
 interface ApplyResponse {
@@ -51,14 +60,14 @@ interface AICreationStudioProps {
 const PROPOSE_MUTATION = `
   mutation ProposeAgentAction($userId: ID!, $businessId: ID!, $prompt: String!, $domain: String) {
     proposeAgentAction(userId: $userId, businessId: $businessId, prompt: $prompt, domain: $domain) {
-      message proposals { id type field domain summary currentValue newValue }
+      message batchId provider model inputTokens outputTokens totalTokens proposals { id type field domain summary currentValue newValue }
     }
   }
 `;
 
 const APPLY_MUTATION = `
-  mutation ApplyAgentProposal($userId: ID!, $businessId: ID!, $changes: String!) {
-    applyAgentProposal(userId: $userId, businessId: $businessId, changes: $changes) {
+  mutation ApplyAgentProposal($userId: ID!, $businessId: ID!, $changes: String, $batchId: ID) {
+    applyAgentProposal(userId: $userId, businessId: $businessId, changes: $changes, batchId: $batchId) {
       success message
     }
   }
@@ -77,7 +86,9 @@ export function AICreationStudio({
   const [lastPrompt, setLastPrompt] = useState('');
   const [messages, setMessages] = useState<StudioMessage[]>([]);
   const [proposalMessage, setProposalMessage] = useState('');
-  const [proposal, setProposal] = useState<ProposedChange | null>(null);
+  const [proposals, setProposals] = useState<ProposedChange[]>([]);
+  const [activeProposalIndex, setActiveProposalIndex] = useState(0);
+  const [proposalBatchId, setProposalBatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
@@ -92,8 +103,10 @@ export function AICreationStudio({
   }, [messages]);
 
   useEffect(() => {
-    if (!proposal && !loading) chatInputRef.current?.focus();
-  }, [proposal, loading]);
+    if (!proposals.length && !loading) chatInputRef.current?.focus();
+  }, [proposals.length, loading]);
+
+  const proposal = proposals[activeProposalIndex] ?? null;
 
   const requestProposal = async (instruction: string) => {
     if (!selectedBusiness || !userId || !instruction.trim() || loading) return;
@@ -105,8 +118,8 @@ export function AICreationStudio({
     setError(null);
     setSuccess(null);
     setLastPrompt(instruction.trim());
-    const contextualPrompt = proposal
-      ? `${instruction.trim()}\n\nRevise the pending AI proposal below. Preserve everything I did not ask to change.\nPending proposal field: ${proposal.field}\nPending proposal JSON:\n${proposal.newValue}`
+    const contextualPrompt = proposals.length
+      ? `${instruction.trim()}\n\nRevise the complete pending AI proposal batch below. Preserve every unrelated field and every proposal I did not ask to change.\nPending proposal batch JSON:\n${JSON.stringify(proposals)}`
       : instruction.trim();
     const userMsg: StudioMessage = { role: 'user', content: instruction.trim(), id: `m-${++msgCounter}` };
     setMessages(current => [...current, userMsg]);
@@ -121,13 +134,15 @@ export function AICreationStudio({
         userId, businessId: selectedBusiness.id, prompt: contextualPrompt, domain,
       });
       const result = data.proposeAgentAction;
-      const nextProposal = result.proposals?.[0] ?? null;
-      setProposal(nextProposal);
-      setProposalMessage(result.message || (nextProposal ? 'A new version is ready for review.' : 'No changes were proposed.'));
+      const nextProposals = result.proposals ?? [];
+      setProposals(nextProposals);
+      setActiveProposalIndex(0);
+      setProposalBatchId(result.batchId || null);
+      setProposalMessage(result.message || (nextProposals.length ? `${nextProposals.length} change${nextProposals.length === 1 ? '' : 's'} ready for review.` : 'No changes were proposed.'));
       const assistantMsg: StudioMessage = { role: 'assistant', content: result.message || 'I prepared a version for review.', id: `m-${++msgCounter}` };
       setMessages(current => [...current, assistantMsg]);
       setPrompt('');
-      if (!nextProposal && !result.message) setError('AI did not return a reviewable change. Describe the result you want more specifically.');
+      if (!nextProposals.length && !result.message) setError('AI did not return a reviewable change. Describe the result you want more specifically.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI generation failed. Please try rephrasing your request.');
     } finally {
@@ -152,17 +167,21 @@ export function AICreationStudio({
   };
 
   const approveProposal = async () => {
-    if (!proposal || !selectedBusiness || !userId || applying) return;
+    if (!proposals.length || !selectedBusiness || !userId || applying) return;
     setApplying(true);
     setError(null);
     try {
       const data = await graphqlRequest<ApplyResponse>(APPLY_MUTATION, {
-        userId, businessId: selectedBusiness.id, changes: JSON.stringify([proposal]),
+        userId, businessId: selectedBusiness.id,
+        changes: proposalBatchId ? null : JSON.stringify(proposals),
+        batchId: proposalBatchId,
       });
       if (!data.applyAgentProposal.success) throw new Error(data.applyAgentProposal.message || 'Approval failed.');
       setSuccess(data.applyAgentProposal.message || 'The approved version is now saved.');
       setMessages(current => [...current, { role: 'assistant', content: 'Approved. I saved this version to the business.', id: `m-${++msgCounter}` }]);
-      setProposal(null);
+      setProposals([]);
+      setActiveProposalIndex(0);
+      setProposalBatchId(null);
       setProposalMessage('');
       await refreshBusiness();
       await onApproved?.();
@@ -198,7 +217,7 @@ export function AICreationStudio({
         gridColumn: stackedBuilderMode ? { lg: '1 / -1' } : undefined,
         bgcolor: builderMode ? 'var(--vm-bg-primary)' : undefined,
       }}>
-        {showLogoQuestionnaire && !proposal && !loading ? (
+        {showLogoQuestionnaire && !proposals.length && !loading ? (
           <Card sx={{
             p: { xs: 1.5, md: 2.5 },
             bgcolor: 'var(--vm-bg-secondary)',
@@ -229,14 +248,30 @@ export function AICreationStudio({
                   <Sparkles size={16} />
                 </Box>
                 <Box>
-                  <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900, fontSize: 14 }}>AI Proposal</Typography>
+                  <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900, fontSize: 14 }}>AI Proposal Batch</Typography>
                   <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{proposal.summary || proposalMessage}</Typography>
                 </Box>
               </Box>
-              <Chip label="Not saved" size="small" color="warning" variant="outlined" sx={{ fontSize: 10 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                {proposals.length > 1 && (
+                  <>
+                    <IconButton size="small" disabled={activeProposalIndex === 0} onClick={() => setActiveProposalIndex(index => Math.max(0, index - 1))}><ChevronLeft size={15} /></IconButton>
+                    <Chip label={`${activeProposalIndex + 1}/${proposals.length}`} size="small" variant="outlined" sx={{ fontSize: 10 }} />
+                    <IconButton size="small" disabled={activeProposalIndex >= proposals.length - 1} onClick={() => setActiveProposalIndex(index => Math.min(proposals.length - 1, index + 1))}><ChevronRight size={15} /></IconButton>
+                  </>
+                )}
+                <Chip label={`${proposals.length} pending`} size="small" color="warning" variant="outlined" sx={{ fontSize: 10 }} />
+              </Box>
             </Box>
 
             {renderProposal(proposal)}
+            {proposals.length > 1 && (
+              <Box sx={{ mt: 1.5, display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                {proposals.map((item, index) => (
+                  <Chip key={item.id || index} label={item.field || item.domain || `Change ${index + 1}`} size="small" color={index === activeProposalIndex ? 'primary' : 'default'} onClick={() => setActiveProposalIndex(index)} sx={{ fontSize: 10 }} />
+                ))}
+              </Box>
+            )}
           </Card>
         ) : (
           <Card sx={{
@@ -344,11 +379,11 @@ export function AICreationStudio({
             loading={loading}
             sx={{ mt: 1.25 }}
           >
-            {proposal ? 'Revise with AI' : 'Generate with AI'}
+            {proposals.length ? 'Revise batch with AI' : 'Generate with AI'}
           </AnimatedButton>
 
           {/* Next / Approve / Discard buttons always below Generate when proposal exists */}
-          {proposal && (
+          {proposals.length > 0 && (
             <>
               {lastPrompt && (
                 <AnimatedButton fullWidth variant="secondary" size="sm" icon={<Sparkles size={14} />} disabled={loading || applying}
@@ -360,9 +395,9 @@ export function AICreationStudio({
               <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid var(--vm-border-subtle)', display: 'flex', gap: 1 }}>
                 <AnimatedButton variant="success" size="sm" icon={<Check size={14} />} disabled={loading || applying} onClick={() => void approveProposal()} loading={applying}
                   sx={{ flex: 1, fontSize: 12 }}>
-                  Approve
+                  Approve all ({proposals.length})
                 </AnimatedButton>
-                <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposal(null); setProposalMessage(''); }}
+                <AnimatedButton variant="ghost" size="sm" icon={<X size={14} />} disabled={applying} onClick={() => { setProposals([]); setActiveProposalIndex(0); setProposalBatchId(null); setProposalMessage(''); }}
                   sx={{ flex: 1, fontSize: 12, color: 'var(--vm-text-muted)' }}>
                   Discard
                 </AnimatedButton>
@@ -370,7 +405,7 @@ export function AICreationStudio({
             </>
           )}
 
-          {!proposal && (
+          {!proposals.length && (
             <>
               <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, mt: 1.5, mb: 0.75 }}>Try asking:</Typography>
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>

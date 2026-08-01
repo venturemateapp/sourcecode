@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Box, Typography, Card } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -14,7 +14,6 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { ToastProvider, useToast } from './components/shared/toast';
 import { Dashboard } from './pages/venturemate/Dashboard';
 import { Businesses } from './pages/venturemate/Businesses';
-import { PitchDeck } from './pages/venturemate/PitchDeck';
 import { InvestorsPage } from './pages/venturemate/Investors';
 import { CoFoundersPage } from './pages/venturemate/CoFounders';
 import { AIAssistant } from './pages/venturemate/AIAssistant';
@@ -31,11 +30,9 @@ import { SocialPage } from './pages/venturemate/Social';
 import { MarketplacePage } from './pages/venturemate/Marketplace';
 import { CreditScorePage } from './pages/venturemate/CreditScore';
 import { HealthScorePage } from './pages/venturemate/HealthScore';
-import { WebsiteBuilderPage } from './pages/venturemate/WebsiteBuilder';
 import { TeamPage } from './pages/venturemate/TeamPage';
 import { BillingPage } from './pages/venturemate/Billing';
 import { DocumentsPage } from './pages/venturemate/Documents';
-import { BusinessPlan } from './pages/venturemate/BusinessPlan';
 import { FinancialForecast } from './pages/venturemate/FinancialForecast';
 import { BrandingKitPage } from './pages/venturemate/BrandingKit';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -58,6 +55,10 @@ import {
   TrendingUp,
   Lightbulb,
 } from 'lucide-react';
+
+const PitchDeckStudioV2 = lazy(() => import('./pages/venturemate/PitchDeckStudioV2').then(module => ({ default: module.PitchDeckStudioV2 })));
+const BusinessPlanStudioV2 = lazy(() => import('./pages/venturemate/BusinessPlanStudioV2').then(module => ({ default: module.BusinessPlanStudioV2 })));
+const WebAppStudio = lazy(() => import('./pages/venturemate/WebAppStudio').then(module => ({ default: module.WebAppStudio })));
 
 // Placeholder component for pages under development
 function PlaceholderPage({ title, description, icon: Icon }: { title: string; description: string; icon: React.ComponentType<{size?: number; color?: string}> }) {
@@ -252,7 +253,7 @@ function VentureMateApp() {
       case 'business-overview':
         return <BusinessOverview />;
       case 'pitch-deck':
-        return <PitchDeck onViewChange={handleViewChange} />;
+        return <PitchDeckStudioV2 />;
       case 'milestones':
         return <MilestonesPage />;
       case 'team':
@@ -266,12 +267,12 @@ function VentureMateApp() {
       case 'messages':
         return <MessagesPage />;
       case 'business-plan':
-        return <BusinessPlan />;
+        return <BusinessPlanStudioV2 />;
       case 'branding-kit':
         return <BrandingKitPage onViewChange={handleViewChange} />;
       case 'website-builder':
       case 'websites':
-        return <WebsiteBuilderPage onViewChange={setActiveView} />;
+        return <WebAppStudio />;
       case 'documents':
         return <DocumentsPage onViewChange={handleViewChange} />;
       case 'market-research':
@@ -325,7 +326,9 @@ function VentureMateApp() {
         activeView={activeView}
         onViewChange={handleViewChange}
       >
-        {renderContent()}
+        <Suspense fallback={<Box sx={{ minHeight: 420, display: 'grid', placeItems: 'center' }}><Typography sx={{ color: 'var(--vm-text-muted)' }}>Loading studio…</Typography></Box>}>
+          {renderContent()}
+        </Suspense>
       </VentureMateLayout>
       <SupportChatFloating />
       </SupportChatProvider>

@@ -2,9 +2,6 @@ package graph
 
 import (
 	"encoding/json"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/graphql-go/graphql"
@@ -118,91 +115,16 @@ func init() {
 			"siteName":     &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			websiteDraft := p.Args["websiteDraft"].(string)
-			businessName := p.Args["businessName"].(string)
 			businessID := p.Args["businessId"].(string)
 			platform := p.Args["platform"].(string)
-			siteName, _ := p.Args["siteName"].(string)
 			if _, err := requireOwnedBusiness(p, businessID); err != nil {
 				return okResult(platform, false, err.Error()), nil
 			}
 
-			// Fetch brand kit for logo and tagline
-			var logo, tagline string
-			if AppContainer != nil && AppContainer.BusinessRepo != nil {
-				if biz, err := AppContainer.BusinessRepo.GetByID(p.Context, businessID); err == nil && biz != nil {
-					tagline = biz.Tagline
-					type BrandKit struct {
-						Logo string `json:"logo"`
-					}
-					var bk BrandKit
-					if biz.BrandKit != "" {
-						json.Unmarshal([]byte(biz.BrandKit), &bk)
-					}
-					logo = bk.Logo
-				}
-			}
-
-			result, err := ai.GenerateReactProject(websiteDraft, businessName, logo, tagline)
-			if err != nil {
-				return okResult(platform, false, "Code generation failed: "+err.Error()), nil
-			}
-
-			switch platform {
-			case "github":
-				repoName := safeRepoName(businessName)
-				dr, err := ai.DeployToGitHub(p.Context, result.Files, repoName, businessName+" website built by VentureMate AI")
-				if err != nil {
-					return okResult("github", false, "GitHub deploy failed: "+err.Error()), nil
-				}
-				return map[string]interface{}{
-					"platform": dr.Platform, "url": dr.URL, "repoName": dr.RepoName,
-					"success": true, "message": dr.Message,
-				}, nil
-
-			case "netlify":
-				// Write files to temp dir, build, then deploy dist/
-				tmpDir, buildErr := os.MkdirTemp("", "vm-netlify-*")
-				if buildErr != nil {
-					return okResult("netlify", false, "Temp dir creation failed: "+buildErr.Error()), nil
-				}
-				for _, f := range result.Files {
-					fp := filepath.Join(tmpDir, f.Path)
-					os.MkdirAll(filepath.Dir(fp), 0755)
-					os.WriteFile(fp, []byte(f.Content), 0644)
-				}
-				// Run npm install && npm run build
-				npmInstall := exec.Command("npm", "install")
-				npmInstall.Dir = tmpDir
-				if out, err := npmInstall.CombinedOutput(); err != nil {
-					os.RemoveAll(tmpDir)
-					return okResult("netlify", false, "npm install failed: "+string(out)), nil
-				}
-				npmBuild := exec.Command("npm", "run", "build")
-				npmBuild.Dir = tmpDir
-				if out, err := npmBuild.CombinedOutput(); err != nil {
-					os.RemoveAll(tmpDir)
-					return okResult("netlify", false, "npm build failed: "+string(out)), nil
-				}
-				// Zip the dist/ folder
-				distDir := filepath.Join(tmpDir, "dist")
-				zipData, zipErr := ai.ZipDirectory(distDir)
-				os.RemoveAll(tmpDir)
-				if zipErr != nil {
-					return okResult("netlify", false, "ZIP creation failed: "+zipErr.Error()), nil
-				}
-				dr, err := ai.DeployToNetlify(p.Context, zipData, siteName)
-				if err != nil {
-					return okResult("netlify", false, "Netlify deploy failed: "+err.Error()), nil
-				}
-				return map[string]interface{}{
-					"platform": dr.Platform, "url": dr.URL, "siteName": dr.SiteName,
-					"success": true, "message": dr.Message,
-				}, nil
-
-			default:
-				return okResult(platform, false, "Unsupported platform: "+platform+" (use github or netlify)"), nil
-			}
+			// Direct builds and deployments inside a GraphQL request are intentionally disabled.
+			// The AI Studio deployment pipeline persists the job, builds from the approved
+			// revision in the isolated worker, and records its artifact and deployment URL.
+			return okResult(platform, false, "Legacy direct deployment is disabled for production safety. Open AI Web App Studio, import or regenerate this site, approve the revision, run a production build, then publish through the durable deployment job."), nil
 		},
 	})
 

@@ -60,12 +60,12 @@ type TokenUsage struct {
 }
 
 type ProviderResponse struct {
-	Content      string       `json:"content"`
-	ToolCalls    []ToolCall   `json:"toolCalls,omitempty"`
-	Provider     string       `json:"provider,omitempty"`
-	Model        string       `json:"model,omitempty"`
-	TokenUsage   *TokenUsage  `json:"tokenUsage,omitempty"`
-	DurationMs   int64        `json:"durationMs,omitempty"`
+	Content    string      `json:"content"`
+	ToolCalls  []ToolCall  `json:"toolCalls,omitempty"`
+	Provider   string      `json:"provider,omitempty"`
+	Model      string      `json:"model,omitempty"`
+	TokenUsage *TokenUsage `json:"tokenUsage,omitempty"`
+	DurationMs int64       `json:"durationMs,omitempty"`
 }
 
 type Provider interface {
@@ -266,10 +266,10 @@ type ollamaRequest struct {
 }
 
 type ollamaResponse struct {
-	Message ollamaMessage `json:"message"`
-	Error   string        `json:"error,omitempty"`
-	PromptEvalCount int `json:"prompt_eval_count,omitempty"`
-	EvalCount       int `json:"eval_count,omitempty"`
+	Message         ollamaMessage `json:"message"`
+	Error           string        `json:"error,omitempty"`
+	PromptEvalCount int           `json:"prompt_eval_count,omitempty"`
+	EvalCount       int           `json:"eval_count,omitempty"`
 }
 
 func (p *ollamaProvider) Chat(ctx context.Context, systemPrompt string, messages []Message, tools []ToolDef) (*ProviderResponse, error) {
@@ -559,7 +559,7 @@ type geminiUsageMetadata struct {
 }
 
 type geminiResponse struct {
-	Candidates    []struct {
+	Candidates []struct {
 		Content geminiContent `json:"content"`
 	} `json:"candidates"`
 	UsageMetadata *geminiUsageMetadata `json:"usageMetadata,omitempty"`
@@ -715,8 +715,8 @@ type claudeUsage struct {
 }
 
 type claudeResponse struct {
-	Content     []claudeBlock `json:"content"`
-	Usage       *claudeUsage  `json:"usage,omitempty"`
+	Content []claudeBlock `json:"content"`
+	Usage   *claudeUsage  `json:"usage,omitempty"`
 }
 
 func (p *claudeProvider) Chat(ctx context.Context, systemPrompt string, messages []Message, tools []ToolDef) (*ProviderResponse, error) {
@@ -870,7 +870,7 @@ func NewProviderFromConfig(cfg ProviderConfig) (Provider, error) {
 			cfg.Endpoint = "https://api.deepseek.com/v1/chat/completions"
 		}
 		if cfg.Model == "" {
-			cfg.Model = "deepseek-chat"
+			cfg.Model = "deepseek-v4-flash"
 		}
 		return newOpenAICompatibleProvider("deepseek", cfg.APIKey, cfg.Endpoint, cfg.Model), nil
 	case "gemini":

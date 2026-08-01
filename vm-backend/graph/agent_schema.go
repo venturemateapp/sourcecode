@@ -10,6 +10,8 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/venturemate/vmbackend/internal/ai"
+	"github.com/venturemate/vmbackend/internal/aistudio"
+	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/businesses"
 	"github.com/venturemate/vmbackend/internal/subscriptions"
 )
@@ -60,6 +62,7 @@ var proposalResponseType = graphql.NewObject(graphql.ObjectConfig{
 		"inputTokens":  &graphql.Field{Type: graphql.Int},
 		"outputTokens": &graphql.Field{Type: graphql.Int},
 		"totalTokens":  &graphql.Field{Type: graphql.Int},
+		"batchId":      &graphql.Field{Type: graphql.ID},
 	},
 })
 
@@ -193,7 +196,10 @@ func init() {
 			if AppContainer == nil {
 				return map[string]interface{}{"message": "Server not initialized"}, nil
 			}
-			userID := p.Args["userId"].(string)
+			userID, ok := auth.UserIDFromContext(p.Context)
+			if !ok || strings.TrimSpace(userID) == "" {
+				return nil, fmt.Errorf("authentication required")
+			}
 			businessID := p.Args["businessId"].(string)
 			prompt := p.Args["prompt"].(string)
 			domain, _ := p.Args["domain"].(string)
@@ -251,7 +257,10 @@ func init() {
 			if AppContainer == nil {
 				return map[string]interface{}{"message": "Server not initialized", "proposals": nil}, nil
 			}
-			userID := p.Args["userId"].(string)
+			userID, ok := auth.UserIDFromContext(p.Context)
+			if !ok || strings.TrimSpace(userID) == "" {
+				return nil, fmt.Errorf("authentication required")
+			}
 			businessID := p.Args["businessId"].(string)
 			prompt := p.Args["prompt"].(string)
 			domain, _ := p.Args["domain"].(string)
@@ -321,10 +330,19 @@ func init() {
 				}
 			}
 
-			// Track token usage
+			// Track token usage and persist the complete proposal batch.
 			if sub != nil && sub.Plan != nil && proposal != nil && proposal.TotalTokens > 0 {
 				period := subscriptions.BillingPeriod(time.Now())
 				_ = AppContainer.UsageRepo.IncrementAITokens(p.Context, userID, period, int64(proposal.TotalTokens))
+			}
+			changesJSON, _ := json.Marshal(proposal.Changes)
+			tokenUsageJSON, _ := json.Marshal(map[string]int{"inputTokens": proposal.InputTokens, "outputTokens": proposal.OutputTokens, "totalTokens": proposal.TotalTokens})
+			batch, batchErr := AppContainer.AIStudioRepo.CreateProposalBatch(p.Context, aistudio.ProposalBatch{
+				UserID: userID, BusinessID: businessID, Domain: domain, Message: proposal.Message, Changes: string(changesJSON),
+				Provider: proposal.Provider, Model: proposal.Model, TokenUsage: string(tokenUsageJSON),
+			})
+			if batchErr != nil {
+				return nil, fmt.Errorf("could not persist proposal batch: %w", batchErr)
 			}
 			return map[string]interface{}{
 				"message":      proposal.Message,
@@ -334,6 +352,7 @@ func init() {
 				"inputTokens":  proposal.InputTokens,
 				"outputTokens": proposal.OutputTokens,
 				"totalTokens":  proposal.TotalTokens,
+				"batchId":      batch.ID,
 			}, nil
 		},
 	})
@@ -343,22 +362,46 @@ func init() {
 		Args: graphql.FieldConfigArgument{
 			"userId":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"changes":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"changes":    &graphql.ArgumentConfig{Type: graphql.String},
+			"batchId":    &graphql.ArgumentConfig{Type: graphql.ID},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil {
 				return map[string]interface{}{"success": false, "message": "Server not initialized"}, nil
 			}
-			userID := p.Args["userId"].(string)
+			userID, ok := auth.UserIDFromContext(p.Context)
+			if !ok || strings.TrimSpace(userID) == "" {
+				return nil, fmt.Errorf("authentication required")
+			}
 			businessID := p.Args["businessId"].(string)
 			var changes []ai.ProposedChange
-			if err := json.Unmarshal([]byte(p.Args["changes"].(string)), &changes); err != nil {
-				return map[string]interface{}{"success": false, "message": "Invalid changes format"}, nil
+			batchID, _ := p.Args["batchId"].(string)
+			if strings.TrimSpace(batchID) != "" {
+				batch, batchErr := AppContainer.AIStudioRepo.GetProposalBatch(p.Context, userID, batchID)
+				if batchErr != nil || batch == nil || batch.BusinessID != businessID || batch.Status != "pending" {
+					return map[string]interface{}{"success": false, "message": "Proposal batch not found or no longer pending"}, nil
+				}
+				if err := json.Unmarshal([]byte(batch.Changes), &changes); err != nil {
+					return map[string]interface{}{"success": false, "message": "Stored proposal batch is invalid"}, nil
+				}
+			} else {
+				rawChanges, _ := p.Args["changes"].(string)
+				if err := json.Unmarshal([]byte(rawChanges), &changes); err != nil {
+					return map[string]interface{}{"success": false, "message": "Invalid changes format"}, nil
+				}
+			}
+			if len(changes) == 0 {
+				return map[string]interface{}{"success": false, "message": "No changes selected"}, nil
 			}
 			msg, err := ai.ApplyChangesWithDependencies(p.Context, ai.ApplyDependencies{BusinessRepo: AppContainer.BusinessRepo, DomainRepo: AppContainer.DomainRepo, WebsiteRepo: AppContainer.WebsiteRepo, AssetStore: AppContainer.S3}, userID, businessID, changes)
 			if err != nil {
 				log.Printf("Apply error for user %s: %v", userID, err)
 				return map[string]interface{}{"success": false, "message": err.Error()}, nil
+			}
+			if strings.TrimSpace(batchID) != "" {
+				if err := AppContainer.AIStudioRepo.MarkProposalBatch(p.Context, userID, batchID, "applied"); err != nil {
+					return map[string]interface{}{"success": false, "message": err.Error()}, nil
+				}
 			}
 			return map[string]interface{}{"success": true, "message": msg}, nil
 		},

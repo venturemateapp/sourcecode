@@ -144,3 +144,81 @@ func (e *Enforcer) HasFeature(ctx context.Context, planName string, feature stri
 	}
 	return false, nil
 }
+
+func (e *Enforcer) CheckAIStudioOperation(ctx context.Context, userID, planName, period, metric string) error {
+	limits, err := e.GetPlanLimits(ctx, planName)
+	if err != nil {
+		return err
+	}
+	limitKey := map[string]string{
+		"recraft_images": "recraft_images_monthly",
+		"ai_builds":      "ai_builds_monthly",
+		"ai_exports":     "ai_exports_monthly",
+		"ai_deployments": "ai_deployments_monthly",
+	}[metric]
+	if limitKey == "" {
+		return nil
+	}
+	limit := limitAsInt(limits, limitKey)
+	if Unlimited(limit) {
+		return nil
+	}
+	usage, err := e.usage.GetUsage(ctx, userID, period)
+	if err != nil || usage == nil {
+		return nil
+	}
+	used := int64(0)
+	switch metric {
+	case "recraft_images":
+		used = usage.RecraftImagesUsed
+	case "ai_builds":
+		used = usage.AIBuildsUsed
+	case "ai_exports":
+		used = usage.AIExportsUsed
+	case "ai_deployments":
+		used = usage.AIDeploymentsUsed
+	}
+	if used >= int64(limit) {
+		return fmt.Errorf("plan limit reached: %s allowance is %d per month", metric, limit)
+	}
+	return nil
+}
+
+func (e *Enforcer) CheckAIProjectLimit(ctx context.Context, planName string, currentCount int) error {
+	limits, err := e.GetPlanLimits(ctx, planName)
+	if err != nil {
+		return err
+	}
+	limit := limitAsInt(limits, "max_ai_projects")
+	if Unlimited(limit) {
+		return nil
+	}
+	if currentCount >= limit {
+		return fmt.Errorf("plan limit reached: maximum %d active AI projects", limit)
+	}
+	return nil
+}
+
+// CheckAIProjectStorage applies the plan's existing storage_gb allowance to
+// document-vault and AI Studio storage together. Missing or -1 limits remain unlimited.
+func (e *Enforcer) CheckAIProjectStorage(ctx context.Context, userID, planName, period string) error {
+	limits, err := e.GetPlanLimits(ctx, planName)
+	if err != nil {
+		return err
+	}
+	storageGB := limitAsInt(limits, "storage_gb")
+	if Unlimited(storageGB) {
+		return nil
+	}
+	usage, err := e.usage.GetUsage(ctx, userID, period)
+	if err != nil || usage == nil {
+		return nil
+	}
+	const gib = int64(1024 * 1024 * 1024)
+	limitBytes := int64(storageGB) * gib
+	used := usage.StorageBytes + usage.AIProjectBytes
+	if used >= limitBytes {
+		return fmt.Errorf("storage quota reached: %.2f/%.2f GB used", float64(used)/float64(gib), float64(limitBytes)/float64(gib))
+	}
+	return nil
+}
