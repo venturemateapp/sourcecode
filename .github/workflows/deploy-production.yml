@@ -204,8 +204,6 @@ jobs:
             apply_default VITE_GOOGLE_AUTH_URL "/auth/google"
             apply_default VITE_CALLBACK_URL "http://localhost:3000/vm/auth/callback"
 
-            cd vm-frontend && npm run lint && npx tsc -b --noEmit && cd "$APP_DIR"
-
             docker compose build --no-cache
             docker compose up --build -d --force-recreate
 

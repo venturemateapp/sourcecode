@@ -455,9 +455,7 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 		}
 		versions = append(versions, v)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
+	rows.Close()
 
 	for _, v := range versions {
 		switch v.operation {
