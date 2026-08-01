@@ -32,6 +32,26 @@ jobs:
           SMTP_FROM_NAME: ${{ secrets.SMTP_FROM_NAME }}
           SMTP_FROM_EMAIL: ${{ secrets.SMTP_FROM_EMAIL }}
           EMAIL_LOGO_URL: ${{ secrets.EMAIL_LOGO_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          OAUTH_REDIRECT_BASE: ${{ secrets.OAUTH_REDIRECT_BASE }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+          GRAPHIQL_ENABLED: ${{ secrets.GRAPHIQL_ENABLED }}
+          AI_WORKER_ID: ${{ secrets.AI_WORKER_ID }}
+          AI_WORKER_POLL_INTERVAL: ${{ secrets.AI_WORKER_POLL_INTERVAL }}
+          AI_BUILD_TIMEOUT: ${{ secrets.AI_BUILD_TIMEOUT }}
+          AI_BUILD_MAX_LOG_BYTES: ${{ secrets.AI_BUILD_MAX_LOG_BYTES }}
+          AI_BUILD_MAX_ARTIFACT_BYTES: ${{ secrets.AI_BUILD_MAX_ARTIFACT_BYTES }}
+          RECRAFT_BASE_URL: ${{ secrets.RECRAFT_BASE_URL }}
+          RECRAFT_MODEL: ${{ secrets.RECRAFT_MODEL }}
+          RECRAFT_VECTOR_MODEL: ${{ secrets.RECRAFT_VECTOR_MODEL }}
+          RECRAFT_PRO_MODEL: ${{ secrets.RECRAFT_PRO_MODEL }}
+          RECRAFT_PRO_VECTOR_MODEL: ${{ secrets.RECRAFT_PRO_VECTOR_MODEL }}
+          RECRAFT_TIMEOUT_SECONDS: ${{ secrets.RECRAFT_TIMEOUT_SECONDS }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_PUBLIC_BASE_URL: ${{ secrets.S3_PUBLIC_BASE_URL }}
+          S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE }}
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
@@ -52,7 +72,11 @@ jobs:
             EMAIL_FROM_NAME,EMAIL_LOGO_URL,
             PUBLIC_SITE_BASE_DOMAIN,PUBLIC_SITE_CNAME_TARGET,
             VITE_GRAPHQL_URL,VITE_AUTH_SERVER_URL,VITE_GOOGLE_AUTH_URL,VITE_CALLBACK_URL,
-            VM_GITHUB_TOKEN,NETLIFY_AUTH_TOKEN
+            VM_GITHUB_TOKEN,NETLIFY_AUTH_TOKEN,
+            DATABASE_URL,FRONTEND_URL,OAUTH_REDIRECT_BASE,JWT_SECRET,CORS_ALLOWED_ORIGINS,GRAPHIQL_ENABLED,
+            AI_WORKER_ID,AI_WORKER_POLL_INTERVAL,AI_BUILD_TIMEOUT,AI_BUILD_MAX_LOG_BYTES,AI_BUILD_MAX_ARTIFACT_BYTES,
+            RECRAFT_BASE_URL,RECRAFT_MODEL,RECRAFT_VECTOR_MODEL,RECRAFT_PRO_MODEL,RECRAFT_PRO_VECTOR_MODEL,RECRAFT_TIMEOUT_SECONDS,
+            S3_ENDPOINT,S3_PUBLIC_BASE_URL,S3_FORCE_PATH_STYLE
           script: |
             set -e
             cd "$APP_DIR"
@@ -99,15 +123,21 @@ jobs:
             write_if_set DB_PASSWORD
             write_if_set DB_NAME
             write_if_set DB_SSLMODE
+            write_if_set DATABASE_URL
             write_if_set JWT_SECRET
             write_if_set OAUTH_REDIRECT_BASE
             write_if_set FRONTEND_URL
+            write_if_set CORS_ALLOWED_ORIGINS
+            write_if_set GRAPHIQL_ENABLED
             write_if_set SMTP_HOST
             write_if_set SMTP_PORT
             write_if_set SMTP_USER
             write_if_set SMTP_PASSWORD
             write_if_set S3_BUCKET
             write_if_set S3_REGION
+            write_if_set S3_ENDPOINT
+            write_if_set S3_PUBLIC_BASE_URL
+            write_if_set S3_FORCE_PATH_STYLE
             write_if_set AWS_ACCESS_KEY_ID
             write_if_set AWS_SECRET_ACCESS_KEY
             write_if_set GEMINI_API_KEY
@@ -131,6 +161,17 @@ jobs:
             write_if_set NETLIFY_AUTH_TOKEN
             write_if_set CURRENCY_API_KEY
             write_if_set RECRAFT_API_KEY
+            write_if_set AI_WORKER_ID
+            write_if_set AI_WORKER_POLL_INTERVAL
+            write_if_set AI_BUILD_TIMEOUT
+            write_if_set AI_BUILD_MAX_LOG_BYTES
+            write_if_set AI_BUILD_MAX_ARTIFACT_BYTES
+            write_if_set RECRAFT_BASE_URL
+            write_if_set RECRAFT_MODEL
+            write_if_set RECRAFT_VECTOR_MODEL
+            write_if_set RECRAFT_PRO_MODEL
+            write_if_set RECRAFT_PRO_VECTOR_MODEL
+            write_if_set RECRAFT_TIMEOUT_SECONDS
 
             apply_default PORT "8080"
             apply_default DB_HOST "localhost"
@@ -144,6 +185,20 @@ jobs:
             apply_default PUBLIC_SITE_BASE_DOMAIN "venturemate.net"
             apply_default PUBLIC_SITE_CNAME_TARGET "sites.venturemate.net"
             apply_default EMAIL_FROM_NAME "VentureMate"
+            apply_default EMAIL_FROM_EMAIL "ops@venturemate.net"
+            apply_default CORS_ALLOWED_ORIGINS "https://venturemate.net,https://www.venturemate.net"
+            apply_default GRAPHIQL_ENABLED "false"
+            apply_default AI_WORKER_ID "worker-1"
+            apply_default AI_WORKER_POLL_INTERVAL "1s"
+            apply_default AI_BUILD_TIMEOUT "5m"
+            apply_default AI_BUILD_MAX_LOG_BYTES "1048576"
+            apply_default AI_BUILD_MAX_ARTIFACT_BYTES "52428800"
+            apply_default RECRAFT_BASE_URL "https://external.api.recraft.ai/v1"
+            apply_default RECRAFT_MODEL "recraftv4_1"
+            apply_default RECRAFT_VECTOR_MODEL "recraftv4_1_vector"
+            apply_default RECRAFT_PRO_MODEL "recraftv4_1_pro"
+            apply_default RECRAFT_PRO_VECTOR_MODEL "recraftv4_1_pro_vector"
+            apply_default RECRAFT_TIMEOUT_SECONDS "90"
             apply_default VITE_GRAPHQL_URL "/graphql"
             apply_default VITE_AUTH_SERVER_URL "/auth"
             apply_default VITE_GOOGLE_AUTH_URL "/auth/google"
