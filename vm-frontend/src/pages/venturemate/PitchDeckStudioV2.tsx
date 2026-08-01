@@ -67,7 +67,7 @@ async function exportDeckPptx(document: DeckDocument): Promise<void> {
           fontSize: Number(style.fontSize || 20), bold: Number(style.fontWeight || 400) >= 700,
           color: cleanHex(String(style.color || document.theme.text), 'F8FAFC'),
           align: (String(style.textAlign || 'left') as 'left' | 'center' | 'right'),
-          valign: 'mid', margin: Number(style.margin || .04), fit: 'shrink',
+          valign: 'middle', margin: Number(style.margin || .04), fit: 'shrink',
         });
       } else if (element.type === 'shape' || element.type === 'line') {
         slide.addShape(element.type === 'line' ? pptx.ShapeType.line : pptx.ShapeType.rect, {

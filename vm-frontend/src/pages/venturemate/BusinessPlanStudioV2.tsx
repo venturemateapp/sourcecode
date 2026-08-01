@@ -133,7 +133,7 @@ function exportDocx(document: PlanDocumentV2): void {
     { name: 'word/document.xml', content: documentXml }, { name: 'word/styles.xml', content: styles },
     { name: 'word/_rels/document.xml.rels', content: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
   ]);
-  downloadBlob(bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', `${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.docx`);
+  downloadBlob(bytes.buffer as ArrayBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', `${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.docx`);
 }
 
 function BlockEditor({ block, onChange, onDelete }: { block: PlanBlock; onChange: (next: PlanBlock) => void; onDelete: () => void }) {

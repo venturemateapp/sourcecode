@@ -78,7 +78,13 @@ export function WebAppStudio() {
       if (message.type === 'runtime-error') {
         const payload = message.payload as Partial<PreviewRuntimeError>;
         if (typeof payload.message === 'string') {
-          setPreviewErrors(current => [...current.slice(-19), { message: payload.message, filename: payload.filename, line: payload.line, column: payload.column }]);
+          const error: PreviewRuntimeError = {
+            message: payload.message,
+            filename: typeof payload.filename === 'string' ? payload.filename : undefined,
+            line: typeof payload.line === 'number' ? payload.line : undefined,
+            column: typeof payload.column === 'number' ? payload.column : undefined,
+          };
+          setPreviewErrors(current => [...current.slice(-19), error]);
         }
       }
     };
