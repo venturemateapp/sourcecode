@@ -9,6 +9,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -542,6 +543,53 @@ func main() {
 	if err := migrations.Run(container.DB, "migrations"); err != nil {
 		log.Fatal("Database migrations failed: ", err)
 	}
+
+	// Background sync scheduler: periodically pull emails + calendar events
+	// for every account with sync_enabled = true.
+	go func() {
+		syncInterval := 15 * time.Minute
+		if iv := os.Getenv("SYNC_INTERVAL_MINUTES"); iv != "" {
+			if mins, err := strconv.Atoi(iv); err == nil && mins > 0 {
+				syncInterval = time.Duration(mins) * time.Minute
+			}
+		}
+		runSync := func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+			defer cancel()
+			// Email
+			if container.EmailSyncService != nil {
+				if accts, err := container.EmailSyncRepo.ListAllEnabled(ctx); err == nil {
+					for i := range accts {
+						if err := container.EmailSyncService.SyncAccount(ctx, &accts[i]); err != nil {
+							log.Printf("email sync failed for %s: %v", accts[i].Email, err)
+						}
+					}
+				} else {
+					log.Printf("email sync list error: %v", err)
+				}
+			}
+			// Calendar
+			if container.CalendarSyncService != nil {
+				if accts, err := container.CalendarRepo.ListAllEnabled(ctx); err == nil {
+					for i := range accts {
+						if err := container.CalendarSyncService.SyncAccount(ctx, &accts[i]); err != nil {
+							log.Printf("calendar sync failed for %s: %v", accts[i].Email, err)
+						}
+					}
+				} else {
+					log.Printf("calendar sync list error: %v", err)
+				}
+			}
+		}
+		// Run once shortly after boot, then on the interval.
+		time.Sleep(30 * time.Second)
+		runSync()
+		ticker := time.NewTicker(syncInterval)
+		defer ticker.Stop()
+		for range ticker.C {
+			runSync()
+		}
+	}()
 
 	graph.SetContainer(container)
 
