@@ -68,6 +68,28 @@ func (r *Repository) ListAccounts(ctx context.Context, businessID string) ([]Ema
 	return list, nil
 }
 
+// ListAllEnabled returns every email account with sync_enabled = true,
+// including passwords, so the background scheduler can sync them.
+func (r *Repository) ListAllEnabled(ctx context.Context) ([]EmailAccount, error) {
+	rows, err := r.db.Query(ctx, `SELECT `+acctCols+` FROM crm_email_accounts WHERE sync_enabled = true ORDER BY email`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var list []EmailAccount
+	for rows.Next() {
+		a, err := scanAccount(rows)
+		if err != nil {
+			return nil, err
+		}
+		if err := r.db.QueryRow(ctx, `SELECT imap_password, smtp_password FROM crm_email_accounts WHERE id = $1`, a.ID).Scan(&a.ImapPassword, &a.SmtpPassword); err != nil {
+			return nil, fmt.Errorf("fetch password: %w", err)
+		}
+		list = append(list, *a)
+	}
+	return list, nil
+}
+
 func (r *Repository) CreateAccount(ctx context.Context, a *EmailAccount) error {
 	a.ID = uuid.New().String()
 	a.CreatedAt = time.Now()

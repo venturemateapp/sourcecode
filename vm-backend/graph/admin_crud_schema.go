@@ -2,9 +2,11 @@ package graph
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/graphql-go/graphql"
+	"github.com/venturemate/vmbackend/internal/marketplace"
 )
 
 var adminUserDetailType = graphql.NewObject(graphql.ObjectConfig{
@@ -26,16 +28,16 @@ var adminUserDetailType = graphql.NewObject(graphql.ObjectConfig{
 var adminBusinessDetailType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "AdminBusinessDetail",
 	Fields: graphql.Fields{
-		"id":          &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"userId":      &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
-		"name":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"industry":    &graphql.Field{Type: graphql.String},
-		"stage":       &graphql.Field{Type: graphql.String},
-		"location":    &graphql.Field{Type: graphql.String},
-		"status":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-		"ownerName":   &graphql.Field{Type: graphql.String},
-		"ownerEmail":  &graphql.Field{Type: graphql.String},
-		"createdAt":   &graphql.Field{Type: graphql.String},
+		"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"userId":     &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
+		"name":       &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"industry":   &graphql.Field{Type: graphql.String},
+		"stage":      &graphql.Field{Type: graphql.String},
+		"location":   &graphql.Field{Type: graphql.String},
+		"status":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"ownerName":  &graphql.Field{Type: graphql.String},
+		"ownerEmail": &graphql.Field{Type: graphql.String},
+		"createdAt":  &graphql.Field{Type: graphql.String},
 	},
 })
 
@@ -156,9 +158,9 @@ func init() {
 	rootMutation.AddFieldConfig("adminCreatePlan", &graphql.Field{
 		Type: graphql.String,
 		Args: graphql.FieldConfigArgument{
-			"name":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"displayName": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"description": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"name":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"displayName":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"description":  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			"priceMonthly": &graphql.ArgumentConfig{Type: graphql.Float},
 			"priceYearly":  &graphql.ArgumentConfig{Type: graphql.Float},
 		},
@@ -179,12 +181,12 @@ func init() {
 	rootMutation.AddFieldConfig("adminUpdatePlan", &graphql.Field{
 		Type: graphql.String,
 		Args: graphql.FieldConfigArgument{
-			"planId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"displayName": &graphql.ArgumentConfig{Type: graphql.String},
-			"description": &graphql.ArgumentConfig{Type: graphql.String},
+			"planId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"displayName":  &graphql.ArgumentConfig{Type: graphql.String},
+			"description":  &graphql.ArgumentConfig{Type: graphql.String},
 			"priceMonthly": &graphql.ArgumentConfig{Type: graphql.Float},
 			"priceYearly":  &graphql.ArgumentConfig{Type: graphql.Float},
-			"isActive":    &graphql.ArgumentConfig{Type: graphql.Boolean},
+			"isActive":     &graphql.ArgumentConfig{Type: graphql.Boolean},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if err := adminOnly(p); err != nil {
@@ -255,6 +257,73 @@ func init() {
 				return false, err
 			}
 			return true, AppContainer.InvestorRepo.Delete(p.Context, p.Args["id"].(string))
+		},
+	})
+
+	// ─── Marketplace (Service Providers) ───────────────────────────────
+	rootMutation.AddFieldConfig("adminUpsertProvider", &graphql.Field{
+		Type: graphql.String,
+		Args: graphql.FieldConfigArgument{
+			"name":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"title":      &graphql.ArgumentConfig{Type: graphql.String},
+			"category":   &graphql.ArgumentConfig{Type: graphql.String},
+			"bio":        &graphql.ArgumentConfig{Type: graphql.String},
+			"picture":    &graphql.ArgumentConfig{Type: graphql.String},
+			"rateHourly": &graphql.ArgumentConfig{Type: graphql.Float},
+			"skills":     &graphql.ArgumentConfig{Type: graphql.String},
+			"portfolio":  &graphql.ArgumentConfig{Type: graphql.String},
+			"isActive":   &graphql.ArgumentConfig{Type: graphql.Boolean},
+			"yearsExp":   &graphql.ArgumentConfig{Type: graphql.Int},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if err := adminOnly(p); err != nil {
+				return "", err
+			}
+			if AppContainer.MarketplaceRepo == nil {
+				return "", fmt.Errorf("marketplace repo is unavailable")
+			}
+			prov := &marketplace.ServiceProvider{
+				Name:       getStringArg(p.Args, "name"),
+				Title:      getStringArg(p.Args, "title"),
+				Category:   getStringArg(p.Args, "category"),
+				Bio:        getStringArg(p.Args, "bio"),
+				Picture:    getStringArg(p.Args, "picture"),
+				RateHourly: getFloatArg(p.Args, "rateHourly"),
+				YearsExp:   getIntArg(p.Args, "yearsExp"),
+				IsActive:   getBoolArgDefault(p.Args, "isActive", true),
+			}
+			skills := getStringArg(p.Args, "skills")
+			if skills != "" && json.Valid([]byte(skills)) {
+				prov.Skills = skills
+			} else {
+				prov.Skills = "[]"
+			}
+			portfolio := getStringArg(p.Args, "portfolio")
+			if portfolio != "" && json.Valid([]byte(portfolio)) {
+				prov.Portfolio = portfolio
+			} else {
+				prov.Portfolio = "[]"
+			}
+			if err := AppContainer.MarketplaceRepo.UpsertProvider(p.Context, prov); err != nil {
+				return "", err
+			}
+			return prov.ID, nil
+		},
+	})
+
+	rootMutation.AddFieldConfig("adminDeleteProvider", &graphql.Field{
+		Type: graphql.Boolean,
+		Args: graphql.FieldConfigArgument{
+			"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if err := adminOnly(p); err != nil {
+				return false, err
+			}
+			if AppContainer.MarketplaceRepo == nil {
+				return false, fmt.Errorf("marketplace repo is unavailable")
+			}
+			return true, AppContainer.MarketplaceRepo.DeleteProvider(p.Context, p.Args["id"].(string))
 		},
 	})
 

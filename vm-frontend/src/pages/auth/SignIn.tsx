@@ -14,6 +14,12 @@ export function SignIn() {
   const { success, error: showError } = useToast()
   const navigate = useNavigate()
 
+  // "Welcome back" only for returning users. A fresh sign-up has no prior
+  // session marker yet, so first-time visitors get a plain "Welcome".
+  const [isReturning] = useState<boolean>(() =>
+    typeof window !== 'undefined' && localStorage.getItem('vm_has_signed_in_before') === 'true'
+  )
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     clearError()
@@ -33,9 +39,10 @@ export function SignIn() {
       return
     }
 
-    success('Welcome back!', {
+    success(isReturning ? 'Welcome back!' : 'Welcome!', {
       description: `Signed in as ${email}`,
     })
+    localStorage.setItem('vm_has_signed_in_before', 'true')
     const stored = JSON.parse(localStorage.getItem('venturemate_user') || '{}')
     navigate(stored?.isAdmin ? '/vm/admin' : '/vm')
   }
@@ -66,7 +73,7 @@ export function SignIn() {
             mb: 1,
           }}
         >
-          Welcome back
+          {isReturning ? 'Welcome back' : 'Welcome'}
         </Typography>
         <Typography sx={{ color: '#6ee7b7', fontSize: { xs: '0.8125rem', sm: '0.875rem', md: '1rem' } }}>
           Sign in to continue building your startup

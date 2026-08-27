@@ -89,12 +89,12 @@ func Signup(repo *users.Repository, subRepo *subscriptions.Repository, emailAddr
 	}
 
 	user := &users.User{
-		FirstName: firstName,
-		Surname:   surname,
-		Email:     emailAddr,
-		Password:  string(hash),
-		Onboarded: true,
-		Status:    "active",
+		FirstName:         firstName,
+		Surname:           surname,
+		Email:             emailAddr,
+		Password:          string(hash),
+		Onboarded:         true,
+		Status:            "active",
 		PreferredCurrency: "GHS",
 	}
 
@@ -184,10 +184,16 @@ func UpdateProfile(repo *users.Repository, subRepo *subscriptions.Repository, us
 		return "", nil, ErrUserNotFound
 	}
 
+	// Preserve the existing picture when the caller didn't provide one
+	// (e.g. a profile save that only touches name/bio/currency). Without
+	// this, an omitted picture argument would NULL the stored avatar.
+	if picture == "" {
+		picture = user.Picture
+	}
+
 	if err := repo.UpdateProfile(context.Background(), userID, firstName, surname, otherNames, dob, primaryPhone, secondaryPhone, picture, bio, country, city, language, linkedIn, twitter, website, preferredCurrency); err != nil {
 		return "", nil, fmt.Errorf("failed to update profile: %w", err)
 	}
-
 	user.FirstName = firstName
 	user.Surname = surname
 	user.OtherNames = otherNames

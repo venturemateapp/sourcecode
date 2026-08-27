@@ -66,10 +66,10 @@ func init() {
 				result[i] = map[string]interface{}{
 					"id": a.ID, "userId": a.UserID, "businessId": a.BusinessID,
 					"email": a.Email, "provider": a.Provider, "caldavUrl": a.CalDAVURL,
-					"syncEnabled": a.SyncEnabled,
+					"syncEnabled":  a.SyncEnabled,
 					"lastSyncedAt": formatTimePtr(a.LastSyncedAt),
-					"createdAt": a.CreatedAt.Format(time.RFC3339),
-					"updatedAt": a.UpdatedAt.Format(time.RFC3339),
+					"createdAt":    a.CreatedAt.Format(time.RFC3339),
+					"updatedAt":    a.UpdatedAt.Format(time.RFC3339),
 				}
 			}
 			return result, nil
@@ -241,7 +241,7 @@ func init() {
 				"uid": e.UID, "title": e.Title, "description": e.Description,
 				"location": e.Location, "startTime": e.StartTime.Format(time.RFC3339),
 				"endTime": e.EndTime.Format(time.RFC3339), "isAllDay": e.IsAllDay,
-				"status": e.Status,
+				"status":    e.Status,
 				"createdAt": e.CreatedAt.Format(time.RFC3339),
 				"updatedAt": e.UpdatedAt.Format(time.RFC3339),
 			}, nil
@@ -254,4 +254,12 @@ func getBoolArg(args map[string]interface{}, key string) bool {
 		return v
 	}
 	return false
+}
+
+// getBoolArgDefault returns the given default when the argument is absent.
+func getBoolArgDefault(args map[string]interface{}, key string, def bool) bool {
+	if v, ok := args[key].(bool); ok {
+		return v
+	}
+	return def
 }
