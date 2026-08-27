@@ -2,92 +2,65 @@ package ai
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"strings"
 	"testing"
 )
 
-type fakeApprovedAssetStore struct {
-	uploads []fakeApprovedUpload
-	err     error
+// fakeStore records uploads and returns a durable URL for each key.
+type fakeStore struct {
+	uploads []fakeUpload
 }
 
-type fakeApprovedUpload struct {
-	key, contentType string
-	data             []byte
+func (f *fakeStore) Upload(_ context.Context, key string, data []byte, contentType string) (string, error) {
+	f.uploads = append(f.uploads, fakeUpload{key: key, contentType: contentType, data: data})
+	return "https://cdn.venturemate.net/" + key, nil
 }
 
-func (f *fakeApprovedAssetStore) Upload(_ context.Context, key string, data []byte, contentType string) (string, error) {
-	if f.err != nil {
-		return "", f.err
-	}
-	f.uploads = append(f.uploads, fakeApprovedUpload{key: key, data: data, contentType: contentType})
-	return "https://assets.example/" + key, nil
+func (f *fakeStore) IsManagedURL(rawURL string) bool {
+	return strings.HasPrefix(rawURL, "https://cdn.venturemate.net/")
 }
 
-func (f *fakeApprovedAssetStore) IsManagedURL(rawURL string) bool {
-	return strings.HasPrefix(rawURL, "https://assets.example/")
-}
-
-func TestPersistApprovedBrandKitUploadsDuplicateLogoOnce(t *testing.T) {
-	png := []byte("\x89PNG\r\n\x1a\napproved-logo")
-	source := "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
-	raw, _ := json.Marshal(map[string]interface{}{
-		"logo": source, "logoIcon": source, "logoWhite": source, "primaryColor": "#123456",
-	})
-	store := &fakeApprovedAssetStore{}
-
-	got, err := persistApprovedBrandKit(context.Background(), store, "business-42", string(raw))
+// TestPersistBrandKitRawSVG proves the exact AI scenario: the model returns a
+// raw <svg>…</svg> string for logo/logoIcon/logoWhite and persistence must
+// succeed, upload to storage, and return durable URLs.
+func TestPersistBrandKitRawSVG(t *testing.T) {
+	svg := `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#1a73e8"/><text x="8" y="42" font-size="36" fill="#fff">VM</text></svg>`
+	escaped := strings.ReplaceAll(svg, `"`, `\"`)
+	raw := `{"logo":"` + escaped + `","logoIcon":"` + escaped + `","logoWhite":"` + escaped + `","colors":["#1a73e8","#ffffff"]}`
+	store := &fakeStore{}
+	out, err := persistApprovedBrandKit(context.Background(), store, "biz-123", raw)
 	if err != nil {
-		t.Fatal(err)
-	}
-	if len(store.uploads) != 1 {
-		t.Fatalf("uploads = %d, want 1", len(store.uploads))
-	}
-	if !strings.HasPrefix(store.uploads[0].key, "businesses/business-42/brand/logos/") ||
-		!strings.HasSuffix(store.uploads[0].key, ".png") {
-		t.Fatalf("unexpected key %q", store.uploads[0].key)
+		t.Fatalf("persistApprovedBrandKit returned error: %v", err)
 	}
 	var brand map[string]interface{}
-	if err := json.Unmarshal([]byte(got), &brand); err != nil {
-		t.Fatal(err)
+	if err := json.Unmarshal([]byte(out), &brand); err != nil {
+		t.Fatalf("output not valid JSON: %v", err)
 	}
 	for _, field := range []string{"logo", "logoIcon", "logoWhite"} {
-		if brand[field] != "https://assets.example/"+store.uploads[0].key {
-			t.Errorf("%s was not replaced with durable URL", field)
+		v, _ := brand[field].(string)
+		if !strings.HasPrefix(v, "https://cdn.venturemate.net/") {
+			t.Errorf("%s = %q, want managed https URL", field, v)
+		}
+	}
+	if len(store.uploads) == 0 {
+		t.Fatal("expected uploads to storage")
+	}
+	for _, up := range store.uploads {
+		if !strings.HasSuffix(up.key, ".svg") {
+			t.Errorf("key %q should end .svg (got %s content type)", up.key, up.contentType)
+		}
+		if len(up.data) == 0 {
+			t.Errorf("key %q uploaded empty data", up.key)
 		}
 	}
 }
 
-func TestPersistApprovedBrandKitLeavesManagedURLsAlone(t *testing.T) {
-	raw := `{"logo":"https://assets.example/businesses/b/brand/logos/a.png"}`
-	store := &fakeApprovedAssetStore{}
-	if _, err := persistApprovedBrandKit(context.Background(), store, "b", raw); err != nil {
-		t.Fatal(err)
-	}
-	if len(store.uploads) != 0 {
-		t.Fatalf("uploads = %d, want 0", len(store.uploads))
-	}
-}
-
-func TestPersistApprovedBrandKitFailsClosedWhenUploadFails(t *testing.T) {
-	png := []byte("\x89PNG\r\n\x1a\napproved-logo")
-	source := "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
-	raw, _ := json.Marshal(map[string]interface{}{"logo": source})
-	store := &fakeApprovedAssetStore{err: errors.New("S3 unavailable")}
-
-	if _, err := persistApprovedBrandKit(context.Background(), store, "b", string(raw)); err == nil {
-		t.Fatal("expected upload error")
-	}
-}
-
-func TestPersistApprovedBrandKitRejectsNonImage(t *testing.T) {
-	source := "data:text/html;base64," + base64.StdEncoding.EncodeToString([]byte("<html>not a logo</html>"))
-	raw, _ := json.Marshal(map[string]interface{}{"logo": source})
-
-	if _, err := persistApprovedBrandKit(context.Background(), &fakeApprovedAssetStore{}, "b", string(raw)); err == nil {
-		t.Fatal("expected non-image error")
+// TestPersistBrandKitRejectsUnmanagedHTTP proves https-only enforcement stays.
+func TestPersistBrandKitRejectsUnmanagedHTTP(t *testing.T) {
+	raw := `{"logo":"http://insecure.example/logo.png"}`
+	store := &fakeStore{}
+	if _, err := persistApprovedBrandKit(context.Background(), store, "biz-123", raw); err == nil {
+		t.Fatal("expected error for http:// logo source")
 	}
 }

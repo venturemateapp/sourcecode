@@ -28,20 +28,28 @@ type ProviderManager struct {
 }
 
 func NewProviderManagerFromEnv() *ProviderManager {
-	// VentureMate runs on DeepSeek exclusively.
+	// DeepSeek is the primary provider. OpenRouter remains as an automatic
+	// fallback so AI features keep working if DeepSeek is down or out of
+	// balance (the cascade tries providers in order).
 	active := "deepseek"
-	fallback := []string{"deepseek"}
+	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "deepseek,openrouter"))
 
 	return &ProviderManager{
 		activeProvider: active,
-		allowOverride:  false,
+		allowOverride:  envBool("AI_ALLOW_PROVIDER_OVERRIDE", false),
 		fallbackOrder:  fallback,
 		configs: map[string]ProviderConfig{
 			"deepseek": {
 				Name:     "deepseek",
-				APIKey:   os.Getenv("DEEPSEEK_API_KEY"),
+				APIKey:   strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
 				Endpoint: envOr("DEEPSEEK_ENDPOINT", "https://api.deepseek.com/v1/chat/completions"),
 				Model:    envOr("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+			},
+			"openrouter": {
+				Name:     "openrouter",
+				APIKey:   strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY")),
+				Endpoint: envOr("OPENROUTER_ENDPOINT", "https://openrouter.ai/api/v1/chat/completions"),
+				Model:    envOr("OPENROUTER_MODEL", "google/gemini-2.5-flash"),
 			},
 		},
 	}
@@ -99,7 +107,7 @@ func (m *ProviderManager) Status(ctx context.Context, checkHealth bool) []Provid
 	if m == nil {
 		m = NewProviderManagerFromEnv()
 	}
-	order := []string{"deepseek"}
+	order := []string{"deepseek", "openrouter"}
 	infos := make([]ProviderInfo, 0, len(order))
 	for _, name := range order {
 		cfg := m.configs[name]

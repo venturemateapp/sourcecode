@@ -38,6 +38,12 @@ func NewSyncService(repo *Repository) *SyncService {
 func (s *SyncService) SyncAccount(ctx context.Context, acct *CalendarAccount) error {
 	log.Printf("Syncing calendar for %s (provider: %s)", acct.Email, acct.Provider)
 
+	// Google (gmail) accounts authenticate via OAuth tokens, not CalDAV basic
+	// auth. Route them through the Google Calendar v3 REST API instead.
+	if strings.EqualFold(acct.Provider, "gmail") || strings.EqualFold(acct.Provider, "google-calendar") {
+		return s.syncGoogleCalendar(ctx, acct)
+	}
+
 	httpClient := &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &basicAuthTransport{

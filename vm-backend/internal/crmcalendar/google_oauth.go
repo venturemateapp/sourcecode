@@ -13,6 +13,14 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// businessIDForUser returns the user's first business id, or "" if none.
+func businessIDForUser(db *pgxpool.Pool, userID string) string {
+	var id string
+	_ = db.QueryRow(context.Background(),
+		`SELECT id FROM businesses WHERE user_id = $1 ORDER BY created_at LIMIT 1`, userID).Scan(&id)
+	return id
+}
+
 // GoogleCalendarOAuth handles OAuth for Google Calendar using the same
 // google-credentials.json that the signup flow uses (no extra env vars needed).
 type GoogleCalendarOAuth struct {
@@ -96,7 +104,9 @@ func (g *GoogleCalendarOAuth) HandleCallback(w http.ResponseWriter, r *http.Requ
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err == nil {
 		defer resp.Body.Close()
-		var info struct{ Email string `json:"email"` }
+		var info struct {
+			Email string `json:"email"`
+		}
 		json.NewDecoder(resp.Body).Decode(&info)
 		email = info.Email
 	}
@@ -108,6 +118,19 @@ func (g *GoogleCalendarOAuth) HandleCallback(w http.ResponseWriter, r *http.Requ
 	if _, err := g.tokenDB.Exec(context.Background(), query, uuid.New().String(), userID, tok.AccessToken, tok.RefreshToken, email); err != nil {
 		log.Printf("Failed to save calendar token: %v", err)
 	}
+
+	// Bridge: also upsert the calendar account so the sync scheduler picks it up.
+	// It has no CalDAV credentials — the google sync path uses the OAuth token.
+	if email != "" {
+		acctID := uuid.New().String()
+		_, _ = g.tokenDB.Exec(context.Background(), `
+			INSERT INTO crm_calendar_accounts (id, user_id, business_id, email, provider, caldav_url, caldav_username, caldav_password, sync_enabled, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, 'gmail', '', '', '', true, NOW(), NOW())
+			ON CONFLICT (user_id, email) DO UPDATE SET
+				provider = 'gmail', sync_enabled = true, updated_at = NOW()`,
+			acctID, userID, businessIDForUser(g.tokenDB, userID), email)
+	}
+
 	// Redirect to calendar page
 	http.Redirect(w, r, g.frontend+"/vm/calendar?google=connected", http.StatusTemporaryRedirect)
 }
