@@ -28,50 +28,18 @@ type ProviderManager struct {
 }
 
 func NewProviderManagerFromEnv() *ProviderManager {
-	active := normalizeProviderName(envOr("AI_PROVIDER", "deepseek"))
-	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "openrouter,gemini,openai,claude,grok,deepseek"))
-	if len(fallback) == 0 {
-		fallback = []string{"openrouter"}
-	}
+	// VentureMate runs on DeepSeek exclusively.
+	active := "deepseek"
+	fallback := []string{"deepseek"}
 
 	return &ProviderManager{
 		activeProvider: active,
-		allowOverride:  envBool("AI_ALLOW_PROVIDER_OVERRIDE", true),
+		allowOverride:  false,
 		fallbackOrder:  fallback,
 		configs: map[string]ProviderConfig{
-			"openrouter": {
-				Name:     "openrouter",
-				APIKey:   strings.TrimSpace(envOr("OPENROUTER_API_KEY", "")),
-				Endpoint: envOr("OPENROUTER_ENDPOINT", "https://openrouter.ai/api/v1/chat/completions"),
-				Model:    envOr("OPENROUTER_MODEL", "google/gemini-2.5-flash"),
-			},
-			"gemini": {
-				Name:     "gemini",
-				APIKey:   strings.TrimSpace(os.Getenv("GEMINI_API_KEY")),
-				Endpoint: envOr("GEMINI_ENDPOINT", "https://generativelanguage.googleapis.com/v1beta"),
-				Model:    envOr("GEMINI_MODEL", "gemini-2.5-flash"),
-			},
-			"openai": {
-				Name:     "openai",
-				APIKey:   strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
-				Endpoint: envOr("OPENAI_ENDPOINT", "https://api.openai.com/v1/chat/completions"),
-				Model:    envOr("OPENAI_MODEL", "gpt-4o-mini"),
-			},
-			"claude": {
-				Name:     "claude",
-				APIKey:   strings.TrimSpace(os.Getenv("CLAUDE_API_KEY")),
-				Endpoint: envOr("CLAUDE_ENDPOINT", "https://api.anthropic.com/v1/messages"),
-				Model:    envOr("CLAUDE_MODEL", "claude-sonnet-4-6"),
-			},
-			"grok": {
-				Name:     "grok",
-				APIKey:   strings.TrimSpace(os.Getenv("GROK_API_KEY")),
-				Endpoint: envOr("GROK_ENDPOINT", "https://api.x.ai/v1/chat/completions"),
-				Model:    envOr("GROK_MODEL", "grok-4.3"),
-			},
 			"deepseek": {
 				Name:     "deepseek",
-				APIKey:   strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
+				APIKey:   os.Getenv("DEEPSEEK_API_KEY"),
 				Endpoint: envOr("DEEPSEEK_ENDPOINT", "https://api.deepseek.com/v1/chat/completions"),
 				Model:    envOr("DEEPSEEK_MODEL", "deepseek-v4-flash"),
 			},
@@ -81,7 +49,7 @@ func NewProviderManagerFromEnv() *ProviderManager {
 
 func (m *ProviderManager) ActiveProvider() string {
 	if m == nil || m.activeProvider == "" {
-		return "openrouter"
+		return "deepseek"
 	}
 	return m.activeProvider
 }
@@ -131,7 +99,7 @@ func (m *ProviderManager) Status(ctx context.Context, checkHealth bool) []Provid
 	if m == nil {
 		m = NewProviderManagerFromEnv()
 	}
-	order := []string{"openrouter", "gemini", "openai", "claude", "grok", "deepseek"}
+	order := []string{"deepseek"}
 	infos := make([]ProviderInfo, 0, len(order))
 	for _, name := range order {
 		cfg := m.configs[name]
