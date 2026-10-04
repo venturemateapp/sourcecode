@@ -31,20 +31,22 @@ type Service struct {
 }
 
 type GenerateInput struct {
-	UserID       string
-	BusinessID   string
-	ProjectID    string
-	Kind         string
-	Subject      string
-	Purpose      string
-	Style        string
-	Size         string
-	BusinessName string
-	Industry     string
-	Region       string
-	BrandColors  []string
-	Pro          bool
-	Vector       bool
+	UserID         string
+	BusinessID     string
+	ProjectID      string
+	Kind           string
+	Subject        string
+	Purpose        string
+	Style          string
+	Size           string
+	BusinessName   string
+	Industry       string
+	Region         string
+	BrandColors    []string
+	Pro            bool
+	Vector         bool
+	Variants       int
+	ReferenceImage string
 }
 
 func NewService(client *recraft.Client, store *storage.Service, repo *aistudio.Repository) *Service {
@@ -110,48 +112,68 @@ func (s *Service) Generate(ctx context.Context, input GenerateInput) (*aistudio.
 	if strings.TrimSpace(input.Subject) == "" {
 		return nil, fmt.Errorf("asset subject is required")
 	}
-	var response *recraft.GenerateResponse
-	var err error
-	if input.Pro {
-		response, err = s.recraft.GeneratePro(ctx, prompt, input.Size, input.Style, input.Vector)
-	} else if input.Vector {
-		response, err = s.recraft.GenerateVector(ctx, prompt, input.Size, input.Style)
-	} else {
-		response, err = s.recraft.Generate(ctx, recraft.GenerateOptions{Prompt: prompt, Size: input.Size, Style: input.Style, Model: s.recraft.RasterModel()})
+	count := input.Variants
+	if count < 1 {
+		count = 1
 	}
-	if err != nil {
-		return nil, err
+	if count > 4 {
+		count = 4
 	}
-	remoteURL := response.GetFirstURL()
-	data, mimeType, width, height, err := s.download(ctx, remoteURL)
-	if err != nil {
-		return nil, err
+	var refs []string
+	if ref := strings.TrimSpace(input.ReferenceImage); ref != "" {
+		refs = []string{ref}
 	}
-	ext := extensionForMime(mimeType)
-	model := s.recraft.RasterModel()
-	if input.Pro && input.Vector {
-		model = s.recraft.ProVectorModel()
-	} else if input.Pro {
-		model = s.recraft.ProModel()
-	} else if input.Vector {
-		model = s.recraft.VectorModel()
-	}
-	key := storage.GenerateKey("ai-assets/"+input.UserID, kind+ext)
-	durableURL, err := s.storage.Upload(ctx, key, data, mimeType)
-	if err != nil {
-		return nil, err
-	}
-	asset, err := s.repo.CreateAsset(ctx, aistudio.Asset{
-		UserID: input.UserID, BusinessID: input.BusinessID, ProjectID: input.ProjectID,
-		Source: "opper", Kind: kind, Prompt: prompt, Model: model, Style: input.Style,
-		MimeType: mimeType, Width: width, Height: height, SizeBytes: int64(len(data)), StorageKey: key,
-		URL: durableURL, ThumbnailURL: durableURL, Metadata: `{"durable":true}`,
+	response, err := s.recraft.Generate(ctx, recraft.GenerateOptions{
+		Prompt: prompt, Size: input.Size, Style: input.Style,
+		Model: s.recraft.RasterModel(), Count: count, ReferenceImages: refs,
 	})
 	if err != nil {
-		_, _ = s.storage.Delete(ctx, key)
 		return nil, err
 	}
-	return asset, nil
+	urls := response.AllURLs()
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("image provider returned no images")
+	}
+	model := s.recraft.RasterModel()
+	var first *aistudio.Asset
+	for _, remoteURL := range urls {
+		data, mimeType, width, height, derr := s.download(ctx, remoteURL)
+		if derr != nil {
+			if first != nil {
+				break // keep whatever variants already succeeded
+			}
+			return nil, derr
+		}
+		ext := extensionForMime(mimeType)
+		key := storage.GenerateKey("ai-assets/"+input.UserID, kind+ext)
+		durableURL, uerr := s.storage.Upload(ctx, key, data, mimeType)
+		if uerr != nil {
+			if first != nil {
+				break
+			}
+			return nil, uerr
+		}
+		asset, cerr := s.repo.CreateAsset(ctx, aistudio.Asset{
+			UserID: input.UserID, BusinessID: input.BusinessID, ProjectID: input.ProjectID,
+			Source: "opper", Kind: kind, Prompt: prompt, Model: model, Style: input.Style,
+			MimeType: mimeType, Width: width, Height: height, SizeBytes: int64(len(data)), StorageKey: key,
+			URL: durableURL, ThumbnailURL: durableURL, Metadata: `{"durable":true}`,
+		})
+		if cerr != nil {
+			_, _ = s.storage.Delete(ctx, key)
+			if first != nil {
+				break
+			}
+			return nil, cerr
+		}
+		if first == nil {
+			first = asset
+		}
+	}
+	if first == nil {
+		return nil, fmt.Errorf("image provider returned no usable images")
+	}
+	return first, nil
 }
 
 func (s *Service) download(ctx context.Context, rawURL string) ([]byte, string, int, int, error) {

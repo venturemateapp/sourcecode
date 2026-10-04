@@ -184,7 +184,7 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
     return next;
   }, [project, watch]);
 
-  const generateAsset = useCallback(async (input: { kind: string; subject: string; purpose?: string; style?: string; size?: string; vector?: boolean; pro?: boolean }) => {
+  const generateAsset = useCallback(async (input: { kind: string; subject: string; purpose?: string; style?: string; size?: string; vector?: boolean; pro?: boolean; variants?: number; referenceImage?: string }) => {
     if (!project) throw new Error('No project selected.');
     setError(null);
     try {
@@ -192,7 +192,7 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
       watch(next);
       return next;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not generate the Recraft asset.');
+      setError(cause instanceof Error ? cause.message : 'Could not generate the asset.');
       throw cause;
     }
   }, [businessId, project, watch]);

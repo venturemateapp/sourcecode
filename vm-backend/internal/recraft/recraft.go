@@ -69,11 +69,12 @@ func NewClient() *Client {
 // with zero-day retention, so outputs cannot be stored server-side; images come
 // back inline as base64 (the default response_format).
 type opperImageRequest struct {
-	Model   string `json:"model"`
-	Prompt  string `json:"prompt"`
-	Size    string `json:"size,omitempty"`
-	N       int    `json:"n,omitempty"`
-	Quality string `json:"quality,omitempty"`
+	Model           string   `json:"model"`
+	Prompt          string   `json:"prompt"`
+	Size            string   `json:"size,omitempty"`
+	N               int      `json:"n,omitempty"`
+	Quality         string   `json:"quality,omitempty"`
+	ReferenceImages []string `json:"reference_images,omitempty"`
 }
 
 type GenerateResponse struct {
@@ -85,11 +86,18 @@ type GenerateResponse struct {
 }
 
 type GenerateOptions struct {
-	Prompt string
-	Size   string
-	Style  string
-	Model  string
-	Count  int
+	Prompt          string
+	Size            string
+	Style           string
+	Model           string
+	Count           int
+	ReferenceImages []string
+}
+
+// GenerateLogoVariants returns up to 4 distinct logo options in a single call so
+// a user can pick their favourite.
+func (c *Client) GenerateLogoVariants(prompt string, count int) (*GenerateResponse, error) {
+	return c.Generate(context.Background(), GenerateOptions{Prompt: prompt, Size: "1024x1024", Count: count})
 }
 
 func (c *Client) GenerateLogo(prompt string) (*GenerateResponse, error) {
@@ -158,6 +166,11 @@ func (c *Client) Generate(ctx context.Context, options GenerateOptions) (*Genera
 		N:       options.Count,
 		Quality: c.quality,
 	}
+	for _, ref := range options.ReferenceImages {
+		if ref = strings.TrimSpace(ref); ref != "" {
+			body.ReferenceImages = append(body.ReferenceImages, ref)
+		}
+	}
 	payload, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -217,6 +230,20 @@ func (r *GenerateResponse) GetFirstURL() string {
 		return r.Data[0].URL
 	}
 	return ""
+}
+
+// AllURLs returns every generated image URL (data URIs under ZDR).
+func (r *GenerateResponse) AllURLs() []string {
+	if r == nil {
+		return nil
+	}
+	urls := make([]string, 0, len(r.Data))
+	for _, d := range r.Data {
+		if d.URL != "" {
+			urls = append(urls, d.URL)
+		}
+	}
+	return urls
 }
 
 // VectorizeImage is retained for API compatibility. Opper's GPT Image pipeline

@@ -342,6 +342,7 @@ func init() {
 		"projectId": &graphql.ArgumentConfig{Type: graphql.ID}, "businessId": &graphql.ArgumentConfig{Type: graphql.ID}, "kind": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		"subject": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)}, "purpose": &graphql.ArgumentConfig{Type: graphql.String}, "style": &graphql.ArgumentConfig{Type: graphql.String},
 		"size": &graphql.ArgumentConfig{Type: graphql.String}, "vector": &graphql.ArgumentConfig{Type: graphql.Boolean}, "pro": &graphql.ArgumentConfig{Type: graphql.Boolean},
+		"variants": &graphql.ArgumentConfig{Type: graphql.Int}, "referenceImage": &graphql.ArgumentConfig{Type: graphql.String},
 	}, Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 		userID, err := requireAIStudioUser(p)
 		if err != nil {
@@ -362,7 +363,7 @@ func init() {
 		if err := enforceAIStudioJobQuota(p.Context, userID, "asset"); err != nil {
 			return nil, err
 		}
-		request := map[string]any{"kind": p.Args["kind"], "subject": p.Args["subject"], "purpose": stringArg(p.Args, "purpose"), "style": stringArg(p.Args, "style"), "size": stringArg(p.Args, "size"), "vector": boolArg(p.Args, "vector"), "pro": boolArg(p.Args, "pro")}
+		request := map[string]any{"kind": p.Args["kind"], "subject": p.Args["subject"], "purpose": stringArg(p.Args, "purpose"), "style": stringArg(p.Args, "style"), "size": stringArg(p.Args, "size"), "vector": boolArg(p.Args, "vector"), "pro": boolArg(p.Args, "pro"), "variants": intArg(p.Args, "variants"), "referenceImage": stringArg(p.Args, "referenceImage")}
 		encoded, _ := json.Marshal(request)
 		return AppContainer.AIJobRepo.Create(p.Context, aijobs.CreateInput{UserID: userID, BusinessID: businessID, ProjectID: projectID, ArtifactType: "asset", JobType: "asset", Request: string(encoded), MaxAttempts: 3})
 	}})
@@ -596,6 +597,17 @@ func stringArg(args map[string]interface{}, key string) string {
 func boolArg(args map[string]interface{}, key string) bool {
 	value, _ := args[key].(bool)
 	return value
+}
+func intArg(args map[string]interface{}, key string) int {
+	switch v := args[key].(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	}
+	return 0
 }
 func jsonRawOrObject(value string) any {
 	if strings.TrimSpace(value) == "" {

@@ -39,3 +39,18 @@ providers.
 - True SVG vector logos are no longer produced (GPT Image is raster PNG only).
 - DB usage counters still named `recraft_images_*` (internal only; no migration).
 - Deploy: set OPPER_API_KEY in production env (not committed).
+
+## Feature update (2026-06): Logo Variants + Vision Branding
+- Image client (`internal/recraft`): `GenerateOptions.ReferenceImages`, `Count` (n up
+  to 4), `AllURLs()`, `GenerateLogoVariants(prompt,count)`. Reference images sent as
+  `reference_images` (data URIs work under ZDR).
+- `internal/assetstudio`: `GenerateInput.Variants` + `ReferenceImage`; generates N
+  images in one call and persists each as its own durable asset (returns first).
+- GraphQL: `generateAiAsset` gains `variants: Int` + `referenceImage: String`;
+  new `generateLogoVariants(prompt, count)` mutation returns up to 4 logos.
+- Frontend (`StudioChrome.tsx` assets tab): brand-reference image upload (≤4MB → data
+  URI) and a "Logo options" count selector for logo/icon/vector kinds. Generated
+  variants appear in the assets grid; clicking one inserts it ("pick your favourite").
+  All "Recraft" labels replaced with "Opper"; added data-testids.
+- Verified live: 3 variants returned as data URIs; reference-image generation OK.
+  go build/vet all pass; frontend files transpile clean (sandbox lacks @types for full tsc).

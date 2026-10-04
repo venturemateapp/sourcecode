@@ -48,4 +48,42 @@ func init() {
 			return out, nil
 		},
 	})
+
+	rootMutation.AddFieldConfig("generateLogoVariants", &graphql.Field{
+		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(logoResultType))),
+		Args: graphql.FieldConfigArgument{
+			"prompt": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"count":  &graphql.ArgumentConfig{Type: graphql.Int},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			if AppContainer == nil || AppContainer.RecraftClient == nil {
+				return nil, nil
+			}
+			prompt := p.Args["prompt"].(string)
+			count := 3
+			if raw, ok := p.Args["count"]; ok {
+				switch v := raw.(type) {
+				case int:
+					count = v
+				case float64:
+					count = int(v)
+				}
+			}
+			if count < 1 {
+				count = 1
+			}
+			if count > 4 {
+				count = 4
+			}
+			genResult, err := AppContainer.RecraftClient.GenerateLogoVariants(prompt, count)
+			if err != nil {
+				return nil, err
+			}
+			out := make([]map[string]interface{}, 0, count)
+			for _, url := range genResult.AllURLs() {
+				out = append(out, map[string]interface{}{"url": url, "svgUrl": nil})
+			}
+			return out, nil
+		},
+	})
 }

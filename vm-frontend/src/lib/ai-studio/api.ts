@@ -144,8 +144,8 @@ export async function listAIAssets(projectId?: string, businessId?: string): Pro
   return data.aiAssets;
 }
 
-export async function generateAIAsset(input: { projectId?: string; businessId?: string; kind: string; subject: string; purpose?: string; style?: string; size?: string; vector?: boolean; pro?: boolean }): Promise<AIGenerationJob> {
-  const mutation = `mutation GenerateAIAsset($projectId: ID, $businessId: ID, $kind: String!, $subject: String!, $purpose: String, $style: String, $size: String, $vector: Boolean, $pro: Boolean) { generateAiAsset(projectId: $projectId, businessId: $businessId, kind: $kind, subject: $subject, purpose: $purpose, style: $style, size: $size, vector: $vector, pro: $pro) { ${JOB_FIELDS} } }`;
+export async function generateAIAsset(input: { projectId?: string; businessId?: string; kind: string; subject: string; purpose?: string; style?: string; size?: string; vector?: boolean; pro?: boolean; variants?: number; referenceImage?: string }): Promise<AIGenerationJob> {
+  const mutation = `mutation GenerateAIAsset($projectId: ID, $businessId: ID, $kind: String!, $subject: String!, $purpose: String, $style: String, $size: String, $vector: Boolean, $pro: Boolean, $variants: Int, $referenceImage: String) { generateAiAsset(projectId: $projectId, businessId: $businessId, kind: $kind, subject: $subject, purpose: $purpose, style: $style, size: $size, vector: $vector, pro: $pro, variants: $variants, referenceImage: $referenceImage) { ${JOB_FIELDS} } }`;
   const data = await graphqlRequest<{ generateAiAsset: AIGenerationJob }>(mutation, input);
   return data.generateAiAsset;
 }

@@ -4,7 +4,7 @@ import {
   DialogTitle, Divider, IconButton, LinearProgress, MenuItem, Select, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
 import {
-  Bot, Check, Clock3, Download, History, Image, Plus, RefreshCw, Rocket, Sparkles, XCircle,
+  Bot, Check, Clock3, Download, History, Image, Plus, RefreshCw, Rocket, Sparkles, Upload, XCircle,
 } from 'lucide-react';
 import type { AIAsset, AIGenerationJob, AIProject, AIProjectRevision } from '../../lib/ai-studio/types';
 
@@ -36,7 +36,7 @@ interface StudioChromeProps {
   starterPrompts: string[];
   createLabel: string;
   generationContext?: string;
-  onGenerateAsset?: (input: { kind: string; subject: string; purpose?: string; style?: string; size?: string; vector?: boolean; pro?: boolean }) => Promise<unknown>;
+  onGenerateAsset?: (input: { kind: string; subject: string; purpose?: string; style?: string; size?: string; vector?: boolean; pro?: boolean; variants?: number; referenceImage?: string }) => Promise<unknown>;
   onSelectAsset?: (asset: AIAsset) => void;
 }
 
@@ -61,6 +61,9 @@ export function StudioChrome(props: StudioChromeProps) {
   const [assetKind, setAssetKind] = useState('image');
   const [assetStyle, setAssetStyle] = useState('modern editorial');
   const [assetSize, setAssetSize] = useState('1024x1024');
+  const [assetVariants, setAssetVariants] = useState(3);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
   const isJobActive = Boolean(props.job && ['queued', 'running'].includes(props.job.status));
   const revisionCount = props.revisions.length;
   const latestApproved = useMemo(() => props.revisions.find(item => item.status === 'approved'), [props.revisions]);
@@ -93,14 +96,28 @@ export function StudioChrome(props: StudioChromeProps) {
 
   const generateAsset = async () => {
     if (!props.onGenerateAsset || !assetSubject.trim() || isJobActive) return;
+    const isLogo = ['vector', 'logo', 'icon'].includes(assetKind);
     setGeneratingAsset(true);
     try {
       await props.onGenerateAsset({
         kind: assetKind, subject: assetSubject.trim(), purpose: `Asset for ${props.title}`,
-        style: assetStyle.trim(), size: assetSize, vector: ['vector', 'logo', 'icon'].includes(assetKind),
+        style: assetStyle.trim(), size: assetSize, vector: isLogo,
+        variants: isLogo ? assetVariants : 1,
+        referenceImage: referenceImage || undefined,
       });
       setAssetSubject('');
     } finally { setGeneratingAsset(false); }
+  };
+
+  const onReferenceSelected = (file: File | null) => {
+    setReferenceError(null);
+    if (!file) { setReferenceImage(null); return; }
+    if (!file.type.startsWith('image/')) { setReferenceError('Please choose an image file.'); return; }
+    if (file.size > 4 * 1024 * 1024) { setReferenceError('Reference image must be under 4 MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => setReferenceImage(typeof reader.result === 'string' ? reader.result : null);
+    reader.onerror = () => setReferenceError('Could not read that image.');
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -210,27 +227,50 @@ export function StudioChrome(props: StudioChromeProps) {
             <Box sx={{ p: 1, overflow: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
               {props.onGenerateAsset && (
                 <Card sx={{ gridColumn: '1 / -1', p: 1.25, bgcolor: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.2)' }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 850, mb: 1 }}>Generate a durable Recraft asset</Typography>
-                  <TextField fullWidth size="small" label="What should the visual show?" value={assetSubject} onChange={event => setAssetSubject(event.target.value)} multiline minRows={2} />
+                  <Typography sx={{ fontSize: 11, fontWeight: 850, mb: 1 }}>Generate a durable Opper asset</Typography>
+                  <TextField fullWidth size="small" label="What should the visual show?" value={assetSubject} onChange={event => setAssetSubject(event.target.value)} multiline minRows={2} data-testid="asset-subject-input" />
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: .75, mt: .75 }}>
-                    <Select size="small" value={assetKind} onChange={event => setAssetKind(event.target.value)}>
+                    <Select size="small" value={assetKind} onChange={event => setAssetKind(event.target.value)} data-testid="asset-kind-select">
                       {['image', 'background', 'mockup', 'chart', 'logo', 'icon', 'vector'].map(kind => <MenuItem key={kind} value={kind}>{kind}</MenuItem>)}
                     </Select>
-                    <Select size="small" value={assetSize} onChange={event => setAssetSize(event.target.value)}>
+                    <Select size="small" value={assetSize} onChange={event => setAssetSize(event.target.value)} data-testid="asset-size-select">
                       {['1024x1024', '1365x768', '768x1365'].map(size => <MenuItem key={size} value={size}>{size}</MenuItem>)}
                     </Select>
                   </Box>
-                  <TextField fullWidth size="small" label="Visual style" value={assetStyle} onChange={event => setAssetStyle(event.target.value)} sx={{ mt: .75 }} />
-                  <Button fullWidth variant="contained" sx={{ mt: 1 }} disabled={!props.project || !assetSubject.trim() || generatingAsset || isJobActive} onClick={() => void generateAsset()} startIcon={generatingAsset ? <CircularProgress size={13} /> : <Sparkles size={14} />}>Generate with Recraft</Button>
+                  <TextField fullWidth size="small" label="Visual style" value={assetStyle} onChange={event => setAssetStyle(event.target.value)} sx={{ mt: .75 }} data-testid="asset-style-input" />
+                  {['vector', 'logo', 'icon'].includes(assetKind) && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: .75, mt: .75 }}>
+                      <Typography sx={{ fontSize: 10, fontWeight: 700, color: 'var(--vm-text-muted)' }}>Logo options</Typography>
+                      <Select size="small" value={assetVariants} onChange={event => setAssetVariants(Number(event.target.value))} sx={{ flex: 1 }} data-testid="asset-variants-select">
+                        {[1, 2, 3, 4].map(n => <MenuItem key={n} value={n}>{n} {n === 1 ? 'option' : 'options to pick from'}</MenuItem>)}
+                      </Select>
+                    </Box>
+                  )}
+                  <Box sx={{ mt: .75 }}>
+                    {referenceImage ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box component="img" src={referenceImage} alt="reference" sx={{ width: 40, height: 40, borderRadius: 1, objectFit: 'cover', border: '1px solid var(--vm-border-subtle)' }} />
+                        <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', flex: 1 }}>Brand reference attached — Opper will match its look.</Typography>
+                        <IconButton size="small" onClick={() => setReferenceImage(null)} data-testid="asset-reference-clear"><XCircle size={15} /></IconButton>
+                      </Box>
+                    ) : (
+                      <Button component="label" fullWidth size="small" variant="outlined" startIcon={<Upload size={13} />} data-testid="asset-reference-upload">
+                        Upload brand reference (optional)
+                        <input hidden type="file" accept="image/*" onChange={event => onReferenceSelected(event.target.files?.[0] || null)} />
+                      </Button>
+                    )}
+                    {referenceError && <Typography sx={{ fontSize: 9, color: '#f87171', mt: .35 }}>{referenceError}</Typography>}
+                  </Box>
+                  <Button fullWidth variant="contained" sx={{ mt: 1 }} disabled={!props.project || !assetSubject.trim() || generatingAsset || isJobActive} onClick={() => void generateAsset()} startIcon={generatingAsset ? <CircularProgress size={13} /> : <Sparkles size={14} />} data-testid="asset-generate-button">Generate with Opper</Button>
                 </Card>
               )}
               {props.assets.map(asset => (
-                <Card key={asset.id} onClick={() => props.onSelectAsset?.(asset)} sx={{ overflow: 'hidden', bgcolor: 'rgba(255,255,255,.025)', cursor: props.onSelectAsset ? 'pointer' : 'default' }}>
+                <Card key={asset.id} onClick={() => props.onSelectAsset?.(asset)} sx={{ overflow: 'hidden', bgcolor: 'rgba(255,255,255,.025)', cursor: props.onSelectAsset ? 'pointer' : 'default' }} data-testid={`asset-card-${asset.id}`}>
                   <Box component="img" src={asset.thumbnailUrl || asset.url} alt={asset.prompt} sx={{ width: '100%', aspectRatio: '1.3', objectFit: 'cover', display: 'block' }} />
                   <Box sx={{ p: .75 }}><Typography sx={{ fontSize: 9, fontWeight: 700 }} noWrap>{asset.kind}</Typography><Typography sx={{ fontSize: 8, color: 'var(--vm-text-muted)' }} noWrap>{asset.model}</Typography>{props.onSelectAsset && <Typography sx={{ mt: .35, fontSize: 8, color: '#a78bfa' }}>Click to insert</Typography>}</Box>
                 </Card>
               ))}
-              {!props.assets.length && <Typography sx={{ gridColumn: '1 / -1', p: 2, fontSize: 11, color: 'var(--vm-text-muted)' }}>Generated Recraft assets will appear here.</Typography>}
+              {!props.assets.length && <Typography sx={{ gridColumn: '1 / -1', p: 2, fontSize: 11, color: 'var(--vm-text-muted)' }}>Generated Opper assets will appear here.</Typography>}
             </Box>
           )}
         </Box>
