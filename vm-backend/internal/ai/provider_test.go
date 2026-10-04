@@ -20,7 +20,7 @@ func TestResponseTokenLimitDefaultsAndBounds(t *testing.T) {
 		t.Fatalf("minimum clamp = %d, want 128", got)
 	}
 	max := maxContextTokens - systemPromptTokens - 256
-	if got := responseTokenLimit(withResponseTokenLimit(context.Background(), 99999)); got != max {
+	if got := responseTokenLimit(withResponseTokenLimit(context.Background(), max+50000)); got != max {
 		t.Fatalf("maximum clamp = %d, want %d", got, max)
 	}
 }
