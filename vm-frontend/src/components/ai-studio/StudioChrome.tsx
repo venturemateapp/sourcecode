@@ -166,7 +166,7 @@ export function StudioChrome(props: StudioChromeProps) {
           {rightTab === 'ai' && (
             <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25, minHeight: 0, flex: 1 }}>
               <Card sx={{ p: 1.25, bgcolor: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.22)' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: .75 }}><Sparkles size={14} /> DeepSeek AI workspace</Typography>
+                <Typography sx={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: .75 }}><Sparkles size={14} /> Opper AI workspace</Typography>
                 <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: .5 }}>AI creates a reviewable revision. Nothing replaces your approved work until you approve it.</Typography>
               </Card>
               {props.job && (
