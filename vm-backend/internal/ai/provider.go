@@ -26,7 +26,7 @@ const (
 	retryBaseDelay = 500 * time.Millisecond
 	retryMaxDelay  = 5 * time.Second
 
-	maxContextTokens       = 32000
+	maxContextTokens       = 128000
 	maxResponseTokens      = 2048
 	creativeResponseTokens = 4096
 	systemPromptTokens     = 1000
@@ -154,6 +154,16 @@ func withResponseTokenLimit(ctx context.Context, limit int) context.Context {
 	}
 	return context.WithValue(ctx, responseTokenLimitContextKey{}, limit)
 }
+
+// WithResponseTokenLimit lets other packages (deck/plan/website generators) raise
+// the model output budget for large structured documents that would otherwise be
+// truncated at the conservative default.
+func WithResponseTokenLimit(ctx context.Context, limit int) context.Context {
+	return withResponseTokenLimit(ctx, limit)
+}
+
+// DeckResponseTokens is the output budget for a full, richly designed deck.
+const DeckResponseTokens = 24000
 
 func responseTokenLimit(ctx context.Context) int {
 	if ctx != nil {
@@ -357,6 +367,7 @@ type openAICompatibleProvider struct {
 	endpoint        string
 	model           string
 	omitTemperature bool
+	reasoningEffort string
 	client          *http.Client
 }
 
@@ -404,11 +415,12 @@ type openAIMessage struct {
 }
 
 type openAIRequest struct {
-	Model       string          `json:"model"`
-	Messages    []openAIMessage `json:"messages"`
-	Tools       []openAITool    `json:"tools,omitempty"`
-	Temperature float64         `json:"temperature,omitempty"`
-	MaxTokens   int             `json:"max_tokens,omitempty"`
+	Model           string          `json:"model"`
+	Messages        []openAIMessage `json:"messages"`
+	Tools           []openAITool    `json:"tools,omitempty"`
+	Temperature     float64         `json:"temperature,omitempty"`
+	MaxTokens       int             `json:"max_tokens,omitempty"`
+	ReasoningEffort string          `json:"reasoning_effort,omitempty"`
 }
 
 type openAIUsage struct {
@@ -456,6 +468,9 @@ func (p *openAICompatibleProvider) Chat(ctx context.Context, systemPrompt string
 	payload := openAIRequest{Model: p.model, Messages: apiMessages, Tools: apiTools, MaxTokens: outputTokens}
 	if !p.omitTemperature {
 		payload.Temperature = 0.2
+	}
+	if p.reasoningEffort != "" {
+		payload.ReasoningEffort = p.reasoningEffort
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -855,6 +870,9 @@ func NewProviderFromConfig(cfg ProviderConfig) (Provider, error) {
 		provider := newOpenAICompatibleProvider("opper", cfg.APIKey, cfg.Endpoint, cfg.Model)
 		// GPT-5 reasoning models only accept the default temperature, so omit it.
 		provider.omitTemperature = true
+		// Keep reasoning light so the token budget goes to the large JSON output
+		// instead of hidden reasoning tokens, and to cut latency.
+		provider.reasoningEffort = "low"
 		return provider, nil
 	case "openrouter", "local":
 		if cfg.Endpoint == "" {
