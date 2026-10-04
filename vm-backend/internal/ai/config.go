@@ -28,28 +28,22 @@ type ProviderManager struct {
 }
 
 func NewProviderManagerFromEnv() *ProviderManager {
-	// DeepSeek is the primary provider. OpenRouter remains as an automatic
-	// fallback so AI features keep working if DeepSeek is down or out of
-	// balance (the cascade tries providers in order).
-	active := "deepseek"
-	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "deepseek,openrouter"))
+	// Opper is the single gateway for all AI: it fronts the base chat model
+	// (ChatGPT via openai/gpt-5) with one OPPER_API_KEY, replacing the former
+	// DeepSeek + OpenRouter setup.
+	active := envOr("AI_PROVIDER", "opper")
+	fallback := splitCSV(envOr("AI_FALLBACK_PROVIDERS", "opper"))
 
 	return &ProviderManager{
 		activeProvider: active,
 		allowOverride:  envBool("AI_ALLOW_PROVIDER_OVERRIDE", false),
 		fallbackOrder:  fallback,
 		configs: map[string]ProviderConfig{
-			"deepseek": {
-				Name:     "deepseek",
-				APIKey:   strings.TrimSpace(os.Getenv("DEEPSEEK_API_KEY")),
-				Endpoint: envOr("DEEPSEEK_ENDPOINT", "https://api.deepseek.com/v1/chat/completions"),
-				Model:    envOr("DEEPSEEK_MODEL", "deepseek-v4-flash"),
-			},
-			"openrouter": {
-				Name:     "openrouter",
-				APIKey:   strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY")),
-				Endpoint: envOr("OPENROUTER_ENDPOINT", "https://openrouter.ai/api/v1/chat/completions"),
-				Model:    envOr("OPENROUTER_MODEL", "google/gemini-2.5-flash"),
+			"opper": {
+				Name:     "opper",
+				APIKey:   strings.TrimSpace(os.Getenv("OPPER_API_KEY")),
+				Endpoint: envOr("OPPER_ENDPOINT", "https://api.opper.ai/v3/compat/chat/completions"),
+				Model:    envOr("OPPER_MODEL", "openai/gpt-5"),
 			},
 		},
 	}
@@ -57,7 +51,7 @@ func NewProviderManagerFromEnv() *ProviderManager {
 
 func (m *ProviderManager) ActiveProvider() string {
 	if m == nil || m.activeProvider == "" {
-		return "deepseek"
+		return "opper"
 	}
 	return m.activeProvider
 }
@@ -98,7 +92,7 @@ func (m *ProviderManager) Resolve(requested string) (Provider, error) {
 		if len(configErrors) > 0 {
 			return nil, fmt.Errorf("no usable AI provider: %s", strings.Join(configErrors, "; "))
 		}
-		return nil, fmt.Errorf("no AI provider is configured; ensure OPENROUTER_API_KEY is set")
+		return nil, fmt.Errorf("no AI provider is configured; ensure OPPER_API_KEY is set")
 	}
 	return newCascadeProvider(providers), nil
 }
@@ -107,7 +101,7 @@ func (m *ProviderManager) Status(ctx context.Context, checkHealth bool) []Provid
 	if m == nil {
 		m = NewProviderManagerFromEnv()
 	}
-	order := []string{"deepseek", "openrouter"}
+	order := []string{"opper"}
 	infos := make([]ProviderInfo, 0, len(order))
 	for _, name := range order {
 		cfg := m.configs[name]

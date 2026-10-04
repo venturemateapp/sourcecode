@@ -284,12 +284,12 @@ func (p *Processor) generateAsset(ctx context.Context, job *aijobs.Job) (any, st
 		return nil, "", "", "", 0, 0, err
 	}
 	request.UserID, request.ProjectID, request.BusinessID = job.UserID, job.ProjectID, job.BusinessID
-	_ = p.Jobs.UpdateProgress(ctx, job.ID, p.WorkerID, "generating_asset", "Generating visual with Recraft", 30, "Calling Recraft")
+	_ = p.Jobs.UpdateProgress(ctx, job.ID, p.WorkerID, "generating_asset", "Generating visual with Opper", 30, "Calling Opper")
 	asset, err := p.Assets.Generate(ctx, request)
 	if err != nil {
 		return nil, "", "", "", 0, 0, err
 	}
-	return map[string]any{"asset": asset}, "completed", "recraft", asset.Model, 0, 0, nil
+	return map[string]any{"asset": asset}, "completed", "opper", asset.Model, 0, 0, nil
 }
 
 type buildRequest struct {

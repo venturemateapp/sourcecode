@@ -4,11 +4,11 @@ interface AIProviderContextValue {
   providerName: string;
 }
 
-const AIProviderContext = createContext<AIProviderContextValue>({ providerName: 'deepseek' });
+const AIProviderContext = createContext<AIProviderContextValue>({ providerName: 'opper' });
 
 export function AIProviderProvider({ children }: { children: ReactNode }) {
   return (
-    <AIProviderContext.Provider value={{ providerName: 'deepseek' }}>
+    <AIProviderContext.Provider value={{ providerName: 'opper' }}>
       {children}
     </AIProviderContext.Provider>
   );

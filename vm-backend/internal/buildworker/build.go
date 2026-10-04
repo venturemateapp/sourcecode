@@ -341,7 +341,7 @@ func envDuration(key string, fallback time.Duration) time.Duration {
 }
 
 func filteredEnvironment(values []string) []string {
-	blockedPrefixes := []string{"DEEPSEEK_", "OPENAI_", "CLAUDE_", "GEMINI_", "GROK_", "RECRAFT_", "AWS_", "S3_", "DATABASE_URL=", "DB_PASSWORD=", "JWT_SECRET="}
+	blockedPrefixes := []string{"OPPER_", "DEEPSEEK_", "OPENAI_", "CLAUDE_", "GEMINI_", "GROK_", "RECRAFT_", "AWS_", "S3_", "DATABASE_URL=", "DB_PASSWORD=", "JWT_SECRET="}
 	output := make([]string, 0, len(values))
 	for _, value := range values {
 		blocked := false

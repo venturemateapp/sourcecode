@@ -3,6 +3,7 @@ package assetstudio
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -79,7 +80,7 @@ func BuildPrompt(input GenerateInput) string {
 
 func (s *Service) Generate(ctx context.Context, input GenerateInput) (*aistudio.Asset, error) {
 	if s == nil || s.recraft == nil || !s.recraft.Available() {
-		return nil, fmt.Errorf("Recraft is not configured")
+		return nil, fmt.Errorf("image generation is not configured")
 	}
 	if s.storage == nil || s.repo == nil {
 		return nil, fmt.Errorf("asset storage is unavailable")
@@ -142,7 +143,7 @@ func (s *Service) Generate(ctx context.Context, input GenerateInput) (*aistudio.
 	}
 	asset, err := s.repo.CreateAsset(ctx, aistudio.Asset{
 		UserID: input.UserID, BusinessID: input.BusinessID, ProjectID: input.ProjectID,
-		Source: "recraft", Kind: kind, Prompt: prompt, Model: model, Style: input.Style,
+		Source: "opper", Kind: kind, Prompt: prompt, Model: model, Style: input.Style,
 		MimeType: mimeType, Width: width, Height: height, SizeBytes: int64(len(data)), StorageKey: key,
 		URL: durableURL, ThumbnailURL: durableURL, Metadata: `{"durable":true}`,
 	})
@@ -154,9 +155,13 @@ func (s *Service) Generate(ctx context.Context, input GenerateInput) (*aistudio.
 }
 
 func (s *Service) download(ctx context.Context, rawURL string) ([]byte, string, int, int, error) {
-	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	rawURL = strings.TrimSpace(rawURL)
+	if strings.HasPrefix(rawURL, "data:") {
+		return decodeDataURL(rawURL)
+	}
+	parsed, err := url.Parse(rawURL)
 	if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
-		return nil, "", 0, 0, fmt.Errorf("Recraft returned an invalid asset URL")
+		return nil, "", 0, 0, fmt.Errorf("image provider returned an invalid asset URL")
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
 	if err != nil {
@@ -183,6 +188,41 @@ func (s *Service) download(ctx context.Context, rawURL string) ([]byte, string, 
 	}
 	trimmed := bytes.TrimSpace(data)
 	if bytes.HasPrefix(trimmed, []byte("<svg")) || bytes.HasPrefix(trimmed, []byte("<?xml")) && bytes.Contains(trimmed, []byte("<svg")) {
+		mimeType = "image/svg+xml"
+	}
+	if !strings.HasPrefix(mimeType, "image/") {
+		return nil, "", 0, 0, fmt.Errorf("generated response is not an image (%s)", mimeType)
+	}
+	width, height := 0, 0
+	if mimeType != "image/svg+xml" {
+		if cfg, _, decodeErr := image.DecodeConfig(bytes.NewReader(data)); decodeErr == nil {
+			width, height = cfg.Width, cfg.Height
+		}
+	}
+	return data, mimeType, width, height, nil
+}
+
+func decodeDataURL(source string) ([]byte, string, int, int, error) {
+	header, payload, ok := strings.Cut(source, ",")
+	if !ok || !strings.HasSuffix(header, ";base64") {
+		return nil, "", 0, 0, fmt.Errorf("unsupported image data URL")
+	}
+	mimeType := strings.TrimPrefix(strings.TrimSuffix(header, ";base64"), "data:")
+	data, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		return nil, "", 0, 0, fmt.Errorf("decode image data URL: %w", err)
+	}
+	if len(data) == 0 {
+		return nil, "", 0, 0, fmt.Errorf("generated image is empty")
+	}
+	if len(data) > maxGeneratedAssetBytes {
+		return nil, "", 0, 0, fmt.Errorf("generated asset is too large")
+	}
+	if strings.TrimSpace(mimeType) == "" || mimeType == "application/octet-stream" {
+		mimeType = http.DetectContentType(data)
+	}
+	trimmed := bytes.TrimSpace(data)
+	if bytes.HasPrefix(trimmed, []byte("<svg")) || (bytes.HasPrefix(trimmed, []byte("<?xml")) && bytes.Contains(trimmed, []byte("<svg"))) {
 		mimeType = "image/svg+xml"
 	}
 	if !strings.HasPrefix(mimeType, "image/") {

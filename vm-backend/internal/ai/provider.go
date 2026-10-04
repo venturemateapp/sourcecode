@@ -352,11 +352,12 @@ func (p *ollamaProvider) Chat(ctx context.Context, systemPrompt string, messages
 // OpenAI-compatible provider (OpenAI and Grok) -------------------------------
 
 type openAICompatibleProvider struct {
-	name     string
-	apiKey   string
-	endpoint string
-	model    string
-	client   *http.Client
+	name            string
+	apiKey          string
+	endpoint        string
+	model           string
+	omitTemperature bool
+	client          *http.Client
 }
 
 func newOpenAICompatibleProvider(name, apiKey, endpoint, model string) *openAICompatibleProvider {
@@ -452,7 +453,10 @@ func (p *openAICompatibleProvider) Chat(ctx context.Context, systemPrompt string
 	for _, t := range tools {
 		apiTools = append(apiTools, openAITool{Type: "function", Function: openAIFunction{Name: t.Name, Description: t.Description, Parameters: t.Parameters}})
 	}
-	payload := openAIRequest{Model: p.model, Messages: apiMessages, Tools: apiTools, Temperature: 0.2, MaxTokens: outputTokens}
+	payload := openAIRequest{Model: p.model, Messages: apiMessages, Tools: apiTools, MaxTokens: outputTokens}
+	if !p.omitTemperature {
+		payload.Temperature = 0.2
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -841,6 +845,17 @@ func (p *cascadeProvider) Chat(ctx context.Context, systemPrompt string, message
 func NewProviderFromConfig(cfg ProviderConfig) (Provider, error) {
 	name := strings.ToLower(strings.TrimSpace(cfg.Name))
 	switch name {
+	case "opper":
+		if cfg.Endpoint == "" {
+			cfg.Endpoint = "https://api.opper.ai/v3/compat/chat/completions"
+		}
+		if cfg.Model == "" {
+			cfg.Model = "openai/gpt-5"
+		}
+		provider := newOpenAICompatibleProvider("opper", cfg.APIKey, cfg.Endpoint, cfg.Model)
+		// GPT-5 reasoning models only accept the default temperature, so omit it.
+		provider.omitTemperature = true
+		return provider, nil
 	case "openrouter", "local":
 		if cfg.Endpoint == "" {
 			cfg.Endpoint = "https://openrouter.ai/api/v1/chat/completions"
