@@ -40,7 +40,27 @@ providers.
 - DB usage counters still named `recraft_images_*` (internal only; no migration).
 - Deploy: set OPPER_API_KEY in production env (not committed).
 
-## Feature update (2026-06): Logo Variants + Vision Branding
+## Pitch Deck pro-level upgrade (2026-06)
+- Root cause fixed: deck/plan generators ran at the default 2048 output-token cap
+  (only agent.go raised it), truncating multi-slide decks into invalid JSON.
+- `internal/ai/provider.go`: exported `WithResponseTokenLimit`; `DeckResponseTokens=24000`;
+  raised `maxContextTokens` 32000→128000; added `reasoning_effort` on the OpenAI-compatible
+  request and set Opper to `low` (keeps token budget for JSON + cuts latency).
+- `internal/deckstudio/generator.go`: raised output budget to DeckResponseTokens; rewrote
+  the system prompt into a full visual-design-system spec (layered backgrounds, accent
+  shapes, stat blocks, typographic hierarchy, 11-13 slide structure); added `mergeTheme`
+  to backfill any theme fields the model omits.
+- Verified LIVE against gpt-5 via the real code path: complete 12-slide deck, ~104-108
+  positioned elements, 0 empty slides, cohesive theme. Go unit tests added (mergeTheme) and
+  passing; full backend build/vet/test green.
+- Frontend `StudioChrome.tsx`: fixed stale "DeepSeek AI workspace" → "Opper AI workspace";
+  made the shared studio shell mobile-responsive (editor min 66vh, rails capped/stacked on
+  xs, right panel min height). Transpiles clean.
+- NOT browser-verified: this Go+Postgres+async-worker+auth app can't run in the sandbox
+  (no DB/Docker). Run full browser QA after deploy or with a Postgres-backed env.
+- Backlog: apply the same token-limit + design-prompt upgrade to planstudio (business plan),
+  website builder, and brand/logo; per-studio mobile polish.
+
 - Image client (`internal/recraft`): `GenerateOptions.ReferenceImages`, `Count` (n up
   to 4), `AllURLs()`, `GenerateLogoVariants(prompt,count)`. Reference images sent as
   `reference_images` (data URIs work under ZDR).
