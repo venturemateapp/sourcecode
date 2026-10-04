@@ -153,10 +153,10 @@ export function StudioChrome(props: StudioChromeProps) {
       {props.job && isJobActive && <LinearProgress variant="determinate" value={Math.max(2, props.job.progress || 2)} />}
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', lg: `${props.leftRail ? '230px ' : ''}minmax(0,1fr) 330px` } }}>
-        {props.leftRail && <Box sx={{ borderRight: '1px solid var(--vm-border-subtle)', minHeight: 0, overflow: 'auto', bgcolor: '#0b0f17' }}>{props.leftRail}</Box>}
-        <Box sx={{ minWidth: 0, minHeight: 0, overflow: 'auto', bgcolor: '#080c13' }}>{props.loading ? <Box sx={{ height: '100%', display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : props.editor}</Box>
+        {props.leftRail && <Box sx={{ borderRight: { lg: '1px solid var(--vm-border-subtle)' }, borderBottom: { xs: '1px solid var(--vm-border-subtle)', lg: 'none' }, minHeight: 0, maxHeight: { xs: 168, lg: 'none' }, overflow: 'auto', bgcolor: '#0b0f17' }}>{props.leftRail}</Box>}
+        <Box sx={{ minWidth: 0, minHeight: { xs: '66vh', lg: 0 }, overflow: 'auto', bgcolor: '#080c13' }}>{props.loading ? <Box sx={{ height: '100%', display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : props.editor}</Box>
 
-        <Box sx={{ borderLeft: '1px solid var(--vm-border-subtle)', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#0b0f17' }}>
+        <Box sx={{ borderLeft: { lg: '1px solid var(--vm-border-subtle)' }, borderTop: { xs: '1px solid var(--vm-border-subtle)', lg: 'none' }, minHeight: { xs: 460, lg: 0 }, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#0b0f17' }}>
           <Tabs value={rightTab} onChange={(_, value) => setRightTab(value)} variant="fullWidth" sx={{ minHeight: 42, borderBottom: '1px solid var(--vm-border-subtle)', '& .MuiTab-root': { minHeight: 42, fontSize: 10 } }}>
             <Tab value="ai" icon={<Bot size={14} />} iconPosition="start" label="AI" />
             <Tab value="history" icon={<History size={14} />} iconPosition="start" label={`History ${revisionCount}`} />
