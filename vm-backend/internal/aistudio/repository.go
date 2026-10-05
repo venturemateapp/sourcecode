@@ -66,9 +66,9 @@ func scanProject(row scanner) (*Project, error) {
 	return &p, nil
 }
 
-const revisionSelect = `id::text, project_id::text, COALESCE(parent_revision_id::text,''), created_by_user_id::text,
-	source, prompt, summary, status, schema_version, document::text, manifest::text, diagnostics::text,
-	token_usage::text, content_hash, created_at, updated_at`
+const revisionSelect = `r.id::text, r.project_id::text, COALESCE(r.parent_revision_id::text,''), r.created_by_user_id::text,
+	r.source, r.prompt, r.summary, r.status, r.schema_version, r.document::text, r.manifest::text, r.diagnostics::text,
+	r.token_usage::text, r.content_hash, r.created_at, r.updated_at`
 
 func scanRevision(row scanner) (*Revision, error) {
 	var rev Revision
@@ -80,8 +80,8 @@ func scanRevision(row scanner) (*Revision, error) {
 	return &rev, nil
 }
 
-const fileSelect = `id::text, project_id::text, path, language, is_binary, COALESCE(asset_id::text,''),
-	current_content, content_hash, size_bytes, created_at, updated_at`
+const fileSelect = `f.id::text, f.project_id::text, f.path, f.language, f.is_binary, COALESCE(f.asset_id::text,''),
+	f.current_content, f.content_hash, f.size_bytes, f.created_at, f.updated_at`
 
 func scanProjectFile(row scanner) (*ProjectFile, error) {
 	var f ProjectFile
