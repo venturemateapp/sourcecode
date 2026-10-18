@@ -165,6 +165,9 @@ func WithResponseTokenLimit(ctx context.Context, limit int) context.Context {
 // DeckResponseTokens is the output budget for a full, richly designed deck.
 const DeckResponseTokens = 24000
 
+// PlanResponseTokens is the output budget for a complete editable business plan.
+const PlanResponseTokens = 30000
+
 func responseTokenLimit(ctx context.Context) int {
 	if ctx != nil {
 		if limit, ok := ctx.Value(responseTokenLimitContextKey{}).(int); ok && limit > 0 {

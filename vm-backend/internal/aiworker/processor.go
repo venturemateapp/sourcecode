@@ -256,7 +256,8 @@ func (p *Processor) generate(ctx context.Context, job *aijobs.Job) (any, string,
 			}
 		}
 		_ = p.Jobs.UpdateProgress(ctx, job.ID, p.WorkerID, "generating", "Writing long-form plan sections", 35, "Calling AI provider")
-		document, providerResponse, err := planstudio.Generate(ctx, provider, business, request.Prompt, current, projection)
+		planCtx := ai.WithResponseTokenLimit(ctx, ai.PlanResponseTokens)
+		document, providerResponse, err := planstudio.Generate(planCtx, provider, business, request.Prompt, current, projection)
 		if err != nil {
 			return nil, "", "", "", 0, 0, err
 		}
