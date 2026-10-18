@@ -180,7 +180,7 @@ func (r *Repository) ListProjects(ctx context.Context, userID, businessID, proje
 		WHERE user_id=$1 AND archived_at IS NULL
 		AND ($2='' OR business_id::text=$2)
 		AND ($3='' OR project_type=$3)
-		ORDER BY updated_at DESC LIMIT $4 OFFSET $5`, userID, businessID, projectType, limit, offset)
+		ORDER BY updated_at DESC LIMIT $4::int OFFSET $5::int`, userID, businessID, projectType, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +250,7 @@ func (r *Repository) ListRevisions(ctx context.Context, userID, projectID string
 	rows, err := r.db.Query(ctx, `SELECT `+revisionSelect+` FROM ai_project_revisions r
 		JOIN ai_projects p ON p.id=r.project_id
 		WHERE r.project_id=$1 AND p.user_id=$2 AND p.archived_at IS NULL
-		ORDER BY r.created_at DESC LIMIT $3 OFFSET $4`, projectID, userID, limit, offset)
+		ORDER BY r.created_at DESC LIMIT $3::int OFFSET $4::int`, projectID, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
