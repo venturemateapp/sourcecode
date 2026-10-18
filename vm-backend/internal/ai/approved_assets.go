@@ -121,7 +121,7 @@ func decodeImageDataURL(source string) ([]byte, string, error) {
 	return validateApprovedImage(data, contentType)
 }
 
-func validateApprovedImage(data []byte, declaredType string) ([]byte, string, error) {
+func validateApprovedImage(data []byte, _ string) ([]byte, string, error) {
 	detected := http.DetectContentType(data)
 	if bytes.Contains(bytes.ToLower(data[:min(len(data), 512)]), []byte("<svg")) {
 		detected = "image/svg+xml"
@@ -129,11 +129,7 @@ func validateApprovedImage(data []byte, declaredType string) ([]byte, string, er
 	if !strings.HasPrefix(detected, "image/") {
 		return nil, "", fmt.Errorf("approved asset is not an image")
 	}
-	contentType := detected
-	if strings.HasPrefix(declaredType, "image/") && detected != "image/svg+xml" {
-		contentType = declaredType
-	}
-	return data, contentType, nil
+	return data, detected, nil
 }
 
 func imageExtension(contentType string) string {
