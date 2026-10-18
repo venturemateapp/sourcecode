@@ -855,6 +855,26 @@ Make it unforgettable — a logo people recognize instantly from the shape alone
 		brand["logoIcon"] = generatedLogoDataURL(mark, shape, style, "#10b981", "#059669", false)
 		brand["logoWhite"] = generatedLogoDataURL(mark, shape, style, "#ffffff", "#d1fae5", true)
 	}
+	// Models often follow the schema literally and return placeholder strings
+	// such as "generated from logo SVG" for logoIcon/logoWhite. When logo
+	// options are present, always derive those fields from the selected SVG so
+	// approval receives valid data URLs instead of placeholders.
+	if len(logos) > 0 {
+		selected := selLogo
+		if selected < 0 || selected >= len(logos) {
+			selected = 0
+		}
+		if logoObj, ok := logos[selected].(map[string]interface{}); ok {
+			if svg, _ := logoObj["svg"].(string); extractSVG(svg) != "" {
+				cleanSVG := extractSVG(svg)
+				if source, _ := brand["logo"].(string); !strings.HasPrefix(source, "data:image/") && !strings.HasPrefix(source, "https://") {
+					brand["logo"] = svgToDataURL(cleanSVG)
+				}
+				brand["logoIcon"] = svgToDataURL(cleanSVG)
+				brand["logoWhite"] = svgToDataURL(recolorSVGForWhite(cleanSVG))
+			}
+		}
+	}
 
 	// Process selected color palette
 	if selColor >= 0 && selColor < len(colors) {
