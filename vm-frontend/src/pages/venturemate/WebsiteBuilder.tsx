@@ -6,6 +6,7 @@ import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelec
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
 import { PageHeader } from '../../components/shared';
+import { normalizeImageSource } from '../../lib/imageSource';
 import type { ViewType } from '../../types/venturemate';
 
 interface WebsiteRecord {
@@ -281,7 +282,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false, act
         borderBottom: '1px solid rgba(255,255,255,.06)',
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {logo ? <Box component="img" src={logo} sx={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 0.5 }} /> : <Box sx={{ width: 28, height: 28, borderRadius: 0.5, bgcolor: primary }} />}
+          {logo ? <Box component="img" src={normalizeImageSource(logo)} sx={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 0.5 }} /> : <Box sx={{ width: 28, height: 28, borderRadius: 0.5, bgcolor: primary }} />}
           <Typography sx={{ color: 'white', fontWeight: 800, fontSize: 14, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{businessName}</Typography>
         </Box>
         <Box sx={{ flex: 1 }} />
@@ -319,7 +320,7 @@ function SitePreview({ draft, businessName, tagline, logo, proposed = false, act
                   '&::before': { content: '""', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,.03), transparent 50%)', pointerEvents: 'none' },
                 }}>
                   <Box sx={{ maxWidth: 720, position: 'relative', zIndex: 1, textAlign: heroImage ? 'left' : 'center', mx: heroImage ? 0 : 'auto' }}>
-                    {logo && <Box component="img" src={logo} alt="" sx={{ width: { xs: 56, sm: 72 }, height: { xs: 56, sm: 72 }, objectFit: 'contain', mb: { xs: 1.5, sm: 2.5 }, mx: 'auto', display: 'block' }} />}
+                    {logo && <Box component="img" src={normalizeImageSource(logo)} alt="" sx={{ width: { xs: 56, sm: 72 }, height: { xs: 56, sm: 72 }, objectFit: 'contain', mb: { xs: 1.5, sm: 2.5 }, mx: 'auto', display: 'block' }} />}
                     <Typography sx={{ color: 'white', fontSize: { xs: 28, sm: 42, md: 52 }, fontWeight: 950, lineHeight: 1.05, letterSpacing: '-.02em', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{heading || businessName}</Typography>
                     {body && <Typography sx={{ color: 'rgba(255,255,255,.7)', fontSize: { xs: 14, sm: 17 }, lineHeight: 1.7, mt: { xs: 1.5, sm: 2 }, maxWidth: 580, mx: heroImage ? 0 : 'auto', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{body}</Typography>}
                     <Box sx={{ mt: { xs: 2, sm: 3 }, display: 'flex', gap: 1.5, justifyContent: heroImage ? 'flex-start' : 'center', flexWrap: 'wrap' }}>

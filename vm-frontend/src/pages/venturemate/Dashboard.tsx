@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import type { ViewType } from '../../types/venturemate';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
+import { normalizeImageSource } from '../../lib/imageSource';
 
 interface DashboardProps {
   onViewChange: (view: ViewType) => void;
@@ -290,7 +291,7 @@ const statsCards = b ? [
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 3 }}>
               {activeBusiness.brandKit?.logo && (activeBusiness.brandKit.logo.startsWith('data:') || activeBusiness.brandKit.logo.startsWith('http')) ? (
-                <Box component="img" src={activeBusiness.brandKit.logo} alt="Logo" sx={{ width: 64, height: 64, borderRadius: 3, objectFit: 'contain' }} />
+                <Box component="img" src={normalizeImageSource(activeBusiness.brandKit.logo)} alt="Logo" sx={{ width: 64, height: 64, borderRadius: 3, objectFit: 'contain' }} />
               ) : (
                 <Box
                   sx={{
