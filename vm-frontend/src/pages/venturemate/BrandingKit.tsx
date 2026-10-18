@@ -31,6 +31,21 @@ async function downloadSvg(svg: string, filename: string) {
   saveBlob(blob, filename);
 }
 
+function logoOptionSource(option?: { svg?: string; image?: string; url?: string }): string {
+  if (!option) return '';
+  if (option.image || option.url) return normalizeImageSource(option.image || option.url || '');
+  const svg = option.svg || '';
+  return svg ? `data:image/svg+xml;base64,${btoa(svg)}` : '';
+}
+
+function logoDownloadExtension(source: string): string {
+  const normalized = normalizeImageSource(source).toLowerCase();
+  if (normalized.includes('image/png')) return 'png';
+  if (normalized.includes('image/jpeg') || normalized.includes('image/jpg')) return 'jpg';
+  if (normalized.includes('image/webp')) return 'webp';
+  return 'svg';
+}
+
 function isLightColor(hex: string): boolean {
   const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
   return (0.299 * r + 0.587 * g + 0.114 * b) > 160;
@@ -124,8 +139,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
   const { primaryColor, secondaryColor, accentColor, darkColor, fontHeading, fontBody } = brand;
   const logoOptions = brand.logos || [];
   const optionSource = (index: number) => {
-    const svg = logoOptions[index]?.svg || '';
-    return svg ? `data:image/svg+xml;base64,${btoa(svg)}` : '';
+    return logoOptionSource(logoOptions[index]);
   };
   const displayLogo = brand.logo || optionSource(brand.selectedLogo || 0);
   const gradient = `linear-gradient(135deg, ${darkColor}, ${primaryColor})`;
@@ -133,7 +147,8 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
     if (downloadingLogo) return;
     setDownloadingLogo(true);
     try {
-      await downloadSvg(displayLogo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.svg`);
+      const ext = logoDownloadExtension(displayLogo);
+      await downloadSvg(displayLogo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.${ext}`);
     } catch (error) {
       console.error('Logo download failed', error);
       window.alert(error instanceof Error ? error.message : 'Logo download failed.');
@@ -500,7 +515,7 @@ svg{max-width:100%;height:auto}
               </Typography>
               {(() => {
                 const shirtUrl = 'https://freepngimg.com/convert-png/2798-white-t-shirt-png-image';
-                const logoSrc = brand.logo || (logos[selectedLogoIdx]?.svg ? `data:image/svg+xml;base64,${btoa(logos[selectedLogoIdx].svg)}` : '');
+                const logoSrc = brand.logo || logoOptionSource(logos[selectedLogoIdx]);
                 return (
                   <Box sx={{ maxWidth: 400, mx: 'auto' }}>
                     <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: '#fff', border: '1px solid rgba(255,255,255,.06)' }}>

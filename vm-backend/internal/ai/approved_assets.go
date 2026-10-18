@@ -44,8 +44,11 @@ func persistApprovedBrandKit(ctx context.Context, store ApprovedAssetStore, busi
 					selected = int(n)
 				}
 				if option, ok := options[selected].(map[string]interface{}); ok {
-					if svg, ok := option["svg"].(string); ok && strings.TrimSpace(svg) != "" {
-						source = strings.TrimSpace(svg)
+					for _, key := range []string{"image", "url", "src", "svg"} {
+						if candidate, ok := option[key].(string); ok && strings.TrimSpace(candidate) != "" {
+							source = strings.TrimSpace(candidate)
+							break
+						}
 					}
 				}
 			}

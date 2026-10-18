@@ -76,7 +76,9 @@ export interface BrandKit {
 }
 
 export interface LogoOption {
-  svg: string;
+  svg?: string;
+  image?: string;
+  url?: string;
   name: string;
   concept: string;
   type: 'icon' | 'name' | 'initial';

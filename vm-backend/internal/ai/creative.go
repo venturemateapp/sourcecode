@@ -768,8 +768,8 @@ DESIGN SPECIFICATIONS:
 - Solid color blocks only — zero gradients, shadows, or effects
 - Full-color vibrant design, NOT black and white, NOT monochrome
 
-TECHNICAL OUTPUT:
-- Vector-quality design suitable for SVG
+			TECHNICAL OUTPUT:
+			- Clean, high-resolution raster artwork suitable for PNG export and web use
 - Icon-only mark for standalone use (works with or without wordmark)
 - Maximum 3 distinct color areas in the main composition
 
