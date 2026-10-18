@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"strings"
@@ -62,5 +63,35 @@ func TestPersistBrandKitRejectsUnmanagedHTTP(t *testing.T) {
 	store := &fakeStore{}
 	if _, err := persistApprovedBrandKit(context.Background(), store, "biz-123", raw); err == nil {
 		t.Fatal("expected error for http:// logo source")
+	}
+}
+
+func TestValidateApprovedImageUsesRasterSignatureWhenPNGContainsSVGMetadata(t *testing.T) {
+	// This is the failure mode returned by the image provider: PNG bytes with
+	// an embedded SVG MIME/metadata string. The payload must remain PNG.
+	png := append([]byte("\x89PNG\r\n\x1a\n\x00\x00image/svg+xml"), make([]byte, 64)...)
+	data, contentType, err := validateApprovedImage(png, "image/svg+xml")
+	if err != nil {
+		t.Fatalf("validateApprovedImage returned error: %v", err)
+	}
+	if !bytes.Equal(data, png) {
+		t.Fatal("validateApprovedImage changed the image bytes")
+	}
+	if contentType != "image/png" {
+		t.Fatalf("content type = %q, want image/png", contentType)
+	}
+	if got := imageExtension(contentType); got != ".png" {
+		t.Fatalf("extension = %q, want .png", got)
+	}
+}
+
+func TestValidateApprovedImageRecognizesRealSVG(t *testing.T) {
+	svg := []byte(`<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>`)
+	_, contentType, err := validateApprovedImage(svg, "image/png")
+	if err != nil {
+		t.Fatalf("validateApprovedImage returned error: %v", err)
+	}
+	if contentType != "image/svg+xml" {
+		t.Fatalf("content type = %q, want image/svg+xml", contentType)
 	}
 }
