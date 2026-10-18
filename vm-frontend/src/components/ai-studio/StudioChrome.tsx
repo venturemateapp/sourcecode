@@ -88,6 +88,17 @@ export function StudioChrome(props: StudioChromeProps) {
     } finally { setGenerating(false); }
   };
 
+  const runStarterPrompt = async (starter: string) => {
+    setPrompt(starter);
+    if (!props.project || isJobActive || generating) return;
+    setGenerating(true);
+    try {
+      const scopedPrompt = props.generationContext ? `${props.generationContext}\n\nUSER REQUEST:\n${starter}` : starter;
+      await props.onGenerate(scopedPrompt);
+      setPrompt('');
+    } finally { setGenerating(false); }
+  };
+
   const approve = async () => {
     if (!props.pendingRevision) return;
     setApproving(true);
@@ -199,7 +210,7 @@ export function StudioChrome(props: StudioChromeProps) {
               <Divider />
               <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', fontWeight: 700 }}>STARTING PROMPTS</Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: .75, overflow: 'auto' }}>
-                {props.starterPrompts.map(item => <Button key={item} variant="text" onClick={() => setPrompt(item)} sx={{ justifyContent: 'flex-start', textAlign: 'left', fontSize: 10, color: 'var(--vm-text-secondary)', px: 1 }}>{item}</Button>)}
+                {props.starterPrompts.map(item => <Button key={item} variant="text" disabled={!props.project || isJobActive || generating} onClick={() => void runStarterPrompt(item)} sx={{ justifyContent: 'flex-start', textAlign: 'left', fontSize: 10, color: 'var(--vm-text-secondary)', px: 1 }}>{item}</Button>)}
               </Box>
             </Box>
           )}
