@@ -49,6 +49,10 @@ jobs:
           RECRAFT_PRO_MODEL: ${{ secrets.RECRAFT_PRO_MODEL }}
           RECRAFT_PRO_VECTOR_MODEL: ${{ secrets.RECRAFT_PRO_VECTOR_MODEL }}
           RECRAFT_TIMEOUT_SECONDS: ${{ secrets.RECRAFT_TIMEOUT_SECONDS }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
           S3_PUBLIC_BASE_URL: ${{ secrets.S3_PUBLIC_BASE_URL }}
           S3_FORCE_PATH_STYLE: ${{ secrets.S3_FORCE_PATH_STYLE }}
@@ -84,8 +88,6 @@ jobs:
             git remote set-url origin https://$GIT_PAT@github.com/venturemateapp/sourcecode.git
             git fetch origin
             git reset --hard origin/Production
-
-            . ./vm-backend/.env 2>/dev/null || true
 
             write_if_set() {
               local KEY="$1"
