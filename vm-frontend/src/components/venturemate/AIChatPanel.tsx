@@ -26,6 +26,7 @@ import {
 import type { ProposedChange } from './AICreationStudio';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest, uploadFile } from '../../lib/api';
+import { normalizeImageSource } from '../../lib/imageSource';
 import { AIResponseRenderer } from '../ai-response/AIResponseRenderer';
 
 interface Attachment {
@@ -174,7 +175,7 @@ function CreativeProposalPreview({ proposal }: { proposal: PendingCreativePropos
     const colors = ['primaryColor', 'secondaryColor', 'accentColor', 'darkColor'].map(key => String(value[key] || '')).filter(Boolean);
     return (
       <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
-        {typeof value.logo === 'string' && value.logo && <Box component="img" src={value.logo} alt="AI logo proposal" sx={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 2, bgcolor: 'rgba(255,255,255,.07)' }} />}
+        {typeof value.logo === 'string' && value.logo && <Box component="img" src={normalizeImageSource(value.logo)} alt="AI logo proposal" sx={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 2, bgcolor: 'rgba(255,255,255,.07)' }} />}
         <Box sx={{ flex: 1, minWidth: 180 }}>
           <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 13, fontWeight: 900 }}>{String(concept.style || 'AI-designed')} logo concept</Typography>
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: .35 }}>{String(concept.rationale || proposal.change.summary)}</Typography>

@@ -6,6 +6,7 @@ import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelec
 import { useBusiness } from '../../contexts/BusinessContext';
 import { graphqlRequest } from '../../lib/api';
 import { saveBlob } from '../../lib/download';
+import { isInlineSvg, normalizeImageSource } from '../../lib/imageSource';
 import { PageHeader } from '../../components/shared';
 import type { BrandKit, BrandingFull, ViewType } from '../../types/venturemate';
 
@@ -17,16 +18,16 @@ const DEFAULT_BRAND_KIT: BrandKit = {
 };
 
 async function downloadSvg(svg: string, filename: string) {
-  if (svg.startsWith('http')) {
-    const response = await fetch(svg);
+  const source = normalizeImageSource(svg);
+  if (source.startsWith('http') || source.startsWith('data:')) {
+    const response = await fetch(source);
     if (!response.ok) throw new Error(`Logo download failed with HTTP ${response.status}.`);
     const blob = await response.blob();
-    const ext = blob.type.includes('webp') ? 'webp' : blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : 'img';
-    saveBlob(blob, filename.replace('.svg', `.${ext}`));
+    const ext = blob.type.includes('webp') ? 'webp' : blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : blob.type.includes('svg') ? 'svg' : 'img';
+    saveBlob(blob, filename.replace(/\.svg$/i, `.${ext}`));
     return;
   }
-  const content = svg.startsWith('data:') ? atob(svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : svg;
-  const blob = new Blob([content], { type: 'image/svg+xml' });
+  const blob = new Blob([source], { type: 'image/svg+xml' });
   saveBlob(blob, filename);
 }
 
@@ -45,6 +46,7 @@ function adaptColor(match: string, attr: string, onDark: boolean): string {
 function renderSvg(svg: string, options?: { dark?: boolean; size?: number }) {
   try {
     let cleaned = svg.startsWith('data:') ? atob(svg.split(',')[1]?.replace(/-/g, '+').replace(/_/g, '/') || '') : svg;
+    if (!/<svg[\s>]/i.test(cleaned)) return null;
     const onDark = options?.dark === true;
     cleaned = cleaned.replace(/(fill=")(?:none|transparent)(")/gi, '___KEEP_FILL___$1$2___END_KEEP___');
     cleaned = cleaned.replace(/fill="#[0-9A-Fa-f]{6}"/gi, (m) => adaptColor(m, 'fill', onDark));
@@ -62,20 +64,21 @@ function renderSvg(svg: string, options?: { dark?: boolean; size?: number }) {
 }
 
 function LogoDisplay({ logo, size = 100, contrast = false }: { logo: string; size?: number; contrast?: boolean }) {
-  const isRaster = logo.startsWith('http') || (logo.startsWith('data:') && !logo.includes('svg'));
+  const source = normalizeImageSource(logo);
+  const inlineSvg = isInlineSvg(source);
   const containerSx = contrast ? {
     bgcolor: 'rgba(255,255,255,.06)', backdropFilter: 'blur(10px)',
     border: '1px solid rgba(255,255,255,.1)', borderRadius: 2,
     p: 1.5, boxShadow: '0 4px 16px rgba(0,0,0,.15)',
   } : {};
-  if (logo.includes('<svg') || (logo.startsWith('data:') && logo.includes('svg'))) {
-    return <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerSx }}>{renderSvg(logo, { size })}</Box>;
+  if (inlineSvg) {
+    return <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerSx }}>{renderSvg(source, { size })}</Box>;
   }
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...containerSx }}>
-      <Box component="img" src={logo} alt="Logo" sx={{
+      <Box component="img" src={source} alt="Logo" sx={{
         maxWidth: size, maxHeight: size, objectFit: 'contain',
-        filter: isRaster ? 'drop-shadow(0 2px 8px rgba(0,0,0,.15))' : 'none',
+        filter: 'drop-shadow(0 2px 8px rgba(0,0,0,.15))',
       }} />
     </Box>
   );
@@ -155,7 +158,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
             boxShadow: '0 8px 32px rgba(0,0,0,.2)',
           }}>
             {brand.logo ? <LogoDisplay logo={brand.logo} size={90} contrast /> : <Sparkles size={40} color="rgba(255,255,255,.3)" />}
-            {brand.logo && brand.logo.includes('<svg') && (
+            {brand.logo && isInlineSvg(brand.logo) && (
               <IconButton size="small" disabled={downloadingLogo} onClick={handleLogoDownload}
                 sx={{ position: 'absolute', bottom: -8, right: -8, bgcolor: 'rgba(0,0,0,.5)', color: 'white', width: 28, height: 28, '&:hover': { bgcolor: 'rgba(0,0,0,.7)' } }}>
                 {downloadingLogo ? <CircularProgress size={13} /> : <Download size={13} />}
