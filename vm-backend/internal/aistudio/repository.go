@@ -526,7 +526,7 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 		}
 	}
 	_, err = tx.Exec(ctx, `INSERT INTO ai_audit_events(user_id,business_id,project_id,revision_id,action,target_type,target_id)
-		VALUES($1,NULLIF($2,'')::uuid,$3,$4,'generation_approved','revision',$4)`, userID, businessID, projectID, revisionID)
+		VALUES($1,NULLIF($2,'')::uuid,$3,$4::uuid,'generation_approved','revision',$5::text)`, userID, businessID, projectID, revisionID, revisionID)
 	if err != nil {
 		return nil, err
 	}
