@@ -381,8 +381,7 @@ svg{max-width:100%;height:auto}
       )}
 
       {!hasApprovedBrand && !proposedBrand ? (
-        <Box sx={{ borderRadius: 3.5, overflow: 'hidden', border: '1px solid rgba(255,255,255,.06)', bgcolor: 'rgba(255,255,255,.02)' }}>
-          <AICreationStudio
+        <AICreationStudio
             domain="branding" title="" description=""
             showLogoQuestionnaire
             placeholder="Describe the brand feel you want (e.g., 'Modern, trustworthy edtech brand with green tones')"
@@ -410,7 +409,6 @@ svg{max-width:100%;height:auto}
               return <BrandPreview brand={{ ...DEFAULT_BRAND_KIT, ...parsed }} businessName={selectedBusiness.name} proposed />;
             }}
           />
-        </Box>
       ) : (
         <Box>
           {/* Brand Hero */}
@@ -523,8 +521,7 @@ svg{max-width:100%;height:auto}
           )}
 
           {/* AI revision studio */}
-          <Box sx={{ borderRadius: 3.5, overflow: 'hidden', border: '1px solid rgba(255,255,255,.06)', bgcolor: 'rgba(255,255,255,.02)' }}>
-            <AICreationStudio
+          <AICreationStudio
               domain="branding" title="" description=""
               placeholder="Tell AI what to revise in your brand identity…"
               starterPrompts={['Create a more premium and minimal logo option.', 'Keep my colours but redesign the logo mark.', 'Make the identity warmer and friendlier.']}
@@ -535,7 +532,6 @@ svg{max-width:100%;height:auto}
                 return parsed ? <BrandPreview brand={{ ...DEFAULT_BRAND_KIT, ...parsed }} businessName={selectedBusiness.name} proposed /> : <Typography color="error">Invalid proposal</Typography>;
               }}
             />
-          </Box>
         </Box>
       )}
     </Box>
