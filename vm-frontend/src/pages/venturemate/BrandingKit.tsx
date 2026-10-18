@@ -512,7 +512,7 @@ svg{max-width:100%;height:auto}
                 return (
                   <Box sx={{ maxWidth: 400, mx: 'auto' }}>
                     <Box sx={{ position: 'relative', borderRadius: 2.5, overflow: 'hidden', bgcolor: '#fff', border: '1px solid rgba(255,255,255,.06)' }}>
-                      <Box sx={{ position: 'absolute', top: '26%', left: '50%', transform: 'translateX(-50%)', width: '32%', height: '22%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, background: 'transparent', border: 'none', boxShadow: 'none' }}>
+                      <Box sx={{ position: 'absolute', top: '25%', left: '50%', transform: 'translateX(-50%)', width: '48%', height: '25%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, background: 'transparent', border: 'none', boxShadow: 'none', overflow: 'visible', '& > *': { width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%' }, '& img, & svg': { width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' } }}>
                         {logoSrc.startsWith('http') ? (
                           <Box component="img" src={logoSrc} alt="Logo" sx={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
                         ) : (
