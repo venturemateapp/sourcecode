@@ -364,15 +364,32 @@ Rules:
 	var proposal Proposal
 	if err := json.Unmarshal([]byte(content), &proposal); err != nil {
 		log.Printf("AI proposal JSON parse error for domain %s: %v. AI response length: %d, content preview: %s", domain, err, len(content), truncate(content, 200))
-		proposal = Proposal{Message: strings.TrimSpace(resp.Content), Provider: resp.Provider, Model: resp.Model}
+		// Creative proposals can be large and occasionally get truncated by the
+		// model. Retry once with a compact-output instruction before falling back;
+		// an empty `{}` proposal must never reach the approval UI.
+		if isCreativeDomain(domain) {
+			retryCtx := withResponseTokenLimit(ctx, creativeResponseTokens*2)
+			retryPrompt := prompt + "\n\nYour previous response was truncated. Return ONLY compact, valid JSON for the requested proposal. Omit explanatory prose and keep the complete brandKit/pitchDeck/businessPlan data within the response."
+			retryResp, retryErr := provider.Chat(retryCtx, systemPrompt, []Message{{Role: "user", Content: retryPrompt}}, nil)
+			if retryErr == nil {
+				content = extractJSONObject(retryResp.Content)
+				if unmarshalErr := json.Unmarshal([]byte(content), &proposal); unmarshalErr == nil {
+					resp = retryResp
+				} else {
+					log.Printf("AI compact proposal retry failed for domain %s: %v", domain, unmarshalErr)
+				}
+			}
+		}
+		if len(proposal.Changes) == 0 && !isCreativeDomain(domain) {
+			proposal = Proposal{Message: strings.TrimSpace(resp.Content), Provider: resp.Provider, Model: resp.Model}
+		}
 		if resp.TokenUsage != nil {
 			proposal.TotalTokens = resp.TokenUsage.TotalTokens
 			proposal.InputTokens = resp.TokenUsage.InputTokens
 			proposal.OutputTokens = resp.TokenUsage.OutputTokens
 		}
-		if isCreativeDomain(domain) {
-			proposal.Message = "I prepared a safe starter version from the approved business information. Review it and tell me what to change."
-			proposal.Changes = []ProposedChange{defaultCreativeChange(domain, biz)}
+		if isCreativeDomain(domain) && len(proposal.Changes) == 0 {
+			return nil, fmt.Errorf("AI returned an incomplete %s proposal; please retry", creativeDomain(domain))
 		} else {
 			return &proposal, nil
 		}
