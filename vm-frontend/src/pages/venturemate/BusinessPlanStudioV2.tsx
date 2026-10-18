@@ -11,6 +11,7 @@ import { useAIStudioProject } from '../../hooks/useAIStudioProject';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { useBusiness } from '../../contexts/BusinessContext';
 import type { PlanBlock, PlanDocumentV2, PlanSectionV2 } from '../../lib/ai-studio/types';
+import { normalizeImageSource } from '../../lib/imageSource';
 
 function safePlan(raw?: string, title = 'Business Plan', businessId?: string): PlanDocumentV2 {
   try {
@@ -160,6 +161,7 @@ export function BusinessPlanStudioV2() {
   }, [source]);
 
   const document = history.value;
+  const approvedLogo = normalizeImageSource(selectedBusiness?.brandKit?.logo || selectedBusiness?.brandKit?.logoIcon || '');
   const selectedSection = document.sections.find(section => section.id === selectedSectionId) || document.sections[0];
   const insertAsset = (asset: { url: string; prompt: string }) => {
     if (!selectedSection) return;
@@ -202,6 +204,7 @@ export function BusinessPlanStudioV2() {
   const editor = !studio.project || !source ? <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', p: 3 }}><Card sx={{ p: { xs: 3, md: 5 }, maxWidth: 560, textAlign: 'center', border: '1px solid rgba(16,185,129,.18)', bgcolor: 'rgba(15,23,42,.72)' }}><FileText size={42} color="#34d399" /><Typography variant="h5" fontWeight={900} sx={{ mt: 2, color: 'var(--vm-text-primary)' }}>Your business plan is ready to generate</Typography><Typography sx={{ color: 'var(--vm-text-muted)', mt: 1, lineHeight: 1.7 }}>Choose a starting prompt or describe the plan you need in the AI workspace. The complete editable plan will appear here after generation.</Typography><Button variant="contained" sx={{ mt: 2 }} onClick={() => void studio.generate(`Write a complete investor-ready business plan for ${selectedBusiness?.name || 'my business'} using all verified business data.`)}>Generate first draft</Button></Card></Box> : <Box sx={{ p: { xs: 1, md: 2 }, overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
     <Box sx={{ width: 'min(100%, 850px)' }}>
       <Card sx={{ p: { xs: 2, md: 4 }, minHeight: 900, bgcolor: '#fff', color: '#172033', boxShadow: '0 20px 70px rgba(0,0,0,.35)', '& .MuiInputBase-root': { bgcolor: '#fff', color: '#172033' }, '& .MuiInputBase-input, & .MuiInputBase-inputMultiline': { color: '#172033', WebkitTextFillColor: '#172033', lineHeight: 1.6 }, '& .MuiInputBase-input::placeholder, & textarea::placeholder': { color: '#64748b', opacity: 1 }, '& .MuiInputLabel-root': { color: '#64748b' }, '& fieldset': { borderColor: '#cbd5e1 !important' }, '& .MuiButton-root': { color: '#334155' } }}>
+        {approvedLogo && <Box component="img" src={approvedLogo} alt={`${selectedBusiness?.name || 'Business'} logo`} sx={{ display: 'block', width: 'auto', maxWidth: 180, height: 56, objectFit: 'contain', objectPosition: 'left center', mb: 2 }} />}
         <TextField fullWidth variant="standard" value={document.title.replace(/\s+Business Plan\s+Business Plan$/i, ' Business Plan')} onChange={event => mutate(next => { next.title = event.target.value; })} InputProps={{ disableUnderline: true, sx: { fontSize: { xs: 24, md: 30 }, fontWeight: 900, bgcolor: '#fff !important' } }} />
         <Box sx={{ display: 'flex', gap: .75, mt: 1, mb: 3, flexWrap: 'wrap' }}><Chip size="small" label={`Version ${document.metadata.versionLabel || '1.0'}`} sx={{ bgcolor: '#eef2ff', color: '#4338ca', fontWeight: 700 }} /><Chip size="small" label={document.metadata.currency || 'GHS'} sx={{ bgcolor: '#ecfdf5', color: '#047857', fontWeight: 700 }} /><Chip size="small" label={`${document.sections.length} sections`} sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 700 }} /></Box>
         <Typography sx={{ fontSize: 11, color: '#64748b', fontWeight: 900, letterSpacing: '.08em' }}>EXECUTIVE SUMMARY</Typography>
