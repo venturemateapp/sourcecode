@@ -81,6 +81,7 @@ interface ApplyResponse {
 interface PendingCreativeProposal {
   domain: 'branding' | 'website' | 'business-plan' | 'pitch-deck';
   change: ProposedChange;
+  selectedLogoIndex?: number;
 }
 
 interface AIChatPanelProps {
@@ -168,7 +169,7 @@ function safeObject(value: string): Record<string, unknown> {
   }
 }
 
-function CreativeProposalPreview({ proposal }: { proposal: PendingCreativeProposal }) {
+function CreativeProposalPreview({ proposal, onSelectLogo }: { proposal: PendingCreativeProposal; onSelectLogo?: (index: number) => void }) {
   const value = safeObject(proposal.change.newValue);
   if (proposal.domain === 'branding') {
     const concept = value.logoConcept && typeof value.logoConcept === 'object' ? value.logoConcept as Record<string, unknown> : {};
@@ -181,12 +182,26 @@ function CreativeProposalPreview({ proposal }: { proposal: PendingCreativePropos
         : '';
     const colors = ['primaryColor', 'secondaryColor', 'accentColor', 'darkColor'].map(key => String(value[key] || '')).filter(Boolean);
     return (
-      <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
-        {previewLogo && <Box component="img" src={normalizeImageSource(previewLogo)} alt="AI logo proposal" sx={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 2, bgcolor: 'rgba(255,255,255,.07)' }} />}
+      <Box>
+        {logoOptions.length > 0 && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: .8, mb: 1.2 }}>
+          {logoOptions.map((option, index) => {
+            const item = option && typeof option === 'object' ? option as Record<string, unknown> : {};
+            const svg = typeof item.svg === 'string' ? item.svg : '';
+            const source = svg ? `data:image/svg+xml;base64,${btoa(svg)}` : '';
+            const selected = (proposal.selectedLogoIndex ?? Number(value.selectedLogo) ?? 0) === index;
+            return <Box key={index} component="button" type="button" onClick={() => onSelectLogo?.(index)} sx={{ minWidth: 0, p: .6, borderRadius: 1.5, cursor: 'pointer', bgcolor: '#fff', border: selected ? '2px solid var(--vm-primary-400)' : '1px solid var(--vm-border-subtle)', color: 'var(--vm-text-primary)' }}>
+              {source && <Box component="img" src={normalizeImageSource(source)} alt={String(item.name || `Logo option ${index + 1}`)} sx={{ width: '100%', height: 72, objectFit: 'contain' }} />}
+              <Typography sx={{ fontSize: 9, mt: .35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(item.name || `Option ${index + 1}`)}</Typography>
+            </Box>;
+          })}
+        </Box>}
+        {previewLogo && <Box component="img" src={normalizeImageSource(previewLogo)} alt="Selected AI logo proposal" sx={{ display: logoOptions.length ? 'none' : 'block', width: 72, height: 72, objectFit: 'contain', borderRadius: 2, bgcolor: 'rgba(255,255,255,.07)' }} />}
+        <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
         <Box sx={{ flex: 1, minWidth: 180 }}>
           <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 13, fontWeight: 900 }}>{String(concept.style || 'AI-designed')} logo concept</Typography>
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: .35 }}>{String(concept.rationale || proposal.change.summary)}</Typography>
           <Box sx={{ display: 'flex', gap: .6, mt: .8 }}>{colors.map(color => <Box key={color} title={color} sx={{ width: 24, height: 24, borderRadius: 999, bgcolor: color, border: '1px solid rgba(255,255,255,.24)' }} />)}</Box>
+        </Box>
         </Box>
       </Box>
     );
@@ -439,10 +454,16 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
     setApplyingProposal(true);
     setError(null);
     try {
+      let approvedChange = pendingProposal.change;
+      if (pendingProposal.domain === 'branding' && pendingProposal.selectedLogoIndex !== undefined) {
+        const value = safeObject(approvedChange.newValue);
+        value.selectedLogo = pendingProposal.selectedLogoIndex;
+        approvedChange = { ...approvedChange, newValue: JSON.stringify(value) };
+      }
       const data = await graphqlRequest<ApplyResponse>(APPLY_MUTATION, {
         userId,
         businessId: selectedBusiness.id,
-        changes: JSON.stringify([pendingProposal.change]),
+        changes: JSON.stringify([approvedChange]),
       });
       if (!data.applyAgentProposal.success) throw new Error(data.applyAgentProposal.message || 'Could not approve this version.');
       const approvedDomain = pendingProposal.domain;
@@ -586,7 +607,7 @@ export function AIChatPanel({ domain, placeholder, mode = 'floating' }: AIChatPa
               <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 12, fontWeight: 900, flex: 1 }}>AI proposal · not saved</Typography>
               <Chip label={displayDomain(pendingProposal.domain)} size="small" variant="outlined" sx={{ fontSize: 9 }} />
             </Box>
-            <CreativeProposalPreview proposal={pendingProposal} />
+            <CreativeProposalPreview proposal={pendingProposal} onSelectLogo={index => setPendingProposal(current => current ? { ...current, selectedLogoIndex: index } : current)} />
             <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10.5, mt: 1.1 }}>
               Type a revision below, request another option, or approve this exact version.
             </Typography>
