@@ -290,7 +290,7 @@ export function PitchDeckStudioV2() {
     title="AI Pitch Deck Studio" subtitle="Editable 16:9 canvas · native PPTX · PDF · revision history"
     projects={studio.projects} project={studio.project} revisions={studio.revisions} assets={studio.assets} job={studio.job}
     loading={studio.loading} saving={studio.saving} error={studio.error} pendingRevision={studio.pendingRevision}
-    generationContext={selectedSlide ? `EDITING SCOPE: Revise only slide "${selectedSlide.title}" (slideId: ${selectedSlide.id})${selectedElement ? ` and only the selected ${selectedElement.type} element (elementId: ${selectedElement.id})` : ''}. Preserve all other slides and elements unless the user explicitly asks for a broader change.` : undefined}
+    generationContext={studio.approvedRevision && selectedSlide ? `EDITING SCOPE: Revise only slide "${selectedSlide.title}" (slideId: ${selectedSlide.id})${selectedElement ? ` and only the selected ${selectedElement.type} element (elementId: ${selectedElement.id})` : ''}. Preserve all other slides and elements unless the user explicitly asks for a broader change.` : undefined}
     leftRail={leftRail} editor={editor} toolbar={toolbar}
     onSelectProject={project => void studio.selectProject(project)} onCreateProject={studio.createProject} onRefresh={() => void studio.load()}
     onGenerate={studio.generate} onApprove={studio.approve} onRollback={studio.rollback} onDismissError={() => studio.setError(null)} onGenerateAsset={studio.generateAsset} onSelectAsset={insertAsset}

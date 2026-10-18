@@ -221,7 +221,7 @@ export function BusinessPlanStudioV2() {
     title="AI Business Plan Studio" subtitle="Long-form editor · financial assumptions · A4 PDF · DOCX · Markdown"
     projects={studio.projects} project={studio.project} revisions={studio.revisions} assets={studio.assets} job={studio.job}
     loading={studio.loading} saving={studio.saving} error={studio.error} pendingRevision={studio.pendingRevision}
-    generationContext={selectedSection ? `EDITING SCOPE: Revise only the business-plan section "${selectedSection.title}" (sectionId: ${selectedSection.id}). Preserve every other section unless the user explicitly asks for a broader change.` : undefined}
+    generationContext={studio.approvedRevision && selectedSection ? `EDITING SCOPE: Revise only the business-plan section "${selectedSection.title}" (sectionId: ${selectedSection.id}). Preserve every other section unless the user explicitly asks for a broader change.` : undefined}
     leftRail={leftRail} editor={editor} toolbar={toolbar}
     onSelectProject={project => void studio.selectProject(project)} onCreateProject={studio.createProject} onRefresh={() => void studio.load()}
     onGenerate={studio.generate} onApprove={studio.approve} onRollback={studio.rollback} onDismissError={() => studio.setError(null)} onGenerateAsset={studio.generateAsset} onSelectAsset={insertAsset}
