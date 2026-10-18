@@ -19,7 +19,22 @@ const DEFAULT_BRAND_KIT: BrandKit = {
 
 async function downloadSvg(svg: string, filename: string) {
   const source = normalizeImageSource(svg);
-  if (source.startsWith('http') || source.startsWith('data:')) {
+  // S3 serves the logo correctly as an image, but its bucket CORS policy may
+  // intentionally reject JavaScript fetches. Use a native browser download
+  // for managed remote assets so downloads do not depend on S3 CORS headers.
+  if (source.startsWith('http')) {
+    const link = document.createElement('a');
+    link.href = source;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    return;
+  }
+  if (source.startsWith('data:')) {
     const response = await fetch(source);
     if (!response.ok) throw new Error(`Logo download failed with HTTP ${response.status}.`);
     const blob = await response.blob();
