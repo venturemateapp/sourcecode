@@ -123,7 +123,10 @@ func decodeImageDataURL(source string) ([]byte, string, error) {
 
 func validateApprovedImage(data []byte, _ string) ([]byte, string, error) {
 	detected := http.DetectContentType(data)
-	if bytes.Contains(bytes.ToLower(data[:min(len(data), 512)]), []byte("<svg")) {
+	trimmed := bytes.TrimSpace(data)
+	lowerTrimmed := bytes.ToLower(trimmed)
+	if bytes.HasPrefix(lowerTrimmed, []byte("<svg")) ||
+		(bytes.HasPrefix(lowerTrimmed, []byte("<?xml")) && bytes.Contains(lowerTrimmed[:min(len(lowerTrimmed), 1024)], []byte("<svg"))) {
 		detected = "image/svg+xml"
 	}
 	if !strings.HasPrefix(detected, "image/") {
