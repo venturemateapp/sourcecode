@@ -122,6 +122,12 @@ function FontPreview({ name, label }: { name: string; label: string }) {
 function BrandPreview({ brand, businessName, proposed = false }: { brand: BrandingFull; businessName: string; proposed?: boolean }) {
   const [downloadingLogo, setDownloadingLogo] = useState(false);
   const { primaryColor, secondaryColor, accentColor, darkColor, fontHeading, fontBody } = brand;
+  const logoOptions = brand.logos || [];
+  const optionSource = (index: number) => {
+    const svg = logoOptions[index]?.svg || '';
+    return svg ? `data:image/svg+xml;base64,${btoa(svg)}` : '';
+  };
+  const displayLogo = brand.logo || optionSource(brand.selectedLogo || 0);
   const gradient = `linear-gradient(135deg, ${darkColor}, ${primaryColor})`;
   const handleLogoDownload = async () => {
     if (downloadingLogo) return;
@@ -157,8 +163,8 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
             border: '1px solid rgba(255,255,255,.12)',
             boxShadow: '0 8px 32px rgba(0,0,0,.2)',
           }}>
-            {brand.logo ? <LogoDisplay logo={brand.logo} size={90} contrast /> : <Sparkles size={40} color="rgba(255,255,255,.3)" />}
-            {brand.logo && isInlineSvg(brand.logo) && (
+            {displayLogo ? <LogoDisplay logo={displayLogo} size={90} contrast /> : <Sparkles size={40} color="rgba(255,255,255,.3)" />}
+            {displayLogo && isInlineSvg(displayLogo) && (
               <IconButton size="small" disabled={downloadingLogo} onClick={handleLogoDownload}
                 sx={{ position: 'absolute', bottom: -8, right: -8, bgcolor: 'rgba(0,0,0,.5)', color: 'white', width: 28, height: 28, '&:hover': { bgcolor: 'rgba(0,0,0,.7)' } }}>
                 {downloadingLogo ? <CircularProgress size={13} /> : <Download size={13} />}
@@ -174,6 +180,24 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
           </Box>
         </Box>
       </Box>
+
+      {proposed && logoOptions.length > 0 && (
+        <Box>
+          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Eye size={13} /> Logo Options · choose your preferred direction
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3,1fr)' }, gap: 1.25 }}>
+            {logoOptions.map((option, index) => {
+              const source = optionSource(index);
+              return <Box key={`${option.name}-${index}`} sx={{ p: 1.5, borderRadius: 2.5, bgcolor: '#fff', border: index === (brand.selectedLogo || 0) ? '2px solid var(--vm-primary-400)' : '1px solid rgba(255,255,255,.12)', textAlign: 'center' }}>
+                {source && <LogoDisplay logo={source} size={110} />}
+                <Typography sx={{ color: '#1f2937', fontSize: 11, fontWeight: 800, mt: .8 }}>{option.name || `Option ${index + 1}`}</Typography>
+                <Typography sx={{ color: '#64748b', fontSize: 10, mt: .35, lineHeight: 1.4 }}>{option.concept || option.type || 'Logo concept'}</Typography>
+              </Box>;
+            })}
+          </Box>
+        </Box>
+      )}
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
         <Box>
@@ -198,7 +222,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
         </Box>
       </Box>
 
-      {brand.logo && (
+      {(displayLogo || logoOptions.length > 0) && (
         <Box>
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
             <Eye size={13} /> Logo Variations
@@ -220,7 +244,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
                   borderRadius: 1.5, p: 1.5, backdropFilter: dark ? 'none' : 'none',
                   border: dark ? '1px solid rgba(255,255,255,.06)' : '1px solid rgba(0,0,0,.04)',
                 }}>
-                  <LogoDisplay logo={brand.logo} size={72} contrast />
+                  <LogoDisplay logo={displayLogo} size={72} contrast />
                 </Box>
                 <Typography sx={{ fontSize: 9, color: dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.4)', fontWeight: 600 }}>{label}</Typography>
               </Box>
