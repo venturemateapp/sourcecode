@@ -37,6 +37,19 @@ func persistApprovedBrandKit(ctx context.Context, store ApprovedAssetStore, busi
 	for _, field := range fields {
 		source, _ := brand[field].(string)
 		source = strings.TrimSpace(source)
+		if !isApprovedImageSource(source) {
+			if options, ok := brand["logos"].([]interface{}); ok && len(options) > 0 {
+				selected := 0
+				if n, ok := brand["selectedLogo"].(float64); ok && int(n) >= 0 && int(n) < len(options) {
+					selected = int(n)
+				}
+				if option, ok := options[selected].(map[string]interface{}); ok {
+					if svg, ok := option["svg"].(string); ok && strings.TrimSpace(svg) != "" {
+						source = strings.TrimSpace(svg)
+					}
+				}
+			}
+		}
 		if source == "" || (store != nil && store.IsManagedURL(source)) {
 			continue
 		}
@@ -74,6 +87,11 @@ func persistApprovedBrandKit(ctx context.Context, store ApprovedAssetStore, busi
 		return "", fmt.Errorf("encode persisted brand kit: %w", err)
 	}
 	return string(out), nil
+}
+
+func isApprovedImageSource(source string) bool {
+	trimmed := strings.TrimSpace(source)
+	return strings.HasPrefix(trimmed, "data:image/") || strings.HasPrefix(trimmed, "https://") || strings.HasPrefix(trimmed, "<svg") || strings.HasPrefix(trimmed, "<?xml")
 }
 
 func fetchApprovedImage(ctx context.Context, source string) ([]byte, string, error) {

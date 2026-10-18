@@ -172,10 +172,17 @@ function CreativeProposalPreview({ proposal }: { proposal: PendingCreativePropos
   const value = safeObject(proposal.change.newValue);
   if (proposal.domain === 'branding') {
     const concept = value.logoConcept && typeof value.logoConcept === 'object' ? value.logoConcept as Record<string, unknown> : {};
+    const logoOptions = Array.isArray(value.logos) ? value.logos : [];
+    const firstLogo = logoOptions[0] && typeof logoOptions[0] === 'object' ? logoOptions[0] as Record<string, unknown> : null;
+    const previewLogo = typeof value.logo === 'string' && value.logo
+      ? value.logo
+      : typeof firstLogo?.svg === 'string' && firstLogo.svg
+        ? `data:image/svg+xml;base64,${btoa(firstLogo.svg)}`
+        : '';
     const colors = ['primaryColor', 'secondaryColor', 'accentColor', 'darkColor'].map(key => String(value[key] || '')).filter(Boolean);
     return (
       <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap' }}>
-        {typeof value.logo === 'string' && value.logo && <Box component="img" src={normalizeImageSource(value.logo)} alt="AI logo proposal" sx={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 2, bgcolor: 'rgba(255,255,255,.07)' }} />}
+        {previewLogo && <Box component="img" src={normalizeImageSource(previewLogo)} alt="AI logo proposal" sx={{ width: 72, height: 72, objectFit: 'contain', borderRadius: 2, bgcolor: 'rgba(255,255,255,.07)' }} />}
         <Box sx={{ flex: 1, minWidth: 180 }}>
           <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 13, fontWeight: 900 }}>{String(concept.style || 'AI-designed')} logo concept</Typography>
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: .35 }}>{String(concept.rationale || proposal.change.summary)}</Typography>
