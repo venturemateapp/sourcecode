@@ -26,6 +26,25 @@ services:
     networks:
       - vm-network
 
+  ai-worker:
+    build: ./vm-backend
+    command: ["/sbin/tini", "--", "./ai-worker"]
+    env_file:
+      - ./vm-backend/.env
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_USER: "${DB_USER:-venturematedb}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_NAME: "${DB_NAME:-venturematedb}"
+      DB_SSLMODE: disable
+      DATABASE_URL: "postgres://${DB_USER}:${DB_PASSWORD}@host.docker.internal:${DB_PORT}/${DB_NAME}?sslmode=disable"
+      AI_WORKER_ID: "ai-worker"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - vm-network
+
   frontend:
     build:
       context: ./vm-frontend
