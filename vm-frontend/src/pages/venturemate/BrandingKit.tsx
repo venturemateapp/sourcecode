@@ -415,7 +415,6 @@ svg{max-width:100%;height:auto}
               if (!parsed) return <Typography color="error">Invalid proposal</Typography>;
               return <BrandPreview brand={{ ...DEFAULT_BRAND_KIT, ...parsed }} businessName={selectedBusiness.name} proposed />;
             }}
-            onApproved={() => window.location.reload()}
           />
         </Box>
       ) : (
