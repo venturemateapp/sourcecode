@@ -156,11 +156,13 @@ export function StudioChrome(props: StudioChromeProps) {
         <Tooltip title="Refresh project"><IconButton onClick={props.onRefresh} disabled={props.loading} size="small"><RefreshCw size={16} /></IconButton></Tooltip>
         {props.project && <Chip size="small" label={props.project.status} color={props.project.status === 'published' ? 'success' : 'default'} variant="outlined" sx={{ fontSize: 10 }} />}
         <Box sx={{ flex: 1 }} />
-        {props.pendingRevision && (
+        {props.pendingRevision ? (
           <Button size="small" variant="contained" color="success" startIcon={approving ? <CircularProgress size={13} /> : <Check size={15} />} onClick={() => void approve()} disabled={approving || props.saving}>
             Approve AI revision
           </Button>
-        )}
+        ) : latestApproved ? (
+          <Chip size="small" icon={<Check size={14} />} label="Approved" color="success" variant="outlined" sx={{ fontWeight: 800 }} />
+        ) : null}
         {props.toolbar}
         {props.onExport && <Button size="small" variant="outlined" startIcon={<Download size={14} />} onClick={props.onExport}>Export</Button>}
         {props.onPublish && <Button size="small" variant="contained" startIcon={<Rocket size={14} />} onClick={props.onPublish}>Publish</Button>}

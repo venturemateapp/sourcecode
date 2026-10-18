@@ -106,7 +106,7 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
 
   const pendingRevision = useMemo(() => {
     const revisionId = job ? parseResult(job.result).revisionId : undefined;
-    return (revisionId && revisions.find(item => item.id === revisionId))
+    return (revisionId && revisions.find(item => item.id === revisionId && item.status === 'ready' && item.id !== project?.approvedRevisionId))
       || revisions.find(item => item.status === 'ready' && item.id !== project?.approvedRevisionId)
       || null;
   }, [job, project?.approvedRevisionId, revisions]);
