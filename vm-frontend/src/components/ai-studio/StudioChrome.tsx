@@ -80,6 +80,11 @@ export function StudioChrome(props: StudioChromeProps) {
 
   const generate = async () => {
     if (!prompt.trim() || isJobActive) return;
+    if (!props.project) {
+      setProjectName(props.createLabel.replace(/^Create\s+/i, '').trim() || 'AI Project');
+      setCreateOpen(true);
+      return;
+    }
     setGenerating(true);
     try {
       const scopedPrompt = props.generationContext ? `${props.generationContext}\n\nUSER REQUEST:\n${prompt.trim()}` : prompt.trim();
@@ -204,7 +209,7 @@ export function StudioChrome(props: StudioChromeProps) {
                 onKeyDown={event => { if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void generate(); } }}
                 sx={{ '& .MuiOutlinedInput-root': { alignItems: 'flex-start', bgcolor: 'rgba(0,0,0,.18)' } }}
               />
-              <Button fullWidth variant="contained" startIcon={generating || isJobActive ? <CircularProgress size={14} /> : <Sparkles size={15} />} disabled={!props.project || !prompt.trim() || generating || isJobActive} onClick={() => void generate()}>
+              <Button fullWidth variant="contained" startIcon={generating || isJobActive ? <CircularProgress size={14} /> : <Sparkles size={15} />} disabled={!prompt.trim() || generating || isJobActive} onClick={() => void generate()}>
                 {isJobActive ? 'AI is working…' : 'Generate reviewable revision'}
               </Button>
               <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', textAlign: 'center' }}>Ctrl/Cmd + Enter to generate</Typography>
