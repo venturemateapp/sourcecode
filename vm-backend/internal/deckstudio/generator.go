@@ -62,7 +62,21 @@ Return the complete deck with required top-level fields: schemaVersion, title, t
 	var document Document
 	decoder := json.NewDecoder(strings.NewReader(raw))
 	if err := decoder.Decode(&document); err != nil {
-		return nil, response, fmt.Errorf("AI returned invalid deck JSON: %w", err)
+		// A single syntax-repair pass prevents transient malformed JSON from
+		// failing an otherwise valid long-form deck generation.
+		repairResponse, repairErr := provider.Chat(ctx,
+			"Repair the following pitch-deck JSON. Return only one valid JSON object matching the requested deck schema. Do not add commentary, markdown, or change the content beyond fixing JSON syntax.",
+			[]ai.Message{{Role: "user", Content: raw}}, nil)
+		if repairErr == nil && repairResponse != nil {
+			repaired := extractJSONObject(repairResponse.Content)
+			if repairDecodeErr := json.NewDecoder(strings.NewReader(repaired)).Decode(&document); repairDecodeErr == nil {
+				response = repairResponse
+			} else {
+				return nil, response, fmt.Errorf("AI returned invalid deck JSON: %w", err)
+			}
+		} else {
+			return nil, response, fmt.Errorf("AI returned invalid deck JSON: %w", err)
+		}
 	}
 	document.Theme = mergeTheme(document.Theme, DefaultTheme(document.Template))
 	if err := document.Validate(); err != nil {
