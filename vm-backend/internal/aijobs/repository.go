@@ -203,7 +203,7 @@ func (r *Repository) Complete(ctx context.Context, jobID, workerID, status, resu
 	}
 	command, err := r.db.Exec(ctx, `UPDATE ai_generation_jobs SET status=$3,progress=$4,step=$3,message=$5,result=$6::jsonb,
 		provider=$7,model=$8,input_tokens=$9,output_tokens=$10,error_code='',error_message='',
-		completed_at=CASE WHEN $3='completed' THEN NOW() ELSE NULL END,
+		completed_at=CASE WHEN $3::varchar='completed' THEN NOW() ELSE NULL END,
 		heartbeat_at=NOW(),updated_at=NOW(),logs=CASE WHEN $11='' THEN logs ELSE RIGHT(logs || CASE WHEN logs='' THEN '' ELSE E'\n' END || $11,262144) END
 		WHERE id=$1 AND locked_by=$2 AND status='running'`, jobID, workerID, status, progress,
 		map[bool]string{true: "Ready for review", false: "Completed"}[status == "awaiting_review"], result,
@@ -227,8 +227,8 @@ func (r *Repository) Fail(ctx context.Context, jobID, workerID, code, message, l
 		}
 	}
 	command, err := r.db.Exec(ctx, `UPDATE ai_generation_jobs SET status=$3,step=$4,message=$5,error_code=$6,error_message=$5,
-		completed_at=CASE WHEN $3='failed' THEN NOW() ELSE NULL END,locked_by=CASE WHEN $3='queued' THEN NULL ELSE locked_by END,
-		locked_at=CASE WHEN $3='queued' THEN NULL ELSE locked_at END,heartbeat_at=NOW(),updated_at=NOW(),
+		completed_at=CASE WHEN $3::varchar='failed' THEN NOW() ELSE NULL END,locked_by=CASE WHEN $3::varchar='queued' THEN NULL ELSE locked_by END,
+		locked_at=CASE WHEN $3::varchar='queued' THEN NULL ELSE locked_at END,heartbeat_at=NOW(),updated_at=NOW(),
 		logs=CASE WHEN $7='' THEN logs ELSE RIGHT(logs || CASE WHEN logs='' THEN '' ELSE E'\n' END || $7,262144) END
 		WHERE id=$1 AND locked_by=$2 AND status='running'`, jobID, workerID, status, step, message, code, sanitizeLog(logLine))
 	if err != nil {

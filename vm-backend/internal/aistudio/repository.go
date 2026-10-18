@@ -732,7 +732,7 @@ func (r *Repository) MarkProposalBatch(ctx context.Context, userID, batchID, sta
 	if status != "applied" && status != "discarded" && status != "superseded" && status != "failed" {
 		return errors.New("invalid proposal batch status")
 	}
-	result, err := r.db.Exec(ctx, `UPDATE ai_proposal_batches SET status=$3,updated_at=NOW(),applied_at=CASE WHEN $3='applied' THEN NOW() ELSE applied_at END
+	result, err := r.db.Exec(ctx, `UPDATE ai_proposal_batches SET status=$3,updated_at=NOW(),applied_at=CASE WHEN $3::varchar='applied' THEN NOW() ELSE applied_at END
 		WHERE id=$1 AND user_id=$2 AND status='pending'`, batchID, userID, status)
 	if err != nil {
 		return err
