@@ -133,7 +133,7 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
     if (downloadingLogo) return;
     setDownloadingLogo(true);
     try {
-      await downloadSvg(brand.logo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.svg`);
+      await downloadSvg(displayLogo, `${businessName.replace(/[^a-zA-Z0-9]/g, '_')}_logo.svg`);
     } catch (error) {
       console.error('Logo download failed', error);
       window.alert(error instanceof Error ? error.message : 'Logo download failed.');
@@ -149,8 +149,8 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
         '&::before': { content: '""', position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,.08), transparent 60%)', pointerEvents: 'none' },
         '&::after': { content: '""', position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${accentColor}25, transparent 70%)`, pointerEvents: 'none' },
       }}>
-        {!proposed && brand.logo && (
-          <IconButton disabled={downloadingLogo} onClick={handleLogoDownload}
+        {!proposed && displayLogo && (
+          <IconButton aria-label="Download approved logo" disabled={downloadingLogo} onClick={handleLogoDownload}
             sx={{ position: 'absolute', top: 12, right: 12, zIndex: 2, bgcolor: 'rgba(255,255,255,.08)', backdropFilter: 'blur(8px)', color: 'rgba(255,255,255,.6)', '&:hover': { bgcolor: 'rgba(255,255,255,.15)', color: 'white' } }}>
             {downloadingLogo ? <CircularProgress size={18} /> : <Download size={18} />}
           </IconButton>
@@ -164,12 +164,6 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
             boxShadow: '0 8px 32px rgba(0,0,0,.2)',
           }}>
             {displayLogo ? <LogoDisplay logo={displayLogo} size={90} contrast /> : <Sparkles size={40} color="rgba(255,255,255,.3)" />}
-            {displayLogo && isInlineSvg(displayLogo) && (
-              <IconButton size="small" disabled={downloadingLogo} onClick={handleLogoDownload}
-                sx={{ position: 'absolute', bottom: -8, right: -8, bgcolor: 'rgba(0,0,0,.5)', color: 'white', width: 28, height: 28, '&:hover': { bgcolor: 'rgba(0,0,0,.7)' } }}>
-                {downloadingLogo ? <CircularProgress size={13} /> : <Download size={13} />}
-              </IconButton>
-            )}
           </Box>
           <Box sx={{ textAlign: { xs: 'center', sm: 'left' }, flex: 1 }}>
             <Typography sx={{ color: 'white', fontFamily: fontHeading, fontSize: { xs: 26, sm: 34, md: 40 }, fontWeight: 900, lineHeight: 1.1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{businessName}</Typography>
