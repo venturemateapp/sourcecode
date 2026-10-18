@@ -225,7 +225,7 @@ func (p *Processor) generate(ctx context.Context, job *aijobs.Job) (any, string,
 		}
 	case aistudio.ProjectTypePitchDeck:
 		current := request.CurrentDocument
-		if current == "" && project.CurrentRevisionID != "" {
+		if current == "" && project.ApprovedRevisionID != "" && project.CurrentRevisionID != "" {
 			if currentRevision, getErr := p.Projects.GetRevision(ctx, job.UserID, project.CurrentRevisionID); getErr == nil && currentRevision != nil {
 				current = currentRevision.Document
 			}
@@ -243,7 +243,7 @@ func (p *Processor) generate(ctx context.Context, job *aijobs.Job) (any, string,
 		}
 	case aistudio.ProjectTypeBusinessPlan:
 		current := request.CurrentDocument
-		if current == "" && project.CurrentRevisionID != "" {
+		if current == "" && project.ApprovedRevisionID != "" && project.CurrentRevisionID != "" {
 			if currentRevision, getErr := p.Projects.GetRevision(ctx, job.UserID, project.CurrentRevisionID); getErr == nil && currentRevision != nil {
 				current = currentRevision.Document
 			}
