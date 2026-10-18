@@ -204,14 +204,7 @@ func (s *Service) download(ctx context.Context, rawURL string) ([]byte, string, 
 	if len(data) > maxGeneratedAssetBytes {
 		return nil, "", 0, 0, fmt.Errorf("generated asset is too large")
 	}
-	mimeType := strings.TrimSpace(strings.Split(resp.Header.Get("Content-Type"), ";")[0])
-	if mimeType == "" || mimeType == "application/octet-stream" {
-		mimeType = http.DetectContentType(data)
-	}
-	trimmed := bytes.TrimSpace(data)
-	if bytes.HasPrefix(trimmed, []byte("<svg")) || bytes.HasPrefix(trimmed, []byte("<?xml")) && bytes.Contains(trimmed, []byte("<svg")) {
-		mimeType = "image/svg+xml"
-	}
+	mimeType := detectImageMime(data, strings.TrimSpace(strings.Split(resp.Header.Get("Content-Type"), ";")[0]))
 	if !strings.HasPrefix(mimeType, "image/") {
 		return nil, "", 0, 0, fmt.Errorf("generated response is not an image (%s)", mimeType)
 	}
@@ -240,13 +233,7 @@ func decodeDataURL(source string) ([]byte, string, int, int, error) {
 	if len(data) > maxGeneratedAssetBytes {
 		return nil, "", 0, 0, fmt.Errorf("generated asset is too large")
 	}
-	if strings.TrimSpace(mimeType) == "" || mimeType == "application/octet-stream" {
-		mimeType = http.DetectContentType(data)
-	}
-	trimmed := bytes.TrimSpace(data)
-	if bytes.HasPrefix(trimmed, []byte("<svg")) || (bytes.HasPrefix(trimmed, []byte("<?xml")) && bytes.Contains(trimmed, []byte("<svg"))) {
-		mimeType = "image/svg+xml"
-	}
+	mimeType = detectImageMime(data, mimeType)
 	if !strings.HasPrefix(mimeType, "image/") {
 		return nil, "", 0, 0, fmt.Errorf("generated response is not an image (%s)", mimeType)
 	}
@@ -257,6 +244,21 @@ func decodeDataURL(source string) ([]byte, string, int, int, error) {
 		}
 	}
 	return data, mimeType, width, height, nil
+}
+
+// Providers occasionally return raster bytes with an image/svg+xml header.
+// Trust the payload signature so the stored extension and Content-Type match
+// what browsers can actually decode.
+func detectImageMime(data []byte, declared string) string {
+	trimmed := bytes.TrimSpace(data)
+	if bytes.HasPrefix(trimmed, []byte("<svg")) || (bytes.HasPrefix(trimmed, []byte("<?xml")) && bytes.Contains(trimmed, []byte("<svg"))) {
+		return "image/svg+xml"
+	}
+	detected := http.DetectContentType(data)
+	if strings.HasPrefix(detected, "image/") {
+		return detected
+	}
+	return declared
 }
 
 func extensionForMime(mimeType string) string {
