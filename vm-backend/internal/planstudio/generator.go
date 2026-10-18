@@ -43,7 +43,7 @@ Every section and block needs a stable unique id. Keep prose clear and specific,
 		return nil, nil, err
 	}
 	raw := extractJSONObject(response.Content)
-	raw = normalizeAssumptions(raw)
+	raw = normalizePlanShape(raw)
 	var document Document
 	if err := json.Unmarshal([]byte(raw), &document); err != nil {
 		return nil, response, fmt.Errorf("AI returned invalid business plan JSON: %w", err)
@@ -55,6 +55,33 @@ Every section and block needs a stable unique id. Keep prose clear and specific,
 		return nil, response, err
 	}
 	return &document, response, nil
+}
+
+func normalizePlanShape(raw string) string {
+	raw = normalizeAssumptions(raw)
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
+		return raw
+	}
+	if theme, ok := envelope["theme"]; ok {
+		trimmed := strings.TrimSpace(string(theme))
+		if trimmed == "" || trimmed[0] != '{' {
+			// Preserve a textual theme as a harmless style hint instead of
+			// rejecting the entire otherwise-valid plan.
+			var label string
+			if json.Unmarshal(theme, &label) == nil && strings.TrimSpace(label) != "" {
+				encoded, _ := json.Marshal(map[string]any{"style": label})
+				envelope["theme"] = encoded
+			} else {
+				envelope["theme"] = json.RawMessage(`{}`)
+			}
+			result, err := json.Marshal(envelope)
+			if err == nil {
+				return string(result)
+			}
+		}
+	}
+	return raw
 }
 
 // Models occasionally return assumptions as a keyed object instead of the
