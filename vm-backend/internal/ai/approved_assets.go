@@ -50,7 +50,9 @@ func persistApprovedBrandKit(ctx context.Context, store ApprovedAssetStore, busi
 		// The AI produces raw <svg>…</svg> strings for logo fields. Wrap them
 		// into a data URL so they can flow through the same durability path
 		// (upload to S3) and render in <img> tags everywhere.
-		if strings.HasPrefix(source, "<svg") {
+		trimmedSource := strings.TrimSpace(source)
+		if strings.HasPrefix(trimmedSource, "<svg") || strings.HasPrefix(trimmedSource, "<?xml") {
+			source = trimmedSource
 			source = "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(source))
 		}
 		data, contentType, err := fetchApprovedImage(ctx, source)

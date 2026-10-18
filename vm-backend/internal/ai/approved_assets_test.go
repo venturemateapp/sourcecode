@@ -95,3 +95,15 @@ func TestValidateApprovedImageRecognizesRealSVG(t *testing.T) {
 		t.Fatalf("content type = %q, want image/svg+xml", contentType)
 	}
 }
+
+func TestPersistBrandKitAcceptsWhitespacePrefixedRawSVG(t *testing.T) {
+	rawSVG := "  \n\t<svg xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"1\" height=\"1\"/></svg>  "
+	rawBrand, err := json.Marshal(map[string]string{"logoIcon": rawSVG})
+	if err != nil {
+		t.Fatalf("marshal test brand: %v", err)
+	}
+	store := &fakeStore{}
+	if _, err := persistApprovedBrandKit(context.Background(), store, "biz-whitespace", string(rawBrand)); err != nil {
+		t.Fatalf("persistApprovedBrandKit rejected whitespace-prefixed SVG: %v", err)
+	}
+}
