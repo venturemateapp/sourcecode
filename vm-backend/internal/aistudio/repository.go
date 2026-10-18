@@ -766,8 +766,8 @@ func (r *Repository) ListAssets(ctx context.Context, userID, businessID, project
 	}
 	rows, err := r.db.Query(ctx, `SELECT id::text,user_id::text,COALESCE(business_id::text,''),COALESCE(project_id::text,''),source,kind,prompt,model,style,mime_type,
 		COALESCE(width,0),COALESCE(height,0),size_bytes,storage_key,url,thumbnail_url,metadata::text,created_at,updated_at
-		FROM ai_assets WHERE user_id=$1 AND ($2='' OR business_id::text=$2) AND ($3='' OR project_id::text=$3) AND ($4='' OR kind=$4)
-		ORDER BY created_at DESC LIMIT $5`, userID, businessID, projectID, kind, limit)
+		FROM ai_assets WHERE user_id=$1 AND ($2::text='' OR business_id::text=$2::text) AND ($3::text='' OR project_id::text=$3::text) AND ($4::text='' OR kind=$4::text)
+		ORDER BY created_at DESC LIMIT $5::int`, userID, businessID, projectID, kind, limit)
 	if err != nil {
 		return nil, err
 	}
