@@ -43,6 +43,7 @@ Every section and block needs a stable unique id. Keep prose clear and specific,
 		return nil, nil, err
 	}
 	raw := extractJSONObject(response.Content)
+	raw = normalizeAssumptions(raw)
 	var document Document
 	if err := json.Unmarshal([]byte(raw), &document); err != nil {
 		return nil, response, fmt.Errorf("AI returned invalid business plan JSON: %w", err)
@@ -54,6 +55,50 @@ Every section and block needs a stable unique id. Keep prose clear and specific,
 		return nil, response, err
 	}
 	return &document, response, nil
+}
+
+// Models occasionally return assumptions as a keyed object instead of the
+// documented array. Normalize that shape before decoding so one formatting
+// variation cannot fail an otherwise valid business plan.
+func normalizeAssumptions(raw string) string {
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
+		return raw
+	}
+	assumptions, ok := envelope["assumptions"]
+	if !ok || len(assumptions) == 0 || assumptions[0] != '{' {
+		return raw
+	}
+	var keyed map[string]json.RawMessage
+	if err := json.Unmarshal(assumptions, &keyed); err != nil {
+		return raw
+	}
+	converted := make([]Assumption, 0, len(keyed))
+	for label, value := range keyed {
+		item := Assumption{ID: "assumption-" + strings.ToLower(strings.ReplaceAll(label, " ", "-")), Label: label, Unit: "unspecified", Source: "Verification required"}
+		var number float64
+		if json.Unmarshal(value, &number) == nil {
+			item.Value = number
+		} else {
+			var textValue string
+			if json.Unmarshal(value, &textValue) == nil {
+				item.Description = textValue
+			} else {
+				item.Description = string(value)
+			}
+		}
+		converted = append(converted, item)
+	}
+	encoded, err := json.Marshal(converted)
+	if err != nil {
+		return raw
+	}
+	envelope["assumptions"] = encoded
+	result, err := json.Marshal(envelope)
+	if err != nil {
+		return raw
+	}
+	return string(result)
 }
 
 func extractJSONObject(value string) string {
