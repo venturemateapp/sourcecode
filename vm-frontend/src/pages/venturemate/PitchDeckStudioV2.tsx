@@ -16,19 +16,48 @@ import type { DeckDocument, DeckElement, DeckSlide } from '../../lib/ai-studio/t
 const W = 13.34;
 const H = 7.5;
 
+function normalizeDeckLayout(deck: DeckDocument): DeckDocument {
+  const next = structuredClone(deck);
+  next.slides.forEach(slide => {
+    const textElements = slide.elements.filter(element => element.type === 'text' && element.visible !== false).sort((a, b) => a.y - b.y || a.x - b.x);
+    textElements.forEach((element, index) => {
+      element.x = Math.max(0, Math.min(W - element.w, element.x));
+      element.y = Math.max(0, Math.min(H - element.h, element.y));
+      element.w = Math.max(.7, Math.min(W - element.x, element.w));
+      element.h = Math.max(.35, Math.min(H - element.y, element.h));
+      const style = element.style || (element.style = {});
+      const requestedSize = Number(style.fontSize || 20);
+      // Keep generated type proportional to its box so long headlines cannot
+      // visually escape into neighboring elements.
+      style.fontSize = Math.min(requestedSize, Math.max(12, element.h * 72 * .78));
+      for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
+        const previous = textElements[previousIndex];
+        const overlapsX = element.x < previous.x + previous.w && element.x + element.w > previous.x;
+        const overlapsY = element.y < previous.y + previous.h && element.y + element.h > previous.y;
+        if (overlapsX && overlapsY) {
+          const nextY = previous.y + previous.h + .08;
+          if (nextY + element.h <= H) element.y = nextY;
+          else element.h = Math.max(.35, H - element.y - .08);
+        }
+      }
+    });
+  });
+  return next;
+}
+
 function safeDeck(raw?: string, title = 'Pitch Deck'): DeckDocument {
   try {
     const parsed = JSON.parse(raw || '') as DeckDocument;
-    if (parsed?.schemaVersion === '2.0' && Array.isArray(parsed.slides)) return parsed;
+    if (parsed?.schemaVersion === '2.0' && Array.isArray(parsed.slides)) return normalizeDeckLayout(parsed);
   } catch { /* use starter */ }
-  return {
+  return normalizeDeckLayout({
     schemaVersion: '2.0', title, template: 'modern-dark',
     theme: { primary: '#10b981', secondary: '#6366f1', background: '#080b12', surface: '#111827', text: '#f8fafc', mutedText: '#94a3b8', headingFont: 'Aptos Display', bodyFont: 'Aptos' },
     slides: [{ id: crypto.randomUUID(), type: 'cover', title, background: { type: 'solid', color: '#080b12' }, order: 0, notes: '', elements: [
       { id: crypto.randomUUID(), type: 'text', x: .8, y: 2.1, w: 10.8, h: 1.2, zIndex: 1, visible: true, locked: false, text: title, style: { fontSize: 42, fontWeight: 800, color: '#f8fafc' } },
       { id: crypto.randomUUID(), type: 'text', x: .85, y: 3.6, w: 8, h: .8, zIndex: 2, visible: true, locked: false, text: 'Add your investor-ready story', style: { fontSize: 20, color: '#94a3b8' } },
     ] }],
-  };
+  });
 }
 
 function cleanHex(value: string | undefined, fallback = '111827'): string {
@@ -261,7 +290,7 @@ export function PitchDeckStudioV2() {
           {[...selectedSlide.elements].sort((a, b) => a.zIndex - b.zIndex).map(element => {
             const selected = element.id === selectedElementId;
             const common = { position: 'absolute', left: `${element.x / W * 100}%`, top: `${element.y / H * 100}%`, width: `${element.w / W * 100}%`, height: `${element.h / H * 100}%`, transform: `rotate(${element.rotation || 0}deg)`, zIndex: element.zIndex, border: selected ? '2px solid #8b5cf6' : '1px solid transparent', cursor: element.locked ? 'default' : 'move', userSelect: 'none', overflow: 'hidden' } as const;
-            if (element.type === 'text') return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} onDoubleClick={() => setSelectedElementId(element.id)} sx={{ ...common, overflow: 'visible', color: String(element.style?.color || document.theme.text), fontSize: `clamp(8px, ${styleNumber(element, 'fontSize', 20) / 1100 * 100}vw, ${styleNumber(element, 'fontSize', 20)}px)`, fontWeight: styleNumber(element, 'fontWeight', 400), lineHeight: 1.15, textAlign: String(element.style?.textAlign || 'left') as 'left', display: 'block', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word', p: .25 }}>{element.text}</Box>;
+            if (element.type === 'text') return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} onDoubleClick={() => setSelectedElementId(element.id)} sx={{ ...common, color: String(element.style?.color || document.theme.text), fontSize: `clamp(8px, ${styleNumber(element, 'fontSize', 20) / 1100 * 100}vw, ${styleNumber(element, 'fontSize', 20)}px)`, fontWeight: styleNumber(element, 'fontWeight', 400), lineHeight: 1.15, textAlign: String(element.style?.textAlign || 'left') as 'left', display: 'block', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word', p: .25 }}>{element.text}</Box>;
             if (element.type === 'image') return <Box key={element.id} component="img" src={element.url} alt={element.altText || ''} onPointerDown={event => beginDrag(event, element)} sx={{ ...common, objectFit: String(element.style?.objectFit || 'cover') }} />;
             return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} sx={{ ...common, bgcolor: String(element.style?.background || element.style?.fill || document.theme.primary), opacity: Number(element.style?.opacity ?? 1), borderRadius: Number(element.style?.borderRadius ?? 0) }} />;
           })}
