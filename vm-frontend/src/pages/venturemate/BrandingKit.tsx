@@ -190,24 +190,6 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
         </Box>
       </Box>
 
-      {proposed && logoOptions.length > 0 && (
-        <Box>
-          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <Eye size={13} /> Logo Options · choose your preferred direction
-          </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3,1fr)' }, gap: 1.25 }}>
-            {logoOptions.map((option, index) => {
-              const source = optionSource(index);
-              return <Box key={`${option.name}-${index}`} sx={{ p: 1.5, borderRadius: 2.5, bgcolor: '#fff', border: index === (brand.selectedLogo || 0) ? '2px solid var(--vm-primary-400)' : '1px solid rgba(255,255,255,.12)', textAlign: 'center' }}>
-                {source && <LogoDisplay logo={source} size={110} />}
-                <Typography sx={{ color: '#1f2937', fontSize: 11, fontWeight: 800, mt: .8 }}>{option.name || `Option ${index + 1}`}</Typography>
-                <Typography sx={{ color: '#64748b', fontSize: 10, mt: .35, lineHeight: 1.4 }}>{option.concept || option.type || 'Logo concept'}</Typography>
-              </Box>;
-            })}
-          </Box>
-        </Box>
-      )}
-
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
         <Box>
           <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
