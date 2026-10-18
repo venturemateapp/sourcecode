@@ -182,10 +182,6 @@ export function StudioChrome(props: StudioChromeProps) {
 
           {rightTab === 'ai' && (
             <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25, minHeight: 0, flex: 1 }}>
-              <Card sx={{ p: 1.25, bgcolor: 'rgba(124,58,237,.08)', border: '1px solid rgba(124,58,237,.22)' }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: .75 }}><Sparkles size={14} /> Opper AI workspace</Typography>
-                <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: .5 }}>AI creates a reviewable revision. Nothing replaces your approved work until you approve it.</Typography>
-              </Card>
               {props.job && (
                 <Card sx={{ p: 1.25, bgcolor: 'rgba(255,255,255,.025)' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: .75 }}>
@@ -244,7 +240,7 @@ export function StudioChrome(props: StudioChromeProps) {
             <Box sx={{ p: 1, overflow: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
               {props.onGenerateAsset && (
                 <Card sx={{ gridColumn: '1 / -1', p: 1.25, bgcolor: 'rgba(124,58,237,.07)', border: '1px solid rgba(124,58,237,.2)' }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 850, mb: 1 }}>Generate a durable Opper asset</Typography>
+                  <Typography sx={{ fontSize: 11, fontWeight: 850, mb: 1 }}>Generate a durable asset</Typography>
                   <TextField fullWidth size="small" label="What should the visual show?" value={assetSubject} onChange={event => setAssetSubject(event.target.value)} multiline minRows={2} data-testid="asset-subject-input" />
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: .75, mt: .75 }}>
                     <Select size="small" value={assetKind} onChange={event => setAssetKind(event.target.value)} data-testid="asset-kind-select">
