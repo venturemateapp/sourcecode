@@ -72,6 +72,7 @@ Every section and block needs a stable unique id. Keep prose clear and specific,
 }
 
 func normalizePlanShape(raw string) string {
+	raw = normalizeExecutiveSummary(raw)
 	raw = normalizeAssumptions(raw)
 	var envelope map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
@@ -92,6 +93,49 @@ func normalizePlanShape(raw string) string {
 			result, err := json.Marshal(envelope)
 			if err == nil {
 				return string(result)
+			}
+		}
+	}
+	return raw
+}
+
+// Models sometimes return executiveSummary as a structured object containing
+// summary paragraphs, highlights, or a text/content field. The document
+// schema intentionally stores it as plain text, so coerce that shape without
+// discarding the generated content.
+func normalizeExecutiveSummary(raw string) string {
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &envelope); err != nil {
+		return raw
+	}
+	value, ok := envelope["executiveSummary"]
+	if !ok || len(value) == 0 || value[0] == '"' {
+		return raw
+	}
+	var object map[string]json.RawMessage
+	if json.Unmarshal(value, &object) == nil {
+		for _, key := range []string{"text", "content", "summary", "description"} {
+			if candidate, exists := object[key]; exists {
+				var text string
+				if json.Unmarshal(candidate, &text) == nil && strings.TrimSpace(text) != "" {
+					envelope["executiveSummary"], _ = json.Marshal(text)
+					encoded, err := json.Marshal(envelope)
+					if err == nil {
+						return string(encoded)
+					}
+				}
+			}
+		}
+	}
+	// Last resort: keep all structured content as valid readable JSON text.
+	var structured any
+	if json.Unmarshal(value, &structured) == nil {
+		text, err := json.Marshal(structured)
+		if err == nil {
+			envelope["executiveSummary"], _ = json.Marshal(string(text))
+			encoded, marshalErr := json.Marshal(envelope)
+			if marshalErr == nil {
+				return string(encoded)
 			}
 		}
 	}
