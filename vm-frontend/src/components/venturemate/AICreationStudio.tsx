@@ -276,16 +276,19 @@ export function AICreationStudio({
         ) : (
           <Card sx={{
             p: { xs: 1.5, md: 2.5 },
-            bgcolor: 'var(--vm-bg-secondary)',
-            border: '1px solid var(--vm-border-subtle)',
+            bgcolor: '#0b1220',
+            backgroundImage: 'linear-gradient(145deg, rgba(16,185,129,.06), rgba(11,18,32,.98) 42%)',
+            border: '1px solid rgba(148,163,184,.18)',
             borderRadius: builderMode ? 0 : 3,
             height: builderMode ? '100%' : undefined,
+            color: 'var(--vm-text-primary)',
+            boxShadow: '0 14px 36px rgba(0,0,0,.18)',
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-              <Box sx={{ width: 32, height: 32, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#22c55e20' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, pb: 1.5, borderBottom: '1px solid rgba(148,163,184,.14)' }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(34,197,94,.14)', border: '1px solid rgba(34,197,94,.25)' }}>
                 <Check size={16} color="#22c55e" />
               </Box>
-              <Typography sx={{ color: 'var(--vm-text-primary)', fontWeight: 900, fontSize: 14 }}>Current Approved Version</Typography>
+              <Typography sx={{ color: '#f8fafc', fontWeight: 900, fontSize: 14, letterSpacing: '-.01em' }}>Current Approved Version</Typography>
             </Box>
             <Box sx={{ minHeight: 120 }}>
               {renderCurrent() || (
