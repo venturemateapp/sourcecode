@@ -30,11 +30,13 @@ export interface UploadResult {
 export async function graphqlRequest<T>(
   query: string,
   variables?: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<T> {
   const token = getToken();
 
   const res = await fetch(API_CONFIG.GRAPHQL_URL, {
     method: 'POST',
+    signal,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

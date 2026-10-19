@@ -97,6 +97,8 @@ export function AICreationStudio({
   const [success, setSuccess] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const generationControllerRef = useRef<AbortController | null>(null);
+  const cancelRequestedRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,6 +117,9 @@ export function AICreationStudio({
       if (!canProceed) return;
     }
     setLoading(true);
+    cancelRequestedRef.current = false;
+    const controller = new AbortController();
+    generationControllerRef.current = controller;
     setError(null);
     setSuccess(null);
     setLastPrompt(instruction.trim());
@@ -132,7 +137,7 @@ export function AICreationStudio({
       setSyncing(false);
       const data = await graphqlRequest<ProposalResponse>(PROPOSE_MUTATION, {
         userId, businessId: selectedBusiness.id, prompt: contextualPrompt, domain,
-      });
+      }, controller.signal);
       const result = data.proposeAgentAction;
       const nextProposals = result.proposals ?? [];
       setProposals(nextProposals);
@@ -144,11 +149,23 @@ export function AICreationStudio({
       setPrompt('');
       if (!nextProposals.length && !result.message) setError('AI did not return a reviewable change. Describe the result you want more specifically.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI generation failed. Please try rephrasing your request.');
+      if (!cancelRequestedRef.current) {
+        setError(err instanceof Error ? err.message : 'AI generation failed. Please try rephrasing your request.');
+      }
     } finally {
+      generationControllerRef.current = null;
       setSyncing(false);
       setLoading(false);
     }
+  };
+
+  const cancelGeneration = () => {
+    if (!loading) return;
+    cancelRequestedRef.current = true;
+    generationControllerRef.current?.abort();
+    setLoading(false);
+    setSyncing(false);
+    setSuccess('Generation cancelled. No changes were applied.');
   };
 
   const syncLatestData = async () => {
@@ -384,6 +401,12 @@ export function AICreationStudio({
           >
             {proposals.length ? 'Revise batch with AI' : 'Generate with AI'}
           </AnimatedButton>
+          {loading && (
+            <AnimatedButton fullWidth variant="ghost" size="sm" icon={<X size={14} />} onClick={cancelGeneration}
+              sx={{ mt: 0.75, color: '#fca5a5', borderColor: 'rgba(248,113,113,.3)' }}>
+              Cancel generation
+            </AnimatedButton>
+          )}
 
           {/* Next / Approve / Discard buttons always below Generate when proposal exists */}
           {proposals.length > 0 && (
