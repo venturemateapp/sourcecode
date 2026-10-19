@@ -163,7 +163,15 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       if (data.location) vars.location = data.location;
       if (data.website) vars.website = data.website;
       const result = await graphqlRequest<{ createBusiness: ApiBusiness }>(CREATE_BUSINESS_MUTATION, vars);
-      const business = mapApiToBusiness(result.createBusiness);
+      let business = mapApiToBusiness(result.createBusiness);
+      if (data.brandKit) {
+        const updatedResult = await graphqlRequest<{ updateBusiness: ApiBusiness }>(UPDATE_BUSINESS_MUTATION, {
+          id: business.id,
+          userId,
+          brandKit: serializeForApi(data.brandKit),
+        });
+        business = mapApiToBusiness(updatedResult.updateBusiness);
+      }
       setBusinesses(prev => [...prev, business]);
       return business;
     } catch (err) {
