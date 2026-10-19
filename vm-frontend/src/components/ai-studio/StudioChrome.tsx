@@ -192,7 +192,6 @@ export function StudioChrome(props: StudioChromeProps) {
                   </Box>
                   <Typography sx={{ fontSize: 12, fontWeight: 700, mt: 1 }}>{props.job.message || props.job.step}</Typography>
                   {props.job.errorMessage && <Typography sx={{ fontSize: 10, color: 'error.main', mt: .75 }}>{props.job.errorMessage}</Typography>}
-                  {(props.job.provider || props.job.model) && <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', mt: .75 }}>{props.job.provider} · {props.job.model} · {(props.job.inputTokens || 0) + (props.job.outputTokens || 0)} tokens</Typography>}
                 </Card>
               )}
               {props.generationContext && (
