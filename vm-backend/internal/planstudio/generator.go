@@ -46,7 +46,21 @@ Every section and block needs a stable unique id. Keep prose clear and specific,
 	raw = normalizePlanShape(raw)
 	var document Document
 	if err := json.Unmarshal([]byte(raw), &document); err != nil {
-		return nil, response, fmt.Errorf("AI returned invalid business plan JSON: %w", err)
+		// Long-form plans occasionally contain a valid-looking object with one
+		// field in the wrong JSON shape (for example theme as a string or
+		// assumptions as a keyed object). Give the provider one constrained
+		// repair pass before failing the job.
+		repairResponse, repairErr := provider.Chat(ctx,
+			"Repair the following business-plan JSON. Return only one valid JSON object matching schemaVersion 2.0. Convert assumptions to an array of objects and theme to an object when needed. Preserve all content; do not add commentary or markdown.",
+			[]ai.Message{{Role: "user", Content: raw}}, nil)
+		if repairErr != nil || repairResponse == nil {
+			return nil, response, fmt.Errorf("AI returned invalid business plan JSON: %w", err)
+		}
+		repaired := normalizePlanShape(extractJSONObject(repairResponse.Content))
+		if repairDecodeErr := json.Unmarshal([]byte(repaired), &document); repairDecodeErr != nil {
+			return nil, response, fmt.Errorf("AI returned invalid business plan JSON: %w", err)
+		}
+		response = repairResponse
 	}
 	if projection != nil {
 		document.Projection = projection
