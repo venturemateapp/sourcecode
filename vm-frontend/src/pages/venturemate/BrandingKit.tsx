@@ -197,9 +197,6 @@ function BrandPreview({ brand, businessName, proposed = false }: { brand: Brandi
           </Box>
           <Box sx={{ textAlign: { xs: 'center', sm: 'left' }, flex: 1 }}>
             <Typography sx={{ color: 'white', fontFamily: fontHeading, fontSize: { xs: 26, sm: 34, md: 40 }, fontWeight: 900, lineHeight: 1.1, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{businessName}</Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,.6)', fontFamily: fontBody, fontSize: 13, mt: 1, lineHeight: 1.7, maxWidth: 500, overflowWrap: 'anywhere' }}>
-              {brand.logoConcept || 'AI-crafted brand identity.'}
-            </Typography>
             {proposed && <Chip icon={<Sparkles size={12} />} label="Proposal" size="small" sx={{ mt: 1.5, bgcolor: 'rgba(16,185,129,.2)', color: '#34d399', fontSize: 10, fontWeight: 700 }} />}
           </Box>
         </Box>
