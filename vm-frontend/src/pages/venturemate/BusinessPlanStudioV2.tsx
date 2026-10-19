@@ -26,8 +26,9 @@ function safePlan(raw?: string, title = 'Business Plan', businessId?: string): P
   };
 }
 
-function planToMarkdown(document: PlanDocumentV2): string {
+function planToMarkdown(document: PlanDocumentV2, logo?: string): string {
   const lines = [`# ${document.title}`, '', `**Version:** ${document.metadata.versionLabel || '1.0'}  `, `**Currency:** ${document.metadata.currency || 'GHS'}  `, `**Prepared:** ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, ''];
+  if (logo) lines.push(`![${document.title} logo](${logo})`, '');
   if (document.executiveSummary) lines.push('## Executive Summary', '', document.executiveSummary, '');
   document.sections.forEach(section => {
     lines.push(`## ${section.title}`, '');
@@ -54,11 +55,11 @@ function downloadBlob(data: BlobPart, type: string, filename: string): void {
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
 }
 
-function exportMarkdown(document: PlanDocumentV2): void {
-  downloadBlob(planToMarkdown(document), 'text/markdown;charset=utf-8', `${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.md`);
+function exportMarkdown(document: PlanDocumentV2, logo?: string): void {
+  downloadBlob(planToMarkdown(document, logo), 'text/markdown;charset=utf-8', `${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.md`);
 }
 
-function exportPdf(document: PlanDocumentV2): void {
+async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void> {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const margin = 54; const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight(); const contentWidth = pageWidth - margin * 2;
   let y = margin;
@@ -67,6 +68,10 @@ function exportPdf(document: PlanDocumentV2): void {
     pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size); pdf.setTextColor('#172033');
     const lines = pdf.splitTextToSize(value || '', contentWidth); const height = lines.length * size * 1.35; ensure(height + spacing); pdf.text(lines, margin, y); y += height + spacing;
   };
+  if (logo?.startsWith('data:image/') && !logo.includes('svg')) {
+    const format = logo.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+    pdf.addImage(logo, format, margin, y, 96, 40, undefined, 'FAST'); y += 52;
+  }
   text(document.title, 25, true, 12); text(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'} · ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, 9, false, 20);
   if (document.executiveSummary) { text('Executive Summary', 16, true); text(document.executiveSummary, 11, false, 16); }
   document.sections.forEach(section => {
@@ -186,7 +191,11 @@ export function BusinessPlanStudioV2() {
   });
   const addBlock = (type: string) => mutateSection(section => section.blocks.push({ id: crypto.randomUUID(), type, text: type === 'heading' ? 'New heading' : '', items: type.includes('list') ? ['New item'] : undefined, headers: type === 'table' ? ['Item', 'Value'] : undefined, rows: type === 'table' ? [['Example', '0']] : undefined }));
   const save = async () => { await studio.saveDocument(JSON.stringify(document), 'Edit business plan'); };
-  const runExport = () => { if (format === 'pdf') exportPdf(document); else if (format === 'docx') exportDocx(document); else exportMarkdown(document); };
+  const runExport = async () => {
+    if (format === 'pdf') await exportPdf(document, approvedLogo);
+    else if (format === 'docx') exportDocx(document);
+    else exportMarkdown(document, approvedLogo);
+  };
 
   const leftRail = <Box>
     <Box sx={{ p: 1, display: 'flex', gap: .4, borderBottom: '1px solid var(--vm-border-subtle)' }}><Button size="small" fullWidth startIcon={<Plus size={13} />} onClick={addSection}>Section</Button><IconButton size="small" onClick={duplicateSection}><Copy size={13} /></IconButton><IconButton size="small" disabled={document.sections.length <= 1} color="error" onClick={deleteSection}><Trash2 size={13} /></IconButton></Box>

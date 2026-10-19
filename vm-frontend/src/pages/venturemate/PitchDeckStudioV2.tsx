@@ -78,7 +78,7 @@ async function imageData(url?: string): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
-async function exportDeckPptx(document: DeckDocument): Promise<void> {
+async function exportDeckPptx(document: DeckDocument, logo?: string): Promise<void> {
   const pptx = new PptxGenJS();
   pptx.defineLayout({ name: 'VM_AI_STUDIO', width: W, height: H });
   pptx.layout = 'VM_AI_STUDIO';
@@ -110,13 +110,17 @@ async function exportDeckPptx(document: DeckDocument): Promise<void> {
         if (data) slide.addImage({ data, x: element.x, y: element.y, w: element.w, h: element.h, rotate: element.rotation || 0 });
       }
     }
+    if (source.order === 0 && logo) {
+      const data = await imageData(logo);
+      if (data) slide.addImage({ data, x: 10.9, y: .65, w: 1.6, h: .8 });
+    }
     if (source.notes) slide.addNotes(source.notes);
   }
   const fileName = `${document.title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'pitch-deck'}.pptx`;
   await pptx.writeFile({ fileName, compression: true });
 }
 
-async function exportDeckPdf(document: DeckDocument): Promise<void> {
+async function exportDeckPdf(document: DeckDocument, logo?: string): Promise<void> {
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'in', format: [W, H] });
   for (const [index, source] of document.slides.entries()) {
     if (index) pdf.addPage([W, H], 'landscape');
@@ -144,6 +148,10 @@ async function exportDeckPdf(document: DeckDocument): Promise<void> {
           pdf.addImage(data, format, element.x, element.y, element.w, element.h, undefined, 'FAST', element.rotation || 0);
         }
       }
+    }
+    if (source.order === 0 && logo) {
+      const data = await imageData(logo);
+      if (data && !data.startsWith('data:image/svg')) pdf.addImage(data, data.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG', 10.9, .65, 1.6, .8, undefined, 'FAST');
     }
   }
   pdf.save(`${document.title.replace(/[^a-z0-9]+/gi, '-') || 'pitch-deck'}.pdf`);
@@ -221,7 +229,11 @@ export function PitchDeckStudioV2() {
   };
 
   const save = async () => { await studio.saveDocument(JSON.stringify(document), 'Edit pitch deck'); };
-  const exportDeck = async () => { if (exportMenu === 'pptx') await exportDeckPptx(document); else await exportDeckPdf(document); };
+  const exportDeck = async () => {
+    const logo = selectedBusiness?.brandKit?.logo || selectedBusiness?.brandKit?.logoIcon || '';
+    if (exportMenu === 'pptx') await exportDeckPptx(document, logo);
+    else await exportDeckPdf(document, logo);
+  };
 
   const beginDrag = (event: React.PointerEvent, element: DeckElement) => {
     if (element.locked || !canvasRef.current) return;
