@@ -8,12 +8,14 @@ import type {
   AIAsset, AIProject, AIProjectBuild, AIProjectFile, AIProjectRevision, AIProjectType,
 } from '../lib/ai-studio/types';
 import { useAIJob } from './useAIJob';
+import { useBusiness } from '../contexts/BusinessContext';
 
 function parseResult(result: string): { revisionId?: string } {
   try { return JSON.parse(result || '{}') as { revisionId?: string }; } catch { return {}; }
 }
 
 export function useAIStudioProject(projectType: AIProjectType, businessId?: string, defaultName = 'Untitled project') {
+  const { refreshBusiness } = useBusiness();
   const storageKey = `venturemate:ai-studio:${projectType}:${businessId || 'personal'}`;
   const [projects, setProjects] = useState<AIProject[]>([]);
   const [project, setProject] = useState<AIProject | null>(null);
@@ -99,10 +101,13 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
   const generate = useCallback(async (prompt: string, projection?: Record<string, unknown>) => {
     if (!project) throw new Error('Create or select a project first.');
     setError(null);
+    // Ensure AI context is built from the latest saved business record,
+    // including branding, metrics, team, and financial data.
+    await refreshBusiness();
     const next = await startAIGeneration(project.id, prompt, projection);
     watch(next);
     return next;
-  }, [project, watch]);
+  }, [project, refreshBusiness, watch]);
 
   const pendingRevision = useMemo(() => {
     const revisionId = job ? parseResult(job.result).revisionId : undefined;
