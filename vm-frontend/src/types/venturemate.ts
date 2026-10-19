@@ -62,6 +62,7 @@ export interface Business {
 
 // Branding Kit
 export interface BrandKit {
+  colorsLocked?: boolean;
   logo: string;
   logoWhite: string;
   logoIcon: string;

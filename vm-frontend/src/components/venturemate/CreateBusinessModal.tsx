@@ -95,6 +95,7 @@ export function CreateBusinessModal({ open, onClose, onCreate }: CreateBusinessM
         primaryColor: formData.primaryColor,
         secondaryColor: formData.secondaryColor,
         accentColor: '#34d399',
+        colorsLocked: true,
         darkColor: '#064e3b',
         fontHeading: 'Inter',
         fontBody: 'Inter',

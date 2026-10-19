@@ -877,7 +877,8 @@ Make it unforgettable — a logo people recognize instantly from the shape alone
 	}
 
 	// Process selected color palette
-	if selColor >= 0 && selColor < len(colors) {
+	colorsLocked, _ := brand["colorsLocked"].(bool)
+	if !colorsLocked && selColor >= 0 && selColor < len(colors) {
 		if cObj, ok := colors[selColor].(map[string]interface{}); ok {
 			if c, ok := cObj["colors"].(map[string]interface{}); ok {
 				for _, key := range []string{"primary", "secondary", "accent", "background", "text"} {
