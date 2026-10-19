@@ -16,7 +16,17 @@ import { normalizeImageSource } from '../../lib/imageSource';
 function safePlan(raw?: string, title = 'Business Plan', businessId?: string): PlanDocumentV2 {
   try {
     const parsed = JSON.parse(raw || '') as PlanDocumentV2;
-    if (parsed?.schemaVersion === '2.0' && Array.isArray(parsed.sections)) return parsed;
+    if (parsed?.schemaVersion === '2.0' && Array.isArray(parsed.sections)) {
+      if (typeof parsed.executiveSummary === 'string') {
+        try {
+          const structured = JSON.parse(parsed.executiveSummary) as { blocks?: Array<{ text?: string; items?: string[] }> };
+          if (Array.isArray(structured.blocks)) {
+            parsed.executiveSummary = structured.blocks.flatMap(block => [block.text || '', ...(block.items || [])]).filter(Boolean).join('\n\n');
+          }
+        } catch { /* already plain text */ }
+      }
+      return parsed;
+    }
   } catch { /* use starter */ }
   return {
     schemaVersion: '2.0', title, executiveSummary: '',

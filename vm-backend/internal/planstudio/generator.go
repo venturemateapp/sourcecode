@@ -126,6 +126,28 @@ func normalizeExecutiveSummary(raw string) string {
 				}
 			}
 		}
+		if blocks, exists := object["blocks"]; exists {
+			var list []struct {
+				Text  string   `json:"text"`
+				Items []string `json:"items"`
+			}
+			if json.Unmarshal(blocks, &list) == nil {
+				var parts []string
+				for _, block := range list {
+					if strings.TrimSpace(block.Text) != "" {
+						parts = append(parts, block.Text)
+					}
+					parts = append(parts, block.Items...)
+				}
+				if len(parts) > 0 {
+					envelope["executiveSummary"], _ = json.Marshal(strings.Join(parts, "\n\n"))
+					encoded, err := json.Marshal(envelope)
+					if err == nil {
+						return string(encoded)
+					}
+				}
+			}
+		}
 	}
 	// Last resort: keep all structured content as valid readable JSON text.
 	var structured any
