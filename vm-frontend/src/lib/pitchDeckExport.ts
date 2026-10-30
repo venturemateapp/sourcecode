@@ -59,6 +59,7 @@ function addDeckChrome(
   businessName: string,
   primary: string,
   premium: boolean,
+  logoData?: string,
 ) {
   slide.background = { color: premium ? '080B12' : '101827' };
   slide.addShape(pptx.ShapeType.rect, {
@@ -66,8 +67,17 @@ function addDeckChrome(
     line: { color: primary, transparency: 100 },
     fill: { color: primary },
   });
+  if (logoData) {
+    slide.addShape(pptx.ShapeType.roundRect, {
+      x: 0.58, y: 0.19, w: 0.46, h: 0.46,
+      rectRadius: 0.06,
+      line: { color: '334155', transparency: 40, width: 0.75 },
+      fill: { color: '0B1220' },
+    });
+    slide.addImage({ data: logoData, x: 0.63, y: 0.24, w: 0.36, h: 0.36 });
+  }
   slide.addText(businessName, {
-    x: 0.62, y: 0.28, w: 5.5, h: 0.28,
+    x: logoData ? 1.18 : 0.62, y: 0.28, w: 5.5, h: 0.28,
     fontFace: 'Aptos', fontSize: 10, bold: true,
     color: 'CBD5E1', charSpacing: 0.8, margin: 0,
   });
@@ -151,7 +161,7 @@ export async function exportPitchDeckPptx(options: PitchDeckExportOptions): Prom
   for (let index = 0; index < options.slides.length; index++) {
     const data = options.slides[index];
     const slide = pptx.addSlide();
-    addDeckChrome(pptx, slide, index, options.slides.length, options.businessName, primary, premium);
+    addDeckChrome(pptx, slide, index, options.slides.length, options.businessName, primary, premium, logoData);
     const imageData = await remoteImageData(data.image);
 
     if (index === 0 || data.type === 'title') {
@@ -190,3 +200,5 @@ export async function exportPitchDeckPptx(options: PitchDeckExportOptions): Prom
   await pptx.writeFile({ fileName, compression: true });
   return fileName;
 }
+
+export { remoteImageData as imageToDataUri };

@@ -1,13 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, Slider, Avatar, Chip, CircularProgress } from '@mui/material';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText, Eye } from 'lucide-react';
+import { Box, Typography, IconButton, Tooltip, Slider, Chip, CircularProgress } from '@mui/material';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Download, FileText } from 'lucide-react';
 import { CreativeTemplatePicker } from './CreativeTemplatePicker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import type { PlanSection } from '../../types/venturemate';
-import { safeDownloadName } from '../../lib/pitchDeckExport';
+import { safeDownloadName, imageToDataUri } from '../../lib/pitchDeckExport';
 import { ExportProgress } from '../shared/ExportProgress';
+import { LogoBadge } from './LogoBadge';
 
 type Decoration =
   | 'orb' | 'rings' | 'particles' | 'geometric' | 'rays' | 'minimal'
@@ -261,6 +262,18 @@ function Decoration({ type, accent, accent2 }: { type: Decoration; accent: strin
   }
 }
 
+function PlanFooter({ accent, left, right }: { accent: string; left?: string; right?: string }) {
+  return (
+    <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 3 }}>
+      <Box sx={{ height: '1px', background: `linear-gradient(90deg, transparent, ${accent}30, transparent)` }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 3, sm: 5, md: 8 }, py: 1.25 }}>
+        <Typography sx={{ fontSize: 9.5, color: 'rgba(255,255,255,.22)', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{left || ''}</Typography>
+        <Typography sx={{ fontSize: 9.5, color: 'rgba(255,255,255,.22)', fontFamily: 'monospace' }}>{right || ''}</Typography>
+      </Box>
+    </Box>
+  );
+}
+
 function SummarySlide({ summary, template, logo, businessName }: { summary: string; template: Template; logo?: string; businessName?: string }) {
   const { accent, accent2 } = template;
   return (
@@ -269,28 +282,28 @@ function SummarySlide({ summary, template, logo, businessName }: { summary: stri
       <Decoration type={template.decoration} accent={accent} accent2={accent2} />
 
       {logo && (
-        <Box sx={{ position: 'absolute', top: 20, left: 24, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar src={logo} sx={{ width: 22, height: 22 }} />
-          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 10, fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>}
+        <Box sx={{ position: 'absolute', top: 20, left: 24, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <LogoBadge logo={logo} name={businessName} size={24} radius={7} />
+          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10.5, fontWeight: 600, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>}
         </Box>
       )}
 
-      <Box sx={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', px: { xs: 3, sm: 5, md: 8 }, overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-          <Eye size={16} color={accent} />
-          <Typography sx={{ color: `${accent}cc`, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2 }}>Executive Summary</Typography>
+      <Box sx={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', px: { xs: 3.5, sm: 6, md: 9 }, pt: 4, pb: 6, overflow: 'auto' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 2 }}>
+          <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: accent, boxShadow: `0 0 12px ${accent}90` }} />
+          <Typography sx={{ color: accent, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 3 }}>Executive Summary</Typography>
         </Box>
-        <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 28, md: 36 }, fontWeight: 900, lineHeight: 1.2, mb: 2, letterSpacing: '-0.02em' }}>Executive Summary</Typography>
-        <Box sx={{ width: 40, height: 2.5, borderRadius: 2, bgcolor: accent, mb: 2, boxShadow: `0 0 12px ${accent}50` }} />
-        <Typography sx={{ color: 'rgba(255,255,255,.72)', fontSize: { xs: 12, sm: 14, md: 16 }, lineHeight: 1.8, whiteSpace: 'pre-wrap', maxWidth: '90%', overflowWrap: 'anywhere' }}>{summary}</Typography>
+        <Typography sx={{ color: 'white', fontSize: { xs: 24, sm: 34, md: 46 }, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em' }}>Executive Summary</Typography>
+        <Box sx={{ width: 56, height: 3, borderRadius: 99, bgcolor: accent, boxShadow: `0 0 16px ${accent}60`, mt: 2.5 }} />
+        <Typography sx={{ color: 'rgba(255,255,255,.72)', fontSize: { xs: 12.5, sm: 14.5, md: 17 }, lineHeight: 1.85, whiteSpace: 'pre-wrap', maxWidth: '88%', overflowWrap: 'anywhere', mt: 3 }}>{summary}</Typography>
       </Box>
 
-      <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1px', background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }} />
+      <PlanFooter accent={accent} left={businessName} />
     </Box>
   );
 }
 
-function SectionSlide({ section, index, template, logo, businessName }: { section: PlanSection; index: number; template: Template; logo?: string; businessName?: string }) {
+function SectionSlide({ section, index, total, template, logo, businessName }: { section: PlanSection; index: number; total: number; template: Template; logo?: string; businessName?: string }) {
   const { accent, accent2, glass, border } = template;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -298,32 +311,39 @@ function SectionSlide({ section, index, template, logo, businessName }: { sectio
       <Decoration type={template.decoration} accent={accent} accent2={accent2} />
 
       {logo && (
-        <Box sx={{ position: 'absolute', top: 16, left: 20, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Avatar src={logo} sx={{ width: 18, height: 18 }} />
-          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.25)', fontSize: 9, fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>}
+        <Box sx={{ position: 'absolute', top: 18, left: 22, zIndex: 3, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <LogoBadge logo={logo} name={businessName} size={20} radius={6} />
+          {businessName && <Typography sx={{ color: 'rgba(255,255,255,.28)', fontSize: 10, fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>}
         </Box>
       )}
 
       <Box sx={{ position: 'absolute', top: 16, right: 20, zIndex: 3 }}>
-        <Chip label={`Section ${index + 1}`} size="small" sx={{ bgcolor: glass, color: accent, fontSize: 9, height: 20, border: `1px solid ${border}`, fontWeight: 600, backdropFilter: 'blur(8px)' }} />
+        <Chip label={`Section ${String(index + 1).padStart(2, '0')}`} size="small" sx={{ bgcolor: glass, color: accent, fontSize: 9.5, height: 22, border: `1px solid ${border}`, fontWeight: 700, letterSpacing: 1, backdropFilter: 'blur(8px)' }} />
       </Box>
 
-      <Box sx={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', px: { xs: 2, sm: 3.5, md: 5 }, pt: { xs: 5, sm: 6, md: 7 }, pb: { xs: 2, sm: 3 }, overflow: 'auto' }}>
-        <Box sx={{ width: 28, height: 2.5, borderRadius: 2, bgcolor: accent, mb: 1.5, boxShadow: `0 0 10px ${accent}50` }} />
-        <Typography sx={{ color: 'white', fontSize: { xs: 18, sm: 24, md: 32 }, fontWeight: 900, lineHeight: 1.15, mb: 1.5, letterSpacing: '-0.02em', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{section.title}</Typography>
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
-          <Typography sx={{ color: 'rgba(255,255,255,.68)', fontSize: { xs: 11.5, sm: 13, md: 15 }, lineHeight: 1.85, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{section.content}</Typography>
+      <Box sx={{ position: 'relative', zIndex: 3, height: '100%', display: 'flex', flexDirection: 'column', px: { xs: 3, sm: 5, md: 8 }, pt: { xs: 6.5, sm: 7.5 }, pb: 5, overflow: 'auto' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.75 }}>
+          <Typography sx={{ color: accent, fontSize: 11, fontWeight: 700, fontFamily: 'monospace', letterSpacing: 1 }}>
+            {String(index + 1).padStart(2, '0')}
+          </Typography>
+          <Box sx={{ width: 24, height: 1, bgcolor: `${accent}60` }} />
+          <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2.5 }}>Section</Typography>
+        </Box>
+        <Typography sx={{ color: 'white', fontSize: { xs: 20, sm: 28, md: 38 }, fontWeight: 800, lineHeight: 1.15, mb: 2, letterSpacing: '-0.025em', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{section.title}</Typography>
+        <Box sx={{ width: 44, height: 3, borderRadius: 99, bgcolor: accent, boxShadow: `0 0 14px ${accent}60`, mb: 2.5 }} />
+        <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+          <Typography sx={{ color: 'rgba(255,255,255,.72)', fontSize: { xs: 12, sm: 13.5, md: 15.5 }, lineHeight: 1.9, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{section.content}</Typography>
           {section.subsections && section.subsections.length > 0 && (
-            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box sx={{ mt: 2.5, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
               {section.subsections.map((sub, si) => (
                 <Box key={si} sx={{
-                  position: 'relative', overflow: 'hidden', p: { xs: 1, sm: 1.5 }, borderRadius: 2,
-                  bgcolor: 'rgba(255,255,255,.03)', border: `1px solid ${accent}10`,
+                  position: 'relative', overflow: 'hidden', p: { xs: 1.5, sm: 2 }, borderRadius: '12px',
+                  bgcolor: 'rgba(255,255,255,.03)', border: `1px solid ${accent}1f`,
                   backdropFilter: 'blur(8px)',
                 }}>
-                  <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}06, transparent)`, pointerEvents: 'none' }} />
-                  <Typography sx={{ position: 'relative', color: accent, fontSize: { xs: 11, sm: 12 }, fontWeight: 700, mb: 0.5, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{sub.title}</Typography>
-                  <Typography sx={{ position: 'relative', color: 'rgba(255,255,255,.55)', fontSize: { xs: 10.5, sm: 12 }, lineHeight: 1.7, overflowWrap: 'anywhere' }}>{sub.content}</Typography>
+                  <Box sx={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}08, transparent)`, pointerEvents: 'none' }} />
+                  <Typography sx={{ position: 'relative', color: accent, fontSize: { xs: 11.5, sm: 12.5 }, fontWeight: 700, mb: 0.75, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{sub.title}</Typography>
+                  <Typography sx={{ position: 'relative', color: 'rgba(255,255,255,.6)', fontSize: { xs: 11, sm: 12 }, lineHeight: 1.7, overflowWrap: 'anywhere' }}>{sub.content}</Typography>
                 </Box>
               ))}
             </Box>
@@ -331,6 +351,7 @@ function SectionSlide({ section, index, template, logo, businessName }: { sectio
         </Box>
       </Box>
 
+      <PlanFooter accent={accent} left={businessName} right={`${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`} />
       <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 3 }}>
         <Box sx={{ height: 2, bgcolor: accent, width: '30%', borderRadius: 1 }} />
       </Box>
@@ -373,12 +394,18 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
     const el = viewerRef.current?.querySelector('[data-plan-container]') as HTMLElement;
     if (!el || pdfExporting) return;
     setPdfExporting(true);
+    // Pin the stage to a fixed 16:9 export width so PDF pages are crisp
+    // (1280 × 1.5 = 1920) regardless of the device's screen size.
+    const prevWidth = el.style.width;
+    const prevMaxHeight = el.style.maxHeight;
+    el.style.width = '1280px';
+    el.style.maxHeight = 'none';
     try {
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
       const pageWidth = 1920; const pageHeight = 1080;
       for (let i = 0; i < totalSlides; i++) {
         goTo(i);
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 180));
         const el2 = viewerRef.current?.querySelector('[data-plan-inner]') as HTMLElement;
         if (!el2) continue;
         const canvas = await html2canvas(el2, { scale: 1.5, useCORS: true, backgroundColor: null });
@@ -390,6 +417,8 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
       console.error('Business plan PDF export failed', error);
       window.alert(error instanceof Error ? error.message : 'PDF export failed. Please try again.');
     } finally {
+      el.style.width = prevWidth;
+      el.style.maxHeight = prevMaxHeight;
       setPdfExporting(false);
     }
   };
@@ -398,18 +427,24 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
     if (pptxExporting) return;
     setPptxExporting(true);
     try {
+      const logoData = await imageToDataUri(logo);
+      const addLogo = (slide: PptxGenJS.Slide) => {
+        if (logoData) slide.addImage({ data: logoData, x: 12.05, y: 0.35, w: 0.8, h: 0.8 });
+      };
       const pptx = new PptxGenJS();
       pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
       pptx.layout = 'WIDE';
       if (hasSummary) {
         const slide = pptx.addSlide();
         slide.background = { color: '08080B' };
+        addLogo(slide);
         slide.addText('Executive Summary', { x: 0.8, y: 1, w: 11.7, h: 1.2, fontSize: 36, fontFace: 'Aptos Display', color: 'FFFFFF', bold: true });
         slide.addText(summary, { x: 0.8, y: 2.5, w: 11.7, h: 4, fontSize: 14, fontFace: 'Aptos', color: 'CBD5E1', fit: 'shrink' });
       }
       sections.forEach((s, i) => {
         const slide = pptx.addSlide();
         slide.background = { color: '08080B' };
+        addLogo(slide);
         slide.addText(s.title, { x: 0.8, y: 0.8, w: 11.7, h: 1, fontSize: 30, fontFace: 'Aptos Display', color: 'FFFFFF', bold: true, fit: 'shrink' });
         slide.addText(s.content, { x: 0.8, y: 2.2, w: 11.7, h: 2.5, fontSize: 13, fontFace: 'Aptos', color: 'CBD5E1', fit: 'shrink' });
         if (s.subsections?.length) {
@@ -445,7 +480,7 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
         {isSummary ? (
           <SummarySlide summary={summary} template={template} logo={logo} businessName={businessName} />
         ) : section ? (
-          <SectionSlide section={section} index={sectionIndex} template={template} logo={logo} businessName={businessName} />
+          <SectionSlide section={section} index={sectionIndex} total={totalSlides} template={template} logo={logo} businessName={businessName} />
         ) : (
           <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Typography sx={{ color: 'rgba(255,255,255,.3)' }}>No content</Typography>

@@ -26,37 +26,43 @@ const SECTION_COLORS: Record<string, string> = {
   'marketing-sales': '#06b6d4', 'financial-plan': '#ef4444', 'goal-planning': '#22c55e', appendix: '#64748b',
 };
 
-function SectionCard({ section, accent }: { section: PlanSection; accent: string }) {
-  const [expanded, setExpanded] = useState(true);
+function SectionCard({ section, index, accent }: { section: PlanSection; index: number; accent: string }) {
+  const [expanded, setExpanded] = useState(false);
   const sectionId = section.id || '';
   const Icon = SECTION_ICONS[sectionId] || FileText;
   const sectionColor = SECTION_COLORS[sectionId] || accent;
 
   return (
     <Card sx={{
-      bgcolor: 'rgba(255,255,255,.02)', border: '1px solid var(--vm-border-subtle)', borderRadius: 2.5, overflow: 'hidden',
-      borderLeft: `3px solid ${sectionColor}`,
-      transition: 'all .2s', '&:hover': { borderColor: `${sectionColor}40` },
+      bgcolor: 'rgba(255,255,255,.02)', border: '1px solid var(--vm-border-subtle)', borderRadius: '14px', overflow: 'hidden',
+      transition: 'border-color .2s, box-shadow .2s',
+      '&:hover': { borderColor: `${sectionColor}55`, boxShadow: '0 6px 24px rgba(0,0,0,.28)' },
     }}>
-      <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
-        <Box sx={{ flexShrink: 0, width: 30, height: 30, borderRadius: 1.5, display: 'grid', placeItems: 'center', bgcolor: `${sectionColor}20`, color: sectionColor }}>
-          <Icon size={15} />
+      <Box sx={{ px: 2, py: 1.75, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, fontFamily: 'monospace', color: 'var(--vm-text-muted)', minWidth: 22 }}>
+          {String(index + 1).padStart(2, '0')}
+        </Typography>
+        <Box sx={{ flexShrink: 0, width: 34, height: 34, borderRadius: '10px', display: 'grid', placeItems: 'center', bgcolor: `${sectionColor}1c`, color: sectionColor, border: `1px solid ${sectionColor}30` }}>
+          <Icon size={16} />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 14, fontWeight: 800 }}>{section.title}</Typography>
+          <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 14, fontWeight: 750 }}>{section.title}</Typography>
+          {!expanded && section.content && (
+            <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11.5, mt: 0.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>{section.content}</Typography>
+          )}
         </Box>
-        <IconButton size="small" sx={{ color: 'var(--vm-text-muted)' }}>
-          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <IconButton size="small" sx={{ color: 'var(--vm-text-muted)', bgcolor: 'rgba(255,255,255,.03)', border: '1px solid var(--vm-border-subtle)', '&:hover': { bgcolor: 'rgba(255,255,255,.07)' } }}>
+          {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </IconButton>
       </Box>
       {expanded && (
-        <Box sx={{ px: 2, pb: 2 }}>
-          <Box sx={{ height: 1, bgcolor: 'var(--vm-border-subtle)', mb: 1.5 }} />
-          <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13, lineHeight: 1.85, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{section.content}</Typography>
+        <Box sx={{ px: 2.25, pb: 2.25, pt: 0.25 }}>
+          <Box sx={{ height: 1, bgcolor: 'var(--vm-border-subtle)', mb: 2 }} />
+          <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13.5, lineHeight: 1.9, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{section.content}</Typography>
           {section.subsections?.map((sub, si) => (
-            <Box key={si} sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'rgba(255,255,255,.03)', border: `1px solid ${sectionColor}15` }}>
-              <Typography sx={{ color: sectionColor, fontSize: 12, fontWeight: 700, mb: 0.5 }}>{sub.title}</Typography>
-              <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 12, lineHeight: 1.7 }}>{sub.content}</Typography>
+            <Box key={si} sx={{ mt: 1.5, p: 2, borderRadius: '12px', bgcolor: 'rgba(255,255,255,.03)', border: '1px solid var(--vm-border-subtle)', borderLeft: `2px solid ${sectionColor}` }}>
+              <Typography sx={{ color: sectionColor, fontSize: 12.5, fontWeight: 700, mb: 0.5 }}>{sub.title}</Typography>
+              <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 12.5, lineHeight: 1.75 }}>{sub.content}</Typography>
             </Box>
           ))}
         </Box>
@@ -70,26 +76,29 @@ function PlanPreview({ plan, primary, proposed = false }: { plan: BusinessPlanTy
   const accent = primary || '#10b981';
   return (
     <Box>
-      <GlassCard sx={{ p: { xs: 2, sm: 2.5 }, border: proposed ? `1px solid ${accent}40` : '1px solid var(--vm-border-subtle)' }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+      <GlassCard sx={{ p: { xs: 2.5, sm: 3.5 }, borderRadius: '16px', border: proposed ? `1px solid ${accent}45` : '1px solid var(--vm-border-subtle)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap' }}>
           <Box>
-            <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 20, sm: 26 }, fontWeight: 900 }}>{plan.title || 'Business Plan'}</Typography>
-            <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11, mt: 0.5 }}>v{plan.version || '1.0'} · {sections.length} sections</Typography>
+            <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 22, sm: 26 }, fontWeight: 850, letterSpacing: '-0.02em' }}>{plan.title || 'Business Plan'}</Typography>
+            <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11.5, mt: 0.75, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box component="span" sx={{ px: 1, py: 0.25, borderRadius: 99, bgcolor: 'rgba(255,255,255,.05)', border: '1px solid var(--vm-border-subtle)', fontSize: 10, fontWeight: 700 }}>v{plan.version || '1.0'}</Box>
+              {sections.length} sections
+            </Typography>
           </Box>
-          <Chip icon={<FileText size={14} />} label={proposed ? 'Review' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
+          <Chip icon={<FileText size={13} />} label={proposed ? 'Review' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
         </Box>
         {plan.executiveSummary && (
-          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: `${accent}08`, border: `1px solid ${accent}15` }}>
-            <Typography sx={{ color: `${accent}cc`, fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.08em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Box sx={{ mt: 2.5, p: 2.25, borderRadius: '12px', bgcolor: `${accent}0a`, border: `1px solid ${accent}22` }}>
+            <Typography sx={{ color: accent, fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <TrendingUp size={13} /> Executive Summary
             </Typography>
-            <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13, lineHeight: 1.75, mt: 0.75, whiteSpace: 'pre-wrap' }}>{plan.executiveSummary}</Typography>
+            <Typography sx={{ color: 'var(--vm-text-secondary)', fontSize: 13.5, lineHeight: 1.85, mt: 1.25, whiteSpace: 'pre-wrap' }}>{plan.executiveSummary}</Typography>
           </Box>
         )}
       </GlassCard>
-      <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
         {sections.map((section, index) => (
-          <SectionCard key={section.id || `${section.title}-${index}`} section={section} accent={accent} />
+          <SectionCard key={section.id || `${section.title}-${index}`} section={section} index={index} accent={accent} />
         ))}
         {!sections.length && <Typography sx={{ color: 'var(--vm-text-muted)', py: 4, textAlign: 'center' }}>No sections yet.</Typography>}
       </Box>

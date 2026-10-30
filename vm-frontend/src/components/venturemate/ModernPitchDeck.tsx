@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
-import { Box, Typography, Avatar, IconButton, Tooltip, CircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, CircularProgress } from '@mui/material';
 import { Star, Lightbulb, Target, TrendingUp, Shield, Users, DollarSign, Download, FileText } from 'lucide-react';
 import { AuroraBackground, FloatingOrb } from './AuroraBackground';
 import { CreativeTemplatePicker } from './CreativeTemplatePicker';
+import { LogoBadge } from './LogoBadge';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import type { Slide } from '../../types/venturemate';
@@ -192,6 +193,86 @@ function Decoration({ type, accent, accent2 }: { type: Decoration; accent: strin
   }
 }
 
+// ---------------------------------------------------------------------------
+// CONTENT HELPERS — every layout renders only the slide's real title, content
+// and bullets. Stats are parsed out of the text (e.g. "$2.4M raised in 2025"
+// or "47% month-over-month growth"); nothing is invented.
+// ---------------------------------------------------------------------------
+
+const STAT_PATTERN = /(\$\s?[0-9][0-9,]*(?:\.[0-9]+)?\s?[KMBkmb]?\+?|[0-9]+(?:\.[0-9]+)?\s?(?:%|[Kk]\+?|[Mm]\+?|[Bb]\+?|[Xx]))/;
+
+function splitLeadingStat(text: string): { value: string; label: string } | null {
+  const match = text.match(STAT_PATTERN);
+  if (!match || match.index === undefined || match.index > 6) return null;
+  const label = `${text.slice(0, match.index)} ${text.slice(match.index + match[1].length)}`
+    .replace(/^[:\-–—•|\s]+/, '')
+    .trim();
+  return { value: match[1].replace(/\s+/g, ' ').trim(), label };
+}
+
+function Kicker({ accent, children }: { accent: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 2 }}>
+      <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: accent, boxShadow: `0 0 12px ${accent}90` }} />
+      <Typography sx={{
+        fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 3,
+        maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {children}
+      </Typography>
+    </Box>
+  );
+}
+
+function SlideTitle({ children, sx }: { children: React.ReactNode; sx?: Record<string, unknown> }) {
+  return (
+    <Typography sx={{
+      fontSize: { xs: 24, sm: 40, md: 54 }, fontWeight: 650,
+      lineHeight: 1.08, letterSpacing: '-0.04em', color: 'white',
+      overflowWrap: 'anywhere', wordBreak: 'break-word',
+      ...sx,
+    }}>
+      {children}
+    </Typography>
+  );
+}
+
+function AccentRule({ accent, sx }: { accent: string; sx?: Record<string, unknown> }) {
+  return (
+    <Box sx={{ width: 56, height: 3, borderRadius: 99, bgcolor: accent, boxShadow: `0 0 16px ${accent}70`, mt: 2.5, ...sx }} />
+  );
+}
+
+function BodyCopy({ children, sx }: { children: React.ReactNode; sx?: Record<string, unknown> }) {
+  return (
+    <Typography sx={{
+      fontSize: { xs: 13, sm: 15, md: 17 }, lineHeight: 1.75,
+      color: 'rgba(255,255,255,.62)', maxWidth: 640, overflowWrap: 'anywhere', whiteSpace: 'pre-wrap',
+      ...sx,
+    }}>
+      {children}
+    </Typography>
+  );
+}
+
+function SlideBody({ children }: { children: React.ReactNode }) {
+  return (
+    <Box sx={{
+      position: 'relative', zIndex: 10, height: '100%',
+      display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      px: { xs: 3.5, sm: 6, md: 10 },
+      pt: { xs: 7, sm: 8 },
+      pb: { xs: 6, sm: 6.5 },
+    }}>
+      {children}
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SLIDE CHROME
+// ---------------------------------------------------------------------------
+
 interface ModernPitchDeckProps {
   slides: Slide[];
   title: string;
@@ -208,22 +289,16 @@ function SlideHeader({ logo, businessName, slideType, index, total }: {
     <Box sx={{
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      px: { xs: 3, sm: 5, md: 8 }, py: { xs: 2, sm: 3 },
+      px: { xs: 3.5, sm: 6, md: 8 }, py: { xs: 2, sm: 2.5 },
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        {logo ? (
-          <Avatar src={logo} sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(255,255,255,.05)' }} />
-        ) : (
-          <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,.6)' }}>{(businessName || 'V')[0]}</Typography>
-          </Box>
-        )}
+        <LogoBadge logo={logo} name={businessName} size={34} radius={9} />
         {businessName && (
-          <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,.5)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: 'rgba(255,255,255,.45)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</Typography>
         )}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 11, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: 3 }}>
+        <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 10, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: 2.5 }}>
           {slideType.replace('_', ' ')}
         </Typography>
         <Box sx={{
@@ -244,10 +319,10 @@ function SlideFooter({ businessName }: { businessName?: string }) {
     <Box sx={{
       position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      px: { xs: 3, sm: 5, md: 8 }, py: { xs: 1.5, sm: 2.5 },
+      px: { xs: 3.5, sm: 6, md: 8 }, py: { xs: 1.75, sm: 2.25 },
     }}>
-      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.15)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName || ''}</Typography>
-      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.15)' }}>Confidential</Typography>
+      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.18)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName || ''}</Typography>
+      <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.18)', textTransform: 'uppercase', letterSpacing: 2 }}>Confidential</Typography>
     </Box>
   );
 }
@@ -255,7 +330,7 @@ function SlideFooter({ businessName }: { businessName?: string }) {
 function GlassCard({ children, sx }: { children: React.ReactNode; sx?: Record<string, unknown> }) {
   return (
     <Box sx={{
-      position: 'relative', overflow: 'hidden', borderRadius: 4, border: '1px solid rgba(255,255,255,.08)',
+      position: 'relative', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,.08)',
       bgcolor: 'rgba(255,255,255,.03)', backdropFilter: 'blur(24px)',
       ...sx,
     }}>
@@ -270,10 +345,53 @@ function GlassCard({ children, sx }: { children: React.ReactNode; sx?: Record<st
   );
 }
 
+function PointCard({ index, text, accent }: { index: number; text: string; accent: string }) {
+  return (
+    <GlassCard sx={{ p: { xs: 2.25, sm: 3 } }}>
+      <Box sx={{
+        width: 32, height: 32, borderRadius: '10px', mb: 1.75,
+        display: 'grid', placeItems: 'center',
+        bgcolor: `${accent}1a`, border: `1px solid ${accent}33`,
+      }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 700, color: accent }}>
+          {String(index + 1).padStart(2, '0')}
+        </Typography>
+      </Box>
+      <Typography sx={{ fontSize: { xs: 13, sm: 14.5 }, lineHeight: 1.65, color: 'rgba(255,255,255,.72)', overflowWrap: 'anywhere' }}>
+        {text}
+      </Typography>
+    </GlassCard>
+  );
+}
+
+function StatCard({ value, label, accent, accent2 }: { value: string; label?: string; accent: string; accent2?: string }) {
+  return (
+    <GlassCard sx={{ p: { xs: 2.25, sm: 3 } }}>
+      <Typography sx={{
+        fontSize: { xs: 26, sm: 34, md: 42 }, fontWeight: 650, letterSpacing: '-0.04em', lineHeight: 1.1,
+        background: `linear-gradient(135deg, ${accent}, ${accent2 || accent})`,
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        overflowWrap: 'anywhere',
+      }}>
+        {value}
+      </Typography>
+      {label && (
+        <Typography sx={{ mt: 1.25, fontSize: { xs: 11.5, sm: 12.5 }, lineHeight: 1.55, color: 'rgba(255,255,255,.55)', overflowWrap: 'anywhere' }}>
+          {label}
+        </Typography>
+      )}
+    </GlassCard>
+  );
+}
+
 interface SlideCommon {
   slide: Slide; index: number; total: number; logo?: string; businessName?: string;
   accent: string; decoration: Decoration; accent2: string;
 }
+
+// ---------------------------------------------------------------------------
+// SLIDE LAYOUTS
+// ---------------------------------------------------------------------------
 
 function CoverSlide({ slide, index, total, logo, businessName, accent, accent2 }: SlideCommon) {
   return (
@@ -288,28 +406,28 @@ function CoverSlide({ slide, index, total, logo, businessName, accent, accent2 }
         px: { xs: 4, sm: 6, md: 10 },
       }}>
         <Box sx={{
-          display: 'inline-flex', alignItems: 'center', gap: 1.5,
+          display: 'inline-flex', alignItems: 'center', gap: 1.5, alignSelf: 'flex-start',
           borderRadius: 20, border: '1px solid rgba(255,255,255,.08)',
-          bgcolor: 'rgba(255,255,255,.03)', px: 2, py: 1, mb: 3, backdropFilter: 'blur(16px)',
+          bgcolor: 'rgba(255,255,255,.03)', px: 2, py: 1, mb: 3.5, backdropFilter: 'blur(16px)',
         }}>
           <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: accent, boxShadow: `0 0 15px ${accent}` }} />
-          <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.5)', letterSpacing: 1 }}>
+          <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.5)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
             Company Presentation
           </Typography>
         </Box>
 
         <Typography sx={{
-          fontSize: { xs: 42, sm: 56, md: 80 }, fontWeight: 600,
-          lineHeight: 0.92, letterSpacing: '-0.07em', color: 'white',
-          maxWidth: '80%', overflowWrap: 'anywhere', wordBreak: 'break-word',
+          fontSize: { xs: 30, sm: 48, md: 68 }, fontWeight: 650,
+          lineHeight: 1.04, letterSpacing: '-0.045em', color: 'white',
+          maxWidth: '82%', overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>
           {slide.title}
         </Typography>
 
         {slide.content && (
           <Typography sx={{
-            mt: 4, fontSize: { xs: 16, sm: 18, md: 21 },
-            lineHeight: 1.6, color: 'rgba(255,255,255,.45)', maxWidth: 600, overflowWrap: 'anywhere',
+            mt: 4, fontSize: { xs: 14, sm: 16, md: 19 },
+            lineHeight: 1.65, color: 'rgba(255,255,255,.5)', maxWidth: 620, overflowWrap: 'anywhere',
           }}>
             {slide.content}
           </Typography>
@@ -317,7 +435,7 @@ function CoverSlide({ slide, index, total, logo, businessName, accent, accent2 }
 
         <Box sx={{ mt: 6, display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ width: 64, height: 1, bgcolor: accent }} />
-          <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,.35)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,.35)', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {businessName || 'Building the future'}
           </Typography>
         </Box>
@@ -327,401 +445,296 @@ function CoverSlide({ slide, index, total, logo, businessName, accent, accent2 }
   );
 }
 
-function ProblemSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
+function ProblemSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
+  const bullets = slide.bullets ?? [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
-      <Decoration type={decoration} accent={accent} />
+      <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType="The Problem" index={index} total={total} />
 
-      <Box sx={{
-        position: 'relative', zIndex: 10, height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        px: { xs: 4, sm: 6, md: 10 },
-      }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 8, alignItems: 'center', height: '100%' }}>
+      <SlideBody>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: bullets.length ? '1fr 1fr' : '1fr' }, gap: { xs: 4, md: 7 }, alignItems: 'center', height: '100%' }}>
           <Box>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: accent, mb: 3, letterSpacing: 2 }}>
-              01
-            </Typography>
-            <Typography sx={{
-              fontSize: { xs: 36, sm: 48, md: 68 }, fontWeight: 600,
-              lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-              overflowWrap: 'anywhere', wordBreak: 'break-word',
-            }}>
-              {slide.title}
-            </Typography>
-            {slide.content && (
-              <Typography sx={{
-                mt: 5, fontSize: { xs: 15, sm: 17, md: 19 },
-                lineHeight: 1.7, color: 'rgba(255,255,255,.45)', maxWidth: 480, overflowWrap: 'anywhere',
-              }}>
-                {slide.content}
-              </Typography>
-            )}
+            <Kicker accent={accent}>The Problem</Kicker>
+            <SlideTitle>{slide.title}</SlideTitle>
+            <AccentRule accent={accent} />
+            {slide.content && <Box sx={{ mt: 3 }}><BodyCopy>{slide.content}</BodyCopy></Box>}
           </Box>
 
-          <Box sx={{ position: 'relative' }}>
-            <Box sx={{
-              position: 'absolute', inset: -24, borderRadius: 10,
-              bgcolor: `${accent}08`, filter: 'blur(40px)',
-            }} />
-            <GlassCard>
-              <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                {slide.bullets?.map((bullet, i) => (
-                  <Box key={i} sx={{
-                    display: 'flex', alignItems: 'center', gap: 2.5,
-                    p: 2.5, mb: 1, borderRadius: 3,
-                    border: '1px solid rgba(255,255,255,.06)',
-                    bgcolor: 'rgba(255,255,255,.03)',
-                    transition: 'all .2s',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,.06)' },
-                    '&:last-child': { mb: 0 },
+          {bullets.length > 0 && (
+            <GlassCard sx={{ p: { xs: 1.5, sm: 2 } }}>
+              {bullets.map((bullet, i) => (
+                <Box key={i} sx={{
+                  display: 'flex', alignItems: 'flex-start', gap: 2,
+                  p: { xs: 1.5, sm: 2 }, borderRadius: '12px',
+                  transition: 'background .2s',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,.04)' },
+                  '& + &': { mt: 0.5 },
+                }}>
+                  <Box sx={{
+                    width: 30, height: 30, flexShrink: 0, borderRadius: '9px',
+                    display: 'grid', placeItems: 'center',
+                    bgcolor: `${accent}1a`, border: `1px solid ${accent}33`,
                   }}>
-                    <Box sx={{
-                      width: 44, height: 44, flexShrink: 0, borderRadius: 2,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      bgcolor: `${accent}15`,
-                    }}>
-                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: accent }}>
-                        {String(i + 1).padStart(2, '0')}
-                      </Typography>
-                    </Box>
-                    <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', lineHeight: 1.5, overflowWrap: 'anywhere' }}>
-                      {bullet}
+                    <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: accent }}>
+                      {String(i + 1).padStart(2, '0')}
                     </Typography>
                   </Box>
-                ))}
-              </Box>
+                  <Typography sx={{ fontSize: { xs: 13, sm: 14.5 }, lineHeight: 1.6, color: 'rgba(255,255,255,.72)', overflowWrap: 'anywhere', pt: 0.5 }}>
+                    {bullet}
+                  </Typography>
+                </Box>
+              ))}
             </GlassCard>
-          </Box>
+          )}
         </Box>
-      </Box>
+      </SlideBody>
       <SlideFooter businessName={businessName} />
     </Box>
   );
 }
 
-function SolutionSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
-  const points = slide.bullets?.length ? slide.bullets : slide.content ? [slide.content] : [];
+function SolutionSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
+  const bullets = slide.bullets ?? [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
-      <Decoration type={decoration} accent={accent} />
+      <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType="The Solution" index={index} total={total} />
 
-      <Box sx={{
-        position: 'relative', zIndex: 10, height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        px: { xs: 4, sm: 6, md: 10 },
-      }}>
-        <Typography sx={{
-          fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-          lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-          overflowWrap: 'anywhere', wordBreak: 'break-word',
-        }}>
-          {slide.title}
-        </Typography>
-
-        <Box sx={{ mt: 6, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-          {points.slice(0, 6).map((point, i) => (
-            <GlassCard key={i} sx={{ p: 3.5 }}>
-              <Box sx={{ position: 'absolute', top: -64, right: -64, width: 160, height: 160, borderRadius: '50%', bgcolor: `${accent}10`, filter: 'blur(48px)', transition: 'all .3s' }} />
-              <Typography sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 300, color: accent, mb: 4 }}>
-                0{i + 1}
-              </Typography>
-              <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', lineHeight: 1.6, overflowWrap: 'anywhere' }}>
-                {point}
-              </Typography>
-            </GlassCard>
-          ))}
-        </Box>
-      </Box>
+      <SlideBody>
+        <Kicker accent={accent}>The Solution</Kicker>
+        <SlideTitle>{slide.title}</SlideTitle>
+        <AccentRule accent={accent} />
+        {bullets.length > 0 ? (
+          <Box sx={{ mt: 4, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+            {bullets.slice(0, 6).map((point, i) => (
+              <PointCard key={i} index={i} text={point} accent={accent} />
+            ))}
+          </Box>
+        ) : (
+          slide.content && <Box sx={{ mt: 3 }}><BodyCopy>{slide.content}</BodyCopy></Box>
+        )}
+      </SlideBody>
       <SlideFooter businessName={businessName} />
     </Box>
   );
 }
 
-function MarketSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
-  const Icon = SLIDE_ICONS[slide.type] || TrendingUp;
+function MarketSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
+  const bullets = slide.bullets ?? [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
-      <Decoration type={decoration} accent={accent} />
+      <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType="Market Opportunity" index={index} total={total} />
 
-      <Box sx={{
-        position: 'relative', zIndex: 10, height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        px: { xs: 4, sm: 6, md: 10 },
-      }}>
-            <Typography sx={{
-              fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-              lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-              overflowWrap: 'anywhere', wordBreak: 'break-word',
-            }}>
-              {slide.title}
-            </Typography>
-
-        <Box sx={{ mt: 6, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-          <GlassCard sx={{ p: { xs: 3, sm: 4 } }}>
-            <Box sx={{ position: 'absolute', top: -80, right: -80, width: 192, height: 192, borderRadius: '50%', bgcolor: `${accent}10`, filter: 'blur(48px)' }} />
-            <Box sx={{ position: 'relative' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Icon size={16} color={accent} />
-                <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: 1 }}>TAM</Typography>
-              </Box>
-              <Typography sx={{ fontSize: { xs: 32, sm: 42, md: 52 }, fontWeight: 600, letterSpacing: '-0.06em', color: accent }}>
-                {slide.title.includes('$') || slide.title.includes('B') || slide.title.includes('M') ? '$' : ''}XX
-              </Typography>
-              <Typography sx={{ mt: 2, fontSize: 14, color: 'rgba(255,255,255,.6)' }}>Total Addressable Market</Typography>
-            </Box>
-          </GlassCard>
-          <GlassCard sx={{ p: { xs: 3, sm: 4 } }}>
-            <Box sx={{ position: 'absolute', top: -80, right: -80, width: 192, height: 192, borderRadius: '50%', bgcolor: `${accent}10`, filter: 'blur(48px)' }} />
-            <Box sx={{ position: 'relative' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Icon size={16} color={accent} />
-                <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: 1 }}>SAM</Typography>
-              </Box>
-              <Typography sx={{ fontSize: { xs: 32, sm: 42, md: 52 }, fontWeight: 600, letterSpacing: '-0.06em', color: accent }}>
-                {slide.title.includes('$') || slide.title.includes('B') || slide.title.includes('M') ? '$' : ''}XX
-              </Typography>
-              <Typography sx={{ mt: 2, fontSize: 14, color: 'rgba(255,255,255,.6)' }}>Serviceable Available Market</Typography>
-            </Box>
-          </GlassCard>
-          <GlassCard sx={{ p: { xs: 3, sm: 4 } }}>
-            <Box sx={{ position: 'absolute', top: -80, right: -80, width: 192, height: 192, borderRadius: '50%', bgcolor: `${accent}10`, filter: 'blur(48px)' }} />
-            <Box sx={{ position: 'relative' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Icon size={16} color={accent} />
-                <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: 1 }}>SOM</Typography>
-              </Box>
-              <Typography sx={{ fontSize: { xs: 32, sm: 42, md: 52 }, fontWeight: 600, letterSpacing: '-0.06em', color: accent }}>
-                {slide.title.includes('$') || slide.title.includes('B') || slide.title.includes('M') ? '$' : ''}XX
-              </Typography>
-              <Typography sx={{ mt: 2, fontSize: 14, color: 'rgba(255,255,255,.6)' }}>Serviceable Obtainable Market</Typography>
-            </Box>
-          </GlassCard>
-        </Box>
-      </Box>
+      <SlideBody>
+        <Kicker accent={accent}>Market Opportunity</Kicker>
+        <SlideTitle>{slide.title}</SlideTitle>
+        <AccentRule accent={accent} />
+        {slide.content && <Box sx={{ mt: 3 }}><BodyCopy>{slide.content}</BodyCopy></Box>}
+        {bullets.length > 0 && (
+          <Box sx={{
+            mt: slide.content ? 4 : 3.5,
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+            gap: 2,
+          }}>
+            {bullets.slice(0, 6).map((bullet, i) => {
+              const stat = splitLeadingStat(bullet);
+              return stat
+                ? <StatCard key={i} value={stat.value} label={stat.label} accent={accent} accent2={accent2} />
+                : <PointCard key={i} index={i} text={bullet} accent={accent} />;
+            })}
+          </Box>
+        )}
+      </SlideBody>
       <SlideFooter businessName={businessName} />
     </Box>
   );
 }
 
-function TractionSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
+function TractionSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
+  const bullets = slide.bullets ?? [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
-      <Decoration type={decoration} accent={accent} />
+      <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType="Traction" index={index} total={total} />
 
-      <Box sx={{
-        position: 'relative', zIndex: 10, height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        px: { xs: 4, sm: 6, md: 10 },
-      }}>
-        <Typography sx={{
-          fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-          lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-          overflowWrap: 'anywhere', wordBreak: 'break-word',
-        }}>
-          {slide.title}
-        </Typography>
-
-        <Box sx={{ mt: 6, display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 3 }}>
-          {['Users', 'Revenue', 'Growth', 'Retention'].map((label, i) => (
-            <GlassCard key={i} sx={{ p: { xs: 2.5, sm: 3.5 }, position: 'relative' }}>
-              <Box sx={{
-                position: 'absolute', bottom: 0, left: 0, height: 4,
-                width: '100%', background: `linear-gradient(90deg, ${accent}, transparent)`,
-                opacity: 0.7,
-              }} />
-              <Typography sx={{
-                fontSize: { xs: 28, sm: 36, md: 48 }, fontWeight: 600,
-                letterSpacing: '-0.05em', color: 'white',
-              }}>
-                {['12K+', '$2.4M', '47%', '94%'][i]}
-              </Typography>
-              <Typography sx={{ mt: 2, fontSize: 13, color: 'rgba(255,255,255,.45)' }}>
-                {label}
-              </Typography>
-              <Typography sx={{ mt: 2, fontSize: 12, color: accent }}>
-                ↗ {['+240%', '+180%', '+12%', '+5%'][i]}
-              </Typography>
-            </GlassCard>
-          ))}
-        </Box>
-      </Box>
+      <SlideBody>
+        <Kicker accent={accent}>Traction</Kicker>
+        <SlideTitle>{slide.title}</SlideTitle>
+        <AccentRule accent={accent} />
+        {slide.content && <Box sx={{ mt: 3 }}><BodyCopy>{slide.content}</BodyCopy></Box>}
+        {bullets.length > 0 && (
+          <Box sx={{
+            mt: slide.content ? 4 : 3.5,
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+            gap: 2,
+          }}>
+            {bullets.slice(0, 8).map((bullet, i) => {
+              const stat = splitLeadingStat(bullet);
+              return stat
+                ? <StatCard key={i} value={stat.value} label={stat.label} accent={accent} accent2={accent2} />
+                : <PointCard key={i} index={i} text={bullet} accent={accent} />;
+            })}
+          </Box>
+        )}
+      </SlideBody>
       <SlideFooter businessName={businessName} />
     </Box>
   );
 }
 
-function BusinessModelSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
-  const items = slide.bullets?.length ? slide.bullets : slide.content ? [slide.content] : [];
+function BusinessModelSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
+  const bullets = slide.bullets ?? [];
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
-      <Decoration type={decoration} accent={accent} />
+      <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType="Business Model" index={index} total={total} />
 
-      <Box sx={{
-        position: 'relative', zIndex: 10, height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        px: { xs: 4, sm: 6, md: 10 },
-      }}>
-        <Typography sx={{
-          fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-          lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-          overflowWrap: 'anywhere', wordBreak: 'break-word',
-        }}>
-          {slide.title}
-        </Typography>
-
-        <Box sx={{ mt: 6, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
-          {['Subscription', 'Enterprise', 'Marketplace'].map((label, i) => (
-            <GlassCard key={i} sx={{ p: { xs: 3, sm: 4 } }}>
-              <Box sx={{
-                width: 48, height: 48, borderRadius: 2, mb: 4,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                bgcolor: `${accent}15`,
-              }}>
-                <Typography sx={{ fontSize: 18, fontWeight: 700, color: accent }}>{i + 1}</Typography>
-              </Box>
-              <Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 500, color: 'rgba(255,255,255,.8)', mb: 2, overflowWrap: 'anywhere' }}>
-                {label}
-              </Typography>
-              <Typography sx={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(255,255,255,.4)', overflowWrap: 'anywhere' }}>
-                {items[i] || `Revenue stream ${i + 1} description with key metrics and pricing.`}
-              </Typography>
-            </GlassCard>
-          ))}
-        </Box>
-      </Box>
+      <SlideBody>
+        <Kicker accent={accent}>Business Model</Kicker>
+        <SlideTitle>{slide.title}</SlideTitle>
+        <AccentRule accent={accent} />
+        {slide.content && <Box sx={{ mt: 3 }}><BodyCopy>{slide.content}</BodyCopy></Box>}
+        {bullets.length > 0 && (
+          <Box sx={{
+            mt: slide.content ? 4 : 3.5,
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+            gap: 2,
+          }}>
+            {bullets.slice(0, 6).map((item, i) => (
+              <PointCard key={i} index={i} text={item} accent={accent} />
+            ))}
+          </Box>
+        )}
+      </SlideBody>
       <SlideFooter businessName={businessName} />
     </Box>
   );
 }
 
 function AskSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
-  const uses = slide.bullets?.length ? slide.bullets : [];
+  const uses = slide.bullets ?? [];
+  const content = slide.content || '';
+  const amountMatch = content.match(/\$\s?[0-9][0-9,]*(?:\.[0-9]+)?\s?[KMBkmb]?\+?/);
+  const amount = amountMatch ? amountMatch[0].replace(/\s+/g, ' ').trim() : null;
+  const remainder = amountMatch
+    ? content.replace(amountMatch[0], '').replace(/^[:\-–—\s]+/, '').trim()
+    : content;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} secondary={accent2} />
       <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType="The Ask" index={index} total={total} />
 
-      <Box sx={{
-        position: 'relative', zIndex: 10, height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        px: { xs: 4, sm: 6, md: 10 },
-      }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 8, alignItems: 'center', height: '100%' }}>
-          <Box>
-        <Typography sx={{
-          fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-          lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-          overflowWrap: 'anywhere', wordBreak: 'break-word',
+      <SlideBody>
+        <Box sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', lg: uses.length ? '1fr 1fr' : '1fr' },
+          gap: { xs: 4, md: 7 }, alignItems: 'center', height: '100%',
         }}>
-          {slide.title}
-        </Typography>
-            <Typography sx={{
-              mt: 5, fontSize: { xs: 42, sm: 56, md: 80 }, fontWeight: 600,
-              letterSpacing: '-0.07em',
-              background: `linear-gradient(135deg, ${accent}, ${accent2})`,
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
-              {slide.title.includes('$') ? '' : '$'}XX
-            </Typography>
+          <Box>
+            <Kicker accent={accent}>The Ask</Kicker>
+            <SlideTitle>{slide.title}</SlideTitle>
+            <AccentRule accent={accent} />
+            {amount && (
+              <Typography sx={{
+                mt: 3.5, fontSize: { xs: 32, sm: 48, md: 62 }, fontWeight: 650,
+                letterSpacing: '-0.045em', lineHeight: 1, overflowWrap: 'anywhere',
+                background: `linear-gradient(135deg, ${accent}, ${accent2 || accent})`,
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}>
+                {amount}
+              </Typography>
+            )}
+            {remainder && <Box sx={{ mt: 2.5 }}><BodyCopy>{remainder}</BodyCopy></Box>}
           </Box>
 
-          <GlassCard sx={{ p: { xs: 3, sm: 4 } }}>
-            <Box sx={{ position: 'absolute', top: -80, right: -80, width: 192, height: 192, borderRadius: '50%', bgcolor: `${accent}15`, filter: 'blur(48px)' }} />
-            <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: 2, mb: 3 }}>
-              Use of Funds
-            </Typography>
-            <Box>
-              {uses.length > 0 ? uses.map((use, i) => (
+          {uses.length > 0 && (
+            <GlassCard sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: 2.5, mb: 1 }}>
+                Use of Funds
+              </Typography>
+              {uses.map((use, i) => (
                 <Box key={i} sx={{
-                  display: 'flex', alignItems: 'center', gap: 2,
-                  py: 2.5, borderBottom: '1px solid rgba(255,255,255,.06)',
-                  '&:last-child': { borderBottom: 'none' },
+                  display: 'flex', alignItems: 'flex-start', gap: 2,
+                  py: 2, borderBottom: '1px solid rgba(255,255,255,.06)',
+                  '&:last-child': { borderBottom: 'none', pb: 0 },
                 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: accent, minWidth: 28 }}>
-                    0{i + 1}
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: accent, minWidth: 28, pt: 0.25 }}>
+                    {String(i + 1).padStart(2, '0')}
                   </Typography>
-                  <Typography sx={{ fontSize: { xs: 14, sm: 16 }, color: 'rgba(255,255,255,.7)', overflowWrap: 'anywhere' }}>
+                  <Typography sx={{ fontSize: { xs: 13, sm: 14.5 }, lineHeight: 1.6, color: 'rgba(255,255,255,.7)', overflowWrap: 'anywhere' }}>
                     {use}
                   </Typography>
                 </Box>
-              )) : (
-                <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,.4)', py: 4, textAlign: 'center' }}>
-                  Use of funds breakdown
-                </Typography>
-              )}
-            </Box>
-          </GlassCard>
+              ))}
+            </GlassCard>
+          )}
         </Box>
-      </Box>
+      </SlideBody>
       <SlideFooter businessName={businessName} />
     </Box>
   );
 }
 
-function DefaultSlide({ slide, index, total, logo, businessName, accent, decoration }: SlideCommon) {
+function DefaultSlide({ slide, index, total, logo, businessName, accent, accent2, decoration }: SlideCommon) {
   const Icon = SLIDE_ICONS[slide.type] || Star;
   return (
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <AuroraBackground accent={accent} />
-      <Decoration type={decoration} accent={accent} />
+      <Decoration type={decoration} accent={accent} accent2={accent2} />
       <SlideHeader logo={logo} businessName={businessName} slideType={slide.type} index={index} total={total} />
 
-      <Box sx={{
-        position: 'relative', zIndex: 10, height: '100%',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        px: { xs: 4, sm: 6, md: 10 },
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Icon size={14} color={accent} />
-          <Box sx={{
-            width: 10, height: 10, borderRadius: '50%', bgcolor: accent,
-            boxShadow: `0 0 12px ${accent}60`,
-          }} />
-          <Typography sx={{ fontSize: 11, fontWeight: 600, color: accent, textTransform: 'uppercase', letterSpacing: 3, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {slide.type.replace('_', ' ')}
+      <SlideBody>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+          <Icon size={15} color={accent} />
+          <Typography sx={{
+            fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: 3,
+            maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {slide.type.replace(/_/g, ' ')}
           </Typography>
         </Box>
 
-        <Typography sx={{
-          fontSize: { xs: 36, sm: 48, md: 72 }, fontWeight: 600,
-          lineHeight: 0.95, letterSpacing: '-0.06em', color: 'white',
-          maxWidth: '85%', overflowWrap: 'anywhere', wordBreak: 'break-word',
-        }}>
-          {slide.title}
-        </Typography>
+        <SlideTitle sx={{ maxWidth: '88%' }}>{slide.title}</SlideTitle>
+        <AccentRule accent={accent} />
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4, mt: 5, alignItems: 'flex-start' }}>
-          {slide.content && (
-            <Typography sx={{ fontSize: { xs: 14, sm: 16 }, lineHeight: 1.8, color: 'rgba(255,255,255,.6)', maxWidth: 520, overflowWrap: 'anywhere' }}>
-              {slide.content}
-            </Typography>
-          )}
-          {slide.bullets && slide.bullets.length > 0 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {slide.bullets.map((bullet, bi) => (
-                <Box key={bi} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                  <Box sx={{ minWidth: 6, height: 6, borderRadius: '50%', bgcolor: accent, mt: 0.75, boxShadow: `0 0 6px ${accent}60` }} />
-                  <Typography sx={{ fontSize: { xs: 13, sm: 15 }, lineHeight: 1.6, color: 'rgba(255,255,255,.75)', overflowWrap: 'anywhere' }}>
-                    {bullet}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          )}
-        </Box>
-      </Box>
+        {(slide.content || (slide.bullets && slide.bullets.length > 0)) && (
+          <Box sx={{
+            mt: 3.5,
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: slide.content && slide.bullets?.length ? '1fr 1fr' : '1fr' },
+            gap: { xs: 3, md: 5 }, alignItems: 'flex-start',
+          }}>
+            {slide.content && <BodyCopy sx={{ maxWidth: '100%' }}>{slide.content}</BodyCopy>}
+            {slide.bullets && slide.bullets.length > 0 && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                {slide.bullets.map((bullet, bi) => (
+                  <Box key={bi} sx={{
+                    display: 'flex', gap: 1.5, alignItems: 'flex-start',
+                    p: { xs: 1.25, sm: 1.5 }, borderRadius: '12px',
+                    bgcolor: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.05)',
+                  }}>
+                    <Box sx={{ minWidth: 6, height: 6, borderRadius: '50%', bgcolor: accent, mt: 0.9, boxShadow: `0 0 8px ${accent}70` }} />
+                    <Typography sx={{ fontSize: { xs: 12.5, sm: 14 }, lineHeight: 1.65, color: 'rgba(255,255,255,.75)', overflowWrap: 'anywhere' }}>
+                      {bullet}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
+      </SlideBody>
       <SlideFooter businessName={businessName} />
     </Box>
   );
@@ -741,7 +754,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
   if (!slides || slides.length === 0) return null;
 
   const captureSlide = async (el: HTMLElement) => {
-    // Strip any CSS color() functions that html2canvas 1.4.1 can't parse
+    // Strip CSS color()/color-mix() functions that html2canvas 1.4.1 can't parse
     const clone = el.cloneNode(true) as HTMLElement;
     const allEls = clone.querySelectorAll('*');
     allEls.forEach((child: Element) => {
@@ -749,36 +762,37 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
       if (htmlChild.style) {
         // Remove known unsupported CSS functions
         const s = htmlChild.style;
-        if (s.background && s.background.includes('color(')) {
-          s.background = s.background.replace(/color\([^)]+\)/g, 'transparent');
+        if (s.background && /color(?:-mix)?\(/.test(s.background)) {
+          s.background = s.background.replace(/color(?:-mix)?\([^)]+\)/g, 'transparent');
         }
-        if (s.backgroundImage && s.backgroundImage.includes('color(')) {
-          s.backgroundImage = s.backgroundImage.replace(/color\([^)]+\)/g, 'transparent');
+        if (s.backgroundImage && /color(?:-mix)?\(/.test(s.backgroundImage)) {
+          s.backgroundImage = s.backgroundImage.replace(/color(?:-mix)?\([^)]+\)/g, 'transparent');
         }
         // Replace color() in any inline style string
         if (htmlChild.getAttribute('style')) {
           const style = htmlChild.getAttribute('style') || '';
-          htmlChild.setAttribute('style', style.replace(/color\([^)]+\)/g, '#08080b'));
+          htmlChild.setAttribute('style', style.replace(/color(?:-mix)?\([^)]+\)/g, '#08080b'));
         }
       }
     });
     // Also remove color() from any <style> blocks in the clone
     const styleTags = clone.querySelectorAll('style');
     styleTags.forEach((st: Element) => {
-      st.textContent = (st.textContent || '').replace(/color\([^)]+\)/g, '#08080b');
+      st.textContent = (st.textContent || '').replace(/color(?:-mix)?\([^)]+\)/g, '#08080b');
     });
 
-    // Temporarily append clone to capture it
+    // Render the clone at a fixed 16:9 export width so PDF pages are crisp
+    // (1280 × 1.5 = 1920) regardless of the device's screen size.
     const wrapper = document.createElement('div');
     wrapper.style.position = 'absolute';
     wrapper.style.left = '-9999px';
     wrapper.style.top = '0';
-    wrapper.style.width = el.offsetWidth + 'px';
+    wrapper.style.width = '1280px';
     document.body.appendChild(wrapper);
     wrapper.appendChild(clone);
 
     try {
-      const canvas = await html2canvas(clone, { scale: 3, useCORS: true, backgroundColor: '#08080b' });
+      const canvas = await html2canvas(clone, { scale: 1.5, useCORS: true, backgroundColor: '#08080b' });
       document.body.removeChild(wrapper);
       return canvas;
     } catch (e) {

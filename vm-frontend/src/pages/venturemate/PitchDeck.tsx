@@ -28,37 +28,43 @@ const SLIDE_COLORS: Record<string, string> = {
   competition: '#f97316', team: '#3b82f6', financials: '#ec4899', ask: '#14b8a6',
 };
 
-function SlideCard({ slide, primary, dark }: { slide: Slide; primary: string; dark: string }) {
+function SlideCard({ slide, index, primary, dark }: { slide: Slide; index: number; primary: string; dark: string }) {
   const [expanded, setExpanded] = useState(false);
   const Icon = SLIDE_ICONS[slide.type] || Presentation;
   const color = SLIDE_COLORS[slide.type] || primary;
 
   return (
     <GlassCard sx={{
-      p: 0, overflow: 'hidden',
-      background: `radial-gradient(circle at 85% 15%, ${color}66, transparent 30%), linear-gradient(135deg, ${dark}, #07130f)`,
+      p: 0, overflow: 'hidden', borderRadius: '14px', border: '1px solid rgba(255,255,255,.07)',
+      background: `radial-gradient(circle at 85% 15%, ${color}59, transparent 32%), linear-gradient(135deg, ${dark}, #07130f)`,
     }}>
-      <Box sx={{ p: 1.75, cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 1.25 }} onClick={() => setExpanded(!expanded)}>
-        <Box sx={{ flexShrink: 0, width: 28, height: 28, borderRadius: 1.5, display: 'grid', placeItems: 'center', bgcolor: 'rgba(255,255,255,.1)' }}>
-          <Icon size={14} color="white" />
+      <Box sx={{ p: 2, cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 1.5 }} onClick={() => setExpanded(!expanded)}>
+        <Typography sx={{ fontSize: 10.5, fontWeight: 700, fontFamily: 'monospace', color: 'rgba(255,255,255,.35)', pt: 0.9, minWidth: 22 }}>
+          {String(index + 1).padStart(2, '0')}
+        </Typography>
+        <Box sx={{ flexShrink: 0, width: 32, height: 32, borderRadius: '10px', display: 'grid', placeItems: 'center', bgcolor: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.1)' }}>
+          <Icon size={15} color="white" />
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <Typography sx={{ color: 'white', fontSize: 14, fontWeight: 800 }}>{slide.title}</Typography>
-            <Chip label={slide.type} size="small" sx={{ textTransform: 'capitalize', bgcolor: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.7)', fontSize: 8, height: 18, ml: 'auto' }} />
+            <Typography sx={{ color: 'white', fontSize: 14, fontWeight: 750 }}>{slide.title}</Typography>
+            <Chip label={slide.type} size="small" sx={{ textTransform: 'uppercase', bgcolor: 'rgba(255,255,255,.08)', color: 'rgba(255,255,255,.65)', fontSize: 8, height: 18, letterSpacing: 0.5, ml: 'auto' }} />
           </Box>
           {slide.content && !expanded && (
-            <Typography sx={{ color: 'rgba(255,255,255,.6)', fontSize: 11, mt: 0.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2 }}>{slide.content}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: 11.5, mt: 0.5, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{slide.content}</Typography>
           )}
         </Box>
-        <IconButton size="small" sx={{ color: 'rgba(255,255,255,.4)' }}>{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</IconButton>
+        <IconButton size="small" sx={{ color: 'rgba(255,255,255,.45)', bgcolor: 'rgba(255,255,255,.05)', '&:hover': { bgcolor: 'rgba(255,255,255,.1)' } }}>{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</IconButton>
       </Box>
       {expanded && (
-        <Box sx={{ px: 1.75, pb: 1.75 }}>
-          <Box sx={{ height: 1, bgcolor: 'rgba(255,255,255,.08)', mb: 1.5 }} />
-          {slide.content && <Typography sx={{ color: 'rgba(255,255,255,.75)', fontSize: 12, lineHeight: 1.75 }}>{slide.content}</Typography>}
+        <Box sx={{ px: 2, pb: 2 }}>
+          <Box sx={{ height: 1, bgcolor: 'rgba(255,255,255,.08)', mb: 1.75 }} />
+          {slide.content && <Typography sx={{ color: 'rgba(255,255,255,.75)', fontSize: 12.5, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{slide.content}</Typography>}
           {slide.bullets?.map((bullet, bi) => (
-            <Typography key={bi} component="li" sx={{ color: 'rgba(255,255,255,.86)', fontSize: 11.5, mb: 0.3, ml: 2 }}>{bullet}</Typography>
+            <Box key={bi} sx={{ display: 'flex', gap: 1.1, alignItems: 'flex-start', mt: 0.75 }}>
+              <Box sx={{ minWidth: 5, height: 5, borderRadius: '50%', bgcolor: color, mt: 0.85 }} />
+              <Typography sx={{ fontSize: 12, lineHeight: 1.65, color: 'rgba(255,255,255,.85)' }}>{bullet}</Typography>
+            </Box>
           ))}
         </Box>
       )}
@@ -70,15 +76,15 @@ function DeckPreview({ deck, primary, dark, proposed = false }: { deck: PitchDec
   const slides = deck.slides || [];
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
         <Box>
-          <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: 20, fontWeight: 900 }}>{deck.title || 'Pitch Deck'}</Typography>
-          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11 }}>{slides.length} slides</Typography>
+          <Typography sx={{ color: 'var(--vm-text-primary)', fontSize: { xs: 20, sm: 24 }, fontWeight: 850, letterSpacing: '-0.02em' }}>{deck.title || 'Pitch Deck'}</Typography>
+          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 11.5, mt: 0.75 }}>{slides.length} slides</Typography>
         </Box>
         <Chip label={proposed ? 'Review' : 'Approved'} size="small" color={proposed ? 'warning' : 'success'} variant="outlined" />
       </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {slides.map((slide, index) => <SlideCard key={slide.id || index} slide={slide} primary={primary} dark={dark} />)}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        {slides.map((slide, index) => <SlideCard key={slide.id || index} slide={slide} index={index} primary={primary} dark={dark} />)}
       </Box>
     </Box>
   );
@@ -193,7 +199,7 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
         <DialogContent sx={{ pt: 3, mt: 1 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {editSlides.map((slide, idx) => (
-              <Box key={idx} sx={{ p: 2, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 2, border: '1px solid var(--vm-border-subtle)' }}>
+              <Box key={idx} sx={{ p: 2.25, bgcolor: 'rgba(255,255,255,.02)', borderRadius: '12px', border: '1px solid var(--vm-border-subtle)' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                   <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'var(--vm-text-muted)', minWidth: 40 }}>#{idx + 1}</Typography>
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: SLIDE_COLORS[slide.type] || primary }} />
@@ -246,7 +252,7 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
               await updateBusiness(selectedBusiness.id, { pitchDeck: updatedDeck });
               setEditDialogOpen(false);
               toast.success('Deck updated', { description: 'Your pitch deck slides have been saved.' });
-            } catch (err) {
+            } catch {
               toast.error('Failed to save', { description: 'Please try again.' });
             }
             setSavingEdit(false);
