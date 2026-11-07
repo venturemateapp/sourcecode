@@ -6,7 +6,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import type { PlanSection } from '../../types/venturemate';
-import { safeDownloadName, imageToDataUri } from '../../lib/pitchDeckExport';
+import { safeDownloadName, imageToPngDataUri } from '../../lib/pitchDeckExport';
 import { ExportProgress } from '../shared/ExportProgress';
 import { LogoBadge } from './LogoBadge';
 
@@ -394,6 +394,7 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
     const el = viewerRef.current?.querySelector('[data-plan-container]') as HTMLElement;
     if (!el || pdfExporting) return;
     setPdfExporting(true);
+    const logoData = await imageToPngDataUri(logo);
     // Pin the stage to a fixed 16:9 export width so PDF pages are crisp
     // (1280 × 1.5 = 1920) regardless of the device's screen size.
     const prevWidth = el.style.width;
@@ -401,6 +402,7 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
     el.style.width = '1280px';
     el.style.maxHeight = 'none';
     try {
+      if (logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
       const pageWidth = 1920; const pageHeight = 1080;
       for (let i = 0; i < totalSlides; i++) {
@@ -408,7 +410,17 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
         await new Promise(r => setTimeout(r, 180));
         const el2 = viewerRef.current?.querySelector('[data-plan-inner]') as HTMLElement;
         if (!el2) continue;
-        const canvas = await html2canvas(el2, { scale: 1.5, useCORS: true, backgroundColor: null });
+        const canvas = await html2canvas(el2, {
+          scale: 1.5,
+          useCORS: true,
+          backgroundColor: null,
+          onclone: clonedDocument => {
+            if (!logoData) return;
+            clonedDocument.querySelectorAll<HTMLElement>('[data-logo-badge="true"]').forEach(badge => {
+              badge.style.backgroundImage = `url("${logoData}")`;
+            });
+          },
+        });
         if (i > 0) pdf.addPage();
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
       }
@@ -427,7 +439,8 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
     if (pptxExporting) return;
     setPptxExporting(true);
     try {
-      const logoData = await imageToDataUri(logo);
+      const logoData = await imageToPngDataUri(logo);
+      if (logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       const addLogo = (slide: PptxGenJS.Slide) => {
         if (logoData) slide.addImage({ data: logoData, x: 12.05, y: 0.35, w: 0.8, h: 0.8 });
       };

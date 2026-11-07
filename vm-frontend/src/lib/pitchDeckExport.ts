@@ -51,6 +51,30 @@ async function remoteImageData(source?: string): Promise<string | undefined> {
   }
 }
 
+export async function imageToPngDataUri(source?: string): Promise<string | undefined> {
+  const imageData = await remoteImageData(source);
+  if (!imageData) return undefined;
+  if (imageData.startsWith('data:image/png')) return imageData;
+  return new Promise(resolve => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d');
+        if (!context || !canvas.width || !canvas.height) return resolve(undefined);
+        context.drawImage(image, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } catch {
+        resolve(undefined);
+      }
+    };
+    image.onerror = () => resolve(undefined);
+    image.src = imageData;
+  });
+}
+
 function addDeckChrome(
   pptx: PptxGenJS,
   slide: PptxGenJS.Slide,

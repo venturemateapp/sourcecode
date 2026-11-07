@@ -16,7 +16,7 @@ export function LogoBadge({ logo, name, size = 34, radius = 10 }: LogoBadgeProps
   const initial = ((name || 'V').trim().charAt(0) || 'V').toUpperCase();
   const fontSize = typeof size === 'number' ? size * 0.38 : { xs: 13, sm: 16 };
   return (
-    <Box sx={{
+    <Box data-logo-badge="true" sx={{
       width: size, height: size, flexShrink: 0, borderRadius: radius, overflow: 'hidden',
       bgcolor: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)',
       display: 'grid', placeItems: 'center',

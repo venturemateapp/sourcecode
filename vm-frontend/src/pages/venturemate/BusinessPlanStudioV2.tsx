@@ -12,6 +12,7 @@ import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { useBusiness } from '../../contexts/BusinessContext';
 import type { PlanBlock, PlanDocumentV2, PlanSectionV2 } from '../../lib/ai-studio/types';
 import { normalizeImageSource } from '../../lib/imageSource';
+import { imageToDataUri, imageToPngDataUri } from '../../lib/pitchDeckExport';
 
 function safePlan(raw?: string, title = 'Business Plan', businessId?: string): PlanDocumentV2 {
   try {
@@ -78,9 +79,11 @@ async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void>
     pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size); pdf.setTextColor('#172033');
     const lines = pdf.splitTextToSize(value || '', contentWidth); const height = lines.length * size * 1.35; ensure(height + spacing); pdf.text(lines, margin, y); y += height + spacing;
   };
-  if (logo?.startsWith('data:image/') && !logo.includes('svg')) {
-    const format = logo.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
-    pdf.addImage(logo, format, margin, y, 96, 40, undefined, 'FAST'); y += 52;
+  if (logo?.startsWith('data:image/png')) {
+    const { width, height } = pdf.getImageProperties(logo);
+    const scale = Math.min(96 / width, 40 / height);
+    const logoWidth = width * scale; const logoHeight = height * scale;
+    pdf.addImage(logo, 'PNG', margin, y, logoWidth, logoHeight, undefined, 'FAST'); y += logoHeight + 12;
   }
   text(document.title, 25, true, 12); text(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'} · ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, 9, false, 20);
   if (document.executiveSummary) { text('Executive Summary', 16, true); text(document.executiveSummary, 11, false, 16); }
@@ -111,10 +114,10 @@ function crc32(data: Uint8Array): number {
 function u16(value: number): Uint8Array { return new Uint8Array([value & 255, value >>> 8 & 255]); }
 function u32(value: number): Uint8Array { return new Uint8Array([value & 255, value >>> 8 & 255, value >>> 16 & 255, value >>> 24 & 255]); }
 function concat(parts: Uint8Array[]): Uint8Array { const length = parts.reduce((sum, part) => sum + part.length, 0); const out = new Uint8Array(length); let offset = 0; parts.forEach(part => { out.set(part, offset); offset += part.length; }); return out; }
-function zipStore(files: Array<{ name: string; content: string }>): Uint8Array {
+function zipStore(files: Array<{ name: string; content: string | Uint8Array }>): Uint8Array {
   const local: Uint8Array[] = []; const central: Uint8Array[] = []; let offset = 0;
   files.forEach(file => {
-    const name = encoder.encode(file.name); const data = encoder.encode(file.content); const crc = crc32(data);
+    const name = encoder.encode(file.name); const data = typeof file.content === 'string' ? encoder.encode(file.content) : file.content; const crc = crc32(data);
     const header = concat([u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), name, data]);
     local.push(header);
     central.push(concat([u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), name]));
@@ -127,8 +130,21 @@ function xml(value: string): string { return value.replace(/&/g, '&amp;').replac
 function paragraph(value: string, style?: string): string {
   return `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ''}<w:r><w:t xml:space="preserve">${xml(value)}</w:t></w:r></w:p>`;
 }
-function exportDocx(document: PlanDocumentV2): void {
-  const body: string[] = [paragraph(document.title, 'Title'), paragraph(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'}`)];
+function decodeDataUri(value: string): Uint8Array {
+  const payload = value.slice(value.indexOf(',') + 1);
+  const binary = atob(payload);
+  return Uint8Array.from(binary, character => character.charCodeAt(0));
+}
+function docxLogo(image: Uint8Array): string {
+  const readDimension = (offset: number) => ((image[offset] << 24) | (image[offset + 1] << 16) | (image[offset + 2] << 8) | image[offset + 3]) >>> 0;
+  const naturalWidth = readDimension(16); const naturalHeight = readDimension(20);
+  const scale = Math.min(1_645_920 / naturalWidth, 640_080 / naturalHeight);
+  const width = Math.round(naturalWidth * scale); const height = Math.round(naturalHeight * scale);
+  return `<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${width}" cy="${height}"/><wp:docPr id="1" name="Business logo"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdLogo"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${width}" cy="${height}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+}
+function exportDocx(document: PlanDocumentV2, logo?: string): void {
+  const logoBytes = logo ? decodeDataUri(logo) : undefined;
+  const body: string[] = [...(logoBytes ? [docxLogo(logoBytes)] : []), paragraph(document.title, 'Title'), paragraph(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'}`)];
   if (document.executiveSummary) { body.push(paragraph('Executive Summary', 'Heading1'), paragraph(document.executiveSummary)); }
   document.sections.forEach(section => {
     body.push(paragraph(section.title, 'Heading1'));
@@ -141,14 +157,16 @@ function exportDocx(document: PlanDocumentV2): void {
       } else if (block.text) body.push(paragraph(block.text));
     });
   });
-  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>`;
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>`;
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="40"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="24"/></w:rPr></w:style></w:styles>`;
-  const bytes = zipStore([
-    { name: '[Content_Types].xml', content: `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>` },
+  const files: Array<{ name: string; content: string | Uint8Array }> = [
+    { name: '[Content_Types].xml', content: `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${logoBytes ? '<Default Extension="png" ContentType="image/png"/>' : ''}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>` },
     { name: '_rels/.rels', content: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>` },
     { name: 'word/document.xml', content: documentXml }, { name: 'word/styles.xml', content: styles },
-    { name: 'word/_rels/document.xml.rels', content: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
-  ]);
+    { name: 'word/_rels/document.xml.rels', content: `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>${logoBytes ? '<Relationship Id="rIdLogo" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>' : ''}</Relationships>` },
+  ];
+  if (logoBytes) files.push({ name: 'word/media/logo.png', content: logoBytes });
+  const bytes = zipStore(files);
   downloadBlob(bytes.buffer as ArrayBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', `${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.docx`);
 }
 
@@ -202,9 +220,17 @@ export function BusinessPlanStudioV2() {
   const addBlock = (type: string) => mutateSection(section => section.blocks.push({ id: crypto.randomUUID(), type, text: type === 'heading' ? 'New heading' : '', items: type.includes('list') ? ['New item'] : undefined, headers: type === 'table' ? ['Item', 'Value'] : undefined, rows: type === 'table' ? [['Example', '0']] : undefined }));
   const save = async () => { await studio.saveDocument(JSON.stringify(document), 'Edit business plan'); };
   const runExport = async () => {
-    if (format === 'pdf') await exportPdf(document, approvedLogo);
-    else if (format === 'docx') exportDocx(document);
-    else exportMarkdown(document, approvedLogo);
+    try {
+      const embeddedLogo = approvedLogo
+        ? (format === 'pdf' || format === 'docx' ? await imageToPngDataUri(approvedLogo) : await imageToDataUri(approvedLogo))
+        : undefined;
+      if (approvedLogo && !embeddedLogo) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
+      if (format === 'pdf') await exportPdf(document, embeddedLogo);
+      else if (format === 'docx') exportDocx(document, embeddedLogo);
+      else exportMarkdown(document, embeddedLogo);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Business plan export failed. Please try again.');
+    }
   };
 
   const leftRail = <Box>
