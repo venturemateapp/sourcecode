@@ -180,7 +180,8 @@ export async function exportPitchDeckPptx(options: PitchDeckExportOptions): Prom
   const primary = cleanHex(options.primary, '10B981');
   const secondary = cleanHex(options.secondary, '6366F1');
   const premium = options.style !== 'classic';
-  const logoData = await remoteImageData(options.logo);
+  const logoData = await imageToPngDataUri(options.logo);
+  if (options.logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
 
   for (let index = 0; index < options.slides.length; index++) {
     const data = options.slides[index];

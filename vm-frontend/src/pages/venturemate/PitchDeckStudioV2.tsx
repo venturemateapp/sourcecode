@@ -12,6 +12,7 @@ import { useAIStudioProject } from '../../hooks/useAIStudioProject';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { useBusiness } from '../../contexts/BusinessContext';
 import type { DeckDocument, DeckElement, DeckSlide } from '../../lib/ai-studio/types';
+import { imageToPngDataUri } from '../../lib/pitchDeckExport';
 
 const W = 13.34;
 const H = 7.5;
@@ -231,8 +232,14 @@ export function PitchDeckStudioV2() {
   const save = async () => { await studio.saveDocument(JSON.stringify(document), 'Edit pitch deck'); };
   const exportDeck = async () => {
     const logo = selectedBusiness?.brandKit?.logo || selectedBusiness?.brandKit?.logoIcon || '';
-    if (exportMenu === 'pptx') await exportDeckPptx(document, logo);
-    else await exportDeckPdf(document, logo);
+    try {
+      const embeddedLogo = logo ? await imageToPngDataUri(logo) : undefined;
+      if (logo && !embeddedLogo) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
+      if (exportMenu === 'pptx') await exportDeckPptx(document, embeddedLogo);
+      else await exportDeckPdf(document, embeddedLogo);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Pitch deck export failed. Please try again.');
+    }
   };
 
   const beginDrag = (event: React.PointerEvent, element: DeckElement) => {

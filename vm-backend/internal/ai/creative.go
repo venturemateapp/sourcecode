@@ -622,6 +622,22 @@ func normalizeCreativeProposal(ctx context.Context, proposal *Proposal, biz *bus
 			}
 			change.NewValue = normalized
 		}
+		if assetStore != nil {
+			var secured string
+			var err error
+			switch change.Field {
+			case "brandKit":
+				secured, err = persistApprovedBrandKit(ctx, assetStore, biz.ID, change.NewValue)
+			case "businessPlan", "pitchDeck", "websiteDraft":
+				secured, err = persistProposalImageReferences(ctx, assetStore, biz.ID, change.NewValue)
+			}
+			if err != nil {
+				return fmt.Errorf("could not secure proposal images: %w", err)
+			}
+			if secured != "" {
+				change.NewValue = secured
+			}
+		}
 	}
 	return nil
 }

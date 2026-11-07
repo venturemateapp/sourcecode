@@ -6,7 +6,7 @@ import { LogoBadge } from './LogoBadge';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import type { Slide } from '../../types/venturemate';
-import { exportPitchDeckPptx } from '../../lib/pitchDeckExport';
+import { exportPitchDeckPptx, imageToPngDataUri } from '../../lib/pitchDeckExport';
 import { ExportProgress } from '../shared/ExportProgress';
 
 interface GlowPos {
@@ -590,7 +590,7 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     else { document.exitFullscreen?.().catch(() => {}); document.body.style.overflow = ''; }
     return () => { document.body.style.overflow = ''; };
   }, [fullscreen]);
-  const captureSlideViewer = async (el: HTMLElement) => {
+  const captureSlideViewer = async (el: HTMLElement, logoData?: string) => {
     const clone = el.cloneNode(true) as HTMLElement;
     ['style', 'background', 'backgroundImage'].forEach(prop => {
       clone.querySelectorAll(`[${prop}*="color("], [${prop}*="color-mix("]`).forEach(child => {
@@ -601,6 +601,9 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     });
     clone.querySelectorAll('style').forEach(st => {
       if (st.textContent) st.textContent = st.textContent.replace(/color(?:-mix)?\([^)]+\)/g, '#08080b');
+    });
+    if (logoData) clone.querySelectorAll<HTMLElement>('[data-logo-badge="true"]').forEach(badge => {
+      badge.style.backgroundImage = `url("${logoData}")`;
     });
     const wrapper = document.createElement('div');
     wrapper.style.position = 'absolute'; wrapper.style.left = '-9999px'; wrapper.style.top = '0';
@@ -623,6 +626,8 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     if (!el || pdfExporting) return;
     setPdfExporting(true);
     try {
+      const logoData = await imageToPngDataUri(logo);
+      if (logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
       const pageWidth = 1920; const pageHeight = 1080;
       for (let i = 0; i < total; i++) {
@@ -630,7 +635,7 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
         await new Promise(r => setTimeout(r, 150));
         const el2 = viewerRef.current?.querySelector('[data-slide-inner]') as HTMLElement;
         if (!el2) continue;
-        const canvas = await captureSlideViewer(el2);
+        const canvas = await captureSlideViewer(el2, logoData);
         if (!canvas) continue;
         if (i > 0) pdf.addPage();
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);

@@ -419,18 +419,18 @@ func (r *Repository) CreateRevision(ctx context.Context, input RevisionInput) (*
 	return r.GetRevision(ctx, input.UserID, revisionID)
 }
 
-func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID string) (*Project, error) {
+func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID string, securedDocuments ...string) (*Project, error) {
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	var projectID, projectType, businessID, status, document string
-	if err := tx.QueryRow(ctx, `SELECT p.id::text,p.project_type,COALESCE(p.business_id::text,''),r.status,r.document::text
+	var projectID, projectType, businessID, status, document, manifest string
+	if err := tx.QueryRow(ctx, `SELECT p.id::text,p.project_type,COALESCE(p.business_id::text,''),r.status,r.document::text,r.manifest::text
 		FROM ai_project_revisions r JOIN ai_projects p ON p.id=r.project_id
 		WHERE r.id=$1 AND p.user_id=$2 AND p.archived_at IS NULL FOR UPDATE OF p,r`, revisionID, userID).
-		Scan(&projectID, &projectType, &businessID, &status, &document); err != nil {
+		Scan(&projectID, &projectType, &businessID, &status, &document, &manifest); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.New("revision not found or access denied")
 		}
@@ -456,6 +456,17 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 		versions = append(versions, v)
 	}
 	rows.Close()
+	if len(securedDocuments) > 0 && securedDocuments[0] != "" && securedDocuments[0] != document {
+		document = securedDocuments[0]
+		changes := make([]FileChange, 0, len(versions))
+		for _, v := range versions {
+			changes = append(changes, FileChange{Path: v.path, Operation: v.operation, PreviousPath: v.previousPath, Content: v.content, ContentHash: v.contentHash, BaseHash: v.baseHash})
+		}
+		contentHash := revisionContentHash(document, manifest, changes)
+		if _, err := tx.Exec(ctx, `UPDATE ai_project_revisions SET document=$1::jsonb,content_hash=$2,updated_at=NOW() WHERE id=$3`, document, contentHash, revisionID); err != nil {
+			return nil, fmt.Errorf("persist durable revision images: %w", err)
+		}
+	}
 
 	for _, v := range versions {
 		switch v.operation {

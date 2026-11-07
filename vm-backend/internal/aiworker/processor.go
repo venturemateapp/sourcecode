@@ -237,6 +237,13 @@ func (p *Processor) generate(ctx context.Context, job *aijobs.Job) (any, string,
 		}
 		response = providerResponse
 		encoded, _ := json.Marshal(document)
+		if project.BusinessID != "" && p.Storage != nil {
+			secured, secureErr := ai.PersistProposalImageReferences(ctx, p.Storage, project.BusinessID, string(encoded))
+			if secureErr != nil {
+				return nil, "", "", "", 0, 0, fmt.Errorf("secure pitch deck images for review: %w", secureErr)
+			}
+			encoded = []byte(secured)
+		}
 		revision, err = p.Projects.CreateRevision(ctx, aistudio.RevisionInput{ProjectID: project.ID, UserID: job.UserID, Source: sourceForJob(job.JobType), Prompt: request.Prompt, Summary: "Editable pitch deck generated", SchemaVersion: deckstudio.SchemaVersion, Document: string(encoded), TokenUsage: tokenUsageJSON(response)})
 		if err != nil {
 			return nil, "", "", "", 0, 0, err
@@ -263,6 +270,13 @@ func (p *Processor) generate(ctx context.Context, job *aijobs.Job) (any, string,
 		}
 		response = providerResponse
 		encoded, _ := json.Marshal(document)
+		if project.BusinessID != "" && p.Storage != nil {
+			secured, secureErr := ai.PersistProposalImageReferences(ctx, p.Storage, project.BusinessID, string(encoded))
+			if secureErr != nil {
+				return nil, "", "", "", 0, 0, fmt.Errorf("secure business plan images for review: %w", secureErr)
+			}
+			encoded = []byte(secured)
+		}
 		revision, err = p.Projects.CreateRevision(ctx, aistudio.RevisionInput{ProjectID: project.ID, UserID: job.UserID, Source: sourceForJob(job.JobType), Prompt: request.Prompt, Summary: "Editable business plan generated", SchemaVersion: planstudio.SchemaVersion, Document: string(encoded), TokenUsage: tokenUsageJSON(response)})
 		if err != nil {
 			return nil, "", "", "", 0, 0, err

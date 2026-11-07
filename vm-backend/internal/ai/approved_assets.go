@@ -89,7 +89,99 @@ func persistApprovedBrandKit(ctx context.Context, store ApprovedAssetStore, busi
 	if err != nil {
 		return "", fmt.Errorf("encode persisted brand kit: %w", err)
 	}
-	return string(out), nil
+	return persistProposalImageReferences(ctx, store, businessID, string(out))
+}
+
+// persistProposalImageReferences copies image references into managed object
+// storage before a proposal is shown for approval. Provider URLs can be
+// short-lived, so keeping them in a pending proposal risks a broken preview or
+// an approval that can no longer retrieve the image.
+func persistProposalImageReferences(ctx context.Context, store ApprovedAssetStore, businessID, raw string) (string, error) {
+	if store == nil {
+		return raw, nil
+	}
+	var document interface{}
+	if err := json.Unmarshal([]byte(raw), &document); err != nil {
+		return "", fmt.Errorf("invalid proposal JSON while securing images: %w", err)
+	}
+	cache := make(map[string]string)
+	var persist func(value interface{}, key, parentKey string, parent map[string]interface{}, path string) error
+	persist = func(value interface{}, key, parentKey string, parent map[string]interface{}, path string) error {
+		switch typed := value.(type) {
+		case map[string]interface{}:
+			for childKey, child := range typed {
+				if err := persist(child, childKey, key, typed, path+"."+childKey); err != nil {
+					return err
+				}
+			}
+		case []interface{}:
+			for index, child := range typed {
+				if err := persist(child, "", key, nil, fmt.Sprintf("%s[%d]", path, index)); err != nil {
+					return err
+				}
+			}
+		case string:
+			if !proposalImageField(key, parentKey, parent) || !isApprovedImageSource(typed) {
+				return nil
+			}
+			source := strings.TrimSpace(typed)
+			if store.IsManagedURL(source) {
+				return nil
+			}
+			if durable, ok := cache[source]; ok {
+				parent[key] = durable
+				return nil
+			}
+			fetchSource := source
+			if strings.HasPrefix(fetchSource, "<svg") || strings.HasPrefix(fetchSource, "<?xml") {
+				fetchSource = "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(fetchSource))
+			}
+			data, contentType, err := fetchApprovedImage(ctx, fetchSource)
+			if err != nil {
+				return fmt.Errorf("persist proposal image at %s: %w", path, err)
+			}
+			sum := sha256.Sum256(data)
+			keyPath := fmt.Sprintf("businesses/%s/approved-assets/%s%s", businessID, hex.EncodeToString(sum[:]), imageExtension(contentType))
+			durable, err := store.Upload(ctx, keyPath, data, contentType)
+			if err != nil {
+				return fmt.Errorf("upload proposal image at %s: %w", path, err)
+			}
+			parent[key] = durable
+			cache[source] = durable
+		}
+		return nil
+	}
+	if err := persist(document, "", "", nil, "proposal"); err != nil {
+		return "", err
+	}
+	encoded, err := json.Marshal(document)
+	if err != nil {
+		return "", fmt.Errorf("encode proposal with managed images: %w", err)
+	}
+	return string(encoded), nil
+}
+
+// PersistProposalImageReferences is shared by proposal and AI Studio revision
+// creation so pending review documents never depend on temporary image URLs.
+func PersistProposalImageReferences(ctx context.Context, store ApprovedAssetStore, businessID, raw string) (string, error) {
+	return persistProposalImageReferences(ctx, store, businessID, raw)
+}
+
+func proposalImageField(key, parentKey string, parent map[string]interface{}) bool {
+	switch strings.ToLower(strings.TrimSpace(key)) {
+	case "logo", "logourl", "logo_url", "logoicon", "logowhite", "image", "imagesrc", "image_src", "imageurl", "image_url", "src", "thumbnail", "thumbnailurl", "thumbnail_url", "coverimage", "coverurl", "cover_url", "heroimage", "heroimageurl", "backgroundimage", "assetimage":
+		return true
+	case "url":
+		if parent == nil {
+			return false
+		}
+		typeName := strings.ToLower(strings.TrimSpace(fmt.Sprint(parent["type"])))
+		kind := strings.ToLower(strings.TrimSpace(fmt.Sprint(parent["kind"])))
+		collection := strings.ToLower(strings.TrimSpace(parentKey))
+		return typeName == "image" || typeName == "logo" || typeName == "asset" || kind == "image" || kind == "logo" || kind == "asset" || collection == "images" || collection == "logos" || collection == "assets" || parent["altText"] != nil || parent["alt"] != nil
+	default:
+		return false
+	}
 }
 
 func isApprovedImageSource(source string) bool {

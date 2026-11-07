@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/venturemate/vmbackend/internal/ai"
 	"github.com/venturemate/vmbackend/internal/aijobs"
 	"github.com/venturemate/vmbackend/internal/aistudio"
 	"github.com/venturemate/vmbackend/internal/appbuilder"
@@ -213,7 +214,15 @@ func init() {
 		if err := enforceAIStudioStorageQuota(p.Context, userID); err != nil {
 			return nil, err
 		}
-		revision, err := AppContainer.AIStudioRepo.CreateRevision(p.Context, aistudio.RevisionInput{ProjectID: p.Args["projectId"].(string), UserID: userID, Source: "manual", Summary: p.Args["summary"].(string), SchemaVersion: stringArg(p.Args, "schemaVersion"), Document: stringArg(p.Args, "document"), Manifest: stringArg(p.Args, "manifest"), Files: changes})
+		project, err := AppContainer.AIStudioRepo.GetProject(p.Context, userID, p.Args["projectId"].(string))
+		if err != nil {
+			return nil, err
+		}
+		document, err := secureAIStudioDocument(p.Context, project, stringArg(p.Args, "document"))
+		if err != nil {
+			return nil, err
+		}
+		revision, err := AppContainer.AIStudioRepo.CreateRevision(p.Context, aistudio.RevisionInput{ProjectID: project.ID, UserID: userID, Source: "manual", Summary: p.Args["summary"].(string), SchemaVersion: stringArg(p.Args, "schemaVersion"), Document: document, Manifest: stringArg(p.Args, "manifest"), Files: changes})
 		if err == nil {
 			updateAIProjectUsage(p.Context, userID)
 		}
@@ -481,7 +490,22 @@ func createAIProjectResolver(p graphql.ResolveParams) (interface{}, error) {
 }
 
 func approveRevisionAndSync(ctx context.Context, userID, revisionID string) (*aistudio.Project, error) {
-	project, err := AppContainer.AIStudioRepo.ApproveRevision(ctx, userID, revisionID)
+	revision, err := AppContainer.AIStudioRepo.GetRevision(ctx, userID, revisionID)
+	if err != nil {
+		return nil, err
+	}
+	if revision == nil {
+		return nil, errors.New("revision not found or access denied")
+	}
+	projectInfo, err := AppContainer.AIStudioRepo.GetProject(ctx, userID, revision.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	securedDocument, err := secureAIStudioDocument(ctx, projectInfo, revision.Document)
+	if err != nil {
+		return nil, err
+	}
+	project, err := AppContainer.AIStudioRepo.ApproveRevision(ctx, userID, revisionID, securedDocument)
 	if err != nil {
 		return nil, err
 	}
@@ -489,6 +513,20 @@ func approveRevisionAndSync(ctx context.Context, userID, revisionID string) (*ai
 		return nil, err
 	}
 	return project, nil
+}
+
+func secureAIStudioDocument(ctx context.Context, project *aistudio.Project, document string) (string, error) {
+	if project == nil || project.BusinessID == "" || AppContainer == nil || AppContainer.S3 == nil {
+		return document, nil
+	}
+	if project.ProjectType != aistudio.ProjectTypePitchDeck && project.ProjectType != aistudio.ProjectTypeBusinessPlan {
+		return document, nil
+	}
+	secured, err := ai.PersistProposalImageReferences(ctx, AppContainer.S3, project.BusinessID, document)
+	if err != nil {
+		return "", fmt.Errorf("secure AI Studio images for review: %w", err)
+	}
+	return secured, nil
 }
 
 func syncRuntimeRevision(ctx context.Context, userID, projectID, revisionID string) error {

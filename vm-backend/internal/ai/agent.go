@@ -415,6 +415,19 @@ Rules:
 	if err := normalizeCreativeProposal(ctx, &proposal, biz, domain, rc, assetStore); err != nil {
 		return nil, err
 	}
+	if assetStore != nil {
+		for i := range proposal.Changes {
+			change := &proposal.Changes[i]
+			if !json.Valid([]byte(change.NewValue)) {
+				continue
+			}
+			secured, err := persistProposalImageReferences(ctx, assetStore, biz.ID, change.NewValue)
+			if err != nil {
+				return nil, fmt.Errorf("could not secure proposal images: %w", err)
+			}
+			change.NewValue = secured
+		}
+	}
 	kind := creativeDomain(domain)
 	if kind == "branding" {
 		// Skip SVG critique when Recraft generated the logo
@@ -635,7 +648,11 @@ func ApplyChangesWithDependencies(ctx context.Context, deps ApplyDependencies, u
 				if !json.Valid([]byte(ch.NewValue)) {
 					return "", fmt.Errorf("domain data for %s is invalid JSON", domain)
 				}
-				if _, err := deps.DomainRepo.Upsert(ctx, businessID, domain, ch.NewValue); err != nil {
+				secured, err := persistProposalImageReferences(ctx, deps.AssetStore, businessID, ch.NewValue)
+				if err != nil {
+					return "", fmt.Errorf("could not secure approved %s images: %w", domain, err)
+				}
+				if _, err := deps.DomainRepo.Upsert(ctx, businessID, domain, secured); err != nil {
 					return "", err
 				}
 			case "delete":
@@ -653,6 +670,13 @@ func ApplyChangesWithDependencies(ctx context.Context, deps ApplyDependencies, u
 		}
 		if isJSONBusinessField(ch.Field) && !json.Valid([]byte(ch.NewValue)) {
 			return "", fmt.Errorf("%s must contain valid JSON", ch.Field)
+		}
+		if isJSONBusinessField(ch.Field) && ch.Field != "brandKit" && ch.Field != "websiteDraft" {
+			secured, err := persistProposalImageReferences(ctx, deps.AssetStore, businessID, ch.NewValue)
+			if err != nil {
+				return "", fmt.Errorf("could not secure approved %s images: %w", ch.Field, err)
+			}
+			ch.NewValue = secured
 		}
 		switch ch.Field {
 		case "name":

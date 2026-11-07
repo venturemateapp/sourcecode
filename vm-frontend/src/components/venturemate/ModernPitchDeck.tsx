@@ -9,6 +9,7 @@ import jsPDF from 'jspdf';
 import type { Slide } from '../../types/venturemate';
 import { exportPitchDeckPptx } from '../../lib/pitchDeckExport';
 import { ExportProgress } from '../shared/ExportProgress';
+import { imageToPngDataUri } from '../../lib/pitchDeckExport';
 
 const SLIDE_ICONS: Record<string, typeof Star> = {
   title: Star, cover: Star, problem: Lightbulb, solution: Target, market: TrendingUp,
@@ -753,7 +754,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
 
   if (!slides || slides.length === 0) return null;
 
-  const captureSlide = async (el: HTMLElement) => {
+  const captureSlide = async (el: HTMLElement, logoData?: string) => {
     // Strip CSS color()/color-mix() functions that html2canvas 1.4.1 can't parse
     const clone = el.cloneNode(true) as HTMLElement;
     const allEls = clone.querySelectorAll('*');
@@ -779,6 +780,9 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
     const styleTags = clone.querySelectorAll('style');
     styleTags.forEach((st: Element) => {
       st.textContent = (st.textContent || '').replace(/color(?:-mix)?\([^)]+\)/g, '#08080b');
+    });
+    if (logoData) clone.querySelectorAll<HTMLElement>('[data-logo-badge="true"]').forEach(badge => {
+      badge.style.backgroundImage = `url("${logoData}")`;
     });
 
     // Render the clone at a fixed 16:9 export width so PDF pages are crisp
@@ -807,12 +811,14 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
     if (!el || pdfExporting) return;
     setPdfExporting(true);
     try {
+      const logoData = await imageToPngDataUri(logo);
+      if (logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
       const slideEls = el.querySelectorAll('[data-mp-slide]');
       let hasError = false;
       for (let i = 0; i < slideEls.length; i++) {
         const slideEl = slideEls[i] as HTMLElement;
-        const canvas = await captureSlide(slideEl);
+        const canvas = await captureSlide(slideEl, logoData);
         if (!canvas) { hasError = true; continue; }
         if (i > 0) pdf.addPage();
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1920, 1080);
