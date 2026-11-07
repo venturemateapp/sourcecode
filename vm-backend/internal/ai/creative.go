@@ -509,7 +509,7 @@ The newValue must be a COMPLETE JSON object:
   "footer":{"showLogo":true,"showSocial":true,"customText":"..."}
 }
  - Use brand kit colors, fonts, and logo automatically
- - Create 4-5 pages minimum with real content in every section
+ - Create only useful pages supported by supplied business information; do not pad the site with speculative content
  - The proposal only updates the PRIVATE DRAFT; publishing requires later confirmation`
 	case "webapp":
 		return `
@@ -1185,93 +1185,31 @@ func normalizeWebsiteDraftProposal(raw string, biz *businesses.Business) (string
 }
 
 func richWebsiteDraft(biz *businesses.Business, brand map[string]interface{}) map[string]interface{} {
-
-	name := biz.Name
-	tagline := biz.Tagline
-	description := biz.Description
-	industry := biz.Industry
-	location := biz.Location
-	logo, _ := brand["logo"].(string)
-
-	homeAboutContent := description
-	if strings.TrimSpace(homeAboutContent) == "" {
-		homeAboutContent = fmt.Sprintf("%s is a forward-thinking %s company based in %s, built to deliver real value through innovation and reliable execution.", name, industry, location)
-	}
-
-	pages := []interface{}{
-		map[string]interface{}{
-			"id": "page-home", "slug": "/", "title": "Home", "metaDescription": description, "isHome": true, "isPublished": false,
-			"sections": []interface{}{
-				map[string]interface{}{"id": "hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": tagline, "subheadline": homeAboutContent, "ctaPrimary": "Get Started", "secondaryCta": "Learn More", "logo": logo}},
-				map[string]interface{}{"id": "features", "type": "features", "order": 1, "visible": true, "props": map[string]interface{}{
-					"title":    "What we do",
-					"subtitle": "Core capabilities built around your goals",
-					"features": []interface{}{
-						map[string]interface{}{"icon": "Briefcase", "title": "Discover", "description": "Start with your priorities, constraints, and desired outcome."},
-						map[string]interface{}{"icon": "Layers", "title": "Plan", "description": "Turn the brief into a clear scope and practical next steps."},
-						map[string]interface{}{"icon": "TrendingUp", "title": "Deliver", "description": "Move from plan to execution with progress kept visible."},
-					},
-				}},
-				map[string]interface{}{"id": "cta", "type": "cta", "order": 2, "visible": true, "props": map[string]interface{}{"headline": "Ready to move forward?", "subheadline": "Tell us what you are working toward and we can discuss the next step.", "cta": "Contact Us", "href": "/contact"}},
-			},
-		},
-		map[string]interface{}{
-			"id": "page-about", "slug": "/about", "title": "About", "metaDescription": description, "isHome": false, "isPublished": false,
-			"sections": []interface{}{
-				map[string]interface{}{"id": "about-hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": "About " + name, "subheadline": homeAboutContent, "ctaPrimary": "Our services", "secondaryCta": "Contact us", "logo": logo}},
-				map[string]interface{}{"id": "about-content", "type": "about", "order": 1, "visible": true, "props": map[string]interface{}{"title": "Our story", "content": description + " We combine local insight with modern capability so every solution is practical, scalable, and easy to adopt."}},
-				map[string]interface{}{"id": "about-cta", "type": "cta", "order": 2, "visible": true, "props": map[string]interface{}{"headline": "Want to work together?", "subheadline": "Share your priorities and we can discuss the right next step.", "cta": "Get in touch", "href": "/contact"}},
-			},
-		},
-		map[string]interface{}{
-			"id": "page-services", "slug": "/services", "title": "Services", "metaDescription": "Professional services from " + name, "isHome": false, "isPublished": false,
-			"sections": []interface{}{
-				map[string]interface{}{"id": "services-hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": "Services", "subheadline": "Designed to create lasting value across " + industry, "ctaPrimary": "Start a project", "logo": logo}},
-				map[string]interface{}{"id": "features", "type": "features", "order": 1, "visible": true, "props": map[string]interface{}{
-					"title":    "What we do",
-					"subtitle": "Selected capabilities tailored to your needs",
-					"features": []interface{}{
-						map[string]interface{}{"icon": "Briefcase", "title": "Advisory", "description": "Clear recommendations grounded in real-world execution."},
-						map[string]interface{}{"icon": "Layers", "title": "Implementation", "description": "Hands-on delivery with accountable timelines and owners."},
-						map[string]interface{}{"icon": "BarChart3", "title": "Growth", "description": "Performance tracking and optimisation loops that compound results."},
-					},
-				}},
-				map[string]interface{}{"id": "pricing", "type": "pricing", "order": 2, "visible": true, "props": map[string]interface{}{"title": "Engagement options", "subtitle": "Flexible arrangements for every stage", "items": []interface{}{
-					map[string]interface{}{"name": "Starter", "description": "Initial assessment and roadmap", "price": "Tailored", "features": []interface{}{"Baseline review", "Recommendations", "30 day follow-up"}, "cta": "Request quote", "href": "/contact"},
-					map[string]interface{}{"name": "Growth", "description": "Ongoing delivery and support", "price": "Tailored", "features": []interface{}{"Dedicated manager", "Monthly reporting", "Priority support"}, "cta": "Request quote", "href": "/contact"},
-					map[string]interface{}{"name": "Enterprise", "description": "Scoped programme with governance", "price": "Tailored", "features": []interface{}{"Custom scope", "Governance reviews", "Quarterly strategy"}, "cta": "Request quote", "href": "/contact"},
-				}}},
-				map[string]interface{}{"id": "services-cta", "type": "cta", "order": 3, "visible": true, "props": map[string]interface{}{"headline": "Need a tailored proposal?", "subheadline": "Tell us your timeline and constraints and we will propose a practical plan.", "cta": "Contact Us", "href": "/contact"}},
-			},
-		},
-		map[string]interface{}{
-			"id": "page-faq", "slug": "/faq", "title": "FAQ", "metaDescription": "Frequently asked questions about " + name, "isHome": false, "isPublished": false,
-			"sections": []interface{}{
-				map[string]interface{}{"id": "faq-hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": "Questions and answers", "subheadline": "Practical information to help you decide quickly", "ctaPrimary": "Still have questions?", "secondaryCta": "Contact us", "logo": logo}},
-				map[string]interface{}{"id": "faq", "type": "faq", "order": 1, "visible": true, "props": map[string]interface{}{"title": "FAQ", "subtitle": "", "items": []interface{}{
-					map[string]interface{}{"question": "How fast can you start?", "answer": "Depending on scope, initial recommendations can be ready within days, not weeks."},
-					map[string]interface{}{"question": "Which industries do you serve?", "answer": "We specialise in " + industry + " with distributed teams and global clients."},
-					map[string]interface{}{"question": "What does engagement look like?", "answer": "Clear milestones, regular reviews, and defined owners from day one."},
-					map[string]interface{}{"question": "How do you measure success?", "answer": "With agreed KPIs, simple dashboards, and recurring reporting."},
-				}}},
-				map[string]interface{}{"id": "faq-contact", "type": "contact", "order": 2, "visible": true, "props": map[string]interface{}{"title": "Still need help?", "subtitle": "Send us a message and we will reply promptly", "showCompany": true, "showPhone": false}},
-			},
-		},
-		map[string]interface{}{
-			"id": "page-contact", "slug": "/contact", "title": "Contact", "metaDescription": "Contact " + name, "isHome": false, "isPublished": false,
-			"sections": []interface{}{
-				map[string]interface{}{"id": "contact-hero", "type": "hero", "order": 0, "visible": true, "props": map[string]interface{}{"headline": "Contact us", "subheadline": location, "ctaPrimary": "Send message", "logo": logo}},
-				map[string]interface{}{"id": "contact-form", "type": "contact", "order": 1, "visible": true, "props": map[string]interface{}{"title": "Get in touch", "subtitle": "We usually respond within one business day", "showCompany": true, "showPhone": false}},
-				map[string]interface{}{"id": "contact-cta", "type": "cta", "order": 2, "visible": true, "props": map[string]interface{}{"headline": "Prefer email?", "subheadline": "Reach the team directly at " + strings.ToLower(strings.ReplaceAll(name, " ", "")) + "@venturemate.net", "cta": "Email us", "href": "mailto:" + strings.ToLower(strings.ReplaceAll(name, " ", "")) + "@venturemate.net"}},
-			},
-		},
-	}
-
 	brandMap, _ := brand["brandKit"].(map[string]interface{})
 	if brandMap == nil {
 		brandMap = map[string]interface{}{}
 	}
-
+	logo, _ := brand["logo"].(string)
+	description := strings.TrimSpace(biz.Description)
+	sections := []interface{}{
+		map[string]interface{}{
+			"id": "hero", "type": "hero", "order": 0, "visible": true,
+			"props": map[string]interface{}{
+				"headline": biz.Tagline, "subheadline": description, "logo": logo,
+			},
+		},
+	}
+	navigationItems := []interface{}{map[string]interface{}{"label": "Home", "href": "/"}}
+	if description != "" {
+		sections = append(sections, map[string]interface{}{
+			"id": "about", "type": "about", "order": 1, "visible": true,
+			"props": map[string]interface{}{"title": "About " + biz.Name, "content": description},
+		})
+	}
+	pages := []interface{}{map[string]interface{}{
+		"id": "page-home", "slug": "/", "title": "Home", "metaDescription": description,
+		"isHome": true, "isPublished": false, "sections": sections,
+	}}
 	styles := map[string]interface{}{
 		"primaryColor":   stringValue(brandMap, "primaryColor", "#10b981"),
 		"secondaryColor": stringValue(brandMap, "secondaryColor", "#059669"),
@@ -1281,31 +1219,12 @@ func richWebsiteDraft(biz *businesses.Business, brand map[string]interface{}) ma
 		"fontBody":       stringValue(brandMap, "fontBody", "Inter"),
 		"radius":         "16px",
 	}
-
-	navigation := map[string]interface{}{
-		"items": []interface{}{
-			map[string]interface{}{"label": "Home", "href": "/"},
-			map[string]interface{}{"label": "About", "href": "/about"},
-			map[string]interface{}{"label": "Services", "href": "/services"},
-			map[string]interface{}{"label": "FAQ", "href": "/faq"},
-			map[string]interface{}{"label": "Contact", "href": "/contact"},
-		},
-		"style":    "horizontal",
-		"position": "top",
-	}
-
-	footer := map[string]interface{}{
-		"showLogo":   true,
-		"showSocial": true,
-		"customText": fmt.Sprintf("© %d %s. All rights reserved.", time.Now().Year(), name),
-	}
-
 	return map[string]interface{}{
 		"templateId":   "",
-		"subdomain":    strings.ToLower(strings.ReplaceAll(name, " ", "-")),
+		"subdomain":    strings.ToLower(strings.ReplaceAll(biz.Name, " ", "-")),
 		"pages":        pages,
 		"globalStyles": styles,
-		"navigation":   navigation,
-		"footer":       footer,
+		"navigation":   map[string]interface{}{"items": navigationItems, "style": "horizontal", "position": "top"},
+		"footer":       map[string]interface{}{"showLogo": true, "showSocial": true, "customText": fmt.Sprintf("© %d %s", time.Now().Year(), biz.Name)},
 	}
 }
