@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab, CircularProgress } from '@mui/material';
 import {
   Search,
   Filter,
-  Check,
-  Clock,
 } from 'lucide-react';
-import type { ViewType, Investor } from '../../types/venturemate';
+import type { Investor } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
+import { useBusiness } from '../../contexts/BusinessContext';
+import { useToast } from '../../components/shared/toast';
 
 const INVESTORS_QUERY = `
   query Investors {
@@ -15,7 +15,7 @@ const INVESTORS_QUERY = `
       id, name, type, logo, location,
       focusIndustries, stages,
       portfolio, team, thesis, criteria,
-      matchScore, status, connectedAt
+      matchScore
     }
   }
 `;
@@ -33,8 +33,13 @@ interface ApiInvestor {
   thesis: string;
   criteria: string;
   matchScore: number | null;
-  status: string;
-  connectedAt: string | null;
+}
+
+type ConnectionStatus = 'pending' | 'approved' | 'connected' | 'declined';
+interface InvestorConnectionStatus {
+  investorId: string;
+  status: ConnectionStatus;
+  updatedAt: string;
 }
 
 function mapApiToInvestor(api: ApiInvestor): Investor {
@@ -51,20 +56,18 @@ function mapApiToInvestor(api: ApiInvestor): Investor {
     thesis: api.thesis,
     criteria: JSON.parse(api.criteria || '[]'),
     matchScore: api.matchScore ?? undefined,
-    status: api.status as Investor['status'],
-    connectedAt: api.connectedAt ?? undefined,
   };
 }
 
-interface InvestorsProps {
-  onViewChange: (view: ViewType) => void;
-}
-
-export function InvestorsPage({ onViewChange }: InvestorsProps) {
+export function InvestorsPage() {
+  const { selectedBusiness } = useBusiness();
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [, setSelectedInvestor] = useState<Investor | null>(null);
   const [investors, setInvestors] = useState<Investor[]>([]);
+  const [connectionStatuses, setConnectionStatuses] = useState<Record<string, ConnectionStatus>>({});
+  const [connectingInvestorId, setConnectingInvestorId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,22 +79,59 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    setConnectionStatuses({});
+    if (!selectedBusiness?.id) return () => { cancelled = true; };
+    const businessId = selectedBusiness.id;
+    const refresh = async () => {
+      try {
+        const data = await graphqlRequest<{ myInvestorConnections: InvestorConnectionStatus[] }>(
+          'query MyInvestorConnections($businessId:ID!){myInvestorConnections(businessId:$businessId){investorId status updatedAt}}',
+          { businessId },
+        );
+        if (!cancelled) setConnectionStatuses(Object.fromEntries((data.myInvestorConnections || []).map(request => [request.investorId, request.status])));
+      } catch { /* keep the last known status visible while retrying */ }
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 20000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [selectedBusiness?.id]);
+
+  const requestConnection = async (investor: Investor) => {
+    if (!selectedBusiness?.id || connectingInvestorId) return;
+    setConnectingInvestorId(investor.id);
+    try {
+      const data = await graphqlRequest<{ requestInvestorConnection: InvestorConnectionStatus }>(
+        'mutation RequestInvestorConnection($investorId:ID!,$businessId:ID!){requestInvestorConnection(investorId:$investorId,businessId:$businessId){investorId status updatedAt}}',
+        { investorId: investor.id, businessId: selectedBusiness.id },
+      );
+      const status = data.requestInvestorConnection.status;
+      setConnectionStatuses(current => ({ ...current, [investor.id]: status }));
+      setActiveTab(status === 'pending' ? 1 : status === 'approved' ? 2 : status === 'connected' ? 3 : 0);
+      toast.success('Connection request sent', { description: `Your request to connect ${selectedBusiness.name} with ${investor.name} is pending review.` });
+    } catch (error) {
+      toast.error('Could not request connection', { description: error instanceof Error ? error.message : 'Please try again.' });
+    } finally {
+      setConnectingInvestorId(null);
+    }
+  };
+
   const filteredInvestors = investors.filter(inv => 
     inv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     inv.focusIndustries.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const connectedInvestors = filteredInvestors.filter(i => i.status === 'connected');
-  const pendingInvestors = filteredInvestors.filter(i => i.status === 'pending');
-  const suggestedInvestors = filteredInvestors.filter(i => i.status === 'not-connected');
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'connected': return <Check size={14} color="#22c55e" />;
-      case 'pending': return <Clock size={14} color="#f59e0b" />;
-      default: return null;
-    }
-  };
+  const connectedInvestors = filteredInvestors.filter(i => connectionStatuses[i.id] === 'connected');
+  const approvedInvestors = filteredInvestors.filter(i => connectionStatuses[i.id] === 'approved');
+  const pendingInvestors = filteredInvestors.filter(i => connectionStatuses[i.id] === 'pending');
+  const suggestedInvestors = filteredInvestors.filter(i => !connectionStatuses[i.id] || connectionStatuses[i.id] === 'declined');
+  const visibleInvestors = [suggestedInvestors, pendingInvestors, approvedInvestors, connectedInvestors][activeTab] || suggestedInvestors;
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
@@ -193,13 +233,14 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
         }}
       >
         <Tab label={`Suggested (${suggestedInvestors.length})`} />
-        <Tab label={`Connected (${connectedInvestors.length})`} />
         <Tab label={`Pending (${pendingInvestors.length})`} />
+        <Tab label={`Approved (${approvedInvestors.length})`} />
+        <Tab label={`Connected (${connectedInvestors.length})`} />
       </Tabs>
 
       {/* Investor Grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: '24px' }}>
-        {(activeTab === 0 ? suggestedInvestors : activeTab === 1 ? connectedInvestors : pendingInvestors).map((investor) => (
+        {visibleInvestors.map((investor) => (
           <Card
             key={investor.id}
             sx={{
@@ -236,7 +277,15 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
                 {investor.name[0]}
               </Avatar>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                {getStatusIcon(investor.status)}
+                {connectionStatuses[investor.id] && (
+                  <Chip
+                    size="small"
+                    label={connectionStatuses[investor.id]}
+                    sx={{ textTransform: 'capitalize', fontSize: 10, fontWeight: 700,
+                      color: connectionStatuses[investor.id] === 'connected' ? '#34d399' : connectionStatuses[investor.id] === 'declined' ? '#f87171' : '#fbbf24',
+                      bgcolor: connectionStatuses[investor.id] === 'connected' ? 'rgba(52,211,153,.12)' : connectionStatuses[investor.id] === 'declined' ? 'rgba(248,113,113,.12)' : 'rgba(251,191,36,.12)' }}
+                  />
+                )}
                 {investor.matchScore && (
                   <Chip
                     size="small"
@@ -298,13 +347,14 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
               )}
             </Box>
 
-            {investor.status === 'not-connected' && (
+            {(!connectionStatuses[investor.id] || connectionStatuses[investor.id] === 'declined') && (
               <Box
                 component="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onViewChange('messages');
+                  void requestConnection(investor);
                 }}
+                disabled={!selectedBusiness?.id || connectingInvestorId !== null}
                 sx={{
                   mt: 2,
                   width: '100%',
@@ -316,10 +366,11 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
+                  opacity: !selectedBusiness?.id || connectingInvestorId !== null ? 0.65 : 1,
                   '&:hover': { bgcolor: 'var(--vm-primary-500)' },
                 }}
               >
-                Connect
+                {connectingInvestorId === investor.id ? <CircularProgress size={15} sx={{ color: '#fff' }} /> : !selectedBusiness?.id ? 'Select a business first' : connectionStatuses[investor.id] === 'declined' ? 'Request again' : 'Connect'}
               </Box>
             )}
           </Card>

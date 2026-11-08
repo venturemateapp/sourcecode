@@ -261,7 +261,7 @@ function VentureMateApp() {
       case 'ai-assistant':
         return <AIAssistant />;
       case 'investors':
-        return <InvestorsPage onViewChange={handleViewChange} />;
+        return <InvestorsPage />;
       case 'cofounders':
         return <CoFoundersPage onViewChange={handleViewChange} />;
       case 'messages':

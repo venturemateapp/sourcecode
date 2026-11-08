@@ -440,8 +440,6 @@ export interface Investor {
   thesis: string;
   criteria: string[];
   matchScore?: number;
-  status: 'connected' | 'pending' | 'not-connected';
-  connectedAt?: string;
 }
 
 export interface PortfolioCompany {

@@ -11,7 +11,7 @@ import { useConfirm } from '../../components/shared/useConfirm';
 import { stripMarkdown } from '../../lib/stripMarkdown';
 import { AdminAiUsage } from './AdminAiUsage';
 
-type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage' | 'plan-usage';
+type AdminView = 'dashboard' | 'users' | 'businesses' | 'plans' | 'investors' | 'investor-connections' | 'providers' | 'bookings' | 'submissions' | 'broadcast' | 'support' | 'banking' | 'registrations' | 'invoices' | 'financing' | 'ai-usage' | 'plan-usage';
 
 const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; desc: string }> = [
   { key: 'dashboard', icon: BarChart3, label: 'Dashboard', desc: 'Platform overview' },
@@ -22,6 +22,7 @@ const NAV_ITEMS: Array<{ key: AdminView; icon: typeof Shield; label: string; des
   { key: 'businesses', icon: Building2, label: 'Businesses', desc: 'Startup profiles' },
   { key: 'financing', icon: DollarSign, label: 'Financing', desc: 'Lender offers' },
   { key: 'investors', icon: Globe, label: 'Investors', desc: 'Network partners' },
+  { key: 'investor-connections', icon: UserPlus, label: 'Investor Requests', desc: 'Connection requests' },
   { key: 'invoices', icon: Receipt, label: 'Invoices', desc: 'All invoices' },
   { key: 'plan-usage', icon: CreditCard, label: 'Plan Usage', desc: 'Subscriber plan utilization' },
   { key: 'providers', icon: Briefcase, label: 'Providers', desc: 'Service providers' },
@@ -75,6 +76,27 @@ interface AdminInvestor {
   isActive: boolean;
 }
 
+interface AdminInvestorConnection {
+  id: string;
+  investorId: string;
+  investorName: string;
+  investorLogo: string;
+  investorEmail: string;
+  investorPhone: string;
+  businessId: string;
+  businessName: string;
+  businessDescription: string;
+  businessIndustry: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userPhone: string;
+  status: 'pending' | 'approved' | 'connected' | 'declined';
+  adminNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 function jsonStringList(value: string): string {
   try {
     const parsed: unknown = JSON.parse(value);
@@ -123,7 +145,9 @@ function StatusBadge({ status, escalated, active }: { status: string; escalated?
     open: { color: '#34d399', bg: 'rgba(52,211,153,.15)' },
     pending: { color: '#f59e0b', bg: 'rgba(245,158,11,.15)' },
     approved: { color: '#34d399', bg: 'rgba(52,211,153,.15)' },
+    connected: { color: '#38bdf8', bg: 'rgba(56,189,248,.15)' },
     rejected: { color: '#ef4444', bg: 'rgba(239,68,68,.15)' },
+    declined: { color: '#ef4444', bg: 'rgba(239,68,68,.15)' },
   };
   const s = map[escalated || active || status] || map.active;
   return (
@@ -148,6 +172,8 @@ export function AdminDashboard() {
   const [biz, setBiz] = useState<BizRow[]>([]);
   const [leads, setLeads] = useState<Array<{ id: string; name: string; email: string; message: string; createdAt: string }>>([]);
   const [investors, setInvestors] = useState<AdminInvestor[]>([]);
+  const [investorConnections, setInvestorConnections] = useState<AdminInvestorConnection[]>([]);
+  const [investorConnectionActionId, setInvestorConnectionActionId] = useState<string | null>(null);
   const [, setModal] = useState<{ type: string; data?: Record<string, unknown> } | null>(null);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -262,6 +288,34 @@ export function AdminDashboard() {
     } catch { /* ignore */ }
   }, []);
 
+  const loadInvestorConnections = useCallback(async () => {
+    try {
+      const d = await graphqlRequest<{ adminInvestorConnections: AdminInvestorConnection[] }>(
+        'query { adminInvestorConnections { id investorId investorName investorLogo investorEmail investorPhone businessId businessName businessDescription businessIndustry userId userName userEmail userPhone status adminNotes createdAt updatedAt } }',
+      );
+      setInvestorConnections(d.adminInvestorConnections || []);
+    } catch { /* ignore */ }
+  }, []);
+
+  const updateInvestorConnectionStatus = async (id: string, status: AdminInvestorConnection['status']) => {
+    const previous = investorConnections.find(request => request.id === id)?.status;
+    if (!previous || previous === status) return;
+    setInvestorConnectionActionId(id);
+    setInvestorConnections(current => current.map(request => request.id === id ? { ...request, status } : request));
+    try {
+      await graphqlRequest<{ adminUpdateInvestorConnectionStatus: { id: string } }>(
+        'mutation UpdateInvestorConnection($id:ID!,$status:String!){adminUpdateInvestorConnectionStatus(id:$id,status:$status){id}}',
+        { id, status },
+      );
+      await loadInvestorConnections();
+    } catch (error) {
+      setInvestorConnections(current => current.map(request => request.id === id ? { ...request, status: previous } : request));
+      alert(error instanceof Error ? error.message : 'Could not update investor connection status');
+    } finally {
+      setInvestorConnectionActionId(null);
+    }
+  };
+
   const loadBankAccounts = useCallback(async () => {
     try { const d = await graphqlRequest<{ allBankAccounts: typeof bankAccounts }>('query { allBankAccounts { id userId businessId bankName accountType accountNumber accountName currency status createdAt } }'); setBankAccounts(d.allBankAccounts); } catch { /* ignore */ }
   }, []);
@@ -304,6 +358,12 @@ export function AdminDashboard() {
   useEffect(() => { if (view === 'businesses') loadBiz(); }, [view, loadBiz]);
   useEffect(() => { if (view === 'submissions') loadLeads(); }, [view, loadLeads]);
   useEffect(() => { if (view === 'investors') loadInvestors(); }, [view, loadInvestors]);
+  useEffect(() => {
+    if (view !== 'investor-connections') return;
+    void loadInvestorConnections();
+    const interval = window.setInterval(() => void loadInvestorConnections(), 20000);
+    return () => window.clearInterval(interval);
+  }, [view, loadInvestorConnections]);
   useEffect(() => { if (view === 'providers') loadProviders(); }, [view, loadProviders]);
   useEffect(() => { if (view === 'bookings') loadBookings(); }, [view, loadBookings]);
   useEffect(() => { if (view === 'support') { loadSupport(); setSelectedSession(null); setSupportMessages([]); } }, [view, loadSupport]);
@@ -973,6 +1033,53 @@ export function AdminDashboard() {
     </>
   );
 
+  const renderInvestorConnections = () => (
+    <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <UserPlus size={16} color="#f59e0b" />
+        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investor Connection Requests <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({investorConnections.length})</Typography></Typography>
+      </Box>
+      {investorConnections.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No investor connection requests yet.</Typography>}
+      {investorConnections.map(request => (
+        <Box key={request.id} sx={{ display: 'flex', alignItems: { xs: 'flex-start', md: 'center' }, gap: 1.5, px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.04)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' }, flexWrap: 'wrap' }}>
+          <Avatar src={request.investorLogo || undefined} sx={{ width: 38, height: 38, bgcolor: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 14 }}>
+            {request.investorName[0]}
+          </Avatar>
+          <Box sx={{ flex: 1, minWidth: { xs: 'calc(100% - 60px)', md: 250 } }}>
+            <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{request.investorName} ↔ {request.businessName}</Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 11 }}>{request.businessIndustry || 'Startup'} · requested by {request.userName}</Typography>
+            {request.businessDescription && <Typography sx={{ color: 'rgba(255,255,255,.38)', fontSize: 11, mt: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{request.businessDescription}</Typography>}
+            <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11, overflowWrap: 'anywhere' }}>
+              Founder: {request.userEmail}{request.userPhone ? ` · ${request.userPhone}` : ''}
+            </Typography>
+            <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11, overflowWrap: 'anywhere' }}>
+              Investor: {request.investorEmail || 'No email'}{request.investorPhone ? ` · ${request.investorPhone}` : ''}
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 10, mt: 0.5 }}>
+              Submitted {new Date(request.createdAt).toLocaleString()}
+            </Typography>
+          </Box>
+          <StatusBadge status={request.status} />
+          <TextField
+            select
+            size="small"
+            label="Status"
+            value={request.status}
+            disabled={investorConnectionActionId === request.id}
+            onChange={event => void updateInvestorConnectionStatus(request.id, event.target.value as AdminInvestorConnection['status'])}
+            sx={{ width: { xs: '100%', sm: 145 }, '& .MuiInputBase-root': { color: '#fff', fontSize: 12 }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,.45)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}
+          >
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="approved">Approved</MenuItem>
+            <MenuItem value="connected">Connected</MenuItem>
+            <MenuItem value="declined">Declined</MenuItem>
+          </TextField>
+          {investorConnectionActionId === request.id && <CircularProgress size={16} sx={{ color: '#34d399' }} />}
+        </Box>
+      ))}
+    </Card>
+  );
+
   const renderBookings = () => (
     <Card sx={{ bgcolor: 'rgba(13, 26, 21, .8)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
       <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1552,6 +1659,7 @@ export function AdminDashboard() {
       case 'businesses': return renderBiz();
       case 'plans': return renderPlans();
       case 'investors': return renderInvestors();
+      case 'investor-connections': return renderInvestorConnections();
       case 'providers': return renderProviders();
       case 'bookings': return renderBookings();
       case 'submissions': return renderLeads();
@@ -1571,7 +1679,7 @@ export function AdminDashboard() {
 
   const titles: Record<AdminView, string> = {
     dashboard: 'Overview', users: 'Users', businesses: 'Businesses', plans: 'Plans',
-    investors: 'Investors', providers: 'Providers', bookings: 'Bookings',
+    investors: 'Investors', 'investor-connections': 'Investor Requests', providers: 'Providers', bookings: 'Bookings',
     submissions: 'Leads', broadcast: 'Broadcast', support: 'Support', banking: 'Banking', registrations: 'Registrations', invoices: 'Invoices',     financing: 'Financing',
     'ai-usage': 'AI Usage',
     'plan-usage': 'Plan Usage',
@@ -1582,6 +1690,7 @@ export function AdminDashboard() {
     businesses: 'Startup profiles registered on the platform',
     plans: 'Subscription tiers and user distribution',
     investors: 'Investment network partners',
+    'investor-connections': 'Review startup requests and manage investor introductions',
     providers: 'Service provider directory',
     bookings: 'Provider appointment bookings',
     submissions: 'Contact form inquiries',
