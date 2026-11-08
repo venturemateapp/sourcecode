@@ -83,7 +83,10 @@ async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void>
     const { width, height } = pdf.getImageProperties(logo);
     const scale = Math.min(96 / width, 40 / height);
     const logoWidth = width * scale; const logoHeight = height * scale;
-    pdf.addImage(logo, 'PNG', margin, y, logoWidth, logoHeight, undefined, 'FAST'); y += logoHeight + 12;
+    pdf.addImage(logo, 'PNG', margin, y, logoWidth, logoHeight, undefined, 'FAST');
+    // jsPDF positions text by its baseline; reserve the title's ascent as well
+    // as a visible gap so the first title line never collides with the logo.
+    y += logoHeight + 12 + 25;
   }
   text(document.title, 25, true, 12); text(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'} · ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, 9, false, 20);
   if (document.executiveSummary) { text('Executive Summary', 16, true); text(document.executiveSummary, 11, false, 16); }
