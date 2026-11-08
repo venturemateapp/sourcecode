@@ -705,11 +705,31 @@ func main() {
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		w.Write(data)
 	})
-	http.HandleFunc("/api/public-sites/allow-domain", publicSites.AllowDomain)
+	http.HandleFunc("/api/public-sites/allow-domain", func(w http.ResponseWriter, r *http.Request) {
+		domain := strings.TrimSpace(r.URL.Query().Get("domain"))
+		if domain == "" {
+			http.Error(w, "domain is required", http.StatusBadRequest)
+			return
+		}
+		allowed, err := container.WebsiteRepo.IsDomainAllowed(r.Context(), domain, publicSiteDomain)
+		if err != nil {
+			http.Error(w, "domain check failed", http.StatusInternalServerError)
+			return
+		}
+		if !allowed {
+			allowed = aiPreviewBusinessAllowed(r.Context(), container, domain, publicSiteDomain)
+		}
+		if !allowed {
+			http.Error(w, "domain is not connected to a published VentureMate site", http.StatusForbidden)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusOK)
+	})
 	http.HandleFunc("/api/public-sites/subdomain-availability", publicSites.SubdomainAvailability)
 	http.HandleFunc("/api/public-sites/contact", publicSites.SubmitContact)
 	http.HandleFunc("/ws/chat", container.ChatHub.HandleWebSocket)
-	http.Handle("/", publicSites)
+	http.Handle("/", aiPreviewBusinessHostHandler(container, publicSiteDomain, publicSites))
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -1,5 +1,8 @@
 {
 	email edspikeonline@gmail.com
+	on_demand_tls {
+		ask http://127.0.0.1:8080/api/public-sites/allow-domain
+	}
 }
 
 venturemate.net {
@@ -23,6 +26,18 @@ venturemate.net {
 	}
 
 	tls edspikeonline@gmail.com
+}
+
+http://*.venturemate.net {
+	redir https://{host}{uri} 308
+}
+
+:443 {
+	tls {
+		on_demand
+	}
+	@venturemateSubdomains host *.venturemate.net
+	reverse_proxy @venturemateSubdomains 127.0.0.1:8080
 }
 
 hayford-sons.venturemate.net {

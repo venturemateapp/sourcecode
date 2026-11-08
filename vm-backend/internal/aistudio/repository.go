@@ -23,6 +23,11 @@ type Repository struct {
 	db *pgxpool.Pool
 }
 
+type PreviewTarget struct {
+	ProjectID  string
+	RevisionID string
+}
+
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
@@ -47,6 +52,38 @@ func (r *Repository) UserProjectBytes(ctx context.Context, userID string) (int64
 }
 
 func (r *Repository) Pool() *pgxpool.Pool { return r.db }
+
+// GetPreviewByBusinessSlug resolves a unique business hostname to its latest
+// approved AI web-app revision with a completed build.
+func (r *Repository) GetPreviewByBusinessSlug(ctx context.Context, businessSlug string) (*PreviewTarget, error) {
+	businessSlug = strings.TrimSpace(strings.ToLower(businessSlug))
+	if businessSlug == "" {
+		return nil, pgx.ErrNoRows
+	}
+	const matching = `FROM ai_projects p
+		JOIN businesses b ON b.id=p.business_id
+		JOIN ai_project_builds pb ON pb.project_id=p.id AND pb.status='completed'
+		JOIN ai_project_revisions pr ON pr.id=pb.revision_id AND pr.status IN ('approved','superseded')
+		WHERE p.project_type='web_app' AND p.archived_at IS NULL
+		  AND p.status IN ('ready','published')
+		  AND p.approved_revision_id IS NOT NULL
+		  AND trim(both '-' from left(regexp_replace(lower(trim(b.name)), '[^a-z0-9]+', '-', 'g'), 63))=$1`
+	var businesses int
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(DISTINCT b.id) `+matching, businessSlug).Scan(&businesses); err != nil {
+		return nil, err
+	}
+	if businesses != 1 {
+		return nil, pgx.ErrNoRows
+	}
+	var target PreviewTarget
+	err := r.db.QueryRow(ctx, `SELECT p.id::text, pb.revision_id::text `+matching+
+		` ORDER BY (pb.revision_id=p.approved_revision_id) DESC, p.updated_at DESC, pb.created_at DESC LIMIT 1`, businessSlug).
+		Scan(&target.ProjectID, &target.RevisionID)
+	if err != nil {
+		return nil, err
+	}
+	return &target, nil
+}
 
 type scanner interface {
 	Scan(dest ...any) error

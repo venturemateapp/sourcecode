@@ -19,6 +19,12 @@ function languageLabel(file: AIProjectFile): string {
   return file.language || file.path.split('.').pop()?.toUpperCase() || 'TEXT';
 }
 
+function brandedPreviewUrl(businessName?: string): string {
+  const slug = (businessName || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63).replace(/-+$/g, '');
+  const reserved = new Set(['admin', 'api', 'app', 'auth', 'blog', 'cdn', 'dashboard', 'docs', 'help', 'mail', 'sites', 'smtp', 'status', 'support', 'www', 'venturemate', 'assets', 'static', 'graphql', 'billing']);
+  return slug && !reserved.has(slug) ? `https://${slug}.venturemate.net/` : '';
+}
+
 type PreviewNode = { nodeId: string; tagName: string; text: string };
 type PreviewRuntimeError = { message: string; filename?: string; line?: number; column?: number };
 
@@ -42,24 +48,25 @@ export function WebAppStudio() {
     && studio.revisions.some(revision => revision.id === build.revisionId)
     && !starterRevisionIds.has(build.revisionId));
   const latestBuild = visibleBuilds.find(build => build.status === 'completed' && build.previewUrl) || null;
+  const previewUrl = latestBuild ? brandedPreviewUrl(selectedBusiness?.name) || latestBuild.previewUrl : '';
   const failedBuild = visibleBuilds.find(build => build.status === 'failed') || null;
   const hasApprovedGeneratedRevision = Boolean(studio.approvedRevision && studio.approvedRevision.source !== 'migration');
   const studioJobActive = Boolean(studio.job && ['queued', 'running'].includes(studio.job.status));
   const currentDocument = studio.pendingRevision?.document || studio.approvedRevision?.document || '{}';
   const studioPreviewUrl = useMemo(() => {
-    if (!latestBuild?.previewUrl || typeof window === 'undefined') return latestBuild?.previewUrl || '';
+    if (!previewUrl || typeof window === 'undefined') return previewUrl;
     try {
-      const url = new URL(latestBuild.previewUrl, window.location.origin);
+      const url = new URL(previewUrl, window.location.origin);
       url.searchParams.set('studioOrigin', window.location.origin);
       return url.toString();
     } catch {
-      return latestBuild.previewUrl;
+      return previewUrl;
     }
-  }, [latestBuild?.previewUrl]);
+  }, [previewUrl]);
   const previewOrigin = useMemo(() => {
-    if (!latestBuild?.previewUrl || typeof window === 'undefined') return '';
-    try { return new URL(latestBuild.previewUrl, window.location.origin).origin; } catch { return ''; }
-  }, [latestBuild?.previewUrl]);
+    if (!previewUrl || typeof window === 'undefined') return '';
+    try { return new URL(previewUrl, window.location.origin).origin; } catch { return ''; }
+  }, [previewUrl]);
   const generationContext = selectedPreviewNode
     ? `Edit only the selected preview element unless broader changes are explicitly required. nodeId=${selectedPreviewNode.nodeId}; tag=${selectedPreviewNode.tagName}; currentText=${JSON.stringify(selectedPreviewNode.text.slice(0, 300))}`
     : undefined;
@@ -254,7 +261,7 @@ export function WebAppStudio() {
         <Tooltip title="Mobile"><IconButton size="small" color={device === 'mobile' ? 'primary' : 'default'} onClick={() => setDevice('mobile')}><Smartphone size={15} /></IconButton></Tooltip>
         {selectedPreviewNode && <Chip size="small" color="secondary" label={`${selectedPreviewNode.tagName} · ${selectedPreviewNode.nodeId}`} onDelete={() => setSelectedPreviewNode(null)} sx={{ maxWidth: 330, '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }} />}
         <Box sx={{ flex: 1 }} />
-        {latestBuild?.previewUrl && <Button size="small" endIcon={<ExternalLink size={13} />} href={latestBuild.previewUrl} target="_blank" rel="noreferrer">Open preview</Button>}
+        {previewUrl && <Button size="small" endIcon={<ExternalLink size={13} />} href={previewUrl} target="_blank" rel="noreferrer">Open preview</Button>}
       </Box>
       <Box sx={{ flex: 1, p: { xs: 1, md: 2 }, overflow: 'auto', bgcolor: '#05070b', display: 'flex', justifyContent: 'center' }}>
         {latestBuild?.previewUrl ? (
@@ -318,7 +325,7 @@ export function WebAppStudio() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Chip size="small" label={build.status} color={build.status === 'completed' ? 'success' : build.status === 'failed' ? 'error' : 'default'} />
             <Typography sx={{ fontSize: 11, fontWeight: 800, flex: 1 }}>{new Date(build.createdAt).toLocaleString()}</Typography>
-            {build.previewUrl && <Button size="small" href={build.previewUrl} target="_blank" endIcon={<ExternalLink size={12} />}>Preview</Button>}
+            {build.previewUrl && <Button size="small" href={build.id === latestBuild?.id ? previewUrl : build.previewUrl} target="_blank" endIcon={<ExternalLink size={12} />}>Preview</Button>}
             {build.status === 'failed' && <Button size="small" color="warning" disabled={actionBusy || Boolean(studio.job && ['queued', 'running'].includes(studio.job.status))} onClick={() => void repairBuild(build.id)}>Repair with AI</Button>}
             {build.artifactStorageKey && <Button size="small" startIcon={<Download size={12} />} onClick={() => void authenticatedDownload(buildDownloadUrl(build.id), `${studio.project?.slug || 'app'}-build.zip`)}>Build ZIP</Button>}
           </Box>
