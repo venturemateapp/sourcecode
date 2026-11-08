@@ -147,7 +147,9 @@ func (r *Runner) Build(ctx context.Context, projectID, revisionID string, files 
 			return nil, err
 		}
 		previewPrefix := filepath.ToSlash(filepath.Join("ai-studio", projectID, "previews", revisionID))
-		previewURL, err = uploadStaticDirectory(buildCtx, r.Storage, distPath, previewPrefix)
+		if _, err = uploadStaticDirectory(buildCtx, r.Storage, distPath, previewPrefix); err == nil {
+			previewURL = fmt.Sprintf("/api/ai/previews/%s/%s/index.html", projectID, revisionID)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -239,9 +241,6 @@ func uploadStaticDirectory(ctx context.Context, storage *s3.Service, root, prefi
 		url, err := storage.Upload(ctx, key, data, contentType)
 		if err != nil {
 			return err
-		}
-		if err := storage.SetPublicRead(ctx, key); err != nil {
-			return fmt.Errorf("make preview object %s publicly readable: %w", relative, err)
 		}
 		if filepath.ToSlash(relative) == "index.html" {
 			indexURL = url

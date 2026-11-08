@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box, Button, Card, Chip, CircularProgress, Divider, IconButton, MenuItem, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
@@ -33,6 +33,7 @@ export function WebAppStudio() {
   const [deployProvider, setDeployProvider] = useState<'venturemate' | 'github' | 'netlify'>('venturemate');
   const [selectedPreviewNode, setSelectedPreviewNode] = useState<PreviewNode | null>(null);
   const [previewErrors, setPreviewErrors] = useState<PreviewRuntimeError[]>([]);
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
 
   const selectedFile = useMemo(() => studio.files.find(file => file.path === selectedPath) || studio.files[0] || null, [selectedPath, studio.files]);
   const latestBuild = studio.builds.find(build => build.status === 'completed' && build.previewUrl) || null;
@@ -66,7 +67,7 @@ export function WebAppStudio() {
   useEffect(() => {
     if (!previewOrigin) return undefined;
     const receive = (event: MessageEvent) => {
-      if (event.origin !== previewOrigin || !event.data || typeof event.data !== 'object') return;
+      if (event.source !== previewFrameRef.current?.contentWindow || (event.origin !== previewOrigin && event.origin !== 'null') || !event.data || typeof event.data !== 'object') return;
       const message = event.data as { source?: unknown; type?: unknown; payload?: unknown };
       if (message.source !== 'venturemate-preview' || !message.payload || typeof message.payload !== 'object') return;
       if (message.type === 'select') {
@@ -212,7 +213,7 @@ export function WebAppStudio() {
       </Box>
       <Box sx={{ flex: 1, p: { xs: 1, md: 2 }, overflow: 'auto', bgcolor: '#05070b', display: 'flex', justifyContent: 'center' }}>
         {latestBuild?.previewUrl ? (
-          <Box component="iframe" title={`${studio.project.name} preview`} src={studioPreviewUrl} sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin" sx={{ width, maxWidth: '100%', height: '100%', minHeight: 520, border: '1px solid var(--vm-border-subtle)', borderRadius: 2, bgcolor: 'white', transition: 'width .25s ease' }} />
+          <Box component="iframe" ref={previewFrameRef} title={`${studio.project.name} preview`} src={studioPreviewUrl} sandbox="allow-scripts allow-forms allow-popups allow-modals" sx={{ width, maxWidth: '100%', height: '100%', minHeight: 520, border: '1px solid var(--vm-border-subtle)', borderRadius: 2, bgcolor: 'white', transition: 'width .25s ease' }} />
         ) : (
           <Card sx={{ alignSelf: 'center', maxWidth: 500, p: 3, textAlign: 'center', bgcolor: 'rgba(255,255,255,.025)' }}>
             <Laptop size={38} style={{ opacity: .6 }} /><Typography sx={{ mt: 1.5, fontWeight: 900 }}>No compiled preview yet</Typography>

@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/venturemate/vmbackend/internal/aistudio"
 	"github.com/venturemate/vmbackend/internal/app"
 	"github.com/venturemate/vmbackend/internal/buildworker"
 )
@@ -147,6 +150,71 @@ func aiBuildDownloadHandler(container *app.Container) http.HandlerFunc {
 		}
 		http.Redirect(w, r, signedURL, http.StatusTemporaryRedirect)
 	}
+}
+
+func aiPreviewHandler(container *app.Container) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		projectID, revisionID, filePath, ok := parseAIPreviewPath(r.URL.Path)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		available, err := container.AIStudioRepo.HasCompletedPreview(r.Context(), projectID, revisionID)
+		if err != nil || !available {
+			http.NotFound(w, r)
+			return
+		}
+		key := path.Join("ai-studio", projectID, "previews", revisionID, filePath)
+		data, contentType, err := container.S3.Download(r.Context(), key)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		if contentType == "" || contentType == "application/octet-stream" {
+			if detected := mime.TypeByExtension(path.Ext(filePath)); detected != "" {
+				contentType = detected
+			}
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
+		w.Header().Set("Cache-Control", "public, max-age=60")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Cross-Origin-Resource-Policy", "cross-origin")
+		w.Header().Set("Content-Security-Policy", "sandbox allow-scripts allow-forms allow-popups allow-modals; default-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https:")
+		if r.Method == http.MethodHead {
+			return
+		}
+		_, _ = w.Write(data)
+	}
+}
+
+func parseAIPreviewPath(requestPath string) (string, string, string, bool) {
+	const prefix = "/api/ai/previews/"
+	if !strings.HasPrefix(requestPath, prefix) {
+		return "", "", "", false
+	}
+	parts := strings.SplitN(strings.TrimPrefix(requestPath, prefix), "/", 3)
+	if len(parts) != 3 || parts[2] == "" {
+		return "", "", "", false
+	}
+	projectID, err := uuid.Parse(parts[0])
+	if err != nil {
+		return "", "", "", false
+	}
+	revisionID, err := uuid.Parse(parts[1])
+	if err != nil {
+		return "", "", "", false
+	}
+	filePath, err := aistudio.ValidateProjectPath(parts[2])
+	if err != nil {
+		return "", "", "", false
+	}
+	return projectID.String(), revisionID.String(), filePath, true
 }
 
 func pathIdentifier(value, prefix, suffix string) (string, bool) {

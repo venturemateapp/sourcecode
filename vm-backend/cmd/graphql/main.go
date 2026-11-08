@@ -41,9 +41,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := strings.TrimSpace(strings.TrimSuffix(r.Header.Get("Origin"), "/"))
-		allowed := origin == "" || allowAny || allowedOrigins[origin]
+		sandboxedPreviewOrigin := origin == "null" && (strings.HasPrefix(r.URL.Path, "/api/ai/previews/") || strings.HasPrefix(r.URL.Path, "/api/runtime/"))
+		allowed := origin == "" || allowAny || allowedOrigins[origin] || sandboxedPreviewOrigin
 		if origin != "" && allowed {
-			w.Header().Set("Access-Control-Allow-Origin", map[bool]string{true: "*", false: origin}[allowAny])
+			allowOrigin := origin
+			if allowAny || sandboxedPreviewOrigin {
+				allowOrigin = "*"
+			}
+			w.Header().Set("Access-Control-Allow-Origin", allowOrigin)
 			w.Header().Add("Vary", "Origin")
 		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
@@ -639,6 +644,7 @@ func main() {
 	http.Handle("/api/ai/jobs/", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, aiJobEventsHandler(container)))))
 	http.Handle("/api/ai/projects/", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, aiProjectSourceHandler(container)))))
 	http.Handle("/api/ai/builds/", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, aiBuildDownloadHandler(container)))))
+	http.Handle("/api/ai/previews/", corsMiddleware(http.HandlerFunc(aiPreviewHandler(container))))
 	http.Handle("/api/runtime/", corsMiddleware(aiRuntimeHandler(container)))
 	http.HandleFunc("/api/generate", handleGenerateWebsite)
 	http.HandleFunc("/api/pdf/public", func(w http.ResponseWriter, r *http.Request) {

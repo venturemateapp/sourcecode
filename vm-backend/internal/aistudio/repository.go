@@ -981,6 +981,16 @@ func (r *Repository) SetProjectPublished(ctx context.Context, userID, projectID 
 	return project, err
 }
 
+func (r *Repository) HasCompletedPreview(ctx context.Context, projectID, revisionID string) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(ctx, `SELECT EXISTS(
+		SELECT 1 FROM ai_project_builds b
+		JOIN ai_projects p ON p.id=b.project_id
+		WHERE b.project_id=$1::uuid AND b.revision_id=$2::uuid AND b.status='completed' AND p.archived_at IS NULL
+	)`, projectID, revisionID).Scan(&exists)
+	return exists, err
+}
+
 func (r *Repository) GetBuild(ctx context.Context, userID, buildID string) (*Build, error) {
 	row := r.db.QueryRow(ctx, `SELECT b.id::text,b.project_id::text,COALESCE(b.revision_id::text,''),COALESCE(b.job_id::text,''),b.status,b.runtime_version,
 		b.artifact_storage_key,b.preview_url,b.diagnostics::text,b.logs,b.created_at,b.updated_at

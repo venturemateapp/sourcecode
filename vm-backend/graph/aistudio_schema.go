@@ -91,7 +91,19 @@ var aiBuildType = graphql.NewObject(graphql.ObjectConfig{Name: "AIProjectBuild",
 	"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)}, "projectId": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 	"revisionId": &graphql.Field{Type: graphql.ID}, "jobId": &graphql.Field{Type: graphql.ID}, "status": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	"runtimeVersion": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "artifactStorageKey": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-	"previewUrl": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "diagnostics": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+	"previewUrl": &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		var build *aistudio.Build
+		switch value := p.Source.(type) {
+		case *aistudio.Build:
+			build = value
+		case aistudio.Build:
+			build = &value
+		}
+		if build == nil || build.PreviewURL == "" || build.ProjectID == "" || build.RevisionID == "" {
+			return "", nil
+		}
+		return fmt.Sprintf("/api/ai/previews/%s/%s/index.html", build.ProjectID, build.RevisionID), nil
+	}}, "diagnostics": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	"logs": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	"updatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 }})
@@ -100,7 +112,22 @@ var aiDeploymentType = graphql.NewObject(graphql.ObjectConfig{Name: "AIProjectDe
 	"id": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)}, "projectId": &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 	"revisionId": &graphql.Field{Type: graphql.ID}, "buildId": &graphql.Field{Type: graphql.ID}, "jobId": &graphql.Field{Type: graphql.ID},
 	"provider": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "status": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
-	"externalId": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "url": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+	"externalId": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "url": &graphql.Field{Type: graphql.NewNonNull(graphql.String), Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		var deployment *aistudio.Deployment
+		switch value := p.Source.(type) {
+		case *aistudio.Deployment:
+			deployment = value
+		case aistudio.Deployment:
+			deployment = &value
+		}
+		if deployment == nil {
+			return "", nil
+		}
+		if deployment.Provider == "venturemate" && deployment.URL != "" && deployment.ProjectID != "" && deployment.RevisionID != "" {
+			return fmt.Sprintf("/api/ai/previews/%s/%s/index.html", deployment.ProjectID, deployment.RevisionID), nil
+		}
+		return deployment.URL, nil
+	}},
 	"metadata": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "logs": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 	"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)}, "updatedAt": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 }})
