@@ -867,8 +867,8 @@ func (r *Repository) CreateBuild(ctx context.Context, userID string, build Build
 
 func (r *Repository) UpdateBuild(ctx context.Context, buildID, status, artifactKey, previewURL, diagnostics, logs string) (*Build, error) {
 	diagnostics, _ = NormalizeJSON(diagnostics, "{}")
-	row := r.db.QueryRow(ctx, `UPDATE ai_project_builds SET status=$2,artifact_storage_key=$3,preview_url=$4,diagnostics=$5::jsonb,logs=$6,updated_at=NOW(),
-		completed_at=CASE WHEN $2 IN ('completed','failed','cancelled') THEN NOW() ELSE completed_at END
+	row := r.db.QueryRow(ctx, `UPDATE ai_project_builds SET status=$2::varchar,artifact_storage_key=$3,preview_url=$4,diagnostics=$5::jsonb,logs=$6,updated_at=NOW(),
+		completed_at=CASE WHEN $2::varchar IN ('completed','failed','cancelled') THEN NOW() ELSE completed_at END
 		WHERE id=$1 RETURNING id::text,project_id::text,COALESCE(revision_id::text,''),COALESCE(job_id::text,''),status,runtime_version,artifact_storage_key,preview_url,diagnostics::text,logs,created_at,updated_at`,
 		buildID, status, artifactKey, previewURL, diagnostics, logs)
 	var out Build
