@@ -68,7 +68,7 @@ func adminConnectionMap(request investors.ConnectionRequest) map[string]interfac
 
 func connectionStatusValid(status string) bool {
 	switch status {
-	case "pending", "approved", "connected", "declined":
+	case "pending", "in_review", "connected", "declined":
 		return true
 	default:
 		return false
@@ -205,8 +205,8 @@ func notifyInvestorConnectionStatusChanged(ctx context.Context, request *investo
 		return
 	}
 	sendFounderInvestorConnectionEmail(request, request.Status)
-	if request.Status == "approved" || request.Status == "connected" {
-		sendInvestorContactIntroductionEmail(request)
+	if request.Status == "in_review" || request.Status == "connected" {
+		sendInvestorConnectionInvestorEmail(request)
 	}
 	if AppContainer == nil || AppContainer.UserRepo == nil {
 		return

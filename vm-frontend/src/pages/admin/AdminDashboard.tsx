@@ -91,7 +91,7 @@ interface AdminInvestorConnection {
   userName: string;
   userEmail: string;
   userPhone: string;
-  status: 'pending' | 'approved' | 'connected' | 'declined';
+  status: 'pending' | 'in_review' | 'connected' | 'declined';
   adminNotes: string;
   createdAt: string;
   updatedAt: string;
@@ -144,6 +144,7 @@ function StatusBadge({ status, escalated, active }: { status: string; escalated?
     closed: { color: '#94a3b8', bg: 'rgba(148,163,184,.12)' },
     open: { color: '#34d399', bg: 'rgba(52,211,153,.15)' },
     pending: { color: '#f59e0b', bg: 'rgba(245,158,11,.15)' },
+    in_review: { color: '#f59e0b', bg: 'rgba(245,158,11,.15)' },
     approved: { color: '#34d399', bg: 'rgba(52,211,153,.15)' },
     connected: { color: '#38bdf8', bg: 'rgba(56,189,248,.15)' },
     rejected: { color: '#ef4444', bg: 'rgba(239,68,68,.15)' },
@@ -153,7 +154,7 @@ function StatusBadge({ status, escalated, active }: { status: string; escalated?
   return (
     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.3, borderRadius: 6, bgcolor: s.bg }}>
       <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: s.color }} />
-      <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: s.color, textTransform: 'capitalize' }}>{status}</Typography>
+      <Typography sx={{ fontSize: 10.5, fontWeight: 700, color: s.color, textTransform: 'capitalize' }}>{status.replace(/[_-]/g, ' ')}</Typography>
     </Box>
   );
 }
@@ -1070,7 +1071,7 @@ export function AdminDashboard() {
             sx={{ width: { xs: '100%', sm: 145 }, '& .MuiInputBase-root': { color: '#fff', fontSize: 12 }, '& .MuiInputLabel-root': { color: 'rgba(255,255,255,.45)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}
           >
             <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="approved">Approved</MenuItem>
+            <MenuItem value="in_review">In review</MenuItem>
             <MenuItem value="connected">Connected</MenuItem>
             <MenuItem value="declined">Declined</MenuItem>
           </TextField>

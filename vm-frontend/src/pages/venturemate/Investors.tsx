@@ -35,7 +35,7 @@ interface ApiInvestor {
   matchScore: number | null;
 }
 
-type ConnectionStatus = 'pending' | 'approved' | 'connected' | 'declined';
+type ConnectionStatus = 'pending' | 'in_review' | 'connected' | 'declined';
 interface InvestorConnectionStatus {
   investorId: string;
   status: ConnectionStatus;
@@ -113,7 +113,7 @@ export function InvestorsPage() {
       );
       const status = data.requestInvestorConnection.status;
       setConnectionStatuses(current => ({ ...current, [investor.id]: status }));
-      setActiveTab(status === 'pending' ? 1 : status === 'approved' ? 2 : status === 'connected' ? 3 : 0);
+      setActiveTab(status === 'pending' ? 1 : status === 'in_review' ? 2 : status === 'connected' ? 3 : 0);
       toast.success('Connection request sent', { description: `Your request to connect ${selectedBusiness.name} with ${investor.name} is pending review.` });
     } catch (error) {
       toast.error('Could not request connection', { description: error instanceof Error ? error.message : 'Please try again.' });
@@ -128,10 +128,10 @@ export function InvestorsPage() {
   );
 
   const connectedInvestors = filteredInvestors.filter(i => connectionStatuses[i.id] === 'connected');
-  const approvedInvestors = filteredInvestors.filter(i => connectionStatuses[i.id] === 'approved');
+  const inReviewInvestors = filteredInvestors.filter(i => connectionStatuses[i.id] === 'in_review');
   const pendingInvestors = filteredInvestors.filter(i => connectionStatuses[i.id] === 'pending');
   const suggestedInvestors = filteredInvestors.filter(i => !connectionStatuses[i.id] || connectionStatuses[i.id] === 'declined');
-  const visibleInvestors = [suggestedInvestors, pendingInvestors, approvedInvestors, connectedInvestors][activeTab] || suggestedInvestors;
+  const visibleInvestors = [suggestedInvestors, pendingInvestors, inReviewInvestors, connectedInvestors][activeTab] || suggestedInvestors;
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
@@ -234,7 +234,7 @@ export function InvestorsPage() {
       >
         <Tab label={`Suggested (${suggestedInvestors.length})`} />
         <Tab label={`Pending (${pendingInvestors.length})`} />
-        <Tab label={`Approved (${approvedInvestors.length})`} />
+      <Tab label={`In review (${inReviewInvestors.length})`} />
         <Tab label={`Connected (${connectedInvestors.length})`} />
       </Tabs>
 
@@ -280,7 +280,7 @@ export function InvestorsPage() {
                 {connectionStatuses[investor.id] && (
                   <Chip
                     size="small"
-                    label={connectionStatuses[investor.id]}
+                    label={connectionStatuses[investor.id] === 'in_review' ? 'In review' : connectionStatuses[investor.id]}
                     sx={{ textTransform: 'capitalize', fontSize: 10, fontWeight: 700,
                       color: connectionStatuses[investor.id] === 'connected' ? '#34d399' : connectionStatuses[investor.id] === 'declined' ? '#f87171' : '#fbbf24',
                       bgcolor: connectionStatuses[investor.id] === 'connected' ? 'rgba(52,211,153,.12)' : connectionStatuses[investor.id] === 'declined' ? 'rgba(248,113,113,.12)' : 'rgba(251,191,36,.12)' }}
