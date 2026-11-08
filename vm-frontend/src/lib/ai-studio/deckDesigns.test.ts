@@ -22,7 +22,10 @@ describe('deck backgrounds', () => {
 
   it('keeps all design artwork within the exported slide', () => {
     expect(DECK_DESIGNS.every(design => design.background === '#ffffff')).toBe(true);
-    expect(DECK_DESIGNS.every(design => design.text.startsWith('#1') || design.text.startsWith('#2'))).toBe(true);
+    expect(DECK_DESIGNS.every(design => {
+      const [red, green, blue] = design.text.replace('#', '').match(/.{2}/g)?.map(channel => parseInt(channel, 16)) || [];
+      return (.2126 * red + .7152 * green + .0722 * blue) / 255 < .4;
+    })).toBe(true);
     for (const design of DECK_DESIGNS) for (const shape of design.shapes) {
       expect(shape.x).toBeGreaterThanOrEqual(0);
       expect(shape.y).toBeGreaterThanOrEqual(0);

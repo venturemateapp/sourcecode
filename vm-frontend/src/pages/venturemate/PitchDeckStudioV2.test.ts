@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DeckDocument } from '../../lib/ai-studio/types';
+import { DECK_DESIGNS } from '../../lib/ai-studio/deckDesigns';
 
 const pptx = vi.hoisted(() => ({ slide: { background: {} as unknown, addShape: vi.fn(), addText: vi.fn(), addImage: vi.fn(), addNotes: vi.fn() }, writeFile: vi.fn() }));
 vi.mock('pptxgenjs', () => ({ default: class {
@@ -22,9 +23,11 @@ describe('pitch deck PowerPoint export', () => {
       ] }],
     } as unknown as DeckDocument;
     await exportDeckPptx(document);
+    const ocean = DECK_DESIGNS.find(design => design.id === 'ocean')!;
+    const oceanEllipse = ocean.shapes.find(shape => shape.type === 'ellipse')!;
     expect(pptx.slide.background).toEqual({ color: 'FFFFFF' });
-    expect(pptx.slide.addShape).toHaveBeenCalledTimes(4);
-    expect(pptx.slide.addShape).toHaveBeenCalledWith('ellipse', expect.objectContaining({ fill: { color: 'E4F4FB', transparency: 0 } }));
+    expect(pptx.slide.addShape).toHaveBeenCalledTimes(ocean.shapes.length);
+    expect(pptx.slide.addShape).toHaveBeenCalledWith('ellipse', expect.objectContaining({ fill: { color: oceanEllipse.color.slice(1).toUpperCase(), transparency: oceanEllipse.transparency || 0 } }));
     expect(pptx.slide.addText).toHaveBeenCalledWith('Hello investors', expect.objectContaining({ color: '000000' }));
     expect(pptx.writeFile).toHaveBeenCalledOnce();
   });
