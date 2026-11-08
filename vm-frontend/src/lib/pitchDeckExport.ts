@@ -169,7 +169,7 @@ function addStandardContent(slide: PptxGenJS.Slide, data: Slide, primary: string
   const hasImage = Boolean(imageData);
   const contentWidth = hasImage ? 6.55 : 11.6;
   if (data.content) {
-    slide.addText(truncate(data.content, 700), {
+    slide.addText(data.content, {
       x: 0.76, y: 2.28, w: contentWidth, h: data.bullets?.length ? 1.35 : 3.6,
       fontFace: 'Aptos', fontSize: 18, color: 'CBD5E1',
       breakLine: false, valign: 'top', margin: 0.04,
@@ -177,7 +177,7 @@ function addStandardContent(slide: PptxGenJS.Slide, data: Slide, primary: string
     });
   }
   if (data.bullets?.length) {
-    const bullets = data.bullets.slice(0, 7).map(item => `•  ${truncate(item, 180)}`).join('\n');
+    const bullets = data.bullets.map(item => `•  ${item.trim()}`).join('\n');
     slide.addText(bullets, {
       x: 0.8, y: data.content ? 3.85 : 2.35, w: contentWidth, h: data.content ? 2.55 : 3.95,
       fontFace: 'Aptos', fontSize: 16, color: 'E2E8F0',

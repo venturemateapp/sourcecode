@@ -28,6 +28,10 @@ func Generate(ctx context.Context, provider ai.Provider, business *businesses.Bu
 		b, _ := json.Marshal(projection)
 		projectionJSON = "DETERMINISTIC MANAGEMENT PROJECTION (label as projection, never actual):\n" + string(b)
 	}
+	previousDocument := currentDocument
+	if freshDocumentRequested(prompt) {
+		currentDocument = ""
+	}
 	current := "No current plan."
 	if strings.TrimSpace(currentDocument) != "" && currentDocument != "{}" {
 		current = "CURRENT PLAN JSON. Preserve locked and unrelated sections/blocks:\n" + currentDocument
@@ -36,7 +40,7 @@ func Generate(ctx context.Context, provider ai.Provider, business *businesses.Bu
 Required top-level fields: schemaVersion,title,executiveSummary,metadata,sections,assumptions,projection,theme.
 Allowed blocks: heading,paragraph,bullet_list,numbered_list,callout,quote,image,table,chart,page_break,financial_assumptions,financial_projection_table.
 Create a complete professional plan adapted to the business: cover, executive summary, company, problem/opportunity, product, target market, competitors, business model/pricing, go-to-market, operations, organization/team, milestones, risks, projections, funding/use, appendix.
-Never invent customers, traction, historic revenue, team, regulations, awards, market statistics or sources. State "Verification required" where data is missing. Historic and projected figures must never be mixed. Use only the supplied deterministic projection figures. Preserve locked and unrelated content from the current document.
+Never invent customers, traction, historic revenue, team, regulations, awards, market statistics or sources. State "Verification required" where data is missing. Historic and projected figures must never be mixed. Use only the supplied deterministic projection figures. Apply the user's request to the document; never return the current plan unchanged. For explicit requests to create a new, complete, or from-scratch plan, generate fresh unlocked content and do not preserve old unlocked sections. For a scoped revision, preserve unrelated content and locked blocks.
 Every section and block needs a stable unique id. Keep prose clear and specific, not promotional filler.`
 	response, err := provider.Chat(ctx, system, []ai.Message{{Role: "user", Content: businessContext + "\n\n" + projectionJSON + "\n\nUSER REQUEST\n" + prompt + "\n\n" + current}}, nil)
 	if err != nil {
@@ -68,7 +72,63 @@ Every section and block needs a stable unique id. Keep prose clear and specific,
 	if err := document.Validate(); err != nil {
 		return nil, response, err
 	}
+	if strings.TrimSpace(previousDocument) != "" && previousDocument != "{}" {
+		if previous, parseErr := Parse(previousDocument); parseErr == nil && planContentSignature(previous) == planContentSignature(&document) {
+			retryPrompt := businessContext + "\n\n" + projectionJSON + "\n\nUSER REQUEST\n" + prompt + "\n\nCURRENT PLAN JSON\n" + previousDocument + "\n\nYour previous response repeated the existing plan. Apply the user request now and change the relevant content. Preserve unrelated sections only when the request is scoped."
+			retryResponse, retryErr := provider.Chat(ctx, system+"\n\nRETRY REQUIREMENT: The next answer must contain substantive requested changes and must not copy the current plan unchanged.", []ai.Message{{Role: "user", Content: retryPrompt}}, nil)
+			if retryErr != nil || retryResponse == nil {
+				return nil, response, errors.New("AI repeated the existing business plan and the retry failed")
+			}
+			var retryDocument Document
+			if err := json.Unmarshal([]byte(normalizePlanShape(extractJSONObject(retryResponse.Content))), &retryDocument); err != nil {
+				return nil, retryResponse, fmt.Errorf("AI repeated the existing business plan and returned invalid content on retry: %w", err)
+			}
+			if projection != nil {
+				retryDocument.Projection = projection
+			}
+			if err := retryDocument.Validate(); err != nil {
+				return nil, retryResponse, err
+			}
+			if planContentSignature(previous) == planContentSignature(&retryDocument) {
+				return nil, retryResponse, errors.New("AI could not apply the request; no unchanged business plan was saved")
+			}
+			document, response = retryDocument, retryResponse
+		}
+	}
 	return &document, response, nil
+}
+
+func freshDocumentRequested(prompt string) bool {
+	value := strings.ToLower(prompt)
+	for _, phrase := range []string{"from scratch", "start over", "regenerate", "brand new", "completely new", "new business plan", "new plan", "create a complete", "write a complete", "full rewrite", "replace the entire"} {
+		if strings.Contains(value, phrase) {
+			return true
+		}
+	}
+	return false
+}
+
+func planContentSignature(document *Document) string {
+	var parts []string
+	parts = append(parts, document.Title, document.ExecutiveSummary)
+	for _, section := range document.Sections {
+		parts = append(parts, section.Title)
+		for _, block := range section.Blocks {
+			parts = append(parts, block.Type, block.Text, strings.Join(block.Items, "\n"), strings.Join(block.Headers, "\n"), block.URL, block.AltText)
+			for _, row := range block.Rows {
+				parts = append(parts, strings.Join(row, "\n"))
+			}
+			for _, value := range []map[string]any{block.Chart, block.Data} {
+				if encoded, err := json.Marshal(value); err == nil {
+					parts = append(parts, string(encoded))
+				}
+			}
+		}
+	}
+	for _, assumption := range document.Assumptions {
+		parts = append(parts, assumption.Label, fmt.Sprint(assumption.Value), assumption.Unit, assumption.Description, assumption.Source)
+	}
+	return strings.Join(parts, "\x00")
 }
 
 func normalizePlanShape(raw string) string {

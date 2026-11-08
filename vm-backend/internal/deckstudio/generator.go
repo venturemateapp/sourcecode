@@ -18,6 +18,10 @@ func Generate(ctx context.Context, provider ai.Provider, business *businesses.Bu
 	if strings.TrimSpace(prompt) == "" {
 		return nil, nil, errors.New("deck prompt is required")
 	}
+	previousDocument := currentDocument
+	if freshDocumentRequested(prompt) {
+		currentDocument = ""
+	}
 	businessContext := "No linked business. Use placeholders for facts the user must verify."
 	if business != nil {
 		businessContext = fmt.Sprintf("VERIFIED BUSINESS DATA\nName: %s\nTagline: %s\nDescription: %s\nIndustry: %s\nStage: %s\nLocation: %s\nTeam JSON: %s\nMetrics JSON: %s\nFinancials JSON: %s\nBrand JSON: %s",
@@ -49,7 +53,7 @@ Each slide: a clear headline, a tight narrative, and supporting bullets or stat 
 
 TRUTH & SAFETY
 - Never invent customers, traction, revenue, team members, awards, market share, or historic financials. For unknown facts insert clearly editable text like "Add verified metric". Label all forward figures as projections/assumptions.
-- Images may ONLY use durable supplied URLs or be omitted; never fabricate temporary image URLs. Preserve locked slides/elements and unrelated manual edits from the current deck.
+- Images may ONLY use durable supplied URLs or be omitted; never fabricate temporary image URLs. Always apply the user's request and never return the current deck unchanged. Explicit new, complete, or from-scratch requests must create fresh unlocked slides; scoped revisions should preserve unrelated content and locked slides/elements.
 
 OUTPUT
 Return the complete deck with required top-level fields: schemaVersion, title, template, theme, slides, metadata. Produce EVERY slide fully — do not stop early or leave placeholders empty.`
@@ -82,7 +86,74 @@ Return the complete deck with required top-level fields: schemaVersion, title, t
 	if err := document.Validate(); err != nil {
 		return nil, response, err
 	}
+	if strings.TrimSpace(previousDocument) != "" && previousDocument != "{}" {
+		var previous Document
+		if json.Unmarshal([]byte(previousDocument), &previous) == nil && deckContentSignature(&previous) == deckContentSignature(&document) {
+			retryPrompt := businessContext + "\n\nUSER REQUEST\n" + prompt + "\n\nCURRENT DECK JSON\n" + previousDocument + "\n\nYour previous response repeated the existing deck. Apply the user request now and change the relevant slides. Preserve unrelated slides only when the request is scoped."
+			retryResponse, retryErr := provider.Chat(ctx, system+"\n\nRETRY REQUIREMENT: The next answer must contain substantive requested changes and must not copy the current deck unchanged.", []ai.Message{{Role: "user", Content: retryPrompt}}, nil)
+			if retryErr != nil || retryResponse == nil {
+				return nil, response, errors.New("AI repeated the existing pitch deck and the retry failed")
+			}
+			var retryDocument Document
+			if err := json.NewDecoder(strings.NewReader(extractJSONObject(retryResponse.Content))).Decode(&retryDocument); err != nil {
+				return nil, retryResponse, fmt.Errorf("AI repeated the existing pitch deck and returned invalid content on retry: %w", err)
+			}
+			retryDocument.Theme = mergeTheme(retryDocument.Theme, DefaultTheme(retryDocument.Template))
+			if err := retryDocument.Validate(); err != nil {
+				return nil, retryResponse, err
+			}
+			if deckContentSignature(&previous) == deckContentSignature(&retryDocument) {
+				return nil, retryResponse, errors.New("AI could not apply the request; no unchanged pitch deck was saved")
+			}
+			document, response = retryDocument, retryResponse
+		}
+	}
 	return &document, response, nil
+}
+
+func freshDocumentRequested(prompt string) bool {
+	value := strings.ToLower(prompt)
+	for _, phrase := range []string{"from scratch", "start over", "regenerate", "brand new", "completely new", "new pitch deck", "new deck", "create a complete", "full rewrite", "replace the entire", "investor pitch deck"} {
+		if strings.Contains(value, phrase) {
+			return true
+		}
+	}
+	return false
+}
+
+func clearElementIDs(element *Element) {
+	element.ID = ""
+	for index := range element.Children {
+		clearElementIDs(&element.Children[index])
+	}
+}
+
+func deckContentSignature(document *Document) string {
+	type slideContent struct {
+		Type       string
+		Title      string
+		Background Background
+		Notes      string
+		Elements   []string
+	}
+	slides := make([]slideContent, 0, len(document.Slides))
+	for _, slide := range document.Slides {
+		content := slideContent{Type: slide.Type, Title: slide.Title, Background: slide.Background, Notes: slide.Notes}
+		for _, element := range slide.Elements {
+			copy := element
+			clearElementIDs(&copy)
+			encoded, _ := json.Marshal(copy)
+			content.Elements = append(content.Elements, string(encoded))
+		}
+		slides = append(slides, content)
+	}
+	encoded, _ := json.Marshal(struct {
+		Title    string
+		Template string
+		Theme    Theme
+		Slides   []slideContent
+	}{document.Title, document.Template, document.Theme, slides})
+	return string(encoded)
 }
 
 // mergeTheme fills any theme field the model left empty with a sensible default,
