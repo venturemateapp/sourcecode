@@ -143,6 +143,7 @@ export function AdminDashboard() {
   const [busy, setBusy] = useState(false);
   const [providers, setProviders] = useState<AdminProvider[]>([]);
   const [loadProv, setLoadProv] = useState(false);
+  const [bookingActionId, setBookingActionId] = useState<string | null>(null);
   const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, yearsExperience: 0, skills: '', portfolio: '', isActive: true });
   const [providerPictureUploading, setProviderPictureUploading] = useState(false);
   const provFileRef = useRef<HTMLInputElement>(null);
@@ -218,6 +219,26 @@ export function AdminDashboard() {
   const loadBookings = useCallback(async () => {
     try { const d = await graphqlRequest<{ myBookings: typeof bookings }>('query { myBookings { id providerName userName projectTitle status createdAt } }'); setBookings(d.myBookings); } catch { /* ignore */ }
   }, []);
+
+  const updateBookingStatus = async (bookingId: string, status: 'approved' | 'rejected') => {
+    const previousStatus = bookings.find(booking => booking.id === bookingId)?.status;
+    setBookingActionId(bookingId);
+    setBookings(current => current.map(booking => booking.id === bookingId ? { ...booking, status } : booking));
+    try {
+      await graphqlRequest<{ adminUpdateBooking: { id: string } }>(
+        'mutation UpdateBooking($id:ID!,$status:String!){adminUpdateBooking(bookingId:$id,status:$status){id}}',
+        { id: bookingId, status },
+      );
+      await loadBookings();
+    } catch (error) {
+      if (previousStatus) {
+        setBookings(current => current.map(booking => booking.id === bookingId ? { ...booking, status: previousStatus } : booking));
+      }
+      alert(error instanceof Error ? error.message : 'Could not update booking status');
+    } finally {
+      setBookingActionId(null);
+    }
+  };
 
   const loadInvestors = useCallback(async () => {
     try { const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string }> }>('query { investors { id name type location } }'); setInvestors(d.investors); } catch { /* ignore */ }
@@ -897,13 +918,13 @@ export function AdminDashboard() {
             {isPending && (
               <Box sx={{ display: 'flex', gap: 0.25, ml: 1 }}>
                 <Tooltip title="Approve">
-                  <IconButton size="small" sx={{ color: '#34d399' }} onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"approved") { id } }`, {})}>
-                    <CheckCircle size={16} />
+                  <IconButton size="small" disabled={bookingActionId === b.id} sx={{ color: '#34d399' }} onClick={() => void updateBookingStatus(b.id, 'approved')}>
+                    {bookingActionId === b.id ? <CircularProgress size={14} /> : <CheckCircle size={16} />}
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Reject">
-                  <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => exec(`mutation { adminUpdateBooking(bookingId:"${b.id}",status:"rejected") { id } }`, {})}>
-                    <XCircle size={16} />
+                <Tooltip title="Decline">
+                  <IconButton size="small" disabled={bookingActionId === b.id} sx={{ color: '#ef4444' }} onClick={() => void updateBookingStatus(b.id, 'rejected')}>
+                    {bookingActionId === b.id ? <CircularProgress size={14} /> : <XCircle size={16} />}
                   </IconButton>
                 </Tooltip>
               </Box>
