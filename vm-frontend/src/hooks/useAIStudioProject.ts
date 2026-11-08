@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   approveAIRevision, createAIProject, createAIRevision, generateAIAsset, listAIAssets, listAIBuilds,
-  getAIJob, listAIJobs, listAIProjectFiles, listAIProjects, listAIRevisions, rollbackAIProject,
+  listAIJobs, listAIProjectFiles, listAIProjects, listAIRevisions, rollbackAIProject,
   startAIBuild, startAIGeneration, updateAIProjectFile,
 } from '../lib/ai-studio/api';
 import type {
@@ -129,16 +129,23 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
       setProject(updated);
       setProjects(current => current.map(item => item.id === updated.id ? updated : item));
       await refreshProjectData(updated);
-      if (job && parseResult(job.result).revisionId === revisionId) {
-        const settledJob = await getAIJob(job.id);
-        if (settledJob) updateJob(settledJob);
+      try {
+        const projectJobs = await listAIJobs(updated.id);
+        const approvedJob = projectJobs.find(item => parseResult(item.result).revisionId === revisionId)
+          || (job?.projectId === updated.id ? projectJobs.find(item => item.id === job.id) : undefined);
+        if (approvedJob) updateJob(approvedJob);
+        else if (job?.projectId === updated.id) clearJob();
+      } catch {
+        // The approval is already saved; don't turn a job refresh failure into
+        // a false approval error. Clear the stale review badge in this view.
+        if (job?.projectId === updated.id) clearJob();
       }
       return updated;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not approve revision.');
       throw cause;
     } finally { setSaving(false); }
-  }, [job, refreshProjectData, updateJob]);
+  }, [clearJob, job, refreshProjectData, updateJob]);
 
   const saveDocument = useCallback(async (document: string, summary: string) => {
     if (!project) throw new Error('No project selected.');
