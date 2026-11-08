@@ -122,8 +122,8 @@ func ValidateManifest(content string) error {
 	}
 	approvedScripts := map[string]map[string]bool{
 		"dev":     {"vite": true, "vite --host": true},
-		"build":   {"tsc -b && vite build": true, "tsc --noEmit && vite build": true, "vite build": true},
-		"lint":    {"tsc --noEmit": true, "eslint .": true, "eslint src --max-warnings=0": true},
+		"build":   {"tsc -b && vite build": true, "tsc --noEmit && vite build": true, "tsc --noEmit -p tsconfig.app.json && vite build": true, "vite build": true},
+		"lint":    {"tsc --noEmit": true, "tsc --noEmit -p tsconfig.app.json": true, "eslint .": true, "eslint src --max-warnings=0": true},
 		"preview": {"vite preview": true, "vite preview --host": true},
 		"start":   {"vite preview --host": true},
 	}

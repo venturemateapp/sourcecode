@@ -85,6 +85,10 @@ func (r *Runner) Build(ctx context.Context, projectID, revisionID string, files 
 	if err != nil {
 		return nil, errors.New("project is missing package.json")
 	}
+	packageJSON, err = normalizeTypeScriptBuildScripts(workspace, packageJSON)
+	if err != nil {
+		return nil, err
+	}
 	if err := appbuilder.ValidateManifest(string(packageJSON)); err != nil {
 		return nil, err
 	}
@@ -152,6 +156,55 @@ func (r *Runner) Build(ctx context.Context, projectID, revisionID string, files 
 		_ = progress("completed", "Production build completed", 100, fmt.Sprintf("Artifact size: %d bytes", len(artifact)))
 	}
 	return &Result{ArtifactKey: key, PreviewURL: previewURL, Logs: logs.String(), Diagnostics: []map[string]any{}, Runtime: runtime.Version()}, nil
+}
+
+// normalizeTypeScriptBuildScripts works around the root tsconfig used by the
+// React starter: it only contains project references, so `tsc --noEmit` can
+// succeed without checking the app, while `tsc -b` can fail on app tsconfigs
+// that are not configured for build mode. Build directly against the app
+// config, then let Vite create the production bundle.
+func normalizeTypeScriptBuildScripts(workspace string, packageJSON []byte) ([]byte, error) {
+	if _, err := os.Stat(filepath.Join(workspace, "tsconfig.app.json")); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return packageJSON, nil
+		}
+		return nil, err
+	}
+	var manifest map[string]json.RawMessage
+	if err := json.Unmarshal(packageJSON, &manifest); err != nil {
+		return nil, fmt.Errorf("project package.json is invalid: %w", err)
+	}
+	var scripts map[string]string
+	if err := json.Unmarshal(manifest["scripts"], &scripts); err != nil {
+		return nil, errors.New("project package.json scripts are invalid")
+	}
+	changed := false
+	if strings.Join(strings.Fields(scripts["lint"]), " ") == "tsc --noEmit" {
+		scripts["lint"] = "tsc --noEmit -p tsconfig.app.json"
+		changed = true
+	}
+	switch strings.Join(strings.Fields(scripts["build"]), " ") {
+	case "tsc -b && vite build", "tsc --noEmit && vite build":
+		scripts["build"] = "tsc --noEmit -p tsconfig.app.json && vite build"
+		changed = true
+	}
+	if !changed {
+		return packageJSON, nil
+	}
+	scriptJSON, err := json.Marshal(scripts)
+	if err != nil {
+		return nil, err
+	}
+	manifest["scripts"] = scriptJSON
+	updated, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	updated = append(updated, '\n')
+	if err := os.WriteFile(filepath.Join(workspace, "package.json"), updated, 0o644); err != nil {
+		return nil, err
+	}
+	return updated, nil
 }
 
 func uploadStaticDirectory(ctx context.Context, storage *s3.Service, root, prefix string) (string, error) {
