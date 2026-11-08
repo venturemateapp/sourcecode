@@ -391,6 +391,15 @@ func (r *Repository) CreateRevision(ctx context.Context, input RevisionInput) (*
 
 	revisionID := uuid.NewString()
 	contentHash := revisionContentHash(input.Document, input.Manifest, input.Files)
+	if _, err := tx.Exec(ctx, `UPDATE ai_project_revisions SET status='superseded',updated_at=NOW()
+		WHERE project_id=$1 AND status='ready'`, input.ProjectID); err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE ai_generation_jobs SET status='completed',progress=100,step='superseded',
+		message='A newer revision replaced this review',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW()
+		WHERE project_id=$1 AND status='awaiting_review'`, input.ProjectID); err != nil {
+		return nil, err
+	}
 	_, err = tx.Exec(ctx, `INSERT INTO ai_project_revisions (
 		id,project_id,parent_revision_id,created_by_user_id,source,prompt,summary,status,schema_version,
 		document,manifest,diagnostics,token_usage,content_hash
@@ -532,6 +541,15 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 			WHERE project_id=$1 AND status='awaiting_review' AND POSITION($2 IN logs)>0`, projectID, revisionID); err != nil {
 			return nil, fmt.Errorf("complete the approved generation job: %w", err)
 		}
+	}
+	if _, err = tx.Exec(ctx, `UPDATE ai_project_revisions SET status='superseded',updated_at=NOW()
+		WHERE project_id=$1 AND status='ready' AND id<>$2`, projectID, revisionID); err != nil {
+		return nil, err
+	}
+	if _, err = tx.Exec(ctx, `UPDATE ai_generation_jobs SET status='completed',progress=100,step='superseded',
+		message='A newer approved revision replaced this review',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW()
+		WHERE project_id=$1 AND status='awaiting_review'`, projectID); err != nil {
+		return nil, fmt.Errorf("clear obsolete revision review jobs: %w", err)
 	}
 
 	if businessID != "" && json.Valid([]byte(document)) {

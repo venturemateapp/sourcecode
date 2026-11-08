@@ -110,11 +110,14 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
   }, [project, refreshBusiness, watch]);
 
   const pendingRevision = useMemo(() => {
-    const revisionId = job ? parseResult(job.result).revisionId : undefined;
-    return (revisionId && revisions.find(item => item.id === revisionId && item.status === 'ready' && item.id !== project?.approvedRevisionId))
-      || revisions.find(item => item.status === 'ready' && item.id !== project?.approvedRevisionId)
-      || null;
-  }, [job, project?.approvedRevisionId, revisions]);
+    const revisionIds = [job ? parseResult(job.result).revisionId : undefined, project?.currentRevisionId];
+    for (const revisionId of revisionIds) {
+      if (!revisionId || revisionId === project?.approvedRevisionId) continue;
+      const candidate = revisions.find(item => item.id === revisionId && item.status === 'ready');
+      if (candidate) return candidate;
+    }
+    return null;
+  }, [job, project?.approvedRevisionId, project?.currentRevisionId, revisions]);
 
   const approvedRevision = useMemo(() => {
     if (!project?.approvedRevisionId) return revisions.find(item => item.status === 'approved') || null;
