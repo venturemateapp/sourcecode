@@ -634,10 +634,10 @@ export function AdminDashboard() {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             {['name','location','industries','thesis'].map(f => (
               <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
-                sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
+                sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: '#a7f3d0', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
             ))}
             <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}>
               {['vc','angel','accelerator','pe'].map(t => <MenuItem key={t} value={t} sx={{ color: '#fff' }}>{t}</MenuItem>)}
             </TextField>
           </Box>
@@ -686,7 +686,7 @@ export function AdminDashboard() {
       </Typography>
       <Typography sx={{ color: 'rgba(255,255,255,.3)', fontSize: 11, mb: 2 }}>Send a push notification to all users</Typography>
       <TextField fullWidth size="small" placeholder="Notification title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)}
-        sx={{ mb: 1.5, input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)' },
+        sx={{ mb: 1.5, input: { color: '#fff', fontSize: 13 }, label: { color: '#a7f3d0' },
           '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
       <TextField fullWidth multiline minRows={3} placeholder="Write your message..." value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)}
         sx={{ mb: 2, textarea: { color: '#fff', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
@@ -730,11 +730,11 @@ export function AdminDashboard() {
         <DialogContent sx={{ pt: 5 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Name" value={provForm.name} onChange={e => setProvForm({...provForm, name: e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
             <TextField size="small" label="Title" value={provForm.title} onChange={e => setProvForm({...provForm, title: e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <Box>
               <input ref={provFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={async e => {
                 const f = e.target.files?.[0];
@@ -757,14 +757,14 @@ export function AdminDashboard() {
               {provForm.picture && <Avatar src={provForm.picture} sx={{ width: 28, height: 28, mt: 0.5, mx: 'auto' }} />}
             </Box>
             <TextField select size="small" label="Category" value={provForm.category} onChange={e => setProvForm({...provForm, category: e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}>
               {['engineering','design','marketing','legal','accounting','consulting','hr','media'].map(c => <MenuItem key={c} value={c} sx={{ color: '#fff' }}>{c}</MenuItem>)}
             </TextField>
             <TextField size="small" label="Skills (comma)" value={provForm.skills} onChange={e => setProvForm({...provForm, skills: e.target.value})}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
           </Box>
           <TextField fullWidth size="small" label="Bio" multiline minRows={2} value={provForm.bio} onChange={e => setProvForm({...provForm, bio: e.target.value})}
-            sx={{ mt: 2, textarea: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
+            sx={{ mt: 2, textarea: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
@@ -1054,21 +1054,21 @@ export function AdminDashboard() {
         <DialogContent sx={{ pt: 5 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Lender Name" value={financingForm.lenderName} onChange={e => setFinancingForm({ ...financingForm, lenderName: e.target.value })}
-              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField select size="small" label="Product Type" value={financingForm.productType} onChange={e => setFinancingForm({ ...financingForm, productType: e.target.value })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}>
               {['loan', 'line_of_credit', 'term_loan'].map(t => <MenuItem key={t} value={t} sx={{ color: '#fff' }}>{t.replace('_', ' ')}</MenuItem>)}
             </TextField>
             <TextField size="small" label="Min Amount" type="number" value={financingForm.minAmount} onChange={e => setFinancingForm({ ...financingForm, minAmount: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Max Amount" type="number" value={financingForm.maxAmount} onChange={e => setFinancingForm({ ...financingForm, maxAmount: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Min Rate %" type="number" value={financingForm.minRate} onChange={e => setFinancingForm({ ...financingForm, minRate: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Max Rate %" type="number" value={financingForm.maxRate} onChange={e => setFinancingForm({ ...financingForm, maxRate: parseFloat(e.target.value) || 0 })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Term (months)" type="number" value={financingForm.termMonths} onChange={e => setFinancingForm({ ...financingForm, termMonths: parseInt(e.target.value as string) || 12 })}
-              sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 12 }}>Requirements</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -1085,7 +1085,7 @@ export function AdminDashboard() {
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <TextField size="small" placeholder="Add a requirement..." id="req-input"
-                  sx={{ flex: 1, input: { color: '#fff', fontSize: 13 }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+                  sx={{ flex: 1, input: { color: '#fff', fontSize: 13 }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
                 <IconButton size="small" onClick={() => {
                   const input = document.getElementById('req-input') as HTMLInputElement;
                   if (!input?.value?.trim()) return;
