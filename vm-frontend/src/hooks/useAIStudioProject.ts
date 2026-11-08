@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   approveAIRevision, createAIProject, createAIRevision, generateAIAsset, listAIAssets, listAIBuilds,
-  listAIJobs, listAIProjectFiles, listAIProjects, listAIRevisions, rollbackAIProject,
+  getAIJob, listAIJobs, listAIProjectFiles, listAIProjects, listAIRevisions, rollbackAIProject,
   startAIBuild, startAIGeneration, updateAIProjectFile,
 } from '../lib/ai-studio/api';
 import type {
@@ -40,7 +40,7 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
     }
   }, [businessId, projectType]);
 
-  const { job, watch, clear: clearJob, connected } = useAIJob(async (settledJob) => {
+  const { job, watch, setJob: updateJob, clear: clearJob, connected } = useAIJob(async (settledJob) => {
     if (settledJob.status === 'awaiting_review' || settledJob.status === 'completed') {
       if (project) await refreshProjectData(project);
     }
@@ -129,12 +129,16 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
       setProject(updated);
       setProjects(current => current.map(item => item.id === updated.id ? updated : item));
       await refreshProjectData(updated);
+      if (job && parseResult(job.result).revisionId === revisionId) {
+        const settledJob = await getAIJob(job.id);
+        if (settledJob) updateJob(settledJob);
+      }
       return updated;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not approve revision.');
       throw cause;
     } finally { setSaving(false); }
-  }, [refreshProjectData]);
+  }, [job, refreshProjectData, updateJob]);
 
   const saveDocument = useCallback(async (document: string, summary: string) => {
     if (!project) throw new Error('No project selected.');

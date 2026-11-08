@@ -517,6 +517,12 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 	if err != nil {
 		return nil, err
 	}
+	_, err = tx.Exec(ctx, `UPDATE ai_generation_jobs
+		SET status='completed',progress=100,step='approved',message='Revision approved',completed_at=COALESCE(completed_at,NOW()),updated_at=NOW()
+		WHERE project_id=$1 AND status='awaiting_review' AND result->>'revisionId'=$2`, projectID, revisionID)
+	if err != nil {
+		return nil, fmt.Errorf("complete the approved generation job: %w", err)
+	}
 
 	if businessID != "" && json.Valid([]byte(document)) {
 		compatibilityDocument := document
