@@ -47,8 +47,15 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
   });
 
   const reconnectJob = useCallback(async (target: AIProject) => {
-    const jobs = await listAIJobs(target.id);
-    const reconnectable = jobs.find(item => ['queued', 'running', 'awaiting_review'].includes(item.status));
+    const [jobs, currentRevisions] = await Promise.all([listAIJobs(target.id), listAIRevisions(target.id)]);
+    const activeJob = jobs.find(item => ['queued', 'running'].includes(item.status));
+    const readyRevisionIds = new Set(currentRevisions.filter(item => item.status === 'ready').map(item => item.id));
+    const currentRevisionId = target.currentRevisionId || '';
+    const reconnectable = activeJob || jobs.find(item => {
+      if (item.status !== 'awaiting_review') return false;
+      const jobRevisionId = parseResult(item.result).revisionId;
+      return jobRevisionId ? readyRevisionIds.has(jobRevisionId) : readyRevisionIds.has(currentRevisionId);
+    });
     if (reconnectable) watch(reconnectable);
   }, [watch]);
 

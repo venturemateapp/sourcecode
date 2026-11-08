@@ -48,6 +48,16 @@ function jobTone(status: string): 'default' | 'primary' | 'success' | 'error' | 
   return 'default';
 }
 
+function jobMatchesPendingRevision(job: AIGenerationJob, pending: AIProjectRevision | null, project: AIProject | null): boolean {
+  if (!pending) return false;
+  try {
+    const revisionId = (JSON.parse(job.result || '{}') as { revisionId?: string }).revisionId;
+    return revisionId ? revisionId === pending.id : project?.currentRevisionId === pending.id;
+  } catch {
+    return project?.currentRevisionId === pending.id;
+  }
+}
+
 export function StudioChrome(props: StudioChromeProps) {
   const [prompt, setPrompt] = useState('');
   const [rightTab, setRightTab] = useState<'ai' | 'history' | 'assets'>('ai');
@@ -65,6 +75,8 @@ export function StudioChrome(props: StudioChromeProps) {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
   const isJobActive = Boolean(props.job && ['queued', 'running'].includes(props.job.status));
+  const showJob = Boolean(props.job && (props.job.status !== 'awaiting_review'
+    || jobMatchesPendingRevision(props.job, props.pendingRevision, props.project)));
   const revisionCount = props.revisions.length;
   const latestApproved = useMemo(() => props.revisions.find(item => item.status === 'approved'), [props.revisions]);
 
@@ -184,7 +196,7 @@ export function StudioChrome(props: StudioChromeProps) {
 
           {rightTab === 'ai' && (
             <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25, minHeight: 0, flex: 1 }}>
-              {props.job && (
+              {props.job && showJob && (
                 <Card sx={{ p: 1.25, bgcolor: 'rgba(255,255,255,.025)' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: .75 }}>
                     <Chip size="small" label={props.job.status.replaceAll('_', ' ')} color={jobTone(props.job.status)} sx={{ fontSize: 9 }} />
