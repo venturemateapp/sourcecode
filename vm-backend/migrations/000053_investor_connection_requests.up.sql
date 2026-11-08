@@ -1,7 +1,8 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS investor_connection_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    investor_id UUID NOT NULL REFERENCES investors(id) ON DELETE CASCADE,
+    -- Investor IDs are TEXT (some seeded IDs use values such as inv_001).
+    investor_id TEXT NOT NULL REFERENCES investors(id) ON DELETE CASCADE,
     business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status VARCHAR(20) NOT NULL DEFAULT 'pending'
