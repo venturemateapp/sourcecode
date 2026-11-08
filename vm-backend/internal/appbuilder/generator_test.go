@@ -10,7 +10,7 @@ import (
 
 func TestGenerationResultAcceptsBrandMetadata(t *testing.T) {
 	t.Parallel()
-	content := `{"summary":"Updated brand","brand":{"logo":"/logo.svg"},"appSpec":{"schemaVersion":"1.0","name":"Demo","mode":"marketing_website","brand":{"primaryColor":"#123456"}}}`
+	content := `{"summary":"Updated brand","brand":{"logo":"/logo.svg"},"colors":{"primary":"#123456"},"appSpec":{"schemaVersion":"1.0","name":"Demo","mode":"marketing_website","brand":{"primaryColor":"#123456"},"colors":{"secondary":"#654321"},"theme":{"colors":{"background":"#ffffff"}}}}`
 	var result GenerationResult
 	decoder := json.NewDecoder(strings.NewReader(content))
 	decoder.DisallowUnknownFields()
@@ -19,6 +19,9 @@ func TestGenerationResultAcceptsBrandMetadata(t *testing.T) {
 	}
 	if result.Brand["logo"] != "/logo.svg" || result.AppSpec.Brand["primaryColor"] != "#123456" {
 		t.Fatalf("brand metadata was not preserved: root=%v appSpec=%v", result.Brand, result.AppSpec.Brand)
+	}
+	if result.Colors["primary"] != "#123456" || result.AppSpec.Colors["secondary"] != "#654321" || result.AppSpec.Theme.Colors["background"] != "#ffffff" {
+		t.Fatalf("color palettes were not preserved: root=%v appSpec=%v theme=%v", result.Colors, result.AppSpec.Colors, result.AppSpec.Theme.Colors)
 	}
 }
 

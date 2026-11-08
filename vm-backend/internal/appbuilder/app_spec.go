@@ -8,14 +8,15 @@ import (
 )
 
 type ThemeSpec struct {
-	Primary     string `json:"primary"`
-	Secondary   string `json:"secondary"`
-	Background  string `json:"background"`
-	Surface     string `json:"surface"`
-	Text        string `json:"text"`
-	HeadingFont string `json:"headingFont"`
-	BodyFont    string `json:"bodyFont"`
-	Radius      int    `json:"radius"`
+	Primary     string         `json:"primary"`
+	Secondary   string         `json:"secondary"`
+	Background  string         `json:"background"`
+	Surface     string         `json:"surface"`
+	Text        string         `json:"text"`
+	Colors      map[string]any `json:"colors,omitempty"`
+	HeadingFont string         `json:"headingFont"`
+	BodyFont    string         `json:"bodyFont"`
+	Radius      int            `json:"radius"`
 }
 
 type RouteSpec struct {
@@ -44,6 +45,7 @@ type AppSpec struct {
 	Name          string           `json:"name"`
 	Mode          string           `json:"mode"`
 	Brand         map[string]any   `json:"brand,omitempty"`
+	Colors        map[string]any   `json:"colors,omitempty"`
 	Theme         ThemeSpec        `json:"theme"`
 	Routes        []RouteSpec      `json:"routes"`
 	Navigation    map[string]any   `json:"navigation"`
