@@ -1,0 +1,113 @@
+name: Temporary website reset
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Inspect targets or delete them
+        required: true
+        type: choice
+        options:
+          - inspect
+          - delete
+      confirmation:
+        description: Required for deletion; enter DELETE_ALL_USER_WEBSITES
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - name: Inspect or reset production website data
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          RESET_MODE: ${{ inputs.mode }}
+          RESET_CONFIRMATION: ${{ inputs.confirmation }}
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_KEY }}
+          envs: RESET_MODE,RESET_CONFIRMATION
+          script: |
+            set -euo pipefail
+            cd /data/vm/sourcecode
+
+            env_value() {
+              sed -n "s/^$1=//p" vm-backend/.env | tail -n 1
+            }
+
+            DB_HOST="$(env_value DB_HOST)"
+            DB_PORT="$(env_value DB_PORT)"
+            DB_USER="$(env_value DB_USER)"
+            DB_PASSWORD="$(env_value DB_PASSWORD)"
+            DB_NAME="$(env_value DB_NAME)"
+            DB_SSLMODE="$(env_value DB_SSLMODE)"
+            DB_HOST="${DB_HOST:-127.0.0.1}"
+            DB_PORT="${DB_PORT:-5432}"
+            DB_USER="${DB_USER:-venturematedb}"
+            DB_NAME="${DB_NAME:-venturematedb}"
+            DB_SSLMODE="${DB_SSLMODE:-disable}"
+
+            psql_remote() {
+              docker run --rm --network host -e PGPASSWORD="$DB_PASSWORD" postgres:16-alpine \
+                psql -X -v ON_ERROR_STOP=1 "host=$DB_HOST port=$DB_PORT user=$DB_USER dbname=$DB_NAME sslmode=$DB_SSLMODE" "$@"
+            }
+
+            echo "Remote psql client: postgres:16-alpine"
+            echo "Remote AWS CLI: $(command -v aws >/dev/null 2>&1 && echo available || echo unavailable)"
+            echo "Website cleanup mode: $RESET_MODE"
+
+            if [ "$RESET_MODE" = "inspect" ]; then
+              psql_remote -At <<'SQL'
+            SELECT 'user_websites|' || COUNT(*) FROM user_websites
+            UNION ALL SELECT 'published_user_websites|' || COUNT(*) FROM user_websites WHERE status = 'published'
+            UNION ALL SELECT 'website_contact_submissions_to_preserve|' || COUNT(*) FROM website_contact_submissions
+            UNION ALL SELECT 'businesses_with_website_config|' || COUNT(*) FROM businesses WHERE COALESCE(website_config, '{}'::jsonb) <> '{}'::jsonb
+            UNION ALL SELECT 'ai_web_app_projects|' || COUNT(*) FROM ai_projects WHERE project_type = 'web_app'
+            UNION ALL SELECT 'ai_web_app_builds|' || COUNT(*) FROM ai_project_builds WHERE project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
+            UNION ALL SELECT 'ai_web_app_assets|' || COUNT(*) FROM ai_assets WHERE project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
+            UNION ALL SELECT 'website_chat_sessions|' || COUNT(*) FROM ai_chat_sessions WHERE domain IN ('website', 'website-builder') OR project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
+            UNION ALL SELECT 'website_chat_messages|' || COUNT(*) FROM ai_chat_messages m JOIN ai_chat_sessions s ON s.id = m.session_id WHERE s.domain IN ('website', 'website-builder') OR s.project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
+            UNION ALL SELECT 'ai_web_app_deployments|' || COUNT(*) FROM ai_project_deployments WHERE project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
+            UNION ALL SELECT 'ai_web_app_netlify_deployments|' || COUNT(*) FROM ai_project_deployments WHERE provider = 'netlify' AND project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
+            UNION ALL SELECT 'ai_web_app_github_deployments|' || COUNT(*) FROM ai_project_deployments WHERE provider = 'github' AND project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app');
+            SQL
+              exit 0
+            fi
+
+            if [ "$RESET_MODE" != "delete" ] || [ "$RESET_CONFIRMATION" != "DELETE_ALL_USER_WEBSITES" ]; then
+              echo "Deletion confirmation did not match; no data was changed." >&2
+              exit 2
+            fi
+
+            psql_remote <<'SQL'
+            BEGIN;
+            LOCK TABLE user_websites, website_contact_submissions, businesses, ai_projects, ai_chat_sessions IN SHARE ROW EXCLUSIVE MODE;
+
+            ALTER TABLE website_contact_submissions ALTER COLUMN website_id DROP NOT NULL;
+            ALTER TABLE website_contact_submissions DROP CONSTRAINT IF EXISTS website_contact_submissions_website_id_fkey;
+            ALTER TABLE website_contact_submissions
+              ADD CONSTRAINT website_contact_submissions_website_id_fkey
+              FOREIGN KEY (website_id) REFERENCES user_websites(id) ON DELETE SET NULL;
+
+            DELETE FROM ai_chat_sessions
+            WHERE domain IN ('website', 'website-builder')
+               OR project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app');
+
+            UPDATE businesses SET website_config = '{}'::jsonb
+            WHERE COALESCE(website_config, '{}'::jsonb) <> '{}'::jsonb;
+
+            DELETE FROM user_websites;
+            DELETE FROM ai_projects WHERE project_type = 'web_app';
+            COMMIT;
+
+            SELECT 'remaining_user_websites|' || COUNT(*) FROM user_websites
+            UNION ALL SELECT 'remaining_business_website_configs|' || COUNT(*) FROM businesses WHERE COALESCE(website_config, '{}'::jsonb) <> '{}'::jsonb
+            UNION ALL SELECT 'remaining_ai_web_app_projects|' || COUNT(*) FROM ai_projects WHERE project_type = 'web_app'
+            UNION ALL SELECT 'website_contact_submissions_preserved|' || COUNT(*) FROM website_contact_submissions;
+            SQL
