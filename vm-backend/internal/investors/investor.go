@@ -6,6 +6,8 @@ type Investor struct {
 	ID              string    `json:"id"`
 	Name            string    `json:"name"`
 	Type            string    `json:"type"`
+	Email           string    `json:"email"`
+	Phone           string    `json:"phone"`
 	Logo            string    `json:"logo"`
 	Location        string    `json:"location"`
 	FocusIndustries string    `json:"focusIndustries"`

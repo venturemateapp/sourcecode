@@ -11,6 +11,8 @@ var investorType = graphql.NewObject(graphql.ObjectConfig{
 		"id":              &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 		"name":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"type":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"email":           &graphql.Field{Type: graphql.String, Resolve: resolveInvestorContact("email")},
+		"phone":           &graphql.Field{Type: graphql.String, Resolve: resolveInvestorContact("phone")},
 		"logo":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"location":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"focusIndustries": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -60,6 +62,27 @@ var investorType = graphql.NewObject(graphql.ObjectConfig{
 		"connectedAt": &graphql.Field{Type: graphql.String},
 	},
 })
+
+func resolveInvestorContact(field string) graphql.FieldResolveFn {
+	return func(p graphql.ResolveParams) (interface{}, error) {
+		if !isAdmin(p.Context) {
+			return nil, nil
+		}
+		var investor *investors.Investor
+		switch value := p.Source.(type) {
+		case *investors.Investor:
+			investor = value
+		case investors.Investor:
+			investor = &value
+		default:
+			return nil, nil
+		}
+		if field == "email" {
+			return investor.Email, nil
+		}
+		return investor.Phone, nil
+	}
+}
 
 func init() {
 	rootQuery.AddFieldConfig("investors", &graphql.Field{

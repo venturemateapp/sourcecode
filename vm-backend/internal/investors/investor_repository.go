@@ -31,14 +31,14 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-const listQuery = `SELECT id, name, type, logo, location,
+const listQuery = `SELECT id, name, type, email, phone, logo, location,
 	focus_industries::text, stages::text, check_size::text, aum,
 	portfolio::text, team::text, thesis, criteria::text,
 	match_score, status, connected_at, created_at, updated_at FROM investors`
 
 func scanInvestor(row pgx.Row) (*Investor, error) {
 	var i Investor
-	err := row.Scan(&i.ID, &i.Name, &i.Type, &i.Logo, &i.Location,
+	err := row.Scan(&i.ID, &i.Name, &i.Type, &i.Email, &i.Phone, &i.Logo, &i.Location,
 		&i.FocusIndustries, &i.Stages, &i.CheckSize, &i.Aum,
 		&i.Portfolio, &i.Team, &i.Thesis, &i.Criteria,
 		&i.MatchScore, &i.Status, &i.ConnectedAt, &i.CreatedAt, &i.UpdatedAt)
@@ -89,14 +89,14 @@ func (r *Repository) Create(ctx context.Context, i *Investor) error {
 		i.Status = "not-connected"
 	}
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO investors (id, name, type, logo, location,
+		INSERT INTO investors (id, name, type, email, phone, logo, location,
 			focus_industries, stages, check_size, aum,
 			portfolio, team, thesis, criteria,
 			match_score, status, connected_at, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8::jsonb,$9,
-			$10::jsonb,$11::jsonb,$12,$13::jsonb,
-			$14,$15,$16,$17,$18)`,
-		i.ID, i.Name, i.Type, i.Logo, i.Location,
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11,
+			$12::jsonb,$13::jsonb,$14,$15::jsonb,
+			$16,$17,$18,$19,$20)`,
+		i.ID, i.Name, i.Type, i.Email, i.Phone, i.Logo, i.Location,
 		jsonOrArr(i.FocusIndustries), jsonOrArr(i.Stages), jsonOrObj(i.CheckSize), i.Aum,
 		jsonOrArr(i.Portfolio), jsonOrArr(i.Team), i.Thesis, jsonOrArr(i.Criteria),
 		i.MatchScore, i.Status, i.ConnectedAt, i.CreatedAt, i.UpdatedAt)
@@ -106,12 +106,12 @@ func (r *Repository) Create(ctx context.Context, i *Investor) error {
 func (r *Repository) Update(ctx context.Context, i *Investor) error {
 	i.UpdatedAt = time.Now()
 	_, err := r.db.Exec(ctx, `
-		UPDATE investors SET name=$2, type=$3, logo=$4, location=$5,
-			focus_industries=$6::jsonb, stages=$7::jsonb, check_size=$8::jsonb, aum=$9,
-			portfolio=$10::jsonb, team=$11::jsonb, thesis=$12, criteria=$13::jsonb,
-			match_score=$14, status=$15, connected_at=$16, updated_at=$17
+		UPDATE investors SET name=$2, type=$3, email=$4, phone=$5, logo=$6, location=$7,
+			focus_industries=$8::jsonb, stages=$9::jsonb, check_size=$10::jsonb, aum=$11,
+			portfolio=$12::jsonb, team=$13::jsonb, thesis=$14, criteria=$15::jsonb,
+			match_score=$16, status=$17, connected_at=$18, updated_at=$19
 		WHERE id=$1`,
-		i.ID, i.Name, i.Type, i.Logo, i.Location,
+		i.ID, i.Name, i.Type, i.Email, i.Phone, i.Logo, i.Location,
 		jsonOrArr(i.FocusIndustries), jsonOrArr(i.Stages), jsonOrObj(i.CheckSize), i.Aum,
 		jsonOrArr(i.Portfolio), jsonOrArr(i.Team), i.Thesis, jsonOrArr(i.Criteria),
 		i.MatchScore, i.Status, i.ConnectedAt, i.UpdatedAt)
@@ -124,11 +124,13 @@ func (r *Repository) Upsert(ctx context.Context, args map[string]interface{}) er
 	investorType := args["type"].(string)
 	location := args["location"].(string)
 	thesis := args["thesis"].(string)
+	email, _ := args["email"].(string)
+	phone, _ := args["phone"].(string)
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO investors (id, name, type, location, focus_industries, thesis, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5::jsonb,$6,NOW(),NOW())
-		ON CONFLICT (id) DO UPDATE SET name=$2, type=$3, location=$4, focus_industries=$5::jsonb, thesis=$6, updated_at=NOW()`,
-		id, name, investorType, location, args["focusIndustries"].(string), thesis)
+		INSERT INTO investors (id, name, type, location, focus_industries, thesis, email, phone, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,NOW(),NOW())
+		ON CONFLICT (id) DO UPDATE SET name=$2, type=$3, location=$4, focus_industries=$5::jsonb, thesis=$6, email=$7, phone=$8, updated_at=NOW()`,
+		id, name, investorType, location, args["focusIndustries"].(string), thesis, email, phone)
 	return err
 }
 

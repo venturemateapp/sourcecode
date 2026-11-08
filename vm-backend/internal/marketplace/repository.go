@@ -22,7 +22,7 @@ func (r *Repository) ListProviders(ctx context.Context, activeOnly bool) ([]Serv
 	if activeOnly {
 		where = " WHERE is_active = true"
 	}
-	rows, err := r.db.Query(ctx, `SELECT id, name, title, category, COALESCE(bio,''), COALESCE(picture,''),
+	rows, err := r.db.Query(ctx, `SELECT id, name, title, category, COALESCE(bio,''), COALESCE(picture,''), COALESCE(email,''), COALESCE(phone,''),
 		COALESCE(rate_hourly,0), COALESCE(years_experience,0), COALESCE(skills::text,'[]'), COALESCE(portfolio::text,'[]'),
 		is_active, created_at, updated_at FROM service_providers`+where+` ORDER BY name`)
 	if err != nil {
@@ -32,7 +32,7 @@ func (r *Repository) ListProviders(ctx context.Context, activeOnly bool) ([]Serv
 	var out []ServiceProvider
 	for rows.Next() {
 		var p ServiceProvider
-		if err := rows.Scan(&p.ID, &p.Name, &p.Title, &p.Category, &p.Bio, &p.Picture,
+		if err := rows.Scan(&p.ID, &p.Name, &p.Title, &p.Category, &p.Bio, &p.Picture, &p.Email, &p.Phone,
 			&p.RateHourly, &p.YearsExp, &p.Skills, &p.Portfolio,
 			&p.IsActive, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
@@ -51,11 +51,11 @@ func (r *Repository) UpsertProvider(ctx context.Context, p *ServiceProvider) err
 		p.CreatedAt = p.UpdatedAt
 	}
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO service_providers (id, name, title, category, bio, picture, rate_hourly, years_experience, skills, portfolio, is_active, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13)
-		ON CONFLICT (id) DO UPDATE SET name=$2, title=$3, category=$4, bio=$5, picture=$6, rate_hourly=$7, years_experience=$8,
-		skills=$9::jsonb, portfolio=$10::jsonb, is_active=$11, updated_at=$13`,
-		p.ID, p.Name, p.Title, p.Category, p.Bio, p.Picture, p.RateHourly, p.YearsExp, p.Skills, p.Portfolio, p.IsActive, p.CreatedAt, p.UpdatedAt)
+		INSERT INTO service_providers (id, name, title, category, bio, picture, email, phone, rate_hourly, years_experience, skills, portfolio, is_active, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,$14,$15)
+		ON CONFLICT (id) DO UPDATE SET name=$2, title=$3, category=$4, bio=$5, picture=$6, email=$7, phone=$8,
+		rate_hourly=$9, years_experience=$10, skills=$11::jsonb, portfolio=$12::jsonb, is_active=$13, updated_at=$15`,
+		p.ID, p.Name, p.Title, p.Category, p.Bio, p.Picture, p.Email, p.Phone, p.RateHourly, p.YearsExp, p.Skills, p.Portfolio, p.IsActive, p.CreatedAt, p.UpdatedAt)
 	return err
 }
 
@@ -85,7 +85,7 @@ func (r *Repository) ListBookings(ctx context.Context, userID string, admin bool
 	if admin {
 		query = `SELECT b.id, b.provider_id, b.user_id, b.project_title, COALESCE(b.description,''),
 			b.status, COALESCE(b.admin_notes,''), b.created_at, b.updated_at,
-			COALESCE(p.name,''), COALESCE(u.first_name || ' ' || u.surname,'')
+			COALESCE(p.name,''), COALESCE(u.first_name || ' ' || u.surname,''), COALESCE(p.email,''), COALESCE(p.phone,'')
 			FROM bookings b
 			LEFT JOIN service_providers p ON p.id = b.provider_id
 			LEFT JOIN users u ON u.id = b.user_id
@@ -93,7 +93,7 @@ func (r *Repository) ListBookings(ctx context.Context, userID string, admin bool
 	} else {
 		query = `SELECT b.id, b.provider_id, b.user_id, b.project_title, COALESCE(b.description,''),
 			b.status, COALESCE(b.admin_notes,''), b.created_at, b.updated_at,
-			COALESCE(p.name,''), ''
+			COALESCE(p.name,''), '', '', ''
 			FROM bookings b
 			LEFT JOIN service_providers p ON p.id = b.provider_id
 			WHERE b.user_id = $1 OR b.provider_id IN (SELECT id FROM service_providers WHERE created_by = $1)
@@ -114,7 +114,7 @@ func (r *Repository) ListBookings(ctx context.Context, userID string, admin bool
 	for rows.Next() {
 		var b Booking
 		if err := rows.Scan(&b.ID, &b.ProviderID, &b.UserID, &b.ProjectTitle, &b.Description,
-			&b.Status, &b.AdminNotes, &b.CreatedAt, &b.UpdatedAt, &b.ProviderName, &b.UserName); err != nil {
+			&b.Status, &b.AdminNotes, &b.CreatedAt, &b.UpdatedAt, &b.ProviderName, &b.UserName, &b.ProviderEmail, &b.ProviderPhone); err != nil {
 			return nil, err
 		}
 		out = append(out, b)
@@ -126,4 +126,22 @@ func (r *Repository) UpdateBookingStatus(ctx context.Context, id, status, adminN
 	_, err := r.db.Exec(ctx, `UPDATE bookings SET status = $1, admin_notes = $2, updated_at = $3 WHERE id = $4`,
 		status, adminNotes, time.Now(), id)
 	return err
+}
+
+func (r *Repository) GetBookingNotificationDetails(ctx context.Context, id string) (*BookingNotificationDetails, error) {
+	var details BookingNotificationDetails
+	err := r.db.QueryRow(ctx, `
+		SELECT b.id, b.project_title, COALESCE(b.description,''), b.status, COALESCE(b.admin_notes,''), b.created_at,
+			COALESCE(p.name,''), COALESCE(p.email,''), COALESCE(p.phone,''),
+			COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.surname),''), COALESCE(u.email,'')), COALESCE(u.email,'')
+		FROM bookings b
+		LEFT JOIN service_providers p ON p.id = b.provider_id
+		LEFT JOIN users u ON u.id = b.user_id
+		WHERE b.id = $1`, id).Scan(
+		&details.ID, &details.ProjectTitle, &details.Description, &details.Status, &details.AdminNotes, &details.CreatedAt,
+		&details.ProviderName, &details.ProviderEmail, &details.ProviderPhone, &details.UserName, &details.UserEmail)
+	if err != nil {
+		return nil, err
+	}
+	return &details, nil
 }

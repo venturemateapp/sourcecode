@@ -13,11 +13,11 @@ type Repository struct {
 }
 
 type AdminDashboard struct {
-	TotalUsers       int              `json:"totalUsers"`
-	ActiveUsers      int              `json:"activeUsers"`
-	TotalBusinesses  int              `json:"totalBusinesses"`
-	PlansBreakdown   []PlanCount      `json:"plansBreakdown"`
-	RecentSignups    []User           `json:"recentSignups"`
+	TotalUsers      int         `json:"totalUsers"`
+	ActiveUsers     int         `json:"activeUsers"`
+	TotalBusinesses int         `json:"totalBusinesses"`
+	PlansBreakdown  []PlanCount `json:"plansBreakdown"`
+	RecentSignups   []User      `json:"recentSignups"`
 }
 
 type PlanCount struct {
@@ -91,6 +91,24 @@ func (r *Repository) ListAllUsers(ctx context.Context) ([]User, error) {
 		users = append(users, u)
 	}
 	return users, nil
+}
+
+func (r *Repository) ListAdminEmails(ctx context.Context) ([]string, error) {
+	rows, err := r.db.Query(ctx, `SELECT email FROM users WHERE is_admin = true AND status = 'active' AND NULLIF(TRIM(email),'') IS NOT NULL ORDER BY email`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var emails []string
+	for rows.Next() {
+		var email string
+		if err := rows.Scan(&email); err != nil {
+			return nil, err
+		}
+		emails = append(emails, email)
+	}
+	return emails, rows.Err()
 }
 
 func NewRepository(db *pgxpool.Pool) *Repository {

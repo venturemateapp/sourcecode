@@ -53,6 +53,8 @@ interface AdminProvider {
   category: string;
   bio: string;
   picture: string;
+  email: string;
+  phone: string;
   rateHourly: number;
   yearsExperience: number;
   skills: string;
@@ -132,7 +134,7 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [biz, setBiz] = useState<BizRow[]>([]);
   const [leads, setLeads] = useState<Array<{ id: string; name: string; email: string; message: string; createdAt: string }>>([]);
-  const [investors, setInvestors] = useState<Array<{ id: string; name: string; type: string; location: string }>>([]);
+  const [investors, setInvestors] = useState<Array<{ id: string; name: string; type: string; location: string; email: string; phone: string; focusIndustries: string; thesis: string }>>([]);
   const [, setModal] = useState<{ type: string; data?: Record<string, unknown> } | null>(null);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -144,10 +146,10 @@ export function AdminDashboard() {
   const [providers, setProviders] = useState<AdminProvider[]>([]);
   const [loadProv, setLoadProv] = useState(false);
   const [bookingActionId, setBookingActionId] = useState<string | null>(null);
-  const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, yearsExperience: 0, skills: '', portfolio: '', isActive: true });
+  const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', email: '', phone: '', rateHourly: 0, yearsExperience: 0, skills: '', portfolio: '', isActive: true });
   const [providerPictureUploading, setProviderPictureUploading] = useState(false);
   const provFileRef = useRef<HTMLInputElement>(null);
-  const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
+  const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; providerEmail: string; providerPhone: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
   const [supportSessions, setSupportSessions] = useState<Array<{ id: string; userId: string; subject: string; status: string; createdByName: string; createdByEmail: string; summary: string; createdAt: string; updatedAt: string }>>([]);
   const [supportMessages, setSupportMessages] = useState<Array<{ id: string; sessionId: string; role: string; content: string; createdAt: string }>>([]);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
@@ -188,7 +190,7 @@ export function AdminDashboard() {
 
   const loadProviders = useCallback(async () => {
     setLoadProv(true);
-    try { const d = await graphqlRequest<{ serviceProviders: AdminProvider[] }>('query { serviceProviders(activeOnly:false) { id name title category bio picture rateHourly yearsExperience skills portfolio isActive } }'); setProviders(d.serviceProviders); } catch { /* ignore */ }
+    try { const d = await graphqlRequest<{ serviceProviders: AdminProvider[] }>('query { serviceProviders(activeOnly:false) { id name title category bio picture email phone rateHourly yearsExperience skills portfolio isActive } }'); setProviders(d.serviceProviders); } catch { /* ignore */ }
     finally { setLoadProv(false); }
   }, []);
 
@@ -217,7 +219,7 @@ export function AdminDashboard() {
   }, [selectedSession, supportReply, loadSupportMessages]);
 
   const loadBookings = useCallback(async () => {
-    try { const d = await graphqlRequest<{ myBookings: typeof bookings }>('query { myBookings { id providerName userName projectTitle status createdAt } }'); setBookings(d.myBookings); } catch { /* ignore */ }
+    try { const d = await graphqlRequest<{ myBookings: typeof bookings }>('query { myBookings { id providerName providerEmail providerPhone userName projectTitle status createdAt } }'); setBookings(d.myBookings); } catch { /* ignore */ }
   }, []);
 
   const updateBookingStatus = async (bookingId: string, status: 'approved' | 'rejected') => {
@@ -241,7 +243,10 @@ export function AdminDashboard() {
   };
 
   const loadInvestors = useCallback(async () => {
-    try { const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string }> }>('query { investors { id name type location } }'); setInvestors(d.investors); } catch { /* ignore */ }
+    try {
+      const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string; email: string; phone: string; focusIndustries: string; thesis: string }> }>('query { investors { id name type location email phone focusIndustries thesis } }');
+      setInvestors(d.investors);
+    } catch { /* ignore */ }
   }, []);
 
   const loadBankAccounts = useCallback(async () => {
@@ -665,7 +670,7 @@ export function AdminDashboard() {
   );
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
+  const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', email: '', phone: '', industries: '', thesis: '' });
 
   const renderInvestors = () => (
     <>
@@ -673,7 +678,7 @@ export function AdminDashboard() {
         <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
           <Globe size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({investors.length})</Typography></Typography>
-          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('investor'); setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: 'Invests in...' }); }}>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('investor'); setInvForm({ id: '', name: '', type: 'vc', location: '', email: '', phone: '', industries: '', thesis: 'Invests in...' }); }}>
             Add Investor
           </GradientButton>
         </Box>
@@ -686,7 +691,14 @@ export function AdminDashboard() {
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography>
               <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography>
+              {(inv.email || inv.phone) && <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11 }}>{[inv.email, inv.phone].filter(Boolean).join(' · ')}</Typography>}
             </Box>
+            <Tooltip title="Edit investor">
+              <IconButton size="small" sx={{ color: '#a7f3d0' }} onClick={() => {
+                setInvForm({ id: inv.id, name: inv.name, type: inv.type, location: inv.location, email: inv.email || '', phone: inv.phone || '', industries: jsonStringList(inv.focusIndustries || '[]'), thesis: inv.thesis || '' });
+                setActiveModal('investor');
+              }}><Pencil size={14} /></IconButton>
+            </Tooltip>
             <Tooltip title="Delete">
               <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => confirmAdminDelete(
                 'Delete investor', `Delete ${inv.name}? This cannot be undone.`,
@@ -704,8 +716,9 @@ export function AdminDashboard() {
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-            {['name','location','industries','thesis'].map(f => (
+            {(['name','location','email','phone','industries','thesis'] as const).map(f => (
               <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
+                type={f === 'email' ? 'email' : f === 'phone' ? 'tel' : 'text'}
                 sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: '#a7f3d0', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
             ))}
             <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}
@@ -717,8 +730,19 @@ export function AdminDashboard() {
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={busy} onClick={async () => {
-            await exec(`mutation { adminUpsertInvestor(id:"${invForm.id || crypto.randomUUID()}",name:"${invForm.name.replace(/"/g,'\\"')}",type:"${invForm.type}",location:"${invForm.location.replace(/"/g,'\\"')}",focusIndustries:"${JSON.stringify(invForm.industries.split(',').map(s=>s.trim())).replace(/"/g,'\\"')}",thesis:"${invForm.thesis.replace(/"/g,'\\"')}") }`, {});
-            setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', industries: '', thesis: '' });
+            setBusy(true);
+            try {
+              await graphqlRequest('mutation SaveInvestor($id:ID!,$name:String!,$type:String!,$location:String!,$email:String,$phone:String,$focusIndustries:String!,$thesis:String!){adminUpsertInvestor(id:$id,name:$name,type:$type,location:$location,email:$email,phone:$phone,focusIndustries:$focusIndustries,thesis:$thesis)}', {
+                id: invForm.id || crypto.randomUUID(), name: invForm.name.trim(), type: invForm.type, location: invForm.location,
+                email: invForm.email.trim(), phone: invForm.phone.trim(), focusIndustries: JSON.stringify(invForm.industries.split(',').map(s => s.trim()).filter(Boolean)), thesis: invForm.thesis,
+              });
+              await loadInvestors();
+              setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', email: '', phone: '', industries: '', thesis: '' });
+            } catch (error) {
+              alert(error instanceof Error ? error.message : 'Could not save investor');
+            } finally {
+              setBusy(false);
+            }
           }}>Save</GradientButton>
         </DialogActions>
       </Dialog>
@@ -781,7 +805,7 @@ export function AdminDashboard() {
           <Briefcase size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Providers <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({providers.length})</Typography></Typography>
           <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />}
-            onClick={() => { setActiveModal('provider'); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, yearsExperience: 0, skills: '', portfolio: '', isActive: true }); }}>Add Provider</GradientButton>
+            onClick={() => { setActiveModal('provider'); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', email: '', phone: '', rateHourly: 50, yearsExperience: 0, skills: '', portfolio: '', isActive: true }); }}>Add Provider</GradientButton>
         </Box>
         {loadProv && <CardSkeleton count={4} type="table-row" />}
         {!loadProv && providers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No providers yet.</Typography>}
@@ -791,12 +815,13 @@ export function AdminDashboard() {
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{p.name}</Typography>
               <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: 11 }}>{p.title} · {p.category} · ${p.rateHourly}/hr · {p.yearsExperience} yrs · {p.isActive ? 'Active' : 'Inactive'}</Typography>
+              {(p.email || p.phone) && <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11 }}>{[p.email, p.phone].filter(Boolean).join(' · ')}</Typography>}
             </Box>
             <Tooltip title="Edit provider">
               <IconButton size="small" sx={{ color: '#a7f3d0' }} onClick={() => {
                 setProvForm({
                   id: p.id, name: p.name, title: p.title || '', category: p.category || 'engineering',
-                  bio: p.bio || '', picture: p.picture || '', rateHourly: p.rateHourly || 0,
+                  bio: p.bio || '', picture: p.picture || '', email: p.email || '', phone: p.phone || '', rateHourly: p.rateHourly || 0,
                   yearsExperience: p.yearsExperience || 0, skills: jsonStringList(p.skills || '[]'),
                   portfolio: jsonStringList(p.portfolio || '[]'), isActive: p.isActive,
                 });
@@ -825,6 +850,10 @@ export function AdminDashboard() {
             <TextField size="small" label="Name" value={provForm.name} onChange={e => setProvForm({...provForm, name: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
             <TextField size="small" label="Title" value={provForm.title} onChange={e => setProvForm({...provForm, title: e.target.value})}
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Private email (admin only)" type="email" value={provForm.email} onChange={e => setProvForm({...provForm, email: e.target.value})}
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Private phone (admin only)" type="tel" value={provForm.phone} onChange={e => setProvForm({...provForm, phone: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
@@ -874,10 +903,10 @@ export function AdminDashboard() {
             setBusy(true);
             try {
               const result = await graphqlRequest<{ adminUpsertProvider: AdminProvider }>(
-                `mutation SaveProvider($id:ID,$name:String!,$title:String,$category:String,$bio:String,$picture:String,$rateHourly:Float,$yearsExperience:Int,$skills:String,$portfolio:String,$isActive:Boolean){adminUpsertProvider(id:$id,name:$name,title:$title,category:$category,bio:$bio,picture:$picture,rateHourly:$rateHourly,yearsExperience:$yearsExperience,skills:$skills,portfolio:$portfolio,isActive:$isActive){id name title category bio picture rateHourly yearsExperience skills portfolio isActive}}`,
+                `mutation SaveProvider($id:ID,$name:String!,$title:String,$category:String,$bio:String,$picture:String,$email:String,$phone:String,$rateHourly:Float,$yearsExperience:Int,$skills:String,$portfolio:String,$isActive:Boolean){adminUpsertProvider(id:$id,name:$name,title:$title,category:$category,bio:$bio,picture:$picture,email:$email,phone:$phone,rateHourly:$rateHourly,yearsExperience:$yearsExperience,skills:$skills,portfolio:$portfolio,isActive:$isActive){id name title category bio picture email phone rateHourly yearsExperience skills portfolio isActive}}`,
                 {
                   id: provForm.id || null, name: provForm.name.trim(), title: provForm.title, category: provForm.category,
-                  bio: provForm.bio, picture: provForm.picture, rateHourly: provForm.rateHourly,
+                  bio: provForm.bio, picture: provForm.picture, email: provForm.email.trim(), phone: provForm.phone.trim(), rateHourly: provForm.rateHourly,
                   skills: JSON.stringify(provForm.skills.split(',').map(skill => skill.trim()).filter(Boolean)),
                   yearsExperience: provForm.yearsExperience,
                   portfolio: JSON.stringify(provForm.portfolio.split(',').map(url => url.trim()).filter(Boolean)),
@@ -887,7 +916,7 @@ export function AdminDashboard() {
               const saved = result.adminUpsertProvider;
               setProviders(current => [saved, ...current.filter(provider => provider.id !== saved.id)]);
               setActiveModal(null);
-              setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, yearsExperience: 0, skills: '', portfolio: '', isActive: true });
+              setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', email: '', phone: '', rateHourly: 50, yearsExperience: 0, skills: '', portfolio: '', isActive: true });
             } catch (error) {
               alert(error instanceof Error ? error.message : 'Could not save provider');
             } finally {
@@ -913,6 +942,7 @@ export function AdminDashboard() {
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{b.projectTitle}</Typography>
               <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{b.providerName} → {b.userName}</Typography>
+              {(b.providerEmail || b.providerPhone) && <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11 }}>{[b.providerEmail, b.providerPhone].filter(Boolean).join(' · ')}</Typography>}
             </Box>
             <StatusBadge status={b.status} />
             {isPending && (
