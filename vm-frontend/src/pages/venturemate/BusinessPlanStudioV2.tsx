@@ -82,6 +82,15 @@ function exportSections(document: PlanDocumentV2): PlanSectionV2[] {
   });
 }
 
+function executiveSummaryParagraphs(value: string): string[] {
+  const headings = 'Overview|Problem and Opportunity|Proposed Solution Direction|Target Customers|Business Model and Pricing|Go-to-Market|Operations and Team|Milestones|Funding and Use of Proceeds|Financial Outlook';
+  return value
+    .replace(new RegExp(`\\s+(?=(?:${headings}):\\s)`, 'g'), '\n\n')
+    .split(/\n\s*\n/)
+    .map(paragraph => paragraph.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean);
+}
+
 async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void> {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const margin = 54; const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight(); const contentWidth = pageWidth - margin * 2;
@@ -123,10 +132,12 @@ async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void>
   const title = exportPlanTitle(document.title);
   text(title, 25, true, 12); text(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'} · ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, 9, false, 20);
   if (document.executiveSummary) {
-    const summaryLineCount = (pdf.splitTextToSize(document.executiveSummary, contentWidth) as string[]).length;
+    const summaryParagraphs = executiveSummaryParagraphs(document.executiveSummary);
+    const summaryLineCount = summaryParagraphs.reduce((total, paragraph) => total + (pdf.splitTextToSize(paragraph, contentWidth) as string[]).length, 0);
     ensure(16 * 1.35 + Math.min(2, summaryLineCount) * 11 * 1.35 + 20);
     text('Executive Summary', 16, true, 8);
-    text(document.executiveSummary, 11, false, 16);
+    summaryParagraphs.forEach(paragraph => text(paragraph, 11, false, 7));
+    y += 9;
   }
   exportSections(document).forEach(section => {
     ensure(50); text(section.title, 17, true, 10);
