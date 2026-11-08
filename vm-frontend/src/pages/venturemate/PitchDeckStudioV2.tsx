@@ -13,7 +13,7 @@ import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { useBusiness } from '../../contexts/BusinessContext';
 import type { DeckDocument, DeckElement, DeckSlide } from '../../lib/ai-studio/types';
 import { imageToPngDataUri } from '../../lib/pitchDeckExport';
-import { DECK_DESIGNS, DECK_HEIGHT, DECK_WIDTH, getDeckDesign, isCoveredBackground } from '../../lib/ai-studio/deckDesigns';
+import { DECK_DESIGNS, DECK_HEIGHT, DECK_WIDTH, getDeckDesign, isCoveredBackground, readableTextColor, themedElementFill } from '../../lib/ai-studio/deckDesigns';
 
 const W = DECK_WIDTH;
 const H = DECK_HEIGHT;
@@ -89,10 +89,12 @@ export async function exportDeckPptx(document: DeckDocument, logo?: string): Pro
   const design = getDeckDesign(document);
   for (const source of document.slides) {
     const slide = pptx.addSlide();
-    slide.background = { color: cleanHex(design?.background || source.background.color || document.theme.background, '080B12') };
-    design?.shapes.forEach(shape => slide.addShape(shape.type === 'ellipse' ? pptx.ShapeType.ellipse : pptx.ShapeType.rect, {
+    const slideBackground = design?.background || source.background.color || document.theme.background;
+    slide.background = { color: cleanHex(slideBackground, '080B12') };
+    design?.shapes.forEach(shape => slide.addShape(shape.type === 'ellipse' ? pptx.ShapeType.ellipse : shape.type === 'line' ? pptx.ShapeType.line : pptx.ShapeType.rect, {
       x: shape.x, y: shape.y, w: shape.w, h: shape.h,
-      fill: { color: cleanHex(shape.color) }, line: { color: cleanHex(shape.color), transparency: 100 },
+      fill: shape.type === 'line' ? undefined : { color: cleanHex(shape.color), transparency: shape.transparency || 0 },
+      line: { color: cleanHex(shape.color), transparency: shape.type === 'line' ? shape.transparency || 0 : 100, width: 1.5 },
     }));
     for (const element of [...source.elements].filter(item => item.visible !== false && !isCoveredBackground(item, design)).sort((a, b) => a.zIndex - b.zIndex)) {
       const style = element.style || {};
@@ -101,14 +103,14 @@ export async function exportDeckPptx(document: DeckDocument, logo?: string): Pro
           x: element.x, y: element.y, w: element.w, h: element.h,
           fontFace: String(style.fontFamily || document.theme.bodyFont || 'Aptos'),
           fontSize: Number(style.fontSize || 20), bold: Number(style.fontWeight || 400) >= 700,
-          color: cleanHex(String(style.color || document.theme.text), 'F8FAFC'),
+          color: cleanHex(readableTextColor(element, source.elements, slideBackground, document.theme.surface, design), 'F8FAFC'),
           align: (String(style.textAlign || 'left') as 'left' | 'center' | 'right'),
           valign: 'middle', margin: Number(style.margin || .04), fit: 'shrink',
         });
       } else if (element.type === 'shape' || element.type === 'line') {
         slide.addShape(element.type === 'line' ? pptx.ShapeType.line : pptx.ShapeType.rect, {
           x: element.x, y: element.y, w: element.w, h: element.h,
-          fill: element.type === 'line' ? undefined : { color: cleanHex(String(style.background || style.fill || document.theme.primary), '10B981'), transparency: Math.max(0, Math.min(100, 100 - Number(style.opacity || 1) * 100)) },
+          fill: element.type === 'line' ? undefined : { color: cleanHex(themedElementFill(element, document.theme.surface, design), '10B981'), transparency: Math.max(0, Math.min(100, 100 - Number(style.opacity || 1) * 100)) },
           line: { color: cleanHex(String(style.borderColor || style.color || document.theme.primary), '10B981'), width: Number(style.borderWidth || 1) },
           rotate: element.rotation || 0,
         });
@@ -135,20 +137,25 @@ async function exportDeckPdf(document: DeckDocument, logo?: string): Promise<voi
     const background = design?.background || source.background.color || document.theme.background;
     pdf.setFillColor(background); pdf.rect(0, 0, W, H, 'F');
     design?.shapes.forEach(shape => {
-      pdf.setFillColor(shape.color);
-      if (shape.type === 'ellipse') pdf.ellipse(shape.x + shape.w / 2, shape.y + shape.h / 2, shape.w / 2, shape.h / 2, 'F');
-      else pdf.rect(shape.x, shape.y, shape.w, shape.h, 'F');
+      if (shape.type === 'line') {
+        pdf.setDrawColor(shape.color); pdf.setLineWidth(.025);
+        pdf.line(shape.x, shape.y, shape.x + shape.w, shape.y + shape.h);
+      } else {
+        pdf.setFillColor(shape.color);
+        if (shape.type === 'ellipse') pdf.ellipse(shape.x + shape.w / 2, shape.y + shape.h / 2, shape.w / 2, shape.h / 2, 'F');
+        else pdf.rect(shape.x, shape.y, shape.w, shape.h, 'F');
+      }
     });
     for (const element of [...source.elements].filter(item => item.visible !== false && !isCoveredBackground(item, design)).sort((a, b) => a.zIndex - b.zIndex)) {
       const style = element.style || {};
       if (element.type === 'text') {
-        pdf.setTextColor(String(style.color || document.theme.text));
+        pdf.setTextColor(readableTextColor(element, source.elements, background, document.theme.surface, design));
         pdf.setFontSize(Number(style.fontSize || 20) * .75);
         pdf.setFont('helvetica', Number(style.fontWeight || 400) >= 700 ? 'bold' : 'normal');
         const lines = pdf.splitTextToSize(element.text || '', element.w);
         pdf.text(lines, element.x, element.y + .25, { maxWidth: element.w, baseline: 'top', angle: element.rotation || 0 });
       } else if (element.type === 'shape') {
-        pdf.setFillColor(String(style.background || style.fill || document.theme.primary));
+        pdf.setFillColor(themedElementFill(element, document.theme.surface, design));
         pdf.roundedRect(element.x, element.y, element.w, element.h, .08, .08, 'F');
       } else if (element.type === 'line') {
         pdf.setDrawColor(String(style.borderColor || style.color || document.theme.primary));
@@ -283,20 +290,22 @@ export function PitchDeckStudioV2() {
   const leftRail = (
     <Box>
       <Box sx={{ p: 1, borderBottom: '1px solid var(--vm-border-subtle)' }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, mb: .5 }}>Background design</Typography>
-        <Select fullWidth size="small" value={design?.id || 'original'} aria-label="Background design" onChange={event => updateDocument(next => {
-          next.metadata = { ...next.metadata, backgroundDesign: event.target.value };
-          return next;
-        })}>
-          <MenuItem value="original">Original backgrounds</MenuItem>
-          {DECK_DESIGNS.map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
-        </Select>
-        <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: .5 }}>Applies to all slides. Save to keep your choice.</Typography>
-        <Box sx={{ display: 'flex', gap: .5, mt: .75 }}>
-          {DECK_DESIGNS.map(item => <Box component="button" key={item.id} type="button" aria-label={item.name} aria-pressed={design?.id === item.id} title={item.name} onClick={() => updateDocument(next => { next.metadata = { ...next.metadata, backgroundDesign: item.id }; return next; })} sx={{ flex: 1, aspectRatio: '16/9', position: 'relative', overflow: 'hidden', bgcolor: item.background, border: design?.id === item.id ? '2px solid #fff' : '1px solid #667085', cursor: 'pointer', p: 0 }}>
-            {item.shapes.map((shape, index) => <Box key={index} sx={{ position: 'absolute', left: `${shape.x / W * 100}%`, top: `${shape.y / H * 100}%`, width: `${shape.w / W * 100}%`, height: `${shape.h / H * 100}%`, bgcolor: shape.color, borderRadius: shape.type === 'ellipse' ? '50%' : 0 }} />)}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: .75 }}>
+          <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: .6 }}>DESIGN SYSTEM</Typography>
+          <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)' }}>6 styles</Typography>
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: .65 }}>
+          <Box component="button" type="button" aria-label="Original slide backgrounds" aria-pressed={!design} onClick={() => updateDocument(next => { next.metadata = { ...next.metadata, backgroundDesign: 'original' }; return next; })} sx={{ minWidth: 0, height: 47, position: 'relative', overflow: 'hidden', bgcolor: selectedSlide?.background.color || document.theme.background, border: !design ? '2px solid #94a3b8' : '1px solid rgba(148,163,184,.28)', borderRadius: 1, cursor: 'pointer', p: 0, textAlign: 'left' }}>
+            <Typography sx={{ position: 'absolute', left: 7, bottom: 4, color: '#ffffff', fontSize: 10, fontWeight: 800 }}>Original</Typography>
+          </Box>
+          {DECK_DESIGNS.map(item => <Box component="button" key={item.id} type="button" aria-label={`${item.name}: ${item.descriptor}`} aria-pressed={design?.id === item.id} onClick={() => updateDocument(next => { next.metadata = { ...next.metadata, backgroundDesign: item.id }; return next; })} sx={{ minWidth: 0, height: 47, position: 'relative', overflow: 'hidden', bgcolor: item.background, border: design?.id === item.id ? `2px solid ${item.accent}` : '1px solid rgba(148,163,184,.28)', borderRadius: 1, cursor: 'pointer', p: 0, textAlign: 'left', transition: 'border-color .15s, transform .15s', '&:hover': { transform: 'translateY(-1px)', borderColor: item.accent } }}>
+            <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+              {item.shapes.map((shape, index) => <Box key={index} sx={{ position: 'absolute', left: `${shape.x / W * 100}%`, top: `${shape.y / H * 100}%`, width: `${shape.w / W * 100}%`, height: shape.type === 'line' ? 1 : `${shape.h / H * 100}%`, bgcolor: shape.type === 'line' ? 'transparent' : shape.color, borderTop: shape.type === 'line' ? `1px solid ${shape.color}` : undefined, opacity: 1 - (shape.transparency || 0) / 100, borderRadius: shape.type === 'ellipse' ? '50%' : 0 }} />)}
+              <Typography sx={{ position: 'absolute', left: 7, bottom: 4, color: item.text, fontSize: 10, fontWeight: 800, textShadow: item.id === 'paper' || item.id === 'sage' ? 'none' : '0 1px 3px rgba(0,0,0,.4)' }}>{item.name}</Typography>
+            </Box>
           </Box>)}
         </Box>
+        <Typography sx={{ fontSize: 9, lineHeight: 1.35, color: 'var(--vm-text-muted)', mt: .65 }}>{design ? design.descriptor : 'Original backgrounds'} · applies to all slides. Save to keep.</Typography>
       </Box>
       <Box sx={{ p: 1, display: 'flex', gap: .5, borderBottom: '1px solid var(--vm-border-subtle)' }}>
         <Button size="small" fullWidth startIcon={<Plus size={13} />} onClick={addSlide}>Slide</Button>
@@ -334,14 +343,14 @@ export function PitchDeckStudioV2() {
   ) : (
     <Box sx={{ height: '100%', display: 'grid', gridTemplateRows: 'minmax(0,1fr) auto' }}>
       <Box sx={{ minHeight: 0, overflow: 'auto', p: { xs: 1, md: 2 }, display: 'grid', placeItems: 'center', backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 0)', backgroundSize: '20px 20px' }}>
-        {selectedSlide && <Box ref={canvasRef} onPointerMove={moveDrag} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} sx={{ width: 'min(100%, 1100px)', aspectRatio: '16/9', position: 'relative', overflow: 'hidden', bgcolor: design?.background || selectedSlide.background.color || document.theme.background, boxShadow: '0 22px 80px rgba(0,0,0,.55)', borderRadius: .5 }}>
-          {design?.shapes.map((shape, index) => <Box key={index} sx={{ position: 'absolute', left: `${shape.x / W * 100}%`, top: `${shape.y / H * 100}%`, width: `${shape.w / W * 100}%`, height: `${shape.h / H * 100}%`, bgcolor: shape.color, borderRadius: shape.type === 'ellipse' ? '50%' : 0, pointerEvents: 'none' }} />)}
+        {selectedSlide && <Box ref={canvasRef} onPointerMove={moveDrag} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} sx={{ width: 'min(100%, 1100px)', aspectRatio: '16/9', containerType: 'inline-size', position: 'relative', overflow: 'hidden', bgcolor: design?.background || selectedSlide.background.color || document.theme.background, boxShadow: '0 22px 80px rgba(0,0,0,.55)', borderRadius: .5 }}>
+          {design?.shapes.map((shape, index) => <Box key={index} sx={{ position: 'absolute', left: `${shape.x / W * 100}%`, top: `${shape.y / H * 100}%`, width: `${shape.w / W * 100}%`, height: shape.type === 'line' ? 1 : `${shape.h / H * 100}%`, bgcolor: shape.type === 'line' ? 'transparent' : shape.color, borderTop: shape.type === 'line' ? `1px solid ${shape.color}` : undefined, opacity: 1 - (shape.transparency || 0) / 100, borderRadius: shape.type === 'ellipse' ? '50%' : 0, pointerEvents: 'none' }} />)}
           {[...selectedSlide.elements].filter(element => element.visible !== false && !isCoveredBackground(element, design)).sort((a, b) => a.zIndex - b.zIndex).map(element => {
             const selected = element.id === selectedElementId;
             const common = { position: 'absolute', left: `${element.x / W * 100}%`, top: `${element.y / H * 100}%`, width: `${element.w / W * 100}%`, height: `${element.h / H * 100}%`, transform: `rotate(${element.rotation || 0}deg)`, zIndex: element.zIndex, border: selected ? '2px solid #8b5cf6' : '1px solid transparent', cursor: element.locked ? 'default' : 'move', userSelect: 'none', overflow: 'hidden' } as const;
-            if (element.type === 'text') return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} onDoubleClick={() => setSelectedElementId(element.id)} sx={{ ...common, color: String(element.style?.color || document.theme.text), fontSize: `clamp(8px, ${styleNumber(element, 'fontSize', 20) / 1100 * 100}vw, ${styleNumber(element, 'fontSize', 20)}px)`, fontWeight: styleNumber(element, 'fontWeight', 400), lineHeight: 1.15, textAlign: String(element.style?.textAlign || 'left') as 'left', display: 'block', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word', p: .25 }}>{element.text}</Box>;
+            if (element.type === 'text') return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} onDoubleClick={() => setSelectedElementId(element.id)} sx={{ ...common, color: readableTextColor(element, selectedSlide.elements, design?.background || selectedSlide.background.color || document.theme.background, document.theme.surface, design), fontSize: `${styleNumber(element, 'fontSize', 20) / 1100 * 100}cqw`, fontWeight: styleNumber(element, 'fontWeight', 400), lineHeight: 1.15, textAlign: String(element.style?.textAlign || 'left') as 'left', display: 'block', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word', p: .25 }}>{element.text}</Box>;
             if (element.type === 'image') return <Box key={element.id} component="img" src={element.url} alt={element.altText || ''} onPointerDown={event => beginDrag(event, element)} sx={{ ...common, objectFit: String(element.style?.objectFit || 'cover') }} />;
-            return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} sx={{ ...common, bgcolor: String(element.style?.background || element.style?.fill || document.theme.primary), opacity: Number(element.style?.opacity ?? 1), borderRadius: Number(element.style?.borderRadius ?? 0) }} />;
+            return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} sx={{ ...common, bgcolor: element.type === 'line' ? 'transparent' : themedElementFill(element, document.theme.surface, design), borderTop: element.type === 'line' ? `1px solid ${String(element.style?.color || document.theme.primary)}` : undefined, opacity: Number(element.style?.opacity ?? 1), borderRadius: Number(element.style?.borderRadius ?? 0) }} />;
           })}
         </Box>}
       </Box>

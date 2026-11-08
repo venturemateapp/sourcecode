@@ -18,14 +18,14 @@ describe('pitch deck PowerPoint export', () => {
       theme: { background: '#000000', text: '#ffffff', primary: '#10b981', bodyFont: 'Aptos' },
       slides: [{ order: 0, background: { color: '#000000' }, elements: [
         { id: 'background', type: 'shape', x: 0, y: 0, w: 13.333, h: 7.5, zIndex: 0, visible: true, style: { background: '#000000' } },
-        { id: 'text', type: 'text', text: 'Hello investors', x: 1, y: 1, w: 4, h: 1, zIndex: 1, visible: true },
+        { id: 'text', type: 'text', text: 'Hello investors', x: 1, y: 1, w: 4, h: 1, zIndex: 1, visible: true, style: { color: '#101827' } },
       ] }],
     } as unknown as DeckDocument;
     await exportDeckPptx(document);
     expect(pptx.slide.background).toEqual({ color: '071726' });
-    expect(pptx.slide.addShape).toHaveBeenCalledTimes(3);
-    expect(pptx.slide.addShape).toHaveBeenCalledWith('ellipse', expect.objectContaining({ fill: { color: '10364B' } }));
-    expect(pptx.slide.addText).toHaveBeenCalledWith('Hello investors', expect.any(Object));
+    expect(pptx.slide.addShape).toHaveBeenCalledTimes(4);
+    expect(pptx.slide.addShape).toHaveBeenCalledWith('ellipse', expect.objectContaining({ fill: { color: '0C3044', transparency: 0 } }));
+    expect(pptx.slide.addText).toHaveBeenCalledWith('Hello investors', expect.objectContaining({ color: 'FFFFFF' }));
     expect(pptx.writeFile).toHaveBeenCalledOnce();
   });
 });

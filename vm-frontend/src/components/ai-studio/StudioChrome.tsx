@@ -184,7 +184,7 @@ export function StudioChrome(props: StudioChromeProps) {
       {props.job && isJobActive && <LinearProgress variant="determinate" value={Math.max(2, props.job.progress || 2)} />}
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', lg: `${props.leftRail ? '230px ' : ''}minmax(0,1fr) 330px` } }}>
-        {props.leftRail && <Box sx={{ borderRight: { lg: '1px solid var(--vm-border-subtle)' }, borderBottom: { xs: '1px solid var(--vm-border-subtle)', lg: 'none' }, minHeight: 0, maxHeight: { xs: 168, lg: 'none' }, overflow: 'auto', bgcolor: '#0b0f17' }}>{props.leftRail}</Box>}
+        {props.leftRail && <Box sx={{ borderRight: { lg: '1px solid var(--vm-border-subtle)' }, borderBottom: { xs: '1px solid var(--vm-border-subtle)', lg: 'none' }, minHeight: 0, maxHeight: { xs: 250, lg: 'none' }, overflow: 'auto', bgcolor: '#0b0f17' }}>{props.leftRail}</Box>}
         <Box sx={{ minWidth: 0, minHeight: { xs: '66vh', lg: 0 }, overflow: 'auto', bgcolor: '#080c13' }}>{props.loading ? <Box sx={{ height: '100%', display: 'grid', placeItems: 'center' }}><CircularProgress /></Box> : props.editor}</Box>
 
         <Box sx={{ borderLeft: { lg: '1px solid var(--vm-border-subtle)' }, borderTop: { xs: '1px solid var(--vm-border-subtle)', lg: 'none' }, minHeight: { xs: 460, lg: 0 }, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#0b0f17' }}>
