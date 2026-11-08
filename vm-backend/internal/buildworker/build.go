@@ -116,7 +116,7 @@ func (r *Runner) Build(ctx context.Context, projectID, revisionID string, files 
 		}
 		return nil
 	}
-	if err := run(25, "installing", "Installing locked dependencies", 4*time.Minute, "ci", "--ignore-scripts", "--no-audit", "--no-fund"); err != nil {
+	if err := run(25, "installing", "Installing locked dependencies", 4*time.Minute, "ci", "--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"); err != nil {
 		return failedResult(logs.String(), stepDiagnostic("install", err)), err
 	}
 	if err := run(50, "linting", "Checking generated source", 2*time.Minute, "run", "lint"); err != nil {
