@@ -18,6 +18,13 @@ import { DECK_DESIGNS, DECK_HEIGHT, DECK_WIDTH, getDeckDesign, isCoveredBackgrou
 const W = DECK_WIDTH;
 const H = DECK_HEIGHT;
 
+function estimateTextHeight(element: DeckElement, fontSize: number): number {
+  const widthPixels = element.w / W * 1100;
+  const charactersPerLine = Math.max(1, widthPixels / (fontSize * .52));
+  const lines = (element.text || '').split('\n').reduce((total, line) => total + Math.max(1, Math.ceil(line.length / charactersPerLine)), 0);
+  return lines * fontSize * W / 1100 * 1.18 + .04;
+}
+
 function normalizeDeckLayout(deck: DeckDocument): DeckDocument {
   const next = structuredClone(deck);
   next.slides.forEach(slide => {
@@ -26,22 +33,23 @@ function normalizeDeckLayout(deck: DeckDocument): DeckDocument {
       element.x = Math.max(0, Math.min(W - element.w, element.x));
       element.y = Math.max(0, Math.min(H - element.h, element.y));
       element.w = Math.max(.7, Math.min(W - element.x, element.w));
-      element.h = Math.max(.35, Math.min(H - element.y, element.h));
+      element.h = Math.max(.25, Math.min(H - element.y, element.h));
       const style = element.style || (element.style = {});
-      const requestedSize = Number(style.fontSize || 20);
-      // Keep generated type proportional to its box so long headlines cannot
-      // visually escape into neighboring elements.
-      style.fontSize = Math.min(requestedSize, Math.max(12, element.h * 72 * .78));
+      let fontSize = Math.max(6, Number(style.fontSize || 20));
+      element.h = Math.max(element.h, estimateTextHeight(element, fontSize));
       for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
         const previous = textElements[previousIndex];
         const overlapsX = element.x < previous.x + previous.w && element.x + element.w > previous.x;
         const overlapsY = element.y < previous.y + previous.h && element.y + element.h > previous.y;
         if (overlapsX && overlapsY) {
           const nextY = previous.y + previous.h + .08;
-          if (nextY + element.h <= H) element.y = nextY;
-          else element.h = Math.max(.35, H - element.y - .08);
+          element.y = Math.min(nextY, H - .25);
         }
       }
+      const availableHeight = Math.max(.2, H - element.y - .08);
+      while (fontSize > 6 && estimateTextHeight(element, fontSize) > availableHeight) fontSize = Math.max(6, fontSize - 1);
+      style.fontSize = fontSize;
+      element.h = Math.min(availableHeight, Math.max(element.h, estimateTextHeight(element, fontSize)));
     });
   });
   return next;

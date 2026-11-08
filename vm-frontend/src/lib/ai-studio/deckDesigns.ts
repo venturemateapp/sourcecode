@@ -122,7 +122,6 @@ export const DECK_DESIGNS: DeckDesign[] = [
     { type: 'line', x: 12.7, y: .07, w: 0, h: 7.43, color: '#d9dde2' },
     { type: 'ellipse', x: 11.0, y: .45, w: 1.2, h: 1.2, color: '#e9ecef' },
     { type: 'ellipse', x: 11.45, y: .9, w: .3, h: .3, color: '#2f3a46' },
-    { type: 'line', x: .72, y: .92, w: 1.4, h: 0, color: '#2f3a46' },
     { type: 'line', x: .72, y: 6.98, w: 11.4, h: 0, color: '#d9dde2' },
     { type: 'rect', x: .72, y: 7.34, w: .5, h: .16, color: '#2f3a46' },
     { type: 'rect', x: 1.22, y: 7.34, w: .5, h: .16, color: '#8a939d' },
