@@ -62,6 +62,22 @@ function safeDeck(raw?: string, title = 'Pitch Deck'): DeckDocument {
   });
 }
 
+function DeckSlideThumbnail({ slide, document, design }: { slide: DeckSlide; document: DeckDocument; design: ReturnType<typeof getDeckDesign> }) {
+  const background = design?.background || slide.background.color || document.theme.background;
+  const elements = [...slide.elements].filter(element => element.visible !== false && !isCoveredBackground(element, design)).sort((a, b) => a.zIndex - b.zIndex);
+  return <Box sx={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden', containerType: 'inline-size', bgcolor: background }}>
+    {design?.shapes.map((shape, index) => <Box key={`design-${index}`} sx={{ position: 'absolute', left: `${shape.x / W * 100}%`, top: `${shape.y / H * 100}%`, width: `${shape.w / W * 100}%`, height: shape.type === 'line' ? 1 : `${shape.h / H * 100}%`, bgcolor: shape.type === 'line' ? 'transparent' : shape.color, borderTop: shape.type === 'line' ? `1px solid ${shape.color}` : undefined, opacity: 1 - (shape.transparency || 0) / 100, borderRadius: shape.type === 'ellipse' ? '50%' : 0, pointerEvents: 'none' }} />)}
+    {elements.map(element => {
+      const style = element.style || {};
+      const common = { position: 'absolute', left: `${element.x / W * 100}%`, top: `${element.y / H * 100}%`, width: `${element.w / W * 100}%`, height: `${element.h / H * 100}%`, transform: `rotate(${element.rotation || 0}deg)`, zIndex: element.zIndex, overflow: 'hidden', pointerEvents: 'none' } as const;
+      if (element.type === 'text') return <Box key={element.id} sx={{ ...common, color: readableTextColor(element, slide.elements, background, document.theme.surface, design), fontSize: `${Number(style.fontSize || 20) / 1100 * 100}cqw`, fontWeight: Number(style.fontWeight || 400), lineHeight: 1.15, textAlign: String(style.textAlign || 'left') as 'left', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word', p: .2 }}>{element.text}</Box>;
+      if (element.type === 'image') return <Box key={element.id} component="img" src={element.url} alt={element.altText || ''} sx={{ ...common, objectFit: String(style.objectFit || 'cover') }} />;
+      return <Box key={element.id} sx={{ ...common, bgcolor: element.type === 'line' ? 'transparent' : themedElementFill(element, document.theme.surface, design), borderTop: element.type === 'line' ? `1px solid ${String(style.color || document.theme.primary)}` : undefined, opacity: Number(style.opacity ?? 1), borderRadius: Number(style.borderRadius ?? 0) }} />;
+    })}
+    {!elements.length && <Typography sx={{ position: 'absolute', inset: '12%', color: document.theme.text, fontSize: '2.2cqw', fontWeight: 800, overflowWrap: 'anywhere' }}>{slide.title || 'Untitled slide'}</Typography>}
+  </Box>;
+}
+
 function cleanHex(value: string | undefined, fallback = '111827'): string {
   const normalized = (value || '').replace('#', '');
   return /^[0-9A-Fa-f]{6}$/.test(normalized) ? normalized.toUpperCase() : fallback;
@@ -317,8 +333,8 @@ export function PitchDeckStudioV2() {
       <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
         {document.slides.map((slide, index) => (
           <Card key={slide.id} onClick={() => { setSelectedSlideId(slide.id); setSelectedElementId(''); }} sx={{ cursor: 'pointer', overflow: 'hidden', border: slide.id === selectedSlide?.id ? '2px solid var(--vm-primary-500)' : '1px solid var(--vm-border-subtle)', bgcolor: design?.background || slide.background.color || document.theme.background }}>
-            <Box sx={{ aspectRatio: '16/9', p: .8, position: 'relative' }}><Typography sx={{ color: document.theme.text, fontSize: 9, fontWeight: 800 }}>{slide.title || `Slide ${index + 1}`}</Typography></Box>
-            <Box sx={{ px: .75, py: .45, bgcolor: '#0b0f17' }}><Typography sx={{ fontSize: 8, color: 'var(--vm-text-muted)' }}>{index + 1}. {slide.type}</Typography></Box>
+            <DeckSlideThumbnail slide={slide} document={document} design={design} />
+            <Box sx={{ px: .75, py: .45, bgcolor: '#0b0f17' }}><Typography noWrap sx={{ fontSize: 8, color: 'var(--vm-text-muted)' }}>{index + 1}. {slide.title || slide.type}</Typography></Box>
           </Card>
         ))}
       </Box>
