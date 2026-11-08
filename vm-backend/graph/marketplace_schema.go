@@ -148,6 +148,7 @@ func init() {
 			"yearsExperience": &graphql.ArgumentConfig{Type: graphql.Int},
 			"skills":          &graphql.ArgumentConfig{Type: graphql.String},
 			"portfolio":       &graphql.ArgumentConfig{Type: graphql.String},
+			"isActive":        &graphql.ArgumentConfig{Type: graphql.Boolean},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if err := adminOnly(p); err != nil {
@@ -174,7 +175,7 @@ func init() {
 			if v, ok := p.Args["yearsExperience"].(int); ok {
 				sp.YearsExp = v
 			}
-			sp.IsActive = true
+			sp.IsActive = getBoolArgDefault(p.Args, "isActive", true)
 			if err := AppContainer.MarketplaceRepo.UpsertProvider(p.Context, sp); err != nil {
 				return nil, err
 			}

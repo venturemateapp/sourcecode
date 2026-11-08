@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography, Avatar, IconButton, Drawer, MenuItem, useMediaQuery, useTheme, Tooltip } from '@mui/material';
-import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, CreditCard, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send, Brain } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Building2, Briefcase, ChevronRight, CreditCard, DollarSign, Globe, Landmark, LogOut, Mail, MessageCircle, Menu, Plus, Shield, ThumbsUp, Trash2, Users, UserPlus, X, XCircle, CheckCircle, FileText, Receipt, Send, Brain, Pencil } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { AnimatedBackground } from '../../components/AnimatedBackground';
 import { graphqlRequest, uploadProviderPicture } from '../../lib/api';
+import { useConfirm } from '../../components/shared/useConfirm';
 import { stripMarkdown } from '../../lib/stripMarkdown';
 import { AdminAiUsage } from './AdminAiUsage';
 
@@ -43,6 +44,29 @@ interface AdminUserPlan {
   planName: string; planDisplayName: string; status: string;
   aiTokensUsed: number; storageBytes: number;
   storageLimit: number; aiTokenLimit: number;
+}
+
+interface AdminProvider {
+  id: string;
+  name: string;
+  title: string;
+  category: string;
+  bio: string;
+  picture: string;
+  rateHourly: number;
+  yearsExperience: number;
+  skills: string;
+  portfolio: string;
+  isActive: boolean;
+}
+
+function jsonStringList(value: string): string {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string').join(', ') : '';
+  } catch {
+    return '';
+  }
 }
 
 function StatCard({ icon: Icon, label, value, color, subtitle }: { icon: typeof Users; label: string; value: string | number; color: string; subtitle?: string }) {
@@ -97,6 +121,7 @@ function StatusBadge({ status, escalated, active }: { status: string; escalated?
 
 export function AdminDashboard() {
   const { user, logout } = useAuth();
+  const { confirmAction, dialog: confirmDialog } = useConfirm();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -116,9 +141,9 @@ export function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [userPlanFilter, setUserPlanFilter] = useState('all');
   const [busy, setBusy] = useState(false);
-  const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
+  const [providers, setProviders] = useState<AdminProvider[]>([]);
   const [loadProv, setLoadProv] = useState(false);
-  const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+  const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, yearsExperience: 0, skills: '', portfolio: '', isActive: true });
   const [providerPictureUploading, setProviderPictureUploading] = useState(false);
   const provFileRef = useRef<HTMLInputElement>(null);
   const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
@@ -162,7 +187,7 @@ export function AdminDashboard() {
 
   const loadProviders = useCallback(async () => {
     setLoadProv(true);
-    try { const d = await graphqlRequest<{ serviceProviders: typeof providers }>('query { serviceProviders(activeOnly:false) { id name title category picture rateHourly } }'); setProviders(d.serviceProviders); } catch { /* ignore */ }
+    try { const d = await graphqlRequest<{ serviceProviders: AdminProvider[] }>('query { serviceProviders(activeOnly:false) { id name title category bio picture rateHourly yearsExperience skills portfolio isActive } }'); setProviders(d.serviceProviders); } catch { /* ignore */ }
     finally { setLoadProv(false); }
   }, []);
 
@@ -251,6 +276,20 @@ export function AdminDashboard() {
 
   const exec = async (mutation: string, vars: Record<string, unknown>) => {
     setBusy(true); try { await graphqlRequest(mutation, vars); } catch (e) { alert(e instanceof Error ? e.message : 'Error'); } finally { setBusy(false); setModal(null); }
+  };
+
+  const confirmAdminDelete = (title: string, message: string, mutation: string, afterDelete?: () => void | Promise<void>) => {
+    confirmAction({ title, message }, async () => {
+      setBusy(true);
+      try {
+        await graphqlRequest(mutation);
+        await afterDelete?.();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : 'Delete failed');
+      } finally {
+        setBusy(false);
+      }
+    });
   };
 
   const handleNav = (key: AdminView) => {
@@ -501,7 +540,11 @@ export function AdminDashboard() {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
-                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this user?')) exec(`mutation { adminDeleteUser(userId:"${u.id}") }`, {}); }}>
+                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => confirmAdminDelete(
+                          'Delete user', `Delete ${u.firstName} ${u.surname}? This cannot be undone.`,
+                          `mutation { adminDeleteUser(userId:"${u.id}") }`,
+                          () => setUsers(current => current.filter(userRow => userRow.id !== u.id)),
+                        )}>
                           <Trash2 size={14} />
                         </IconButton>
                       </Tooltip>
@@ -558,7 +601,11 @@ export function AdminDashboard() {
                 </Box>
                 <Box component="td" sx={{ px: { xs: 1.5, sm: 2.5 }, py: 1.25 }}>
                   <Tooltip title="Delete">
-                    <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this business?')) exec(`mutation { adminDeleteBusiness(businessId:"${b.id}") }`, {}); }}>
+                    <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => confirmAdminDelete(
+                      'Delete business', `Delete ${b.name}? This cannot be undone.`,
+                      `mutation { adminDeleteBusiness(businessId:"${b.id}") }`,
+                      () => setBiz(current => current.filter(business => business.id !== b.id)),
+                    )}>
                       <Trash2 size={14} />
                     </IconButton>
                   </Tooltip>
@@ -620,7 +667,11 @@ export function AdminDashboard() {
               <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography>
             </Box>
             <Tooltip title="Delete">
-              <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this investor?')) exec(`mutation { adminDeleteInvestor(id:"${inv.id}") }`, {}); }}>
+              <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => confirmAdminDelete(
+                'Delete investor', `Delete ${inv.name}? This cannot be undone.`,
+                `mutation { adminDeleteInvestor(id:"${inv.id}") }`,
+                () => setInvestors(current => current.filter(investor => investor.id !== inv.id)),
+              )}>
                 <Trash2 size={14} />
               </IconButton>
             </Tooltip>
@@ -630,7 +681,7 @@ export function AdminDashboard() {
       <Dialog open={activeModal === 'investor'} onClose={() => setActiveModal(null)} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
-        <DialogContent sx={{ pt: 5 }}>
+        <DialogContent>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             {['name','location','industries','thesis'].map(f => (
               <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
@@ -670,7 +721,11 @@ export function AdminDashboard() {
             <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.email} · {l.message?.slice(0, 100)}</Typography>
           </Box>
           <Tooltip title="Delete">
-            <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this lead?')) exec(`mutation { adminDeleteContactSubmission(id:"${l.id}") }`, {}); }}>
+            <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => confirmAdminDelete(
+              'Delete lead', `Delete the contact submission from ${l.name}? This cannot be undone.`,
+              `mutation { adminDeleteContactSubmission(id:"${l.id}") }`,
+              () => setLeads(current => current.filter(lead => lead.id !== l.id)),
+            )}>
               <Trash2 size={14} />
             </IconButton>
           </Tooltip>
@@ -705,7 +760,7 @@ export function AdminDashboard() {
           <Briefcase size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Providers <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({providers.length})</Typography></Typography>
           <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />}
-            onClick={() => { setActiveModal('provider'); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, skills: '' }); }}>Add Provider</GradientButton>
+            onClick={() => { setActiveModal('provider'); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, yearsExperience: 0, skills: '', portfolio: '', isActive: true }); }}>Add Provider</GradientButton>
         </Box>
         {loadProv && <CardSkeleton count={4} type="table-row" />}
         {!loadProv && providers.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No providers yet.</Typography>}
@@ -714,10 +769,27 @@ export function AdminDashboard() {
             <Avatar src={p.picture || ''} sx={{ width: 36, height: 36, mr: 1.5, bgcolor: '#f59e0b', fontSize: 13, fontWeight: 700 }}>{p.name[0]}</Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{p.name}</Typography>
-              <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{p.title} · {p.category} · ${p.rateHourly}/hr</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,.55)', fontSize: 11 }}>{p.title} · {p.category} · ${p.rateHourly}/hr · {p.yearsExperience} yrs · {p.isActive ? 'Active' : 'Inactive'}</Typography>
             </Box>
+            <Tooltip title="Edit provider">
+              <IconButton size="small" sx={{ color: '#a7f3d0' }} onClick={() => {
+                setProvForm({
+                  id: p.id, name: p.name, title: p.title || '', category: p.category || 'engineering',
+                  bio: p.bio || '', picture: p.picture || '', rateHourly: p.rateHourly || 0,
+                  yearsExperience: p.yearsExperience || 0, skills: jsonStringList(p.skills || '[]'),
+                  portfolio: jsonStringList(p.portfolio || '[]'), isActive: p.isActive,
+                });
+                setActiveModal('provider');
+              }}>
+                <Pencil size={14} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Delete">
-              <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete provider?')) exec(`mutation { adminDeleteProvider(id:"${p.id}") }`, {}); }}>
+              <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => confirmAdminDelete(
+                'Delete provider', `Delete ${p.name}? This will remove them from the Marketplace.`,
+                `mutation { adminDeleteProvider(id:"${p.id}") }`,
+                () => setProviders(current => current.filter(provider => provider.id !== p.id)),
+              )}>
                 <Trash2 size={14} />
               </IconButton>
             </Tooltip>
@@ -726,8 +798,8 @@ export function AdminDashboard() {
       </Card>
       <Dialog open={activeModal === 'provider'} onClose={() => setActiveModal(null)} maxWidth="sm" fullWidth
         PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, backgroundImage: 'linear-gradient(135deg, rgba(245,158,11,.05), transparent)' } }}>
-        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>New Provider</DialogTitle>
-        <DialogContent sx={{ pt: 5 }}>
+        <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{provForm.id ? 'Edit Provider' : 'New Provider'}</DialogTitle>
+        <DialogContent>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Name" value={provForm.name} onChange={e => setProvForm({...provForm, name: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
@@ -735,6 +807,13 @@ export function AdminDashboard() {
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Years of experience" type="number" value={provForm.yearsExperience} onChange={e => setProvForm({...provForm, yearsExperience: Math.max(0, parseInt(e.target.value, 10) || 0)})}
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField select size="small" label="Status" value={provForm.isActive ? 'active' : 'inactive'} onChange={e => setProvForm({...provForm, isActive: e.target.value === 'active'})}
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              <MenuItem value="active" sx={{ color: '#fff' }}>Active</MenuItem>
+              <MenuItem value="inactive" sx={{ color: '#fff' }}>Inactive</MenuItem>
+            </TextField>
             <Box>
               <input ref={provFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={async e => {
                 const f = e.target.files?.[0];
@@ -762,6 +841,8 @@ export function AdminDashboard() {
             </TextField>
             <TextField size="small" label="Skills (comma)" value={provForm.skills} onChange={e => setProvForm({...provForm, skills: e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
+            <TextField size="small" label="Portfolio URLs (comma)" value={provForm.portfolio} onChange={e => setProvForm({...provForm, portfolio: e.target.value})}
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
           </Box>
           <TextField fullWidth size="small" label="Bio" multiline minRows={2} value={provForm.bio} onChange={e => setProvForm({...provForm, bio: e.target.value})}
             sx={{ mt: 2, textarea: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover fieldset': { borderColor: 'rgba(255,255,255,.25)' } }} />
@@ -771,18 +852,21 @@ export function AdminDashboard() {
           <GradientButton variant="primary" size="sm" disabled={busy || providerPictureUploading || !provForm.name} onClick={async () => {
             setBusy(true);
             try {
-              const result = await graphqlRequest<{ adminUpsertProvider: { id: string; name: string; title: string; category: string; picture: string; rateHourly: number } }>(
-                `mutation SaveProvider($name:String!,$title:String,$category:String,$bio:String,$picture:String,$rateHourly:Float,$skills:String){adminUpsertProvider(name:$name,title:$title,category:$category,bio:$bio,picture:$picture,rateHourly:$rateHourly,skills:$skills){id name title category picture rateHourly}}`,
+              const result = await graphqlRequest<{ adminUpsertProvider: AdminProvider }>(
+                `mutation SaveProvider($id:ID,$name:String!,$title:String,$category:String,$bio:String,$picture:String,$rateHourly:Float,$yearsExperience:Int,$skills:String,$portfolio:String,$isActive:Boolean){adminUpsertProvider(id:$id,name:$name,title:$title,category:$category,bio:$bio,picture:$picture,rateHourly:$rateHourly,yearsExperience:$yearsExperience,skills:$skills,portfolio:$portfolio,isActive:$isActive){id name title category bio picture rateHourly yearsExperience skills portfolio isActive}}`,
                 {
-                  name: provForm.name.trim(), title: provForm.title, category: provForm.category,
+                  id: provForm.id || null, name: provForm.name.trim(), title: provForm.title, category: provForm.category,
                   bio: provForm.bio, picture: provForm.picture, rateHourly: provForm.rateHourly,
                   skills: JSON.stringify(provForm.skills.split(',').map(skill => skill.trim()).filter(Boolean)),
+                  yearsExperience: provForm.yearsExperience,
+                  portfolio: JSON.stringify(provForm.portfolio.split(',').map(url => url.trim()).filter(Boolean)),
+                  isActive: provForm.isActive,
                 },
               );
               const saved = result.adminUpsertProvider;
               setProviders(current => [saved, ...current.filter(provider => provider.id !== saved.id)]);
               setActiveModal(null);
-              setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+              setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 50, yearsExperience: 0, skills: '', portfolio: '', isActive: true });
             } catch (error) {
               alert(error instanceof Error ? error.message : 'Could not save provider');
             } finally {
@@ -1053,7 +1137,10 @@ export function AdminDashboard() {
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
-                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => { if (confirm('Delete this offer?')) exec(`mutation { adminDeleteFinancingOffer(id:"${o.id}") }`, {}).then(loadFinancingOffers); }}>
+                        <IconButton size="small" sx={{ color: '#ef4444' }} onClick={() => confirmAdminDelete(
+                          'Delete financing offer', `Delete the ${o.lenderName} offer? This cannot be undone.`,
+                          `mutation { adminDeleteFinancingOffer(id:"${o.id}") }`, loadFinancingOffers,
+                        )}>
                           <Trash2 size={14} />
                         </IconButton>
                       </Tooltip>
@@ -1068,7 +1155,7 @@ export function AdminDashboard() {
       <Dialog open={activeModal === 'financing'} onClose={() => setActiveModal(null)}
         maxWidth="sm" fullWidth PaperProps={{ sx: { bgcolor: '#0d1a15', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3 } }}>
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{financingForm.id ? 'Edit' : 'New'} Financing Offer</DialogTitle>
-        <DialogContent sx={{ pt: 5 }}>
+        <DialogContent>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             <TextField size="small" label="Lender Name" value={financingForm.lenderName} onChange={e => setFinancingForm({ ...financingForm, lenderName: e.target.value })}
               sx={{ gridColumn: { xs: '1', sm: '1 / -1' }, input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
@@ -1459,6 +1546,7 @@ export function AdminDashboard() {
           {renderContent()}
         </Box>
       </Box>
+      {confirmDialog}
     </Box>
   );
 }

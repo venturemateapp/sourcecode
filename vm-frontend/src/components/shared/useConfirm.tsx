@@ -17,6 +17,7 @@ export function useConfirm() {
         options,
         onConfirm: () => {
           action();
+          setState(null);
           resolve();
         },
       });
@@ -46,8 +47,7 @@ export function useConfirm() {
       confirmColor={state.options.confirmColor}
       loading={state.loading}
       onConfirm={() => {
-        state.onConfirm();
-        if (!state.loading) setState(null);
+        if (!state.loading) void state.onConfirm();
       }}
       onCancel={() => setState(null)}
     />

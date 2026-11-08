@@ -44,7 +44,15 @@ const shared = {
       styleOverrides: { root: { color: '#ffffff', pb: 1 } },
     },
     MuiDialogContent: {
-      styleOverrides: { root: { color: '#d1fae5', paddingTop: '24px' } },
+      styleOverrides: {
+        root: {
+          color: '#d1fae5',
+          // MUI removes the top padding when content follows a DialogTitle. Keep
+          // enough space for outlined TextField labels in every modal form.
+          paddingTop: '24px',
+          '.MuiDialogTitle-root + &': { paddingTop: '32px' },
+        },
+      },
     },
     MuiMenu: {
       styleOverrides: {
