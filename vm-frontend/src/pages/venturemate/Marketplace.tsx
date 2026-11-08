@@ -81,6 +81,18 @@ export function MarketplacePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const refreshWhenActive = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    window.addEventListener('focus', refreshWhenActive);
+    document.addEventListener('visibilitychange', refreshWhenActive);
+    return () => {
+      window.removeEventListener('focus', refreshWhenActive);
+      document.removeEventListener('visibilitychange', refreshWhenActive);
+    };
+  }, [load]);
+
   const createBooking = async () => {
     if (!bookingProvider || !bookingTitle) return;
     setBookingSaving(true);

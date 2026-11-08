@@ -769,8 +769,25 @@ export function AdminDashboard() {
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
           <GradientButton variant="primary" size="sm" disabled={busy || providerPictureUploading || !provForm.name} onClick={async () => {
-            await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim())).replace(/"/g,'\\"')}") { id } }`, {});
-            setActiveModal(null); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+            setBusy(true);
+            try {
+              const result = await graphqlRequest<{ adminUpsertProvider: { id: string; name: string; title: string; category: string; picture: string; rateHourly: number } }>(
+                `mutation SaveProvider($name:String!,$title:String,$category:String,$bio:String,$picture:String,$rateHourly:Float,$skills:String){adminUpsertProvider(name:$name,title:$title,category:$category,bio:$bio,picture:$picture,rateHourly:$rateHourly,skills:$skills){id name title category picture rateHourly}}`,
+                {
+                  name: provForm.name.trim(), title: provForm.title, category: provForm.category,
+                  bio: provForm.bio, picture: provForm.picture, rateHourly: provForm.rateHourly,
+                  skills: JSON.stringify(provForm.skills.split(',').map(skill => skill.trim()).filter(Boolean)),
+                },
+              );
+              const saved = result.adminUpsertProvider;
+              setProviders(current => [saved, ...current.filter(provider => provider.id !== saved.id)]);
+              setActiveModal(null);
+              setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+            } catch (error) {
+              alert(error instanceof Error ? error.message : 'Could not save provider');
+            } finally {
+              setBusy(false);
+            }
           }}>Save</GradientButton>
         </DialogActions>
       </Dialog>
