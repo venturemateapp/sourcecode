@@ -533,6 +533,14 @@ func uploadHandler(container *app.Container) http.HandlerFunc {
 }
 
 func adminProviderPictureUploadHandler(container *app.Container) http.HandlerFunc {
+	return adminMarketplacePictureUploadHandler(container, "provider-pictures", "/api/provider-pictures/", "provider")
+}
+
+func adminInvestorPictureUploadHandler(container *app.Container) http.HandlerFunc {
+	return adminMarketplacePictureUploadHandler(container, "investor-pictures", "/api/investor-pictures/", "investor")
+}
+
+func adminMarketplacePictureUploadHandler(container *app.Container, storageFolder, publicPrefix, label string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", http.MethodPost)
@@ -577,19 +585,27 @@ func adminProviderPictureUploadHandler(container *app.Container) http.HandlerFun
 		}
 
 		id := uuid.NewString()
-		key := "provider-pictures/" + id + extension
+		key := storageFolder + "/" + id + extension
 		if _, err := container.S3.Upload(r.Context(), key, data, contentType); err != nil {
-			log.Printf("provider picture upload failed for admin %s: %v", userID, err)
+			log.Printf("%s picture upload failed for admin %s: %v", label, userID, err)
 			http.Error(w, `{"error":"image storage is unavailable; try again"}`, http.StatusBadGateway)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
-		_ = json.NewEncoder(w).Encode(map[string]string{"url": "/api/provider-pictures/" + id + extension})
+		_ = json.NewEncoder(w).Encode(map[string]string{"url": publicPrefix + id + extension})
 	}
 }
 
 func providerPictureHandler(container *app.Container) http.HandlerFunc {
+	return marketplacePictureHandler(container, "provider-pictures", "/api/provider-pictures/")
+}
+
+func investorPictureHandler(container *app.Container) http.HandlerFunc {
+	return marketplacePictureHandler(container, "investor-pictures", "/api/investor-pictures/")
+}
+
+func marketplacePictureHandler(container *app.Container, storageFolder, publicPrefix string) http.HandlerFunc {
 	allowedExtensions := map[string]string{".jpg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp"}
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
@@ -597,7 +613,7 @@ func providerPictureHandler(container *app.Container) http.HandlerFunc {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		filename := strings.TrimPrefix(r.URL.Path, "/api/provider-pictures/")
+		filename := strings.TrimPrefix(r.URL.Path, publicPrefix)
 		if filename == "" || strings.Contains(filename, "/") {
 			http.NotFound(w, r)
 			return
@@ -614,7 +630,7 @@ func providerPictureHandler(container *app.Container) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		data, _, err := container.S3.Download(r.Context(), "provider-pictures/"+filename)
+		data, _, err := container.S3.Download(r.Context(), storageFolder+"/"+filename)
 		if err != nil {
 			http.NotFound(w, r)
 			return
@@ -736,7 +752,9 @@ func main() {
 	http.HandleFunc("/auth/oauth/", oauthHandler(container.OAuthManager))
 	http.Handle("/api/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, uploadHandler(container)))))
 	http.Handle("/api/admin/provider-picture", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, adminProviderPictureUploadHandler(container)))))
+	http.Handle("/api/admin/investor-picture", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, adminInvestorPictureUploadHandler(container)))))
 	http.HandleFunc("/api/provider-pictures/", providerPictureHandler(container))
+	http.HandleFunc("/api/investor-pictures/", investorPictureHandler(container))
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))
 	http.Handle("/api/documents/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, downloadHandler(container)))))
 	http.Handle("/api/pdf/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, pdfDownloadHandler(container)))))

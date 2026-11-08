@@ -123,14 +123,17 @@ func (r *Repository) Upsert(ctx context.Context, args map[string]interface{}) er
 	name := args["name"].(string)
 	investorType := args["type"].(string)
 	location := args["location"].(string)
+	logoArg := args["logo"]
+	logo, _ := logoArg.(string)
+	logoProvided := logoArg != nil
 	thesis := args["thesis"].(string)
 	email, _ := args["email"].(string)
 	phone, _ := args["phone"].(string)
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO investors (id, name, type, location, focus_industries, thesis, email, phone, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,NOW(),NOW())
-		ON CONFLICT (id) DO UPDATE SET name=$2, type=$3, location=$4, focus_industries=$5::jsonb, thesis=$6, email=$7, phone=$8, updated_at=NOW()`,
-		id, name, investorType, location, args["focusIndustries"].(string), thesis, email, phone)
+		INSERT INTO investors (id, name, type, location, logo, focus_industries, thesis, email, phone, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,NOW(),NOW())
+		ON CONFLICT (id) DO UPDATE SET name=$2, type=$3, location=$4, logo=CASE WHEN $10 THEN $5 ELSE investors.logo END, focus_industries=$6::jsonb, thesis=$7, email=$8, phone=$9, updated_at=NOW()`,
+		id, name, investorType, location, logo, args["focusIndustries"].(string), thesis, email, phone, logoProvided)
 	return err
 }
 

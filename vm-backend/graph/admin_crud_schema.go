@@ -234,6 +234,7 @@ func init() {
 			"name":            &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			"type":            &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			"location":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"logo":            &graphql.ArgumentConfig{Type: graphql.String},
 			"email":           &graphql.ArgumentConfig{Type: graphql.String},
 			"phone":           &graphql.ArgumentConfig{Type: graphql.String},
 			"focusIndustries": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},

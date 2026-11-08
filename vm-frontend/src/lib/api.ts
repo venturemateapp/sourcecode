@@ -127,10 +127,18 @@ export async function uploadFile(
 }
 
 export async function uploadProviderPicture(file: File): Promise<string> {
+	return uploadMarketplacePicture(file, API_CONFIG.PROVIDER_PICTURE_UPLOAD_URL);
+}
+
+export async function uploadInvestorPicture(file: File): Promise<string> {
+	return uploadMarketplacePicture(file, API_CONFIG.INVESTOR_PICTURE_UPLOAD_URL);
+}
+
+async function uploadMarketplacePicture(file: File, uploadUrl: string): Promise<string> {
   const token = getToken();
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(API_CONFIG.PROVIDER_PICTURE_UPLOAD_URL, {
+  const res = await fetch(uploadUrl, {
     method: 'POST',
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: formData,

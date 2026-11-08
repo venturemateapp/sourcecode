@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { AnimatedBackground } from '../../components/AnimatedBackground';
-import { graphqlRequest, uploadProviderPicture } from '../../lib/api';
+import { graphqlRequest, uploadInvestorPicture, uploadProviderPicture } from '../../lib/api';
 import { useConfirm } from '../../components/shared/useConfirm';
 import { stripMarkdown } from '../../lib/stripMarkdown';
 import { AdminAiUsage } from './AdminAiUsage';
@@ -60,6 +60,18 @@ interface AdminProvider {
   skills: string;
   portfolio: string;
   isActive: boolean;
+}
+
+interface AdminInvestor {
+  id: string;
+  name: string;
+  type: string;
+  location: string;
+  logo: string;
+  email: string;
+  phone: string;
+  focusIndustries: string;
+  thesis: string;
 }
 
 function jsonStringList(value: string): string {
@@ -134,7 +146,7 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [biz, setBiz] = useState<BizRow[]>([]);
   const [leads, setLeads] = useState<Array<{ id: string; name: string; email: string; message: string; createdAt: string }>>([]);
-  const [investors, setInvestors] = useState<Array<{ id: string; name: string; type: string; location: string; email: string; phone: string; focusIndustries: string; thesis: string }>>([]);
+  const [investors, setInvestors] = useState<AdminInvestor[]>([]);
   const [, setModal] = useState<{ type: string; data?: Record<string, unknown> } | null>(null);
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -244,7 +256,7 @@ export function AdminDashboard() {
 
   const loadInvestors = useCallback(async () => {
     try {
-      const d = await graphqlRequest<{ investors: Array<{ id: string; name: string; type: string; location: string; email: string; phone: string; focusIndustries: string; thesis: string }> }>('query { investors { id name type location email phone focusIndustries thesis } }');
+      const d = await graphqlRequest<{ investors: AdminInvestor[] }>('query { investors { id name type location logo email phone focusIndustries thesis } }');
       setInvestors(d.investors);
     } catch { /* ignore */ }
   }, []);
@@ -670,7 +682,9 @@ export function AdminDashboard() {
   );
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', email: '', phone: '', industries: '', thesis: '' });
+  const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: '' });
+  const [investorPictureUploading, setInvestorPictureUploading] = useState(false);
+  const investorFileRef = useRef<HTMLInputElement>(null);
 
   const renderInvestors = () => (
     <>
@@ -678,16 +692,16 @@ export function AdminDashboard() {
         <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
           <Globe size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({investors.length})</Typography></Typography>
-          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('investor'); setInvForm({ id: '', name: '', type: 'vc', location: '', email: '', phone: '', industries: '', thesis: 'Invests in...' }); }}>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('investor'); setInvForm({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: 'Invests in...' }); }}>
             Add Investor
           </GradientButton>
         </Box>
         {investors.length === 0 && <Typography sx={{ color: 'rgba(255,255,255,.3)', textAlign: 'center', py: 4, fontSize: 13 }}>No investors yet.</Typography>}
         {investors.map(inv => (
           <Box key={inv.id} sx={{ display: 'flex', alignItems: 'center', px: { xs: 2, sm: 2.5 }, py: 1.25, borderBottom: '1px solid rgba(255,255,255,.04)', '&:hover': { bgcolor: 'rgba(255,255,255,.02)' } }}>
-            <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: 'rgba(245,158,11,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 1.5, flexShrink: 0 }}>
-              <Globe size={16} color="#f59e0b" />
-            </Box>
+            <Avatar src={inv.logo || undefined} alt={`${inv.name} logo`} sx={{ width: 36, height: 36, mr: 1.5, flexShrink: 0, bgcolor: 'rgba(245,158,11,.12)', color: '#f59e0b' }}>
+              <Globe size={16} />
+            </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography>
               <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography>
@@ -695,7 +709,7 @@ export function AdminDashboard() {
             </Box>
             <Tooltip title="Edit investor">
               <IconButton size="small" sx={{ color: '#a7f3d0' }} onClick={() => {
-                setInvForm({ id: inv.id, name: inv.name, type: inv.type, location: inv.location, email: inv.email || '', phone: inv.phone || '', industries: jsonStringList(inv.focusIndustries || '[]'), thesis: inv.thesis || '' });
+                setInvForm({ id: inv.id, name: inv.name, type: inv.type, location: inv.location, logo: inv.logo || '', email: inv.email || '', phone: inv.phone || '', industries: jsonStringList(inv.focusIndustries || '[]'), thesis: inv.thesis || '' });
                 setActiveModal('investor');
               }}><Pencil size={14} /></IconButton>
             </Tooltip>
@@ -716,6 +730,30 @@ export function AdminDashboard() {
         <DialogTitle sx={{ color: '#fff', fontSize: 18, fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,.08)' }}>{invForm.id ? 'Edit' : 'New'} Investor</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <Box sx={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <input ref={investorFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={async e => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (!file) return;
+                setInvestorPictureUploading(true);
+                try {
+                  const logo = await uploadInvestorPicture(file);
+                  setInvForm(current => ({ ...current, logo }));
+                } catch (error) {
+                  alert(error instanceof Error ? error.message : 'Investor picture upload failed');
+                } finally {
+                  setInvestorPictureUploading(false);
+                }
+              }} />
+              <Avatar src={invForm.logo || undefined} alt="Investor picture preview" sx={{ width: 56, height: 56, bgcolor: 'rgba(245,158,11,.12)', color: '#f59e0b' }}>
+                <Globe size={20} />
+              </Avatar>
+              <GradientButton variant="outline" size="sm" disabled={investorPictureUploading} onClick={() => investorFileRef.current?.click()}>
+                {investorPictureUploading ? 'Uploading…' : invForm.logo ? 'Change Picture' : 'Upload Picture'}
+              </GradientButton>
+              {invForm.logo && <GradientButton variant="ghost" size="sm" onClick={() => setInvForm(current => ({ ...current, logo: '' }))}>Remove picture</GradientButton>}
+              <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>JPG, PNG, GIF or WebP, up to 5 MB</Typography>
+            </Box>
             {(['name','location','email','phone','industries','thesis'] as const).map(f => (
               <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
                 type={f === 'email' ? 'email' : f === 'phone' ? 'tel' : 'text'}
@@ -729,15 +767,15 @@ export function AdminDashboard() {
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
-          <GradientButton variant="primary" size="sm" disabled={busy} onClick={async () => {
+          <GradientButton variant="primary" size="sm" disabled={busy || investorPictureUploading} onClick={async () => {
             setBusy(true);
             try {
-              await graphqlRequest('mutation SaveInvestor($id:ID!,$name:String!,$type:String!,$location:String!,$email:String,$phone:String,$focusIndustries:String!,$thesis:String!){adminUpsertInvestor(id:$id,name:$name,type:$type,location:$location,email:$email,phone:$phone,focusIndustries:$focusIndustries,thesis:$thesis)}', {
+              await graphqlRequest('mutation SaveInvestor($id:ID!,$name:String!,$type:String!,$location:String!,$logo:String!,$email:String,$phone:String,$focusIndustries:String!,$thesis:String!){adminUpsertInvestor(id:$id,name:$name,type:$type,location:$location,logo:$logo,email:$email,phone:$phone,focusIndustries:$focusIndustries,thesis:$thesis)}', {
                 id: invForm.id || crypto.randomUUID(), name: invForm.name.trim(), type: invForm.type, location: invForm.location,
-                email: invForm.email.trim(), phone: invForm.phone.trim(), focusIndustries: JSON.stringify(invForm.industries.split(',').map(s => s.trim()).filter(Boolean)), thesis: invForm.thesis,
+                logo: invForm.logo, email: invForm.email.trim(), phone: invForm.phone.trim(), focusIndustries: JSON.stringify(invForm.industries.split(',').map(s => s.trim()).filter(Boolean)), thesis: invForm.thesis,
               });
               await loadInvestors();
-              setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', email: '', phone: '', industries: '', thesis: '' });
+              setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: '' });
             } catch (error) {
               alert(error instanceof Error ? error.message : 'Could not save investor');
             } finally {
