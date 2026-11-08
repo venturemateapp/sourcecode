@@ -37,11 +37,16 @@ function safePlan(raw?: string, title = 'Business Plan', businessId?: string): P
   };
 }
 
+function exportPlanTitle(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').replace(/(?:\s+business plan){2,}$/i, ' Business Plan');
+}
+
 function planToMarkdown(document: PlanDocumentV2, logo?: string): string {
-  const lines = [`# ${document.title}`, '', `**Version:** ${document.metadata.versionLabel || '1.0'}  `, `**Currency:** ${document.metadata.currency || 'GHS'}  `, `**Prepared:** ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, ''];
-  if (logo) lines.push(`![${document.title} logo](${logo})`, '');
+  const title = exportPlanTitle(document.title);
+  const lines = [`# ${title}`, '', `**Version:** ${document.metadata.versionLabel || '1.0'}  `, `**Currency:** ${document.metadata.currency || 'GHS'}  `, `**Prepared:** ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, ''];
+  if (logo) lines.push(`![${title} logo](${logo})`, '');
   if (document.executiveSummary) lines.push('## Executive Summary', '', document.executiveSummary, '');
-  document.sections.forEach(section => {
+  exportSections(document).forEach(section => {
     lines.push(`## ${section.title}`, '');
     section.blocks.forEach(block => {
       if (block.type === 'heading') lines.push(`${'#'.repeat(Math.max(3, Math.min(6, block.level || 3)))} ${block.text || ''}`, '');
@@ -67,17 +72,44 @@ function downloadBlob(data: BlobPart, type: string, filename: string): void {
 }
 
 function exportMarkdown(document: PlanDocumentV2, logo?: string): void {
-  downloadBlob(planToMarkdown(document, logo), 'text/markdown;charset=utf-8', `${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.md`);
+  downloadBlob(planToMarkdown(document, logo), 'text/markdown;charset=utf-8', `${exportPlanTitle(document.title).replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.md`);
+}
+
+function exportSections(document: PlanDocumentV2): PlanSectionV2[] {
+  const hasExecutiveSummary = Boolean(document.executiveSummary?.trim());
+  return document.sections.filter(section => {
+    return section.title.trim().toLocaleLowerCase() !== 'executive summary' || !hasExecutiveSummary;
+  });
 }
 
 async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void> {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const margin = 54; const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight(); const contentWidth = pageWidth - margin * 2;
+  const contentBottom = pageHeight - margin;
   let y = margin;
   const ensure = (height: number) => { if (y + height > pageHeight - margin) { pdf.addPage(); y = margin; } };
   const text = (value: string, size = 11, bold = false, spacing = 8) => {
     pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size); pdf.setTextColor('#172033');
-    const lines = pdf.splitTextToSize(value || '', contentWidth); const height = lines.length * size * 1.35; ensure(height + spacing); pdf.text(lines, margin, y); y += height + spacing;
+    const lines = pdf.splitTextToSize(value || '', contentWidth) as string[];
+    const lineHeight = size * 1.35;
+    let offset = 0;
+    while (offset < lines.length) {
+      let availableLines = Math.floor((contentBottom - y) / lineHeight);
+      if (availableLines < 1 || (availableLines === 1 && lines.length - offset > 1)) {
+        pdf.addPage();
+        y = margin;
+        availableLines = Math.floor((contentBottom - y) / lineHeight);
+      }
+      const count = Math.min(availableLines, lines.length - offset);
+      pdf.text(lines.slice(offset, offset + count), margin, y + size);
+      y += count * lineHeight;
+      offset += count;
+      if (offset < lines.length) {
+        pdf.addPage();
+        y = margin;
+      }
+    }
+    y += spacing;
   };
   if (logo?.startsWith('data:image/png')) {
     const { width, height } = pdf.getImageProperties(logo);
@@ -88,9 +120,15 @@ async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void>
     // as a visible gap so the first title line never collides with the logo.
     y += logoHeight + 12 + 25;
   }
-  text(document.title, 25, true, 12); text(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'} · ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, 9, false, 20);
-  if (document.executiveSummary) { text('Executive Summary', 16, true); text(document.executiveSummary, 11, false, 16); }
-  document.sections.forEach(section => {
+  const title = exportPlanTitle(document.title);
+  text(title, 25, true, 12); text(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'} · ${new Date(document.metadata.preparedAt || Date.now()).toLocaleDateString()}`, 9, false, 20);
+  if (document.executiveSummary) {
+    const summaryLineCount = (pdf.splitTextToSize(document.executiveSummary, contentWidth) as string[]).length;
+    ensure(16 * 1.35 + Math.min(2, summaryLineCount) * 11 * 1.35 + 20);
+    text('Executive Summary', 16, true, 8);
+    text(document.executiveSummary, 11, false, 16);
+  }
+  exportSections(document).forEach(section => {
     ensure(50); text(section.title, 17, true, 10);
     section.blocks.forEach(block => {
       if (block.type === 'heading') text(block.text || '', 13, true);
@@ -102,7 +140,14 @@ async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void>
     });
     y += 8;
   });
-  pdf.save(`${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.pdf`);
+  const pageCount = pdf.getNumberOfPages();
+  if (pageCount > 1) {
+    for (let page = 1; page <= pageCount; page += 1) {
+      pdf.setPage(page); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor('#64748b');
+      pdf.text(`${page} / ${pageCount}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+    }
+  }
+  pdf.save(`${title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.pdf`);
 }
 
 const encoder = new TextEncoder();
@@ -147,9 +192,9 @@ function docxLogo(image: Uint8Array): string {
 }
 function exportDocx(document: PlanDocumentV2, logo?: string): void {
   const logoBytes = logo ? decodeDataUri(logo) : undefined;
-  const body: string[] = [...(logoBytes ? [docxLogo(logoBytes)] : []), paragraph(document.title, 'Title'), paragraph(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'}`)];
+  const body: string[] = [...(logoBytes ? [docxLogo(logoBytes)] : []), paragraph(exportPlanTitle(document.title), 'Title'), paragraph(`Version ${document.metadata.versionLabel || '1.0'} · ${document.metadata.currency || 'GHS'}`)];
   if (document.executiveSummary) { body.push(paragraph('Executive Summary', 'Heading1'), paragraph(document.executiveSummary)); }
-  document.sections.forEach(section => {
+  exportSections(document).forEach(section => {
     body.push(paragraph(section.title, 'Heading1'));
     section.blocks.forEach(block => {
       if (block.type === 'heading') body.push(paragraph(block.text || '', 'Heading2'));
@@ -170,7 +215,7 @@ function exportDocx(document: PlanDocumentV2, logo?: string): void {
   ];
   if (logoBytes) files.push({ name: 'word/media/logo.png', content: logoBytes });
   const bytes = zipStore(files);
-  downloadBlob(bytes.buffer as ArrayBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', `${document.title.replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.docx`);
+  downloadBlob(bytes.buffer as ArrayBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', `${exportPlanTitle(document.title).replace(/[^a-z0-9]+/gi, '-') || 'business-plan'}.docx`);
 }
 
 function BlockEditor({ block, onChange, onDelete }: { block: PlanBlock; onChange: (next: PlanBlock) => void; onDelete: () => void }) {
