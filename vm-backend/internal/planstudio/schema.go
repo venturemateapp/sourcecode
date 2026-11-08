@@ -57,12 +57,13 @@ type Document struct {
 }
 
 type Assumption struct {
-	ID          string  `json:"id"`
-	Label       string  `json:"label"`
-	Value       float64 `json:"value"`
-	Unit        string  `json:"unit"`
-	Description string  `json:"description,omitempty"`
-	Source      string  `json:"source"`
+	ID           string  `json:"id"`
+	Label        string  `json:"label"`
+	Value        float64 `json:"value"`
+	ValueEntered bool    `json:"valueEntered,omitempty"`
+	Unit         string  `json:"unit"`
+	Description  string  `json:"description,omitempty"`
+	Source       string  `json:"source"`
 }
 
 type ProjectionInput struct {

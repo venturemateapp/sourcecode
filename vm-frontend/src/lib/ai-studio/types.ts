@@ -217,7 +217,7 @@ export interface PlanDocumentV2 {
   executiveSummary: string;
   metadata: { businessId?: string; versionLabel: string; currency: string; preparedAt: string };
   sections: PlanSectionV2[];
-  assumptions?: Array<{ id: string; label: string; value: number; unit: string; description?: string; source: string }>;
+  assumptions?: Array<{ id: string; label: string; value: number; valueEntered?: boolean; unit: string; description?: string; source: string }>;
   projection?: Record<string, unknown>;
   theme?: Record<string, unknown>;
 }

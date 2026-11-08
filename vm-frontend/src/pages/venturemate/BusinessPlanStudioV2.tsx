@@ -61,9 +61,11 @@ function planToMarkdown(document: PlanDocumentV2, logo?: string): string {
       else if (block.text) lines.push(...textParagraphs(block.text).flatMap(paragraph => [paragraph, '']));
     });
   });
-  if (document.assumptions?.length) {
+  const assumptions = filledAssumptions(document);
+  if (assumptions.length) {
     lines.push('## Financial Assumptions', '');
-    document.assumptions.forEach(item => lines.push(`- **${item.label}:** ${item.value} ${item.unit} — ${item.description || ''} _(Source: ${item.source})_`));
+    lines.push('| Assumption | Value | Unit | Description | Source |', '| --- | ---: | --- | --- | --- |');
+    assumptions.forEach(item => lines.push(`| ${markdownCell(item.label)} | ${item.value} | ${markdownCell(item.unit)} | ${markdownCell(item.description || '')} | ${markdownCell(item.source)} |`));
   }
   return lines.join('\n').trim() + '\n';
 }
@@ -93,6 +95,19 @@ function exportSections(document: PlanDocumentV2): PlanSectionV2[] {
 
 function normalizeExportText(value: string): string { return value.replace(/\s+/g, ' ').trim().toLocaleLowerCase(); }
 function textParagraphs(value: string): string[] { return value.split(/\r?\n/).map(paragraph => paragraph.trim()).filter(Boolean); }
+function markdownCell(value: string): string { return value.replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>'); }
+function filledAssumptions(document: PlanDocumentV2) {
+  const placeholder = /^(?:unspecified|verification required|not provided|n\/?a|tbd)$/i;
+  return (document.assumptions || []).filter(item => {
+    const label = item.label?.trim();
+    if (!label || placeholder.test(label)) return false;
+    const hasNumber = item.valueEntered === true || (Number.isFinite(item.value) && item.value !== 0);
+    const hasMeaningfulUnit = Boolean(item.unit?.trim() && !placeholder.test(item.unit.trim()));
+    const hasMeaningfulDescription = Boolean(item.description?.trim() && !placeholder.test(item.description.trim()));
+    const hasMeaningfulSource = Boolean(item.source?.trim() && !placeholder.test(item.source.trim()));
+    return hasNumber || hasMeaningfulUnit || hasMeaningfulDescription || hasMeaningfulSource;
+  });
+}
 
 function executiveSummaryParagraphs(value: string): string[] {
   const headings = 'Overview|Problem and Opportunity|Proposed Solution Direction|Target Customers|Business Model and Pricing|Go-to-Market|Operations and Team|Milestones|Funding and Use of Proceeds|Financial Outlook';
@@ -177,13 +192,44 @@ async function exportPdf(document: PlanDocumentV2, logo?: string): Promise<void>
     }
     y += 8;
   }
-  if (document.assumptions?.length) {
+  const assumptions = filledAssumptions(document);
+  if (assumptions.length) {
     ensure(45); text('Financial Assumptions', 17, true, 10);
-    document.assumptions.forEach(item => {
-      text(`${item.label}: ${item.value} ${item.unit}`.trim(), 11, true, 3);
-      if (item.description) text(item.description, 10, false, 3);
-      if (item.source) text(`Source: ${item.source}`, 9, false, 8);
-    });
+    const widths = [120, 58, 55, 154, 100];
+    const headers = ['Assumption', 'Value', 'Unit', 'Description', 'Source'];
+    const drawHeader = () => {
+      const height = 24; let x = margin;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setFillColor('#e2e8f0'); pdf.setDrawColor('#94a3b8');
+      widths.forEach((width, index) => {
+        pdf.rect(x, y, width, height, 'FD'); pdf.setTextColor('#172033');
+        pdf.text(headers[index], x + 4, y + 15); x += width;
+      });
+      y += height;
+    };
+    const nextPage = () => { pdf.addPage(); y = margin; drawHeader(); };
+    drawHeader();
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor('#172033'); pdf.setDrawColor('#cbd5e1');
+    for (const item of assumptions) {
+      const cells = [item.label, String(item.value), item.unit, item.description || '', item.source || ''];
+      const cellLines = cells.map((cell, index) => pdf.splitTextToSize(cell, widths[index] - 8) as string[]);
+      const lineCount = Math.max(...cellLines.map(lines => lines.length));
+      let offset = 0;
+      while (offset < lineCount) {
+        let available = Math.floor((contentBottom - y - 10) / 10);
+        if (available < 1) { nextPage(); available = Math.floor((contentBottom - y - 10) / 10); }
+        const count = Math.min(available, lineCount - offset); const height = count * 10 + 10;
+        let x = margin;
+        widths.forEach((width, index) => {
+          pdf.rect(x, y, width, height, 'S');
+          const lines = cellLines[index].slice(offset, offset + count);
+          if (lines.length) pdf.text(lines, x + 4, y + 13);
+          x += width;
+        });
+        y += height; offset += count;
+        if (offset < lineCount) nextPage();
+      }
+    }
+    y += 10;
   }
   const pageCount = pdf.getNumberOfPages();
   if (pageCount > 1) {
@@ -273,13 +319,14 @@ async function exportDocx(document: PlanDocumentV2, logo?: string): Promise<void
       } else if (block.text) body.push(paragraph(block.text));
     }
   }
-  if (document.assumptions?.length) {
+  const assumptions = filledAssumptions(document);
+  if (assumptions.length) {
     body.push(paragraph('Financial Assumptions', 'Heading1'));
-    document.assumptions.forEach(item => {
-      body.push(paragraph(`${item.label}: ${item.value} ${item.unit}`.trim()));
-      if (item.description) body.push(paragraph(item.description));
-      if (item.source) body.push(paragraph(`Source: ${item.source}`));
-    });
+    const rows = [
+      ['Assumption', 'Value', 'Unit', 'Description', 'Source'],
+      ...assumptions.map(item => [item.label, String(item.value), item.unit, item.description || '', item.source || '']),
+    ];
+    body.push(`<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="6"/><w:left w:val="single" w:sz="6"/><w:bottom w:val="single" w:sz="6"/><w:right w:val="single" w:sz="6"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>${rows.map((row, rowIndex) => `<w:tr>${row.map(cell => `<w:tc><w:tcPr>${rowIndex === 0 ? '<w:shd w:fill="E2E8F0"/>' : ''}</w:tcPr><w:p><w:r>${rowIndex === 0 ? '<w:rPr><w:b/></w:rPr>' : ''}<w:t xml:space="preserve">${xml(cell)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`).join('')}</w:tbl>`);
   }
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body></w:document>`;
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="40"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="24"/></w:rPr></w:style></w:styles>`;
@@ -384,7 +431,7 @@ export function BusinessPlanStudioV2() {
           <Box sx={{ display: 'flex', gap: .5, mb: 1.5, flexWrap: 'wrap' }}><Button size="small" startIcon={<Type size={12} />} onClick={() => addBlock('paragraph')}>Paragraph</Button><Button size="small" startIcon={<FileText size={12} />} onClick={() => addBlock('heading')}>Heading</Button><Button size="small" startIcon={<List size={12} />} onClick={() => addBlock('bullet_list')}>Bullets</Button><Button size="small" startIcon={<Table2 size={12} />} onClick={() => addBlock('table')}>Table</Button></Box>
           {selectedSection.blocks.map((block, index) => <BlockEditor key={block.id} block={block} onChange={nextBlock => mutateSection(section => { section.blocks[index] = nextBlock; })} onDelete={() => mutateSection(section => { section.blocks.splice(index, 1); })} />)}
         </>}
-        {document.assumptions && document.assumptions.length > 0 && <Box sx={{ mt: 4 }}><Divider sx={{ mb: 2.5 }} /><Typography sx={{ fontSize: 18, fontWeight: 900, mb: 1.5, color: '#172033' }}>Financial Assumptions</Typography>{document.assumptions.map((assumption, index) => <Card key={assumption.id} variant="outlined" sx={{ p: { xs: 1, md: 1.25 }, mb: 1.25, display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'minmax(0, 2fr) minmax(90px, 1fr) minmax(120px, 1fr) minmax(0, 2fr)' }, gap: 1, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, alignItems: 'start' }}><TextField size="small" fullWidth label="Assumption" value={assumption.label} onChange={event => mutate(next => { if (next.assumptions) next.assumptions[index].label = event.target.value; })} /><TextField size="small" fullWidth type="number" label="Value" value={assumption.value} onChange={event => mutate(next => { if (next.assumptions) next.assumptions[index].value = Number(event.target.value); })} /><TextField size="small" fullWidth label="Unit" value={assumption.unit} onChange={event => mutate(next => { if (next.assumptions) next.assumptions[index].unit = event.target.value; })} /><TextField size="small" fullWidth label="Source" value={assumption.source} onChange={event => mutate(next => { if (next.assumptions) next.assumptions[index].source = event.target.value; })} sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }} /></Card>)}</Box>}
+        {document.assumptions && document.assumptions.length > 0 && <Box sx={{ mt: 4 }}><Divider sx={{ mb: 2.5 }} /><Typography sx={{ fontSize: 18, fontWeight: 900, mb: 1.5, color: '#172033' }}>Financial Assumptions</Typography>{document.assumptions.map(assumption => <Card key={assumption.id} variant="outlined" sx={{ p: { xs: 1, md: 1.25 }, mb: 1.25, display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'minmax(0, 2fr) minmax(90px, 1fr) minmax(120px, 1fr) minmax(0, 2fr)' }, gap: 1, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, alignItems: 'start' }}><TextField size="small" fullWidth label="Assumption" value={assumption.label} onChange={event => mutate(next => { const item = next.assumptions?.find(entry => entry.id === assumption.id); if (item) item.label = event.target.value; })} /><TextField size="small" fullWidth type="number" label="Value" value={assumption.valueEntered === false ? '' : assumption.value} onChange={event => mutate(next => { const item = next.assumptions?.find(entry => entry.id === assumption.id); if (item) { item.value = Number(event.target.value); item.valueEntered = event.target.value.trim() !== ''; } })} /><TextField size="small" fullWidth label="Unit" value={assumption.unit} onChange={event => mutate(next => { const item = next.assumptions?.find(entry => entry.id === assumption.id); if (item) item.unit = event.target.value; })} /><TextField size="small" fullWidth label="Source" value={assumption.source} onChange={event => mutate(next => { const item = next.assumptions?.find(entry => entry.id === assumption.id); if (item) item.source = event.target.value; })} sx={{ gridColumn: { xs: '1 / -1', md: 'auto' } }} /></Card>)}</Box>}
       </Card>
     </Box>
   </Box>;

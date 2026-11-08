@@ -126,7 +126,7 @@ func planContentSignature(document *Document) string {
 		}
 	}
 	for _, assumption := range document.Assumptions {
-		parts = append(parts, assumption.Label, fmt.Sprint(assumption.Value), assumption.Unit, assumption.Description, assumption.Source)
+		parts = append(parts, assumption.Label, fmt.Sprint(assumption.Value), fmt.Sprint(assumption.ValueEntered), assumption.Unit, assumption.Description, assumption.Source)
 	}
 	return strings.Join(parts, "\x00")
 }
