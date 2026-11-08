@@ -34,7 +34,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 const listQuery = `SELECT id, name, type, email, phone, logo, location,
 	focus_industries::text, stages::text, check_size::text, aum,
 	portfolio::text, team::text, thesis, criteria::text,
-	match_score, status, connected_at, created_at, updated_at FROM investors`
+	match_score, status, connected_at::text, created_at, updated_at FROM investors`
 
 func scanInvestor(row pgx.Row) (*Investor, error) {
 	var i Investor
