@@ -135,8 +135,18 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
       try {
         const projectJobs = await listAIJobs(updated.id);
         const approvedJob = projectJobs.find(item => parseResult(item.result).revisionId === revisionId)
-          || (job?.projectId === updated.id ? projectJobs.find(item => item.id === job.id) : undefined);
-        if (approvedJob) updateJob(approvedJob);
+          || (job?.projectId === updated.id && job.status === 'awaiting_review'
+            ? projectJobs.find(item => item.id === job.id) || job
+            : undefined);
+        if (approvedJob) {
+          // The approval is authoritative for the review currently shown in
+          // this studio. Keep the visible job in sync even if an older API
+          // response still carries its pre-approval awaiting_review snapshot.
+          updateJob(approvedJob.status === 'awaiting_review' ? {
+            ...approvedJob, status: 'completed', progress: 100, step: 'approved',
+            message: 'Revision approved', completedAt: approvedJob.completedAt || new Date().toISOString(),
+          } : approvedJob);
+        }
         else if (job?.projectId === updated.id) clearJob();
       } catch {
         // The approval is already saved; don't turn a job refresh failure into
