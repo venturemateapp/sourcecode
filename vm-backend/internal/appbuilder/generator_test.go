@@ -1,11 +1,26 @@
 package appbuilder
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/venturemate/vmbackend/internal/aistudio"
 )
+
+func TestGenerationResultAcceptsBrandMetadata(t *testing.T) {
+	t.Parallel()
+	content := `{"summary":"Updated brand","brand":{"logo":"/logo.svg"},"appSpec":{"schemaVersion":"1.0","name":"Demo","mode":"marketing_website","brand":{"primaryColor":"#123456"}}}`
+	var result GenerationResult
+	decoder := json.NewDecoder(strings.NewReader(content))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&result); err != nil {
+		t.Fatalf("expected brand metadata to be accepted: %v", err)
+	}
+	if result.Brand["logo"] != "/logo.svg" || result.AppSpec.Brand["primaryColor"] != "#123456" {
+		t.Fatalf("brand metadata was not preserved: root=%v appSpec=%v", result.Brand, result.AppSpec.Brand)
+	}
+}
 
 func TestAppSpecPermissionsValidation(t *testing.T) {
 	t.Parallel()

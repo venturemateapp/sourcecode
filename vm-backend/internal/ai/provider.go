@@ -168,6 +168,9 @@ const DeckResponseTokens = 24000
 // PlanResponseTokens is the output budget for a complete editable business plan.
 const PlanResponseTokens = 30000
 
+// AppResponseTokens leaves enough room for structured app specs and file patches.
+const AppResponseTokens = 24000
+
 func responseTokenLimit(ctx context.Context) int {
 	if ctx != nil {
 		if limit, ok := ctx.Value(responseTokenLimitContextKey{}).(int); ok && limit > 0 {

@@ -43,6 +43,7 @@ type AppSpec struct {
 	SchemaVersion string           `json:"schemaVersion"`
 	Name          string           `json:"name"`
 	Mode          string           `json:"mode"`
+	Brand         map[string]any   `json:"brand,omitempty"`
 	Theme         ThemeSpec        `json:"theme"`
 	Routes        []RouteSpec      `json:"routes"`
 	Navigation    map[string]any   `json:"navigation"`

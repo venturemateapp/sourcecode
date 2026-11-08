@@ -54,6 +54,7 @@ type AssetRequest struct {
 
 type GenerationResult struct {
 	Summary        string           `json:"summary"`
+	Brand          map[string]any   `json:"brand,omitempty"`
 	AppSpec        AppSpec          `json:"appSpec"`
 	Operations     []FileOperation  `json:"operations"`
 	AssetRequests  []AssetRequest   `json:"assetRequests"`
@@ -180,9 +181,10 @@ For update_file and delete_file, baseHash must equal the supplied file hash. Pre
 Allowed operations: create_file, update_file, delete_file, move_file.
 Every visible section/component must include a stable data-vm-node-id attribute.
 Entity permissions default to public read only. For a deliberately public form or CRUD experience, explicitly set entity.permissions publicCreate/publicUpdate/publicDelete to true only as required.
-Required JSON shape: {"summary":"...","appSpec":{"schemaVersion":"1.0","name":"...","mode":"marketing_website|functional_web_app|website_plus_app","theme":{},"routes":[],"navigation":{},"entities":[],"workflows":[],"assets":[],"seo":{},"permissions":{}},"operations":[{"type":"update_file","path":"src/App.tsx","baseHash":"sha256:...","replacements":[{"search":"exact","replace":"new"}]}],"assetRequests":[],"schemaChanges":[],"expectedRoutes":[]}.
+Required JSON shape: {"summary":"...","appSpec":{"schemaVersion":"1.0","name":"...","mode":"marketing_website|functional_web_app|website_plus_app","brand":{},"theme":{},"routes":[],"navigation":{},"entities":[],"workflows":[],"assets":[],"seo":{},"permissions":{}},"operations":[{"type":"update_file","path":"src/App.tsx","baseHash":"sha256:...","replacements":[{"search":"exact","replace":"new"}]}],"assetRequests":[],"schemaChanges":[],"expectedRoutes":[]}.
 Use create_file content for new files. A full content field may be used for an update only when necessary.`
 	userMessage := fmt.Sprintf("PROJECT: %s (%s)\nBUSINESS CONTEXT:\n%s\n\nUSER REQUEST:\n%s\n\n%s", project.Name, project.ProjectType, businessContext, prompt, contextBuilder.String())
+	ctx = ai.WithResponseTokenLimit(ctx, ai.AppResponseTokens)
 	response, err := provider.Chat(ctx, system, []ai.Message{{Role: "user", Content: userMessage}}, nil)
 	if err != nil {
 		return nil, nil, nil, err
@@ -192,7 +194,13 @@ Use create_file content for new files. A full content field may be used for an u
 	decoder := json.NewDecoder(strings.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&result); err != nil {
+		if strings.Contains(err.Error(), "unexpected EOF") {
+			return nil, nil, response, errors.New("AI response ended before the app changes were complete; retry with a smaller change request")
+		}
 		return nil, nil, response, fmt.Errorf("AI returned invalid structured app changes: %w", err)
+	}
+	if result.AppSpec.Brand == nil && result.Brand != nil {
+		result.AppSpec.Brand = result.Brand
 	}
 	if strings.TrimSpace(result.Summary) == "" {
 		return nil, nil, response, errors.New("AI result is missing a summary")
