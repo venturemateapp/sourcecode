@@ -5,18 +5,15 @@ import {
   Filter,
   Check,
   Clock,
-  Briefcase,
-  DollarSign,
 } from 'lucide-react';
 import type { ViewType, Investor } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
-import { useCurrency } from '../../contexts/CurrencyContext';
 
 const INVESTORS_QUERY = `
   query Investors {
     investors {
       id, name, type, logo, location,
-      focusIndustries, stages, checkSize, aum,
+      focusIndustries, stages,
       portfolio, team, thesis, criteria,
       matchScore, status, connectedAt
     }
@@ -31,8 +28,6 @@ interface ApiInvestor {
   location: string;
   focusIndustries: string;
   stages: string;
-  checkSize: string;
-  aum: number | null;
   portfolio: string;
   team: string;
   thesis: string;
@@ -51,8 +46,6 @@ function mapApiToInvestor(api: ApiInvestor): Investor {
     location: api.location,
     focusIndustries: JSON.parse(api.focusIndustries || '[]'),
     stages: JSON.parse(api.stages || '[]'),
-    checkSize: JSON.parse(api.checkSize || '{"min":0,"max":0}'),
-    aum: api.aum ?? undefined,
     portfolio: JSON.parse(api.portfolio || '[]'),
     team: JSON.parse(api.team || '[]'),
     thesis: api.thesis,
@@ -68,7 +61,6 @@ interface InvestorsProps {
 }
 
 export function InvestorsPage({ onViewChange }: InvestorsProps) {
-  const { format } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
   const [, setSelectedInvestor] = useState<Investor | null>(null);
@@ -304,21 +296,6 @@ export function InvestorsPage({ onViewChange }: InvestorsProps) {
                   }}
                 />
               )}
-            </Box>
-
-            <Box sx={{ mt: 'auto', display: 'flex', gap: 1 }}>
-              <Box sx={{ flex: 1, textAlign: 'center', p: 1, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 1.5 }}>
-                <DollarSign size={14} style={{ margin: '0 auto', color: 'var(--vm-text-muted)' }} />
-                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.5 }}>
-                  {format(investor.checkSize.min)}-{format(investor.checkSize.max)}
-                </Typography>
-              </Box>
-              <Box sx={{ flex: 1, textAlign: 'center', p: 1, bgcolor: 'var(--vm-bg-tertiary)', borderRadius: 1.5 }}>
-                <Briefcase size={14} style={{ margin: '0 auto', color: 'var(--vm-text-muted)' }} />
-                <Typography sx={{ fontSize: 11, color: 'var(--vm-text-muted)', mt: 0.5 }}>
-                  {investor.portfolio.length} Exits
-                </Typography>
-              </Box>
             </Box>
 
             {investor.status === 'not-connected' && (

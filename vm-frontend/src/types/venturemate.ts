@@ -435,11 +435,6 @@ export interface Investor {
   location: string;
   focusIndustries: string[];
   stages: string[];
-  checkSize: {
-    min: number;
-    max: number;
-  };
-  aum?: number;
   portfolio: PortfolioCompany[];
   team: InvestorTeamMember[];
   thesis: string;
