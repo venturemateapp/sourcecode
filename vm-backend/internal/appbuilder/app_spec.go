@@ -24,6 +24,7 @@ type RouteSpec struct {
 	Path      string `json:"path"`
 	Name      string `json:"name"`
 	Protected bool   `json:"protected"`
+	Public    *bool  `json:"public,omitempty"`
 }
 
 type EntityField struct {
@@ -38,6 +39,7 @@ type EntitySpec struct {
 	Slug        string          `json:"slug"`
 	Fields      []EntityField   `json:"fields"`
 	Permissions map[string]bool `json:"permissions,omitempty"`
+	Public      *bool           `json:"public,omitempty"`
 }
 
 type AppSpec struct {
@@ -46,6 +48,7 @@ type AppSpec struct {
 	Mode          string           `json:"mode"`
 	Brand         map[string]any   `json:"brand,omitempty"`
 	Colors        map[string]any   `json:"colors,omitempty"`
+	Public        *bool            `json:"public,omitempty"`
 	Theme         ThemeSpec        `json:"theme"`
 	Routes        []RouteSpec      `json:"routes"`
 	Navigation    map[string]any   `json:"navigation"`

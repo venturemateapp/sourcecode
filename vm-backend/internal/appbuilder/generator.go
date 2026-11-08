@@ -56,6 +56,7 @@ type GenerationResult struct {
 	Summary        string           `json:"summary"`
 	Brand          map[string]any   `json:"brand,omitempty"`
 	Colors         map[string]any   `json:"colors,omitempty"`
+	Public         *bool            `json:"public,omitempty"`
 	AppSpec        AppSpec          `json:"appSpec"`
 	Operations     []FileOperation  `json:"operations"`
 	AssetRequests  []AssetRequest   `json:"assetRequests"`
@@ -193,22 +194,13 @@ Use create_file content for new files. A full content field may be used for an u
 	raw := extractJSONObject(response.Content)
 	var result GenerationResult
 	decoder := json.NewDecoder(strings.NewReader(raw))
-	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&result); err != nil {
 		if strings.Contains(err.Error(), "unexpected EOF") {
 			return nil, nil, response, errors.New("AI response ended before the app changes were complete; retry with a smaller change request")
 		}
 		return nil, nil, response, fmt.Errorf("AI returned invalid structured app changes: %w", err)
 	}
-	if result.AppSpec.Brand == nil && result.Brand != nil {
-		result.AppSpec.Brand = result.Brand
-	}
-	if result.AppSpec.Colors == nil && result.Colors != nil {
-		result.AppSpec.Colors = result.Colors
-	}
-	if result.AppSpec.Theme.Colors == nil {
-		result.AppSpec.Theme.Colors = result.AppSpec.Colors
-	}
+	normalizeGenerationResult(&result)
 	if strings.TrimSpace(result.Summary) == "" {
 		return nil, nil, response, errors.New("AI result is missing a summary")
 	}
@@ -220,6 +212,39 @@ Use create_file content for new files. A full content field may be used for an u
 		return nil, nil, response, err
 	}
 	return &result, changes, response, nil
+}
+
+func normalizeGenerationResult(result *GenerationResult) {
+	if result == nil {
+		return
+	}
+	if result.AppSpec.Brand == nil {
+		result.AppSpec.Brand = result.Brand
+	}
+	if result.AppSpec.Colors == nil {
+		result.AppSpec.Colors = result.Colors
+	}
+	if result.AppSpec.Theme.Colors == nil {
+		result.AppSpec.Theme.Colors = result.AppSpec.Colors
+	}
+	if result.AppSpec.Public == nil {
+		result.AppSpec.Public = result.Public
+	}
+	for index := range result.AppSpec.Routes {
+		route := &result.AppSpec.Routes[index]
+		if route.Public != nil {
+			route.Protected = !*route.Public
+		}
+	}
+	for index := range result.AppSpec.Entities {
+		entity := &result.AppSpec.Entities[index]
+		if entity.Public != nil {
+			if entity.Permissions == nil {
+				entity.Permissions = make(map[string]bool)
+			}
+			entity.Permissions["publicRead"] = *entity.Public
+		}
+	}
 }
 
 func ApplyOperations(current map[string]aistudio.ProjectFile, operations []FileOperation) ([]aistudio.FileChange, error) {

@@ -10,18 +10,21 @@ import (
 
 func TestGenerationResultAcceptsBrandMetadata(t *testing.T) {
 	t.Parallel()
-	content := `{"summary":"Updated brand","brand":{"logo":"/logo.svg"},"colors":{"primary":"#123456"},"appSpec":{"schemaVersion":"1.0","name":"Demo","mode":"marketing_website","brand":{"primaryColor":"#123456"},"colors":{"secondary":"#654321"},"theme":{"colors":{"background":"#ffffff"}}}}`
+	content := `{"summary":"Updated brand","brand":{"logo":"/logo.svg"},"colors":{"primary":"#123456"},"futureMetadata":{"schemaVersion":2},"appSpec":{"schemaVersion":"1.0","name":"Demo","mode":"marketing_website","brand":{"primaryColor":"#123456"},"colors":{"secondary":"#654321"},"public":true,"theme":{"colors":{"background":"#ffffff"}},"routes":[{"id":"home","path":"/","name":"Home","public":true},{"id":"admin","path":"/admin","name":"Admin","public":false}],"entities":[{"id":"notes","slug":"notes","public":true},{"id":"drafts","slug":"drafts","public":false}]}}`
 	var result GenerationResult
 	decoder := json.NewDecoder(strings.NewReader(content))
-	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&result); err != nil {
-		t.Fatalf("expected brand metadata to be accepted: %v", err)
+		t.Fatalf("expected additive app metadata to be accepted: %v", err)
 	}
+	normalizeGenerationResult(&result)
 	if result.Brand["logo"] != "/logo.svg" || result.AppSpec.Brand["primaryColor"] != "#123456" {
 		t.Fatalf("brand metadata was not preserved: root=%v appSpec=%v", result.Brand, result.AppSpec.Brand)
 	}
 	if result.Colors["primary"] != "#123456" || result.AppSpec.Colors["secondary"] != "#654321" || result.AppSpec.Theme.Colors["background"] != "#ffffff" {
 		t.Fatalf("color palettes were not preserved: root=%v appSpec=%v theme=%v", result.Colors, result.AppSpec.Colors, result.AppSpec.Theme.Colors)
+	}
+	if result.AppSpec.Public == nil || !*result.AppSpec.Public || result.AppSpec.Routes[0].Protected || !result.AppSpec.Routes[1].Protected || result.AppSpec.Entities[0].Permissions["publicRead"] != true || result.AppSpec.Entities[1].Permissions["publicRead"] != false {
+		t.Fatalf("public settings were not normalized: app=%v routes=%v entities=%v", result.AppSpec.Public, result.AppSpec.Routes, result.AppSpec.Entities)
 	}
 }
 
