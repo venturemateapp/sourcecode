@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/graphql-go/graphql"
@@ -137,29 +138,35 @@ func init() {
 	rootMutation.AddFieldConfig("adminUpsertProvider", &graphql.Field{
 		Type: spType,
 		Args: graphql.FieldConfigArgument{
-			"id":             &graphql.ArgumentConfig{Type: graphql.ID},
-			"name":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"title":          &graphql.ArgumentConfig{Type: graphql.String},
-			"category":       &graphql.ArgumentConfig{Type: graphql.String},
-			"bio":            &graphql.ArgumentConfig{Type: graphql.String},
-			"picture":        &graphql.ArgumentConfig{Type: graphql.String},
-			"rateHourly":     &graphql.ArgumentConfig{Type: graphql.Float},
+			"id":              &graphql.ArgumentConfig{Type: graphql.ID},
+			"name":            &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"title":           &graphql.ArgumentConfig{Type: graphql.String},
+			"category":        &graphql.ArgumentConfig{Type: graphql.String},
+			"bio":             &graphql.ArgumentConfig{Type: graphql.String},
+			"picture":         &graphql.ArgumentConfig{Type: graphql.String},
+			"rateHourly":      &graphql.ArgumentConfig{Type: graphql.Float},
 			"yearsExperience": &graphql.ArgumentConfig{Type: graphql.Int},
-			"skills":         &graphql.ArgumentConfig{Type: graphql.String},
-			"portfolio":      &graphql.ArgumentConfig{Type: graphql.String},
+			"skills":          &graphql.ArgumentConfig{Type: graphql.String},
+			"portfolio":       &graphql.ArgumentConfig{Type: graphql.String},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if err := adminOnly(p); err != nil {
 				return nil, err
 			}
-			id, _ := p.Args["id"].(string)
+			id := getStringArg(p.Args, "id")
+			skills := getStringArg(p.Args, "skills")
+			if !json.Valid([]byte(skills)) {
+				skills = "[]"
+			}
+			portfolio := getStringArg(p.Args, "portfolio")
+			if !json.Valid([]byte(portfolio)) {
+				portfolio = "[]"
+			}
 			sp := &marketplace.ServiceProvider{
-				ID: id, Name: p.Args["name"].(string),
-				Title:    p.Args["title"].(string),
-				Category: p.Args["category"].(string),
-				Bio:      p.Args["bio"].(string), Picture: p.Args["picture"].(string),
-				Skills:    p.Args["skills"].(string),
-				Portfolio: p.Args["portfolio"].(string),
+				ID: id, Name: getStringArg(p.Args, "name"),
+				Title: getStringArg(p.Args, "title"), Category: getStringArg(p.Args, "category"),
+				Bio: getStringArg(p.Args, "bio"), Picture: getStringArg(p.Args, "picture"),
+				Skills: skills, Portfolio: portfolio,
 			}
 			if v, ok := p.Args["rateHourly"].(float64); ok {
 				sp.RateHourly = v

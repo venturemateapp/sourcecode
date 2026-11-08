@@ -2,11 +2,9 @@ package graph
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/graphql-go/graphql"
-	"github.com/venturemate/vmbackend/internal/marketplace"
 )
 
 var adminUserDetailType = graphql.NewObject(graphql.ObjectConfig{
@@ -257,57 +255,6 @@ func init() {
 				return false, err
 			}
 			return true, AppContainer.InvestorRepo.Delete(p.Context, p.Args["id"].(string))
-		},
-	})
-
-	// ─── Marketplace (Service Providers) ───────────────────────────────
-	rootMutation.AddFieldConfig("adminUpsertProvider", &graphql.Field{
-		Type: graphql.String,
-		Args: graphql.FieldConfigArgument{
-			"name":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-			"title":      &graphql.ArgumentConfig{Type: graphql.String},
-			"category":   &graphql.ArgumentConfig{Type: graphql.String},
-			"bio":        &graphql.ArgumentConfig{Type: graphql.String},
-			"picture":    &graphql.ArgumentConfig{Type: graphql.String},
-			"rateHourly": &graphql.ArgumentConfig{Type: graphql.Float},
-			"skills":     &graphql.ArgumentConfig{Type: graphql.String},
-			"portfolio":  &graphql.ArgumentConfig{Type: graphql.String},
-			"isActive":   &graphql.ArgumentConfig{Type: graphql.Boolean},
-			"yearsExp":   &graphql.ArgumentConfig{Type: graphql.Int},
-		},
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			if err := adminOnly(p); err != nil {
-				return "", err
-			}
-			if AppContainer.MarketplaceRepo == nil {
-				return "", fmt.Errorf("marketplace repo is unavailable")
-			}
-			prov := &marketplace.ServiceProvider{
-				Name:       getStringArg(p.Args, "name"),
-				Title:      getStringArg(p.Args, "title"),
-				Category:   getStringArg(p.Args, "category"),
-				Bio:        getStringArg(p.Args, "bio"),
-				Picture:    getStringArg(p.Args, "picture"),
-				RateHourly: getFloatArg(p.Args, "rateHourly"),
-				YearsExp:   getIntArg(p.Args, "yearsExp"),
-				IsActive:   getBoolArgDefault(p.Args, "isActive", true),
-			}
-			skills := getStringArg(p.Args, "skills")
-			if skills != "" && json.Valid([]byte(skills)) {
-				prov.Skills = skills
-			} else {
-				prov.Skills = "[]"
-			}
-			portfolio := getStringArg(p.Args, "portfolio")
-			if portfolio != "" && json.Valid([]byte(portfolio)) {
-				prov.Portfolio = portfolio
-			} else {
-				prov.Portfolio = "[]"
-			}
-			if err := AppContainer.MarketplaceRepo.UpsertProvider(p.Context, prov); err != nil {
-				return "", err
-			}
-			return prov.ID, nil
 		},
 	})
 
