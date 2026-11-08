@@ -7,6 +7,7 @@ import {
   Save, Smartphone, Tablet, TerminalSquare,
 } from 'lucide-react';
 import { StudioChrome } from '../../components/ai-studio/StudioChrome';
+import { NoBusinessSelected } from '../../components/venturemate/NoBusinessSelected';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useAIStudioProject } from '../../hooks/useAIStudioProject';
 import {
@@ -22,7 +23,7 @@ type PreviewNode = { nodeId: string; tagName: string; text: string };
 type PreviewRuntimeError = { message: string; filename?: string; line?: number; column?: number };
 
 export function WebAppStudio() {
-  const { selectedBusiness } = useBusiness();
+  const { selectedBusiness, loading: businessLoading } = useBusiness();
   const studio = useAIStudioProject('web_app', selectedBusiness?.id, `${selectedBusiness?.name || 'New'} AI App`);
   const [selectedPath, setSelectedPath] = useState('src/App.tsx');
   const [draft, setDraft] = useState('');
@@ -36,8 +37,13 @@ export function WebAppStudio() {
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
 
   const selectedFile = useMemo(() => studio.files.find(file => file.path === selectedPath) || studio.files[0] || null, [selectedPath, studio.files]);
-  const latestBuild = studio.builds.find(build => build.status === 'completed' && build.previewUrl) || null;
-  const failedBuild = studio.builds.find(build => build.status === 'failed') || null;
+  const starterRevisionIds = useMemo(() => new Set(studio.revisions.filter(revision => revision.source === 'migration').map(revision => revision.id)), [studio.revisions]);
+  const visibleBuilds = studio.builds.filter(build => build.revisionId
+    && studio.revisions.some(revision => revision.id === build.revisionId)
+    && !starterRevisionIds.has(build.revisionId));
+  const latestBuild = visibleBuilds.find(build => build.status === 'completed' && build.previewUrl) || null;
+  const failedBuild = visibleBuilds.find(build => build.status === 'failed') || null;
+  const hasApprovedGeneratedRevision = Boolean(studio.approvedRevision && studio.approvedRevision.source !== 'migration');
   const studioJobActive = Boolean(studio.job && ['queued', 'running'].includes(studio.job.status));
   const currentDocument = studio.pendingRevision?.document || studio.approvedRevision?.document || '{}';
   const studioPreviewUrl = useMemo(() => {
@@ -133,6 +139,10 @@ export function WebAppStudio() {
 
   const runBuild = async (revisionId?: string) => {
     if (actionBusy || studioJobActive) return;
+    if (!revisionId && !hasApprovedGeneratedRevision) {
+      studio.setError('Generate and approve a business-specific revision before building the website.');
+      return;
+    }
     setActionBusy(true);
     setMode('build');
     try {
@@ -223,7 +233,7 @@ export function WebAppStudio() {
         <MenuItem value="github">GitHub</MenuItem>
         <MenuItem value="netlify">Netlify</MenuItem>
       </TextField>
-      <Button size="small" variant="outlined" startIcon={actionBusy || studioJobActive ? <CircularProgress size={13} /> : <Play size={14} />} disabled={!studio.project?.approvedRevisionId || actionBusy || studioJobActive} onClick={() => void runBuild()}>Build</Button>
+      <Button size="small" variant="outlined" startIcon={actionBusy || studioJobActive ? <CircularProgress size={13} /> : <Play size={14} />} disabled={!hasApprovedGeneratedRevision || actionBusy || studioJobActive} onClick={() => void runBuild()}>Build</Button>
     </>
   );
 
@@ -252,8 +262,8 @@ export function WebAppStudio() {
         ) : (
           <Card sx={{ alignSelf: 'center', maxWidth: 500, p: 3, textAlign: 'center', bgcolor: 'rgba(255,255,255,.025)' }}>
             <Laptop size={38} style={{ opacity: .6 }} /><Typography sx={{ mt: 1.5, fontWeight: 900 }}>No compiled preview yet</Typography>
-            <Typography sx={{ mt: .75, color: 'var(--vm-text-muted)', fontSize: 12 }}>Approve a revision, then build it. The isolated worker will lint, compile, upload the complete static output and return a preview URL.</Typography>
-            <Button variant="contained" sx={{ mt: 2 }} disabled={!studio.project.approvedRevisionId || actionBusy} onClick={() => void runBuild()}>Build approved revision</Button>
+            <Typography sx={{ mt: .75, color: 'var(--vm-text-muted)', fontSize: 12 }}>{hasApprovedGeneratedRevision ? 'Build the approved business-specific revision to open its live preview.' : 'Describe the website you want. AI will build it around this business profile, then you can approve and preview it.'}</Typography>
+            {hasApprovedGeneratedRevision && <Button variant="contained" sx={{ mt: 2 }} disabled={actionBusy || studioJobActive} onClick={() => void runBuild()}>Build approved revision</Button>}
           </Card>
         )}
       </Box>
@@ -285,7 +295,7 @@ export function WebAppStudio() {
     </Box>
   ) : (
     <Box sx={{ p: 2, overflow: 'auto' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><TerminalSquare size={18} /><Typography sx={{ fontWeight: 900 }}>Builds and diagnostics</Typography><Box sx={{ flex: 1 }} /><Button variant="contained" startIcon={actionBusy || studioJobActive ? <CircularProgress size={13} /> : <Play size={14} />} disabled={!studio.project.approvedRevisionId || actionBusy || studioJobActive} onClick={() => void runBuild()}>New build</Button></Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><TerminalSquare size={18} /><Typography sx={{ fontWeight: 900 }}>Builds and diagnostics</Typography><Box sx={{ flex: 1 }} /><Button variant="contained" startIcon={actionBusy || studioJobActive ? <CircularProgress size={13} /> : <Play size={14} />} disabled={!hasApprovedGeneratedRevision || actionBusy || studioJobActive} onClick={() => void runBuild()}>New build</Button></Box>
       {studio.pendingRevision && (
         <Card sx={{ p: 1.5, mb: 1.25, bgcolor: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.24)' }}>
           <Chip size="small" color="warning" label="Revision ready for review" />
@@ -303,7 +313,7 @@ export function WebAppStudio() {
           <LinearProgress variant="determinate" value={Math.max(2, studio.job.progress || 2)} />
         </Card>
       )}
-      {studio.builds.map(build => (
+      {visibleBuilds.map(build => (
         <Card key={build.id} sx={{ p: 1.5, mb: 1, bgcolor: 'rgba(255,255,255,.025)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Chip size="small" label={build.status} color={build.status === 'completed' ? 'success' : build.status === 'failed' ? 'error' : 'default'} />
@@ -315,9 +325,16 @@ export function WebAppStudio() {
           {(build.logs || build.diagnostics) && <Box component="pre" sx={{ mt: 1, p: 1.25, borderRadius: 1, bgcolor: '#05070b', fontSize: 9, whiteSpace: 'pre-wrap', maxHeight: 230, overflow: 'auto', color: build.status === 'failed' ? '#fca5a5' : '#a7f3d0' }}>{build.logs || build.diagnostics}</Box>}
         </Card>
       ))}
-      {!studio.builds.length && !failedBuild && !studio.pendingRevision && !(studio.job?.jobType === 'build' && studioJobActive) && <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 12 }}>No builds yet.</Typography>}
+      {!visibleBuilds.length && !failedBuild && !studio.pendingRevision && !(studio.job?.jobType === 'build' && studioJobActive) && <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 12 }}>No business website builds yet. Generate and approve a revision to create the first preview.</Typography>}
     </Box>
   );
+
+  if (businessLoading) {
+    return <Box sx={{ minHeight: 420, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>;
+  }
+  if (!selectedBusiness) {
+    return <NoBusinessSelected message="Select a business before generating its AI website. The website will use that business profile and brand." />;
+  }
 
   return (
     <StudioChrome

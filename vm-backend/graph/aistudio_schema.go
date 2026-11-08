@@ -439,6 +439,18 @@ func createAIProjectResolver(p graphql.ResolveParams) (interface{}, error) {
 		return nil, err
 	}
 	projectType := p.Args["projectType"].(string)
+	businessID := stringArg(p.Args, "businessId")
+	if projectType == aistudio.ProjectTypeWebApp {
+		if businessID == "" {
+			return nil, errors.New("select a business before creating an AI website")
+		}
+		if AppContainer.BusinessRepo == nil {
+			return nil, errors.New("business profile is unavailable")
+		}
+		if business, businessErr := AppContainer.BusinessRepo.GetByIDAndUser(p.Context, businessID, userID); businessErr != nil || business == nil {
+			return nil, errors.New("business not found or access denied")
+		}
+	}
 	if err := enforceAIStudioStorageQuota(p.Context, userID); err != nil {
 		return nil, err
 	}
@@ -461,7 +473,7 @@ func createAIProjectResolver(p graphql.ResolveParams) (interface{}, error) {
 	if projectType == aistudio.ProjectTypeWebApp {
 		framework, version = "react-vite-typescript", "react-app-v1"
 	}
-	project, err := AppContainer.AIStudioRepo.CreateProject(p.Context, userID, stringArg(p.Args, "businessId"), projectType, p.Args["name"].(string), framework, version, stringArg(p.Args, "settings"), "{}")
+	project, err := AppContainer.AIStudioRepo.CreateProject(p.Context, userID, businessID, projectType, p.Args["name"].(string), framework, version, stringArg(p.Args, "settings"), "{}")
 	if err != nil {
 		return nil, err
 	}

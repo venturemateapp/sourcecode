@@ -171,12 +171,17 @@ func Generate(ctx context.Context, provider ai.Provider, project *aistudio.Proje
 	}
 	businessContext := "No linked business context."
 	if business != nil {
-		businessContext = fmt.Sprintf("Business name: %s\nIndustry: %s\nStage: %s\nLocation: %s\nTagline: %s\nDescription: %s\nBrand kit JSON: %s\nVerified metrics JSON: %s",
-			business.Name, business.Industry, business.Stage, business.Location, business.Tagline, business.Description, business.BrandKit, business.Metrics)
+		businessContext = fmt.Sprintf("Business name: %s\nIndustry: %s\nStage: %s\nLocation: %s\nTagline: %s\nDescription: %s\nExisting website: %s\nBrand kit JSON: %s\nVerified metrics JSON: %s",
+			business.Name, business.Industry, business.Stage, business.Location, business.Tagline, business.Description, business.Website, business.BrandKit, business.Metrics)
 	}
 	system := `You are VentureMate's production AI web-app engineer. Return exactly one JSON object and no markdown.
-Create a responsive, accessible, truthful React + TypeScript + Vite application using only dependencies already present in package.json.
-Never invent customers, testimonials, team members, revenue, traction, awards, addresses, market statistics, or historical financial results. Label generated future assumptions as projections.
+Create a polished, business-specific, production-style React + TypeScript + Vite website or app using only dependencies already present in package.json.
+Treat the linked business profile as the source of truth and the user's request as the goal, not a limit on completeness. Even a one-line or vague request must produce a complete, professional result focused on this business: what it offers, who it serves, and the actions visitors should take. Use its actual name, industry, tagline, description, location, existing website, and brand kit wherever available. Keep every headline, section, CTA, label, example, and page relevant to this business and the user's request.
+For a marketing website, build a distinctive homepage with a clear value proposition and business-specific copy, relevant services or products, audience/use cases, a credible how-it-works or process section, a strong contact/lead CTA, and useful footer/navigation. Add about, service, or contact routes when they improve the experience. For a functional app, build the requested workflows with a deliberate dashboard and useful empty/loading/error states. Add relevant sections and working interactions rather than a static text mockup.
+Meet a modern professional design bar: establish a visual concept that fits the industry and brand kit; use a considered palette, strong readable type scale, generous spacing, responsive layouts, clear hierarchy, polished navigation, purposeful imagery or CSS visuals, and refined hover/focus states. Avoid a generic template look, a page made only of repetitive cards, weak contrast, or default browser styling. Implement complete mobile, tablet, and desktop layouts.
+Treat mobile as a first-class layout: support 320px-wide phones without horizontal scrolling, clipped text, overlapping controls, or tiny tap targets; stack or reflow navigation, hero actions, grids, forms, tables, and dashboards appropriately; use an accessible working menu when navigation collapses; keep buttons and fields touch-friendly; and use readable type, spacing, and safe-area padding on small screens. Include real responsive breakpoint rules in src/styles.css and preserve the viewport meta tag in index.html. Check every page and interaction against narrow and wide layouts before returning the result.
+Never show starter copy, TODOs, lorem ipsum, placeholder contact details, fake links, or VentureMate branding in the generated business website. Do not use phrases like "Make this experience specific to your business" or "Launch a polished business experience". Make calls to action and navigation work; implement form validation and clear success/error feedback for forms.
+If profile details are sparse, still create a high-quality site using the verified business name and known industry. Do not make up specific products, service guarantees, customer stories, testimonials, staff, awards, addresses, contact details, market statistics, revenue, traction, or historical financial results. Use clearly labeled editable copy or neutral descriptions where facts are missing. Use verified metrics only when they are supplied and relevant. Label future assumptions as projections.
 Never include API keys or secrets. Generated apps must use src/runtime/client.ts for managed data. Do not add arbitrary packages.
 Preserve every manual edit and every unrelated file. Use exact, reviewable file operations.
 For update_file and delete_file, baseHash must equal the supplied file hash. Prefer exact replacements for small edits; each search must match exactly once.
@@ -184,7 +189,9 @@ Allowed operations: create_file, update_file, delete_file, move_file.
 Every visible section/component must include a stable data-vm-node-id attribute.
 Entity permissions default to public read only. For a deliberately public form or CRUD experience, explicitly set entity.permissions publicCreate/publicUpdate/publicDelete to true only as required.
 Required JSON shape: {"summary":"...","appSpec":{"schemaVersion":"1.0","name":"...","mode":"marketing_website|functional_web_app|website_plus_app","brand":{},"colors":{},"theme":{"colors":{}},"routes":[],"navigation":{},"entities":[],"workflows":[],"assets":[],"seo":{},"permissions":{}},"operations":[{"type":"update_file","path":"src/App.tsx","baseHash":"sha256:...","replacements":[{"search":"exact","replace":"new"}]}],"assetRequests":[],"schemaChanges":[],"expectedRoutes":[]}.
-Use create_file content for new files. A full content field may be used for an update only when necessary.`
+On the first generation from the VentureMate starter project, replace src/App.tsx with complete business-specific page content and update the styling so the result does not resemble the untouched starter. Use full file content for a substantial first build or redesign; use precise patches for small later edits.
+On the first generation, also update index.html with the business name and a specific page description; remove all VentureMate product branding from customer-facing content.
+Use create_file content for new files. A full content field may be used for an update when it produces a complete, coherent page or component.`
 	userMessage := fmt.Sprintf("PROJECT: %s (%s)\nBUSINESS CONTEXT:\n%s\n\nUSER REQUEST:\n%s\n\n%s", project.Name, project.ProjectType, businessContext, prompt, contextBuilder.String())
 	ctx = ai.WithResponseTokenLimit(ctx, ai.AppResponseTokens)
 	response, err := provider.Chat(ctx, system, []ai.Message{{Role: "user", Content: userMessage}}, nil)
@@ -211,7 +218,80 @@ Use create_file content for new files. A full content field may be used for an u
 	if err != nil {
 		return nil, nil, response, err
 	}
+	if business != nil {
+		if err := requireStarterCustomization(currentFiles, changes, business.Name); err != nil {
+			return nil, nil, response, err
+		}
+	}
 	return &result, changes, response, nil
+}
+
+func requireStarterCustomization(currentFiles []aistudio.ProjectFile, changes []aistudio.FileChange, businessName string) error {
+	var currentApp string
+	for _, file := range currentFiles {
+		if file.Path == "src/App.tsx" {
+			currentApp = file.CurrentContent
+			break
+		}
+	}
+	if currentApp == "" {
+		return nil
+	}
+	starterFiles, err := StarterFiles()
+	if err != nil {
+		return err
+	}
+	var starterApp string
+	for _, file := range starterFiles {
+		if file.Path == "src/App.tsx" {
+			starterApp = file.CurrentContent
+			break
+		}
+	}
+	if currentApp != starterApp {
+		return nil
+	}
+	changedFiles := make(map[string]string, len(changes))
+	for _, change := range changes {
+		if change.Operation == "create" || change.Operation == "update" {
+			changedFiles[change.Path] = change.Content
+		}
+	}
+	for _, requiredPath := range []string{"src/App.tsx", "src/styles.css", "index.html"} {
+		if _, ok := changedFiles[requiredPath]; !ok {
+			return fmt.Errorf("AI generation did not customize %s; retry to produce the complete business website", requiredPath)
+		}
+	}
+	for _, placeholder := range []string{
+		"Launch a polished business experience",
+		"Make this experience specific to your business",
+		"Ask VentureMate AI to add pages, workflows, forms, entities, dashboards, and brand visuals.",
+		"Created with VentureMate AI Studio",
+		"<title>VentureMate App</title>",
+	} {
+		for _, content := range changedFiles {
+			if strings.Contains(content, placeholder) {
+				return errors.New("AI generation left generic starter or VentureMate branding in place; retry so the website is fully customized for the business")
+			}
+		}
+	}
+	if !strings.Contains(strings.ToLower(changedFiles["src/styles.css"]), "@media") && !strings.Contains(strings.ToLower(changedFiles["src/styles.css"]), "@container") {
+		return errors.New("AI generation did not include mobile-responsive layout rules; retry to generate phone and tablet layouts")
+	}
+	if !strings.Contains(strings.ToLower(changedFiles["index.html"]), `<meta name="viewport"`) {
+		return errors.New("AI generation removed the mobile viewport setting; retry to preserve responsive browser sizing")
+	}
+	if businessName = strings.TrimSpace(businessName); businessName != "" {
+		var generatedContent strings.Builder
+		for _, content := range changedFiles {
+			generatedContent.WriteString(content)
+			generatedContent.WriteByte('\n')
+		}
+		if !strings.Contains(strings.ToLower(generatedContent.String()), strings.ToLower(businessName)) {
+			return errors.New("AI generation did not include the linked business name; retry to generate a business-specific website")
+		}
+	}
+	return nil
 }
 
 func normalizeGenerationResult(result *GenerationResult, fallbackName string) {

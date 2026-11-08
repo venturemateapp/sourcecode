@@ -201,6 +201,9 @@ func (p *Processor) generate(ctx context.Context, job *aijobs.Job) (any, string,
 			return nil, "", "", "", 0, 0, err
 		}
 	}
+	if project.ProjectType == aistudio.ProjectTypeWebApp && business == nil {
+		return nil, "", "", "", 0, 0, errors.New("link this website to a business before generating business-specific content")
+	}
 	_ = p.Jobs.UpdateProgress(ctx, job.ID, p.WorkerID, "planning", "Preparing verified business context", 10, "Loaded project context")
 
 	var revision *aistudio.Revision
@@ -326,6 +329,19 @@ func (p *Processor) build(ctx context.Context, job *aijobs.Job) (any, string, st
 	}
 	if request.RevisionID == "" {
 		return nil, "", "", "", 0, 0, errors.New("approve a revision before building")
+	}
+	revision, err := p.Projects.GetRevision(ctx, job.UserID, request.RevisionID)
+	if err != nil {
+		return nil, "", "", "", 0, 0, err
+	}
+	if revision == nil || revision.ProjectID != project.ID {
+		return nil, "", "", "", 0, 0, errors.New("revision not found for this project")
+	}
+	if revision.Status != "approved" {
+		return nil, "", "", "", 0, 0, errors.New("approve this revision before building")
+	}
+	if revision.Source == "migration" {
+		return nil, "", "", "", 0, 0, errors.New("generate and approve a business-specific revision before building a website")
 	}
 	files, err := p.Projects.ResolveFilesAtRevision(ctx, job.UserID, project.ID, request.RevisionID)
 	if err != nil {
