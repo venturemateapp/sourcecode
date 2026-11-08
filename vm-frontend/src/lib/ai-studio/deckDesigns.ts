@@ -7,42 +7,42 @@ export type DesignShape = { type: 'rect' | 'ellipse' | 'line'; x: number; y: num
 export type DeckDesign = { id: string; name: string; descriptor: string; background: string; surface: string; text: string; muted: string; accent: string; shapes: DesignShape[] };
 
 export const DECK_DESIGNS: DeckDesign[] = [
-  { id: 'midnight', name: 'Midnight', descriptor: 'Signal green · cinematic', background: '#080b12', surface: '#111827', text: '#f8fafc', muted: '#94a3b8', accent: '#10b981', shapes: [
-    { type: 'rect', x: 0, y: 0, w: .12, h: 7.5, color: '#10b981' },
-    { type: 'ellipse', x: 10.35, y: .35, w: 2.35, h: 2.35, color: '#171f39' },
-    { type: 'ellipse', x: 11.1, y: 1.1, w: .85, h: .85, color: '#202c4a' },
-    { type: 'line', x: 9.1, y: 6.98, w: 3.5, h: 0, color: '#10b981', transparency: 22 },
+  { id: 'midnight', name: 'Emerald', descriptor: 'Clean white · emerald accents', background: '#ffffff', surface: '#f5fbf8', text: '#17231f', muted: '#52645d', accent: '#07865f', shapes: [
+    { type: 'rect', x: 0, y: 0, w: .12, h: 7.5, color: '#07865f' },
+    { type: 'ellipse', x: 10.35, y: .35, w: 2.35, h: 2.35, color: '#e2f3eb' },
+    { type: 'ellipse', x: 11.1, y: 1.1, w: .85, h: .85, color: '#c5e9d8' },
+    { type: 'line', x: 9.1, y: 6.98, w: 3.5, h: 0, color: '#07865f', transparency: 22 },
   ] },
-  { id: 'ocean', name: 'Ocean', descriptor: 'Deep blue · flowing', background: '#071726', surface: '#0d293b', text: '#f0f9ff', muted: '#a6c7d6', accent: '#38bdf8', shapes: [
-    { type: 'rect', x: 0, y: 0, w: 13.34, h: .09, color: '#38bdf8' },
-    { type: 'ellipse', x: 9.55, y: 4, w: 3.6, h: 3.5, color: '#0c3044' },
-    { type: 'ellipse', x: 10.35, y: 4.85, w: 1.9, h: 1.9, color: '#10425a' },
-    { type: 'line', x: .72, y: 6.92, w: 4.15, h: 0, color: '#38bdf8', transparency: 30 },
+  { id: 'ocean', name: 'Sky', descriptor: 'Bright white · sky blue accents', background: '#ffffff', surface: '#f3faff', text: '#17232b', muted: '#536774', accent: '#087fae', shapes: [
+    { type: 'rect', x: 0, y: 0, w: 13.34, h: .09, color: '#168dbd' },
+    { type: 'ellipse', x: 9.55, y: 4, w: 3.6, h: 3.5, color: '#e4f4fb' },
+    { type: 'ellipse', x: 10.35, y: 4.85, w: 1.9, h: 1.9, color: '#cbeaf7' },
+    { type: 'line', x: .72, y: 6.92, w: 4.15, h: 0, color: '#168dbd', transparency: 20 },
   ] },
-  { id: 'aubergine', name: 'Aubergine', descriptor: 'Plum · expressive', background: '#1a1026', surface: '#2a1a38', text: '#fff7ff', muted: '#c9b8d4', accent: '#d8a1ff', shapes: [
-    { type: 'rect', x: 0, y: 0, w: .13, h: 7.5, color: '#d8a1ff' },
-    { type: 'ellipse', x: 10.5, y: .3, w: 2.25, h: 2.25, color: '#392349' },
-    { type: 'ellipse', x: 11.2, y: 1.02, w: .84, h: .84, color: '#503260' },
-    { type: 'rect', x: 9.2, y: 7.35, w: 4.14, h: .15, color: '#a463c7' },
+  { id: 'aubergine', name: 'Orchid', descriptor: 'Soft white · orchid accents', background: '#ffffff', surface: '#fcf7ff', text: '#2c2032', muted: '#6d5a75', accent: '#8b4ba5', shapes: [
+    { type: 'rect', x: 0, y: 0, w: .13, h: 7.5, color: '#8b4ba5' },
+    { type: 'ellipse', x: 10.5, y: .3, w: 2.25, h: 2.25, color: '#f1e7f5' },
+    { type: 'ellipse', x: 11.2, y: 1.02, w: .84, h: .84, color: '#e3d0ed' },
+    { type: 'rect', x: 9.2, y: 7.35, w: 4.14, h: .15, color: '#a66abd' },
   ] },
-  { id: 'slate', name: 'Graphite', descriptor: 'Charcoal · precision', background: '#151b24', surface: '#202a35', text: '#f8fafc', muted: '#b2bdc8', accent: '#fbbf24', shapes: [
-    { type: 'rect', x: 0, y: 0, w: 13.34, h: .08, color: '#fbbf24' },
-    { type: 'rect', x: 12.92, y: .08, w: .42, h: 7.42, color: '#263441' },
-    { type: 'line', x: .72, y: .92, w: 2.6, h: 0, color: '#fbbf24', transparency: 15 },
-    { type: 'rect', x: .72, y: 7.35, w: 2.2, h: .15, color: '#d89b16' },
+  { id: 'slate', name: 'Saffron', descriptor: 'Warm white · saffron accents', background: '#ffffff', surface: '#fffaf0', text: '#2b2618', muted: '#6b624e', accent: '#a76b00', shapes: [
+    { type: 'rect', x: 0, y: 0, w: 13.34, h: .08, color: '#d49216' },
+    { type: 'rect', x: 12.92, y: .08, w: .42, h: 7.42, color: '#f6edda' },
+    { type: 'line', x: .72, y: .92, w: 2.6, h: 0, color: '#c58812', transparency: 10 },
+    { type: 'rect', x: .72, y: 7.35, w: 2.2, h: .15, color: '#d49216' },
   ] },
-  { id: 'paper', name: 'Gallery', descriptor: 'Warm ivory · editorial', background: '#f4f0e7', surface: '#fffdf7', text: '#202a32', muted: '#596671', accent: '#b65337', shapes: [
-    { type: 'rect', x: 0, y: 0, w: .18, h: 7.5, color: '#b65337' },
-    { type: 'rect', x: .18, y: 0, w: 13.16, h: .08, color: '#ded5c7' },
-    { type: 'ellipse', x: 10.72, y: .52, w: 1.45, h: 1.45, color: '#e8ddcb' },
-    { type: 'ellipse', x: 11.2, y: 1, w: .5, h: .5, color: '#c8ad90' },
-    { type: 'line', x: 10.05, y: 6.95, w: 2.55, h: 0, color: '#b65337', transparency: 10 },
+  { id: 'paper', name: 'Gallery', descriptor: 'Pure white · editorial layout', background: '#ffffff', surface: '#fffdf9', text: '#202a32', muted: '#596671', accent: '#a94e35', shapes: [
+    { type: 'rect', x: 0, y: 0, w: .18, h: 7.5, color: '#a94e35' },
+    { type: 'rect', x: .18, y: 0, w: 13.16, h: .08, color: '#e8e3dc' },
+    { type: 'ellipse', x: 10.72, y: .52, w: 1.45, h: 1.45, color: '#f3e9df' },
+    { type: 'ellipse', x: 11.2, y: 1, w: .5, h: .5, color: '#dfc4b1' },
+    { type: 'line', x: 10.05, y: 6.95, w: 2.55, h: 0, color: '#a94e35', transparency: 10 },
   ] },
-  { id: 'sage', name: 'Sage', descriptor: 'Soft green · considered', background: '#edf2e8', surface: '#fbfcf7', text: '#1e3028', muted: '#52685d', accent: '#39765b', shapes: [
+  { id: 'sage', name: 'Sage', descriptor: 'Fresh white · sage accents', background: '#ffffff', surface: '#f5faf5', text: '#1e3028', muted: '#52685d', accent: '#39765b', shapes: [
     { type: 'rect', x: 0, y: 0, w: 13.34, h: .1, color: '#39765b' },
-    { type: 'ellipse', x: 10.28, y: .38, w: 2.4, h: 2.4, color: '#dce7d9' },
-    { type: 'ellipse', x: 11.08, y: 1.15, w: 1.18, h: 1.18, color: '#c9dccf' },
-    { type: 'rect', x: 12.98, y: .1, w: .36, h: 7.4, color: '#d6e2d5' },
+    { type: 'ellipse', x: 10.28, y: .38, w: 2.4, h: 2.4, color: '#e8f1e8' },
+    { type: 'ellipse', x: 11.08, y: 1.15, w: 1.18, h: 1.18, color: '#d6e8d9' },
+    { type: 'rect', x: 12.98, y: .1, w: .36, h: 7.4, color: '#edf4ed' },
     { type: 'line', x: .72, y: 6.98, w: 3.3, h: 0, color: '#39765b', transparency: 15 },
   ] },
 ];
@@ -89,7 +89,7 @@ export function readableTextColor(element: DeckElement, elements: DeckElement[],
   const centerX = element.x + element.w / 2;
   const centerY = element.y + element.h / 2;
   const backingShape = [...elements]
-    .filter(item => item.type === 'shape' && item.visible !== false && item.zIndex < element.zIndex && containsCenter(item, centerX, centerY))
+    .filter(item => item.type === 'shape' && item.visible !== false && item.zIndex < element.zIndex && !isCoveredBackground(item, design) && containsCenter(item, centerX, centerY))
     .sort((a, b) => b.zIndex - a.zIndex)[0];
   const surface = backingShape && originalSurface
     ? themedElementFill(backingShape, originalSurface, design)
