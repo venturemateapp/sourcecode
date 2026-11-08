@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, Avatar, Chip, TextField, InputAdornment, Tabs, Tab, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import {
   Search,
   Filter,
@@ -8,6 +8,8 @@ import type { Investor } from '../../types/venturemate';
 import { graphqlRequest } from '../../lib/api';
 import { useBusiness } from '../../contexts/BusinessContext';
 import { useToast } from '../../components/shared/toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const INVESTORS_QUERY = `
   query Investors {
@@ -61,6 +63,8 @@ function mapApiToInvestor(api: ApiInvestor): Investor {
 
 export function InvestorsPage() {
   const { selectedBusiness } = useBusiness();
+  const { user } = useAuth();
+  const { currency } = useCurrency();
   const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(0);
@@ -68,6 +72,8 @@ export function InvestorsPage() {
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [connectionStatuses, setConnectionStatuses] = useState<Record<string, ConnectionStatus>>({});
   const [connectingInvestorId, setConnectingInvestorId] = useState<string | null>(null);
+  const [connectionInvestor, setConnectionInvestor] = useState<Investor | null>(null);
+  const [connectionForm, setConnectionForm] = useState({ founderName: '', businessName: '', industry: '', fundingStage: '', fundingAmount: '' });
 
   useEffect(() => {
     let cancelled = false;
@@ -103,18 +109,52 @@ export function InvestorsPage() {
     };
   }, [selectedBusiness?.id]);
 
-  const requestConnection = async (investor: Investor) => {
-    if (!selectedBusiness?.id || connectingInvestorId) return;
-    setConnectingInvestorId(investor.id);
+  const openConnectionForm = (investor: Investor) => {
+    if (!selectedBusiness?.id) return;
+    setConnectionForm({
+      founderName: [user?.firstName, user?.lastName].filter(Boolean).join(' '),
+      businessName: selectedBusiness.name || '',
+      industry: selectedBusiness.industry || '',
+      fundingStage: selectedBusiness.stage || '',
+      fundingAmount: '',
+    });
+    setConnectionInvestor(investor);
+  };
+
+  const requestConnection = async () => {
+    if (!selectedBusiness?.id || !connectionInvestor || connectingInvestorId) return;
+    const fundingAmount = Number(connectionForm.fundingAmount);
+    if (!connectionForm.founderName.trim() || !connectionForm.businessName.trim() || !connectionForm.industry.trim() || !connectionForm.fundingStage.trim() || !Number.isFinite(fundingAmount) || fundingAmount <= 0) {
+      toast.error('Complete the connection details', { description: 'Enter the founder, business, industry, funding stage, and a funding amount greater than zero.' });
+      return;
+    }
+    setConnectingInvestorId(connectionInvestor.id);
     try {
       const data = await graphqlRequest<{ requestInvestorConnection: InvestorConnectionStatus }>(
-        'mutation RequestInvestorConnection($investorId:ID!,$businessId:ID!){requestInvestorConnection(investorId:$investorId,businessId:$businessId){investorId status updatedAt}}',
-        { investorId: investor.id, businessId: selectedBusiness.id },
+        'mutation RequestInvestorConnection($investorId:ID!,$businessId:ID!,$founderName:String!,$businessName:String!,$industry:String!,$fundingStage:String!,$fundingAmount:Float!,$fundingCurrency:String!){requestInvestorConnection(investorId:$investorId,businessId:$businessId,founderName:$founderName,businessName:$businessName,industry:$industry,fundingStage:$fundingStage,fundingAmount:$fundingAmount,fundingCurrency:$fundingCurrency){investorId status updatedAt}}',
+        {
+          investorId: connectionInvestor.id,
+          businessId: selectedBusiness.id,
+          founderName: connectionForm.founderName.trim(),
+          businessName: connectionForm.businessName.trim(),
+          industry: connectionForm.industry.trim(),
+          fundingStage: connectionForm.fundingStage.trim(),
+          fundingAmount,
+          fundingCurrency: currency,
+        },
       );
       const status = data.requestInvestorConnection.status;
-      setConnectionStatuses(current => ({ ...current, [investor.id]: status }));
+      setConnectionStatuses(current => ({ ...current, [connectionInvestor.id]: status }));
       setActiveTab(status === 'pending' ? 1 : status === 'in_review' ? 2 : status === 'connected' ? 3 : 0);
-      toast.success('Connection request sent', { description: `Your request to connect ${selectedBusiness.name} with ${investor.name} is pending review.` });
+      const statusMessage = status === 'pending'
+        ? 'Your request is awaiting review.'
+        : status === 'in_review'
+          ? 'The VentureMate team is reviewing your request.'
+          : status === 'connected'
+            ? 'This business is already connected with the investor.'
+            : 'Your request is awaiting review.';
+      toast.success(status === 'connected' ? 'Already connected' : 'Connection request sent', { description: `${statusMessage} We emailed you when the status changes.` });
+      setConnectionInvestor(null);
     } catch (error) {
       toast.error('Could not request connection', { description: error instanceof Error ? error.message : 'Please try again.' });
     } finally {
@@ -352,7 +392,7 @@ export function InvestorsPage() {
                 component="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  void requestConnection(investor);
+                  openConnectionForm(investor);
                 }}
                 disabled={!selectedBusiness?.id || connectingInvestorId !== null}
                 sx={{
@@ -376,6 +416,60 @@ export function InvestorsPage() {
           </Card>
         ))}
       </Box>
+      <Dialog
+        open={Boolean(connectionInvestor)}
+        onClose={() => { if (!connectingInvestorId) setConnectionInvestor(null); }}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { bgcolor: 'var(--vm-bg-secondary)', color: 'var(--vm-text-primary)', border: '1px solid var(--vm-border-primary)', borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Request an investor introduction</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 13, mb: 2 }}>
+            These details help the VentureMate team review your request to connect with {connectionInvestor?.name}. The founder and business details are prefilled from your account and selected business; you can edit them before sending.
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, pt: 0.5 }}>
+            {([
+              ['founderName', 'Founder name'],
+              ['businessName', 'Business name'],
+              ['industry', 'Industry'],
+              ['fundingStage', 'Funding stage'],
+            ] as const).map(([key, label]) => (
+              <TextField
+                key={key}
+                required
+                fullWidth
+                size="small"
+                label={label}
+                value={connectionForm[key]}
+                onChange={event => setConnectionForm(current => ({ ...current, [key]: event.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                sx={{ '& .MuiInputBase-root': { color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
+              />
+            ))}
+            <TextField
+              required
+              fullWidth
+              size="small"
+              type="number"
+              label={`Funding amount required (${currency})`}
+              value={connectionForm.fundingAmount}
+              onChange={event => setConnectionForm(current => ({ ...current, fundingAmount: event.target.value }))}
+              inputProps={{ min: 0.01, step: 0.01 }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ '& .MuiInputBase-root': { color: 'var(--vm-text-primary)' }, '& .MuiInputLabel-root': { color: 'var(--vm-text-muted)' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--vm-border-primary)' } }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Box component="button" type="button" disabled={Boolean(connectingInvestorId)} onClick={() => setConnectionInvestor(null)} sx={{ px: 2, py: 1, border: 0, borderRadius: 2, color: 'var(--vm-text-secondary)', bgcolor: 'transparent', cursor: 'pointer' }}>
+            Cancel
+          </Box>
+          <Box component="button" type="button" disabled={Boolean(connectingInvestorId)} onClick={() => void requestConnection()} sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 1, px: 2.5, py: 1, border: 0, borderRadius: 2, color: '#fff', bgcolor: 'var(--vm-primary-600)', cursor: 'pointer', opacity: connectingInvestorId ? 0.65 : 1 }}>
+            {connectingInvestorId ? <CircularProgress size={15} sx={{ color: '#fff' }} /> : 'Send request'}
+          </Box>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

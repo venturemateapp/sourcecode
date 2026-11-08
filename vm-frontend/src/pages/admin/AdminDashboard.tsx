@@ -87,6 +87,10 @@ interface AdminInvestorConnection {
   businessName: string;
   businessDescription: string;
   businessIndustry: string;
+  founderName: string;
+  fundingStage: string;
+  fundingAmount: number;
+  fundingCurrency: string;
   userId: string;
   userName: string;
   userEmail: string;
@@ -292,7 +296,7 @@ export function AdminDashboard() {
   const loadInvestorConnections = useCallback(async () => {
     try {
       const d = await graphqlRequest<{ adminInvestorConnections: AdminInvestorConnection[] }>(
-        'query { adminInvestorConnections { id investorId investorName investorLogo investorEmail investorPhone businessId businessName businessDescription businessIndustry userId userName userEmail userPhone status adminNotes createdAt updatedAt } }',
+        'query { adminInvestorConnections { id investorId investorName investorLogo investorEmail investorPhone businessId businessName businessDescription businessIndustry founderName fundingStage fundingAmount fundingCurrency userId userName userEmail userPhone status adminNotes createdAt updatedAt } }',
       );
       setInvestorConnections(d.adminInvestorConnections || []);
     } catch { /* ignore */ }
@@ -1051,7 +1055,10 @@ export function AdminDashboard() {
             <Typography sx={{ color: 'rgba(255,255,255,.5)', fontSize: 11 }}>{request.businessIndustry || 'Startup'} · requested by {request.userName}</Typography>
             {request.businessDescription && <Typography sx={{ color: 'rgba(255,255,255,.38)', fontSize: 11, mt: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{request.businessDescription}</Typography>}
             <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11, overflowWrap: 'anywhere' }}>
-              Founder: {request.userEmail}{request.userPhone ? ` · ${request.userPhone}` : ''}
+              Founder: {request.founderName} · {request.userEmail}{request.userPhone ? ` · ${request.userPhone}` : ''}
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,.62)', fontSize: 11 }}>
+              Funding: {request.fundingAmount.toLocaleString()} {request.fundingCurrency} · {request.fundingStage}
             </Typography>
             <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11, overflowWrap: 'anywhere' }}>
               Investor: {request.investorEmail || 'No email'}{request.investorPhone ? ` · ${request.investorPhone}` : ''}

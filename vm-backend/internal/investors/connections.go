@@ -14,6 +14,15 @@ type ConnectionStatus struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
+type ConnectionRequestInput struct {
+	FounderName     string
+	BusinessName    string
+	Industry        string
+	FundingStage    string
+	FundingAmount   float64
+	FundingCurrency string
+}
+
 type ConnectionRequest struct {
 	ID                  string    `json:"id"`
 	InvestorID          string    `json:"investorId"`
@@ -25,6 +34,10 @@ type ConnectionRequest struct {
 	BusinessName        string    `json:"businessName"`
 	BusinessDescription string    `json:"businessDescription"`
 	BusinessIndustry    string    `json:"businessIndustry"`
+	FounderName         string    `json:"founderName"`
+	FundingStage        string    `json:"fundingStage"`
+	FundingAmount       float64   `json:"fundingAmount"`
+	FundingCurrency     string    `json:"fundingCurrency"`
 	UserID              string    `json:"userId"`
 	UserName            string    `json:"userName"`
 	UserEmail           string    `json:"userEmail"`
@@ -41,6 +54,7 @@ func scanConnectionRequest(row pgx.Row) (*ConnectionRequest, error) {
 		&request.ID, &request.InvestorID, &request.InvestorName, &request.InvestorLogo,
 		&request.InvestorEmail, &request.InvestorPhone,
 		&request.BusinessID, &request.BusinessName, &request.BusinessDescription, &request.BusinessIndustry,
+		&request.FounderName, &request.FundingStage, &request.FundingAmount, &request.FundingCurrency,
 		&request.UserID, &request.UserName, &request.UserEmail, &request.UserPhone,
 		&request.Status, &request.AdminNotes, &request.CreatedAt, &request.UpdatedAt,
 	)
@@ -52,7 +66,8 @@ func scanConnectionRequest(row pgx.Row) (*ConnectionRequest, error) {
 
 const connectionRequestDetailsQuery = `
 	SELECT r.id, r.investor_id, i.name, COALESCE(i.logo,''), COALESCE(i.email,''), COALESCE(i.phone,''),
-		r.business_id, b.name, COALESCE(b.description,''), COALESCE(b.industry,''),
+		r.business_id, r.business_name, COALESCE(b.description,''), r.industry,
+		r.founder_name, r.funding_stage, r.funding_amount::float8, r.funding_currency,
 		r.user_id, COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.surname),''), u.email),
 		COALESCE(u.email,''), COALESCE(u.primary_phone,''), r.status, COALESCE(r.admin_notes,''),
 		r.created_at, r.updated_at
@@ -62,8 +77,8 @@ const connectionRequestDetailsQuery = `
 	JOIN users u ON u.id = r.user_id`
 
 // RequestConnection creates a pending request. A previously declined request can
-// be resubmitted; existing pending, approved, or connected requests are returned unchanged.
-func (r *Repository) RequestConnection(ctx context.Context, investorID, businessID, userID string) (*ConnectionRequest, bool, error) {
+// be resubmitted; existing pending, in-review, or connected requests are returned unchanged.
+func (r *Repository) RequestConnection(ctx context.Context, investorID, businessID, userID string, input ConnectionRequestInput) (*ConnectionRequest, bool, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return nil, false, err
@@ -73,13 +88,15 @@ func (r *Repository) RequestConnection(ctx context.Context, investorID, business
 	id := uuid.New().String()
 	var requestID string
 	err = tx.QueryRow(ctx, `
-		INSERT INTO investor_connection_requests (id, investor_id, business_id, user_id)
-		SELECT $1, i.id, b.id, b.user_id
+		INSERT INTO investor_connection_requests (id, investor_id, business_id, user_id,
+			founder_name, business_name, industry, funding_stage, funding_amount, funding_currency)
+		SELECT $1, i.id, b.id, b.user_id, $5, $6, $7, $8, $9, $10
 		FROM investors i
 		JOIN businesses b ON b.id = $3 AND b.user_id = $4
 		WHERE i.id = $2 AND i.is_active = TRUE
 		ON CONFLICT (investor_id, business_id) DO NOTHING
-		RETURNING id`, id, investorID, businessID, userID).Scan(&requestID)
+		RETURNING id`, id, investorID, businessID, userID, input.FounderName, input.BusinessName,
+		input.Industry, input.FundingStage, input.FundingAmount, input.FundingCurrency).Scan(&requestID)
 
 	created := err == nil
 	if err != nil && err != pgx.ErrNoRows {
@@ -88,9 +105,11 @@ func (r *Repository) RequestConnection(ctx context.Context, investorID, business
 	if !created {
 		err = tx.QueryRow(ctx, `
 			UPDATE investor_connection_requests
-			SET status = 'pending', admin_notes = '', updated_at = NOW()
+			SET status = 'pending', admin_notes = '', founder_name = $4, business_name = $5,
+				industry = $6, funding_stage = $7, funding_amount = $8, funding_currency = $9, updated_at = NOW()
 			WHERE investor_id = $1 AND business_id = $2 AND user_id = $3 AND status = 'declined'
-			RETURNING id`, investorID, businessID, userID).Scan(&requestID)
+			RETURNING id`, investorID, businessID, userID, input.FounderName, input.BusinessName,
+			input.Industry, input.FundingStage, input.FundingAmount, input.FundingCurrency).Scan(&requestID)
 		if err == nil {
 			created = true
 		} else if err != pgx.ErrNoRows {

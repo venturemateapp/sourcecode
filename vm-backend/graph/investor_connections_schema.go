@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/graphql-go/graphql"
@@ -32,6 +34,10 @@ var adminInvestorConnectionType = graphql.NewObject(graphql.ObjectConfig{
 		"businessName":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"businessDescription": &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"businessIndustry":    &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"founderName":         &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"fundingStage":        &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"fundingAmount":       &graphql.Field{Type: graphql.NewNonNull(graphql.Float)},
+		"fundingCurrency":     &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"userId":              &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 		"userName":            &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
 		"userEmail":           &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
@@ -58,6 +64,8 @@ func adminConnectionMap(request investors.ConnectionRequest) map[string]interfac
 		"investorEmail": request.InvestorEmail, "investorPhone": request.InvestorPhone,
 		"businessId": request.BusinessID, "businessName": request.BusinessName,
 		"businessDescription": request.BusinessDescription, "businessIndustry": request.BusinessIndustry,
+		"founderName": request.FounderName, "fundingStage": request.FundingStage,
+		"fundingAmount": request.FundingAmount, "fundingCurrency": request.FundingCurrency,
 		"userId": request.UserID, "userName": request.UserName,
 		"userEmail": request.UserEmail, "userPhone": request.UserPhone,
 		"status": request.Status, "adminNotes": request.AdminNotes,
@@ -119,8 +127,14 @@ func init() {
 	rootMutation.AddFieldConfig("requestInvestorConnection", &graphql.Field{
 		Type: graphql.NewNonNull(investorConnectionStatusType),
 		Args: graphql.FieldConfigArgument{
-			"investorId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-			"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"investorId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"businessId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			"founderName":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"businessName":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"industry":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"fundingStage":    &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			"fundingAmount":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
+			"fundingCurrency": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			businessID := p.Args["businessId"].(string)
@@ -136,7 +150,27 @@ func init() {
 			if investor == nil || !investor.IsActive {
 				return nil, fmt.Errorf("investor is unavailable")
 			}
-			request, created, err := AppContainer.InvestorRepo.RequestConnection(p.Context, investorID, businessID, userID)
+			founderName := strings.TrimSpace(p.Args["founderName"].(string))
+			businessName := strings.TrimSpace(p.Args["businessName"].(string))
+			industry := strings.TrimSpace(p.Args["industry"].(string))
+			fundingStage := strings.TrimSpace(p.Args["fundingStage"].(string))
+			fundingAmount := p.Args["fundingAmount"].(float64)
+			fundingCurrency := strings.ToUpper(strings.TrimSpace(p.Args["fundingCurrency"].(string)))
+			currencyCodeValid := len(fundingCurrency) == 3
+			for _, character := range fundingCurrency {
+				if character < 'A' || character > 'Z' {
+					currencyCodeValid = false
+				}
+			}
+			if founderName == "" || businessName == "" || industry == "" || fundingStage == "" ||
+				math.IsNaN(fundingAmount) || math.IsInf(fundingAmount, 0) || fundingAmount <= 0 || !currencyCodeValid {
+				return nil, fmt.Errorf("founder, business, industry, funding stage, a positive funding amount, and a three-letter currency are required")
+			}
+			input := investors.ConnectionRequestInput{
+				FounderName: founderName, BusinessName: businessName, Industry: industry,
+				FundingStage: fundingStage, FundingAmount: fundingAmount, FundingCurrency: fundingCurrency,
+			}
+			request, created, err := AppContainer.InvestorRepo.RequestConnection(p.Context, investorID, businessID, userID, input)
 			if err != nil {
 				return nil, err
 			}

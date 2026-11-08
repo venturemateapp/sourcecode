@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/venturemate/vmbackend/internal/investors"
@@ -40,8 +41,10 @@ func investorConnectionRows(request *investors.ConnectionRequest) []bookingEmail
 		{Label: "Request reference", Value: request.ID},
 		{Label: "Startup", Value: request.BusinessName},
 		{Label: "Industry", Value: request.BusinessIndustry},
+		{Label: "Founder", Value: request.FounderName},
+		{Label: "Funding stage", Value: request.FundingStage},
+		{Label: "Funding amount required", Value: fmt.Sprintf("%.2f %s", request.FundingAmount, request.FundingCurrency)},
 		{Label: "Investor", Value: request.InvestorName},
-		{Label: "Founder", Value: request.UserName},
 		{Label: "Status", Value: investorConnectionStatusLabel(request.Status)},
 	}
 }
@@ -57,10 +60,10 @@ func sendFounderInvestorConnectionEmail(request *investors.ConnectionRequest, st
 		"declined":  "Your investor connection request was declined",
 	}
 	intros := map[string]string{
-		"pending":   "Hi " + request.UserName + ", we received your request to connect " + request.BusinessName + " with " + request.InvestorName + ". Our team is reviewing it and will email you when its status changes.",
-		"in_review": "Hi " + request.UserName + ", your request to connect " + request.BusinessName + " with " + request.InvestorName + " is now being reviewed by the VentureMate team. We will email you when its status changes.",
-		"connected": "Hi " + request.UserName + ", your connection between " + request.BusinessName + " and " + request.InvestorName + " is confirmed. You can now follow up directly using the investor contact details below.",
-		"declined":  "Hi " + request.UserName + ", your request to connect " + request.BusinessName + " with " + request.InvestorName + " was declined. Contact VentureMate support if you need help or would like to discuss next steps.",
+		"pending":   "Hi " + request.FounderName + ", we received your request to connect " + request.BusinessName + " with " + request.InvestorName + ". Our team is reviewing it and will email you when its status changes.",
+		"in_review": "Hi " + request.FounderName + ", your request to connect " + request.BusinessName + " with " + request.InvestorName + " is now being reviewed by the VentureMate team. We will email you when its status changes.",
+		"connected": "Hi " + request.FounderName + ", your connection between " + request.BusinessName + " and " + request.InvestorName + " is confirmed. You can now follow up directly using the investor contact details below.",
+		"declined":  "Hi " + request.FounderName + ", your request to connect " + request.BusinessName + " with " + request.InvestorName + " was declined. Contact VentureMate support if you need help or would like to discuss next steps.",
 	}
 	rows := investorConnectionRows(request)
 	if status == "connected" {
