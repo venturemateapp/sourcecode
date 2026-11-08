@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -68,10 +69,14 @@ func (r *Repository) CreateBooking(ctx context.Context, b *Booking) error {
 	b.Status = "pending"
 	b.CreatedAt = time.Now()
 	b.UpdatedAt = b.CreatedAt
+	var businessID any
+	if b.BusinessID != "" {
+		businessID = b.BusinessID
+	}
 	_, err := r.db.Exec(ctx, `
 		INSERT INTO bookings (id, provider_id, user_id, business_id, project_title, description, status, created_at, updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-		b.ID, b.ProviderID, b.UserID, b.BusinessID, b.ProjectTitle, b.Description, b.Status, b.CreatedAt, b.UpdatedAt)
+		b.ID, b.ProviderID, b.UserID, businessID, b.ProjectTitle, b.Description, b.Status, b.CreatedAt, b.UpdatedAt)
 	return err
 }
 
@@ -94,11 +99,11 @@ func (r *Repository) ListBookings(ctx context.Context, userID string, admin bool
 			WHERE b.user_id = $1 OR b.provider_id IN (SELECT id FROM service_providers WHERE created_by = $1)
 			ORDER BY b.created_at DESC`
 	}
-	rows, err := r.db.Query(ctx, query)
-	if !admin {
-		if err != nil {
-			return nil, err
-		}
+	var rows pgx.Rows
+	var err error
+	if admin {
+		rows, err = r.db.Query(ctx, query)
+	} else {
 		rows, err = r.db.Query(ctx, query, userID)
 	}
 	if err != nil {

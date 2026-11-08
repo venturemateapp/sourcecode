@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Card, Tabs, Tab, Chip, Avatar, TextField, CircularProgress } from '@mui/material';
+import { Alert, Box, Typography, Card, Tabs, Tab, Chip, Avatar, TextField, CircularProgress } from '@mui/material';
 import { GradientButton } from '../../components/shared/buttons';
 import { Modal } from '../../components/shared/Modal';
 import { graphqlRequest } from '../../lib/api';
@@ -24,14 +24,10 @@ interface Booking {
   id: string;
   providerId: string;
   providerName: string;
-  userName: string;
-  businessId: string;
   projectTitle: string;
   description: string;
   status: string;
-  adminNotes: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 const CATEGORIES = [
@@ -55,6 +51,7 @@ export function MarketplacePage() {
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
 
   // Booking form
@@ -63,19 +60,22 @@ export function MarketplacePage() {
   const [bookingDesc, setBookingDesc] = useState('');
   const [bookingSaving, setBookingSaving] = useState(false);
   const [bookingDone, setBookingDone] = useState(false);
+  const [bookingError, setBookingError] = useState('');
 
   const q = useCallback(async <T,>(query: string, vars?: Record<string, unknown>) => graphqlRequest<T>(query, vars), []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const [p, b] = await Promise.all([
-        q<{ serviceProviders: ServiceProvider[] }>('query{serviceProviders(activeOnly:true){id name title category bio picture rateHourly skills yearsExperience}}'),
-        q<{ myBookings: Booking[] }>('query{myBookings{id providerId providerName userName projectTitle description status adminNotes createdAt updatedAt}}'),
-      ]);
-      setProviders(p.serviceProviders);
-      setBookings(b.myBookings);
-    } catch { /* ignore */ }
+    const [providersResult, bookingsResult] = await Promise.allSettled([
+      q<{ serviceProviders: ServiceProvider[] }>('query{serviceProviders(activeOnly:true){id name title category bio picture rateHourly skills yearsExperience}}'),
+      q<{ myBookings: Booking[] }>('query{myBookings{id providerId providerName projectTitle description status createdAt}}'),
+    ]);
+    const errors: string[] = [];
+    if (providersResult.status === 'fulfilled') setProviders(providersResult.value.serviceProviders || []);
+    else errors.push('Could not load providers.');
+    if (bookingsResult.status === 'fulfilled') setBookings(bookingsResult.value.myBookings || []);
+    else errors.push('Could not load bookings.');
+    setLoadError(errors.join(' '));
     setLoading(false);
   }, [q]);
 
@@ -94,16 +94,20 @@ export function MarketplacePage() {
   }, [load]);
 
   const createBooking = async () => {
-    if (!bookingProvider || !bookingTitle) return;
+    if (!bookingProvider || !bookingTitle.trim()) return;
     setBookingSaving(true);
+    setBookingError('');
     try {
       await q('mutation M($p:ID!,$t:String!,$d:String){createBooking(providerId:$p projectTitle:$t description:$d){id}}', {
-        p: bookingProvider.id, t: bookingTitle, d: bookingDesc || '',
+        p: bookingProvider.id, t: bookingTitle.trim(), d: bookingDesc || '',
       });
+      await load();
       setBookingDone(true);
-      load();
-    } catch { /* ignore */ }
-    setBookingSaving(false);
+    } catch (error) {
+      setBookingError(error instanceof Error ? error.message : 'Could not submit booking.');
+    } finally {
+      setBookingSaving(false);
+    }
   };
 
   const filteredProviders = selectedCat ? providers.filter(p => p.category === selectedCat) : providers;
@@ -146,6 +150,7 @@ export function MarketplacePage() {
         <Tab label={`Providers (${providers.length})`} />
         <Tab label={`My Bookings (${bookings.length})`} />
       </Tabs>
+      {!!loadError && <Alert severity="error" sx={{ mb: 2 }} action={<button type="button" onClick={() => void load()} style={{ border: 0, background: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 700 }}>Retry</button>}>{loadError}</Alert>}
 
       {/* Providers Tab */}
       {tab === 0 && (
@@ -188,7 +193,7 @@ export function MarketplacePage() {
                         <Chip key={s} label={s} size="small" sx={{ bgcolor: 'rgba(255,255,255,.04)', color: 'var(--vm-text-muted)', fontSize: 9, height: 20 }} />
                       ))}
                     </Box>
-                    <GradientButton variant="primary" size="sm" fullWidth onClick={() => { setBookingProvider(p); setBookingTitle(''); setBookingDesc(''); setBookingDone(false); }}
+                    <GradientButton variant="primary" size="sm" fullWidth onClick={() => { setBookingProvider(p); setBookingTitle(''); setBookingDesc(''); setBookingError(''); setBookingDone(false); }}
                       sx={{ mt: 'auto' }}>
                       Book Now
                     </GradientButton>
@@ -234,7 +239,7 @@ export function MarketplacePage() {
 
       <Modal open={!!bookingProvider && !bookingDone} onClose={() => setBookingProvider(null)} title={`Book ${bookingProvider?.name || ''}`} icon={<Calendar size={20} />}
         actions={<><GradientButton variant="ghost" size="sm" onClick={() => setBookingProvider(null)}>Cancel</GradientButton>
-          <GradientButton variant="primary" size="sm" disabled={bookingSaving || !bookingTitle} onClick={createBooking}>
+          <GradientButton variant="primary" size="sm" disabled={bookingSaving || !bookingTitle.trim()} onClick={createBooking}>
             {bookingSaving ? <CircularProgress size={14} /> : 'Submit Booking'}
           </GradientButton></>}>
         {bookingProvider && (
@@ -247,6 +252,7 @@ export function MarketplacePage() {
           </Box>
         )}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {bookingError && <Alert severity="error">{bookingError}</Alert>}
           <TextField size="small" label="Project Title" value={bookingTitle} onChange={e => setBookingTitle(e.target.value)}
             sx={{ input: { color: 'var(--vm-text-primary)' }, label: { color: 'var(--vm-text-muted)' }, '& fieldset': { borderColor: 'var(--vm-border-subtle)' } }} />
           <TextField size="small" label="Description" multiline rows={3} value={bookingDesc} onChange={e => setBookingDesc(e.target.value)}

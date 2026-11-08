@@ -55,7 +55,7 @@ func init() {
 			activeOnly, _ := p.Args["activeOnly"].(bool)
 			providers, err := AppContainer.MarketplaceRepo.ListProviders(p.Context, activeOnly)
 			if err != nil {
-				return []interface{}{}, nil
+				return nil, err
 			}
 			out := make([]map[string]interface{}, len(providers))
 			for i, sp := range providers {
@@ -78,7 +78,7 @@ func init() {
 			isAdm := isAdmin(p.Context)
 			bookings, err := AppContainer.MarketplaceRepo.ListBookings(p.Context, userID, isAdm)
 			if err != nil {
-				return []interface{}{}, nil
+				return nil, err
 			}
 			out := make([]map[string]interface{}, len(bookings))
 			for i, b := range bookings {
