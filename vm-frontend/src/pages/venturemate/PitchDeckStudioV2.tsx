@@ -231,9 +231,9 @@ export function PitchDeckStudioV2() {
 
   const save = async () => { await studio.saveDocument(JSON.stringify(document), 'Edit pitch deck'); };
   const exportDeck = async () => {
-    const logo = selectedBusiness?.brandKit?.logo || selectedBusiness?.brandKit?.logoIcon || '';
+    const logo = selectedBusiness?.brandKit?.logo || selectedBusiness?.brandKit?.logoIcon || selectedBusiness?.brandKit?.logoWhite || '';
     try {
-      const embeddedLogo = logo ? await imageToPngDataUri(logo) : undefined;
+      const embeddedLogo = logo ? await imageToPngDataUri(logo, selectedBusiness?.id) : undefined;
       if (logo && !embeddedLogo) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       if (exportMenu === 'pptx') await exportDeckPptx(document, embeddedLogo);
       else await exportDeckPdf(document, embeddedLogo);

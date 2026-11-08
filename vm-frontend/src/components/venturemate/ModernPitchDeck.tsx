@@ -278,6 +278,7 @@ interface ModernPitchDeckProps {
   slides: Slide[];
   title: string;
   logo?: string;
+  businessId?: string;
   businessName?: string;
   accentColor?: string;
   secondaryColor?: string;
@@ -741,7 +742,7 @@ function DefaultSlide({ slide, index, total, logo, businessName, accent, accent2
   );
 }
 
-export function ModernPitchDeck({ slides, title: _title, logo, businessName, accentColor, secondaryColor }: ModernPitchDeckProps) {
+export function ModernPitchDeck({ slides, title: _title, logo, businessId, businessName, accentColor, secondaryColor }: ModernPitchDeckProps) {
   const [templateId, setTemplateId] = useState('velocity');
   const [pptxExporting, setPptxExporting] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
@@ -811,7 +812,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
     if (!el || pdfExporting) return;
     setPdfExporting(true);
     try {
-      const logoData = await imageToPngDataUri(logo);
+      const logoData = await imageToPngDataUri(logo, businessId);
       if (logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
       const slideEls = el.querySelectorAll('[data-mp-slide]');
@@ -838,7 +839,7 @@ export function ModernPitchDeck({ slides, title: _title, logo, businessName, acc
     setPptxExporting(true);
     try {
       await exportPitchDeckPptx({
-        slides, title: _title, logo, businessName: businessName || _title,
+        slides, title: _title, logo, businessId, businessName: businessName || _title,
         primary: accent, secondary, style: 'premium',
       });
     } catch (error) {

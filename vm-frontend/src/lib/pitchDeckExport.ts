@@ -1,10 +1,13 @@
 import PptxGenJS from 'pptxgenjs';
 import type { Slide } from '../types/venturemate';
+import { graphqlRequest } from './api';
+import { normalizeImageSource } from './imageSource';
 
 export interface PitchDeckExportOptions {
   slides: Slide[];
   title: string;
   businessName: string;
+  businessId?: string;
   primary: string;
   secondary?: string;
   logo?: string;
@@ -32,30 +35,45 @@ const truncate = (value: string | undefined, max: number) => {
   return text.length > max ? `${text.slice(0, max - 1).trim()}…` : text;
 };
 
-async function remoteImageData(source?: string): Promise<string | undefined> {
+async function businessLogoData(businessId: string): Promise<string> {
+  const query = `query BusinessLogoData($businessId: ID!) { businessLogoData(businessId: $businessId) }`;
+  const result = await graphqlRequest<{ businessLogoData: string }>(query, { businessId });
+  return result.businessLogoData;
+}
+
+async function remoteImageData(source?: string, businessId?: string): Promise<string | undefined> {
   if (!source) return undefined;
-  if (source.startsWith('data:image/')) return source;
+  const normalized = normalizeImageSource(source);
+  if (normalized.startsWith('data:image/')) return normalized;
   try {
-    const response = await fetch(source, { mode: 'cors' });
-    if (!response.ok) return undefined;
+    const response = await fetch(normalized, { mode: 'cors' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const blob = await response.blob();
-    if (!blob.type.startsWith('image/')) return undefined;
+    if (!blob.type.startsWith('image/')) throw new Error('The source did not return an image.');
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));
       reader.onerror = () => reject(reader.error);
       reader.readAsDataURL(blob);
     });
-  } catch {
+  } catch (cause) {
+    if (businessId) {
+      try {
+        return normalizeImageSource(await businessLogoData(businessId));
+      } catch (fallbackError) {
+        const detail = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+        throw new Error(`The logo is visible in VentureMate, but its image could not be read for export. ${detail}`);
+      }
+    }
+    console.warn('Could not embed remote image for export', normalized, cause);
     return undefined;
   }
 }
 
-export async function imageToPngDataUri(source?: string): Promise<string | undefined> {
-  const imageData = await remoteImageData(source);
-  if (!imageData) return undefined;
-  if (imageData.startsWith('data:image/png')) return imageData;
-  return new Promise(resolve => {
+export async function imageToPngDataUri(source?: string, businessId?: string): Promise<string | undefined> {
+  const toPng = (imageData: string) => {
+    if (imageData.startsWith('data:image/png')) return Promise.resolve(imageData);
+    return new Promise<string | undefined>(resolve => {
     const image = new Image();
     image.onload = () => {
       try {
@@ -72,7 +90,23 @@ export async function imageToPngDataUri(source?: string): Promise<string | undef
     };
     image.onerror = () => resolve(undefined);
     image.src = imageData;
-  });
+    });
+  };
+  const imageData = await remoteImageData(source, businessId);
+  if (!imageData) return undefined;
+  const png = await toPng(imageData);
+  if (png || !businessId) return png;
+  try {
+    const canonicalLogo = normalizeImageSource(await businessLogoData(businessId));
+    if (canonicalLogo !== imageData) return toPng(canonicalLogo);
+  } catch (error) {
+    console.warn('Could not load the approved logo for export', error);
+  }
+  return undefined;
+}
+
+export async function imageToDataUri(source?: string, businessId?: string): Promise<string | undefined> {
+  return remoteImageData(source, businessId);
 }
 
 function addDeckChrome(
@@ -180,7 +214,7 @@ export async function exportPitchDeckPptx(options: PitchDeckExportOptions): Prom
   const primary = cleanHex(options.primary, '10B981');
   const secondary = cleanHex(options.secondary, '6366F1');
   const premium = options.style !== 'classic';
-  const logoData = await imageToPngDataUri(options.logo);
+  const logoData = await imageToPngDataUri(options.logo, options.businessId);
   if (options.logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
 
   for (let index = 0; index < options.slides.length; index++) {
@@ -225,5 +259,3 @@ export async function exportPitchDeckPptx(options: PitchDeckExportOptions): Prom
   await pptx.writeFile({ fileName, compression: true });
   return fileName;
 }
-
-export { remoteImageData as imageToDataUri };

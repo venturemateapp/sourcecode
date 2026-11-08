@@ -565,7 +565,7 @@ function SlideContent({ slide, template, logo, businessName }: {
 // VIEWER
 // ---------------------------------------------------------------------------
 
-export function SlideViewer({ slides, title, logo, businessName, primary: propPrimary }: SlideViewerProps) {
+export function SlideViewer({ slides, title, logo, businessId, businessName, primary: propPrimary }: SlideViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [templateId, setTemplateId] = useState('velocity');
@@ -626,7 +626,7 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     if (!el || pdfExporting) return;
     setPdfExporting(true);
     try {
-      const logoData = await imageToPngDataUri(logo);
+      const logoData = await imageToPngDataUri(logo, businessId);
       if (logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1920, 1080] });
       const pageWidth = 1920; const pageHeight = 1080;
@@ -653,7 +653,7 @@ export function SlideViewer({ slides, title, logo, businessName, primary: propPr
     setPptxExporting(true);
     try {
       await exportPitchDeckPptx({
-        slides, title, logo, businessName: businessName || title,
+        slides, title, logo, businessId, businessName: businessName || title,
         primary: accent, secondary: template.accent2, style: 'classic',
       });
     } catch (error) {
@@ -729,6 +729,7 @@ interface SlideViewerProps {
   slides: Slide[];
   title: string;
   logo?: string;
+  businessId?: string;
   businessName?: string;
   primary?: string;
 }

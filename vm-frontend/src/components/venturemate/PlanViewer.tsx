@@ -359,7 +359,7 @@ function SectionSlide({ section, index, total, template, logo, businessName }: {
   );
 }
 
-export function PlanViewer({ title, summary, sections, version, logo, businessName }: PlanViewerProps) {
+export function PlanViewer({ title, summary, sections, version, logo, businessId, businessName }: PlanViewerProps) {
   const [pptxExporting, setPptxExporting] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -394,7 +394,7 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
     const el = viewerRef.current?.querySelector('[data-plan-container]') as HTMLElement;
     if (!el || pdfExporting) return;
     setPdfExporting(true);
-    const logoData = await imageToPngDataUri(logo);
+    const logoData = await imageToPngDataUri(logo, businessId);
     // Pin the stage to a fixed 16:9 export width so PDF pages are crisp
     // (1280 × 1.5 = 1920) regardless of the device's screen size.
     const prevWidth = el.style.width;
@@ -439,7 +439,7 @@ export function PlanViewer({ title, summary, sections, version, logo, businessNa
     if (pptxExporting) return;
     setPptxExporting(true);
     try {
-      const logoData = await imageToPngDataUri(logo);
+      const logoData = await imageToPngDataUri(logo, businessId);
       if (logo && !logoData) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       const addLogo = (slide: PptxGenJS.Slide) => {
         if (logoData) slide.addImage({ data: logoData, x: 12.05, y: 0.35, w: 0.8, h: 0.8 });
@@ -550,5 +550,6 @@ interface PlanViewerProps {
   sections: PlanSection[];
   version: string;
   logo?: string;
+  businessId?: string;
   businessName?: string;
 }

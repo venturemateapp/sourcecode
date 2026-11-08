@@ -161,13 +161,13 @@ export function BusinessPlan() {
         onBeforeGenerate={handleBeforeGenerate}
         renderCurrent={() => {
           if (!hasPlan) return null;
-          if (viewMode === 'slide') return <PlanViewer title={plan.title || 'Business Plan'} summary={plan.executiveSummary || ''} sections={plan.sections || []} version={plan.version || '1.0'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          if (viewMode === 'slide') return <PlanViewer title={plan.title || 'Business Plan'} summary={plan.executiveSummary || ''} sections={plan.sections || []} version={plan.version || '1.0'} logo={brand?.logo || brand?.logoWhite} businessId={selectedBusiness.id} businessName={selectedBusiness.name} />;
           return <PlanPreview plan={plan} primary={primary} />;
         }}
         renderProposal={(change: ProposedChange) => {
           const proposed = parsePlan(change);
           if (!proposed) return <Typography color="error">The AI returned an invalid business-plan preview.</Typography>;
-          if (viewMode === 'slide') return <PlanViewer title={proposed.title || 'Business Plan'} summary={proposed.executiveSummary || ''} sections={proposed.sections || []} version={proposed.version || '1.0'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+          if (viewMode === 'slide') return <PlanViewer title={proposed.title || 'Business Plan'} summary={proposed.executiveSummary || ''} sections={proposed.sections || []} version={proposed.version || '1.0'} logo={brand?.logo || brand?.logoWhite} businessId={selectedBusiness.id} businessName={selectedBusiness.name} />;
           return <PlanPreview plan={proposed} primary={primary} proposed />;
         }}
       />

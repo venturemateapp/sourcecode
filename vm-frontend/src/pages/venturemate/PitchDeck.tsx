@@ -168,9 +168,9 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
         renderCurrent={() => {
           if (viewMode === 'slide' && hasDeck) {
             if (designMode === 'premium') {
-              return <ModernPitchDeck slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} accentColor={primary} />;
+              return <ModernPitchDeck slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessId={selectedBusiness.id} businessName={selectedBusiness.name} accentColor={primary} />;
             }
-            return <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+            return <SlideViewer slides={currentDeck.slides} title={currentDeck.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessId={selectedBusiness.id} businessName={selectedBusiness.name} />;
           }
           if (hasDeck) return <DeckPreview deck={deck} primary={primary} dark={dark} />;
           return null;
@@ -180,9 +180,9 @@ export function PitchDeck(_props: { onViewChange?: (_view: ViewType) => void }) 
           if (!proposed) return <Typography color="error">Invalid preview.</Typography>;
           if (viewMode === 'slide') {
             if (designMode === 'premium') {
-              return <ModernPitchDeck slides={proposed.slides} title={proposed.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} accentColor={primary} />;
+              return <ModernPitchDeck slides={proposed.slides} title={proposed.title || 'Pitch Deck'} logo={brand?.logo || brand?.logoWhite} businessId={selectedBusiness.id} businessName={selectedBusiness.name} accentColor={primary} />;
             }
-            return <SlideViewer slides={proposed.slides} title={proposed.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessName={selectedBusiness.name} />;
+            return <SlideViewer slides={proposed.slides} title={proposed.title || 'Pitch Deck'} primary={primary} logo={brand?.logo || brand?.logoWhite} businessId={selectedBusiness.id} businessName={selectedBusiness.name} />;
           }
           return <DeckPreview deck={proposed} primary={primary} dark={dark} proposed />;
         }}

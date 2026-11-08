@@ -1,12 +1,85 @@
 package graph
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/venturemate/vmbackend/internal/auth"
 	"github.com/venturemate/vmbackend/internal/businesses"
 )
+
+func businessLogoData(ctx context.Context, userID, businessID string) (string, error) {
+	if AppContainer == nil || AppContainer.BusinessRepo == nil || AppContainer.S3 == nil {
+		return "", errors.New("business logo storage is unavailable")
+	}
+	business, err := AppContainer.BusinessRepo.GetByIDAndUser(ctx, businessID, userID)
+	if err != nil {
+		return "", err
+	}
+	if business == nil {
+		return "", errors.New("business not found or access denied")
+	}
+	var brand map[string]interface{}
+	if err := json.Unmarshal([]byte(business.BrandKit), &brand); err != nil {
+		return "", errors.New("business brand data is invalid")
+	}
+	var candidates []string
+	for _, key := range []string{"logo", "logoIcon", "logoWhite"} {
+		if value, ok := brand[key].(string); ok {
+			candidates = append(candidates, value)
+		}
+	}
+	if options, ok := brand["logos"].([]interface{}); ok && len(options) > 0 {
+		selected := 0
+		if value, ok := brand["selectedLogo"].(float64); ok && int(value) >= 0 && int(value) < len(options) {
+			selected = int(value)
+		}
+		if option, ok := options[selected].(map[string]interface{}); ok {
+			for _, key := range []string{"image", "url", "src", "svg"} {
+				if value, ok := option[key].(string); ok {
+					candidates = append(candidates, value)
+				}
+			}
+		}
+	}
+	var lastErr error
+	for _, source := range candidates {
+		source = strings.TrimSpace(source)
+		if source == "" {
+			continue
+		}
+		if strings.HasPrefix(source, "<svg") || strings.HasPrefix(source, "<?xml") {
+			return "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(source)), nil
+		}
+		if strings.HasPrefix(source, "data:image/") {
+			return source, nil
+		}
+		if !AppContainer.S3.IsManagedURL(source) {
+			lastErr = errors.New("logo source is not stored in managed storage")
+			continue
+		}
+		data, contentType, downloadErr := AppContainer.S3.DownloadManagedURL(ctx, source)
+		if downloadErr != nil {
+			lastErr = fmt.Errorf("read logo from storage: %w", downloadErr)
+			continue
+		}
+		if !strings.HasPrefix(contentType, "image/") {
+			lastErr = fmt.Errorf("stored logo has unsupported content type %q", contentType)
+			continue
+		}
+		return "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(data), nil
+	}
+	if lastErr != nil {
+		return "", lastErr
+	}
+	return "", errors.New("business has no approved logo")
+}
 
 var businessType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Business",
@@ -86,6 +159,18 @@ func businessIDFromSource(source interface{}) (string, bool) {
 }
 
 func init() {
+	rootQuery.AddFieldConfig("businessLogoData", &graphql.Field{
+		Type: graphql.NewNonNull(graphql.String),
+		Args: graphql.FieldConfigArgument{"businessId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)}},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			userID, ok := auth.UserIDFromContext(p.Context)
+			if !ok || strings.TrimSpace(userID) == "" {
+				return nil, errors.New("authentication required")
+			}
+			return businessLogoData(p.Context, userID, p.Args["businessId"].(string))
+		},
+	})
+
 	rootQuery.AddFieldConfig("myBusinesses", &graphql.Field{
 		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(businessType))),
 		Args: graphql.FieldConfigArgument{

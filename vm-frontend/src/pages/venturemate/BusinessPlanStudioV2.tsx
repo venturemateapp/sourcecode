@@ -194,7 +194,7 @@ export function BusinessPlanStudioV2() {
   }, [source]);
 
   const document = history.value;
-  const approvedLogo = normalizeImageSource(selectedBusiness?.brandKit?.logo || selectedBusiness?.brandKit?.logoIcon || '');
+  const approvedLogo = normalizeImageSource(selectedBusiness?.brandKit?.logo || selectedBusiness?.brandKit?.logoIcon || selectedBusiness?.brandKit?.logoWhite || '');
   const selectedSection = document.sections.find(section => section.id === selectedSectionId) || document.sections[0];
   const insertAsset = (asset: { url: string; prompt: string }) => {
     if (!selectedSection) return;
@@ -222,7 +222,7 @@ export function BusinessPlanStudioV2() {
   const runExport = async () => {
     try {
       const embeddedLogo = approvedLogo
-        ? (format === 'pdf' || format === 'docx' ? await imageToPngDataUri(approvedLogo) : await imageToDataUri(approvedLogo))
+        ? (format === 'pdf' || format === 'docx' ? await imageToPngDataUri(approvedLogo, selectedBusiness?.id) : await imageToDataUri(approvedLogo, selectedBusiness?.id))
         : undefined;
       if (approvedLogo && !embeddedLogo) throw new Error('The business logo could not be loaded for export. Check the logo source and try again.');
       if (format === 'pdf') await exportPdf(document, embeddedLogo);
