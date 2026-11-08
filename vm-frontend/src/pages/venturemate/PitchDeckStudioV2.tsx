@@ -13,9 +13,10 @@ import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { useBusiness } from '../../contexts/BusinessContext';
 import type { DeckDocument, DeckElement, DeckSlide } from '../../lib/ai-studio/types';
 import { imageToPngDataUri } from '../../lib/pitchDeckExport';
+import { DECK_DESIGNS, DECK_HEIGHT, DECK_WIDTH, getDeckDesign, isCoveredBackground } from '../../lib/ai-studio/deckDesigns';
 
-const W = 13.34;
-const H = 7.5;
+const W = DECK_WIDTH;
+const H = DECK_HEIGHT;
 
 function normalizeDeckLayout(deck: DeckDocument): DeckDocument {
   const next = structuredClone(deck);
@@ -52,7 +53,7 @@ function safeDeck(raw?: string, title = 'Pitch Deck'): DeckDocument {
     if (parsed?.schemaVersion === '2.0' && Array.isArray(parsed.slides)) return normalizeDeckLayout(parsed);
   } catch { /* use starter */ }
   return normalizeDeckLayout({
-    schemaVersion: '2.0', title, template: 'modern-dark',
+    schemaVersion: '2.0', title, template: 'modern-dark', metadata: { backgroundDesign: 'midnight' },
     theme: { primary: '#10b981', secondary: '#6366f1', background: '#080b12', surface: '#111827', text: '#f8fafc', mutedText: '#94a3b8', headingFont: 'Aptos Display', bodyFont: 'Aptos' },
     slides: [{ id: crypto.randomUUID(), type: 'cover', title, background: { type: 'solid', color: '#080b12' }, order: 0, notes: '', elements: [
       { id: crypto.randomUUID(), type: 'text', x: .8, y: 2.1, w: 10.8, h: 1.2, zIndex: 1, visible: true, locked: false, text: title, style: { fontSize: 42, fontWeight: 800, color: '#f8fafc' } },
@@ -79,16 +80,21 @@ async function imageData(url?: string): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
-async function exportDeckPptx(document: DeckDocument, logo?: string): Promise<void> {
+export async function exportDeckPptx(document: DeckDocument, logo?: string): Promise<void> {
   const pptx = new PptxGenJS();
   pptx.defineLayout({ name: 'VM_AI_STUDIO', width: W, height: H });
   pptx.layout = 'VM_AI_STUDIO';
   pptx.author = 'VentureMate AI Studio';
   pptx.title = document.title;
+  const design = getDeckDesign(document);
   for (const source of document.slides) {
     const slide = pptx.addSlide();
-    slide.background = { color: cleanHex(source.background.color || document.theme.background, '080B12') };
-    for (const element of [...source.elements].filter(item => item.visible !== false).sort((a, b) => a.zIndex - b.zIndex)) {
+    slide.background = { color: cleanHex(design?.background || source.background.color || document.theme.background, '080B12') };
+    design?.shapes.forEach(shape => slide.addShape(shape.type === 'ellipse' ? pptx.ShapeType.ellipse : pptx.ShapeType.rect, {
+      x: shape.x, y: shape.y, w: shape.w, h: shape.h,
+      fill: { color: cleanHex(shape.color) }, line: { color: cleanHex(shape.color), transparency: 100 },
+    }));
+    for (const element of [...source.elements].filter(item => item.visible !== false && !isCoveredBackground(item, design)).sort((a, b) => a.zIndex - b.zIndex)) {
       const style = element.style || {};
       if (element.type === 'text') {
         slide.addText(element.text || '', {
@@ -123,11 +129,17 @@ async function exportDeckPptx(document: DeckDocument, logo?: string): Promise<vo
 
 async function exportDeckPdf(document: DeckDocument, logo?: string): Promise<void> {
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'in', format: [W, H] });
+  const design = getDeckDesign(document);
   for (const [index, source] of document.slides.entries()) {
     if (index) pdf.addPage([W, H], 'landscape');
-    const background = source.background.color || document.theme.background;
+    const background = design?.background || source.background.color || document.theme.background;
     pdf.setFillColor(background); pdf.rect(0, 0, W, H, 'F');
-    for (const element of [...source.elements].filter(item => item.visible !== false).sort((a, b) => a.zIndex - b.zIndex)) {
+    design?.shapes.forEach(shape => {
+      pdf.setFillColor(shape.color);
+      if (shape.type === 'ellipse') pdf.ellipse(shape.x + shape.w / 2, shape.y + shape.h / 2, shape.w / 2, shape.h / 2, 'F');
+      else pdf.rect(shape.x, shape.y, shape.w, shape.h, 'F');
+    });
+    for (const element of [...source.elements].filter(item => item.visible !== false && !isCoveredBackground(item, design)).sort((a, b) => a.zIndex - b.zIndex)) {
       const style = element.style || {};
       if (element.type === 'text') {
         pdf.setTextColor(String(style.color || document.theme.text));
@@ -181,6 +193,7 @@ export function PitchDeckStudioV2() {
   }, [sourceDocument]);
 
   const document = history.value;
+  const design = getDeckDesign(document);
   const selectedSlide = document.slides.find(slide => slide.id === selectedSlideId) || document.slides[0];
   const selectedElement = selectedSlide?.elements.find(element => element.id === selectedElementId) || null;
 
@@ -269,6 +282,22 @@ export function PitchDeckStudioV2() {
 
   const leftRail = (
     <Box>
+      <Box sx={{ p: 1, borderBottom: '1px solid var(--vm-border-subtle)' }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, mb: .5 }}>Background design</Typography>
+        <Select fullWidth size="small" value={design?.id || 'original'} aria-label="Background design" onChange={event => updateDocument(next => {
+          next.metadata = { ...next.metadata, backgroundDesign: event.target.value };
+          return next;
+        })}>
+          <MenuItem value="original">Original backgrounds</MenuItem>
+          {DECK_DESIGNS.map(item => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
+        </Select>
+        <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)', mt: .5 }}>Applies to all slides. Save to keep your choice.</Typography>
+        <Box sx={{ display: 'flex', gap: .5, mt: .75 }}>
+          {DECK_DESIGNS.map(item => <Box component="button" key={item.id} type="button" aria-label={item.name} aria-pressed={design?.id === item.id} title={item.name} onClick={() => updateDocument(next => { next.metadata = { ...next.metadata, backgroundDesign: item.id }; return next; })} sx={{ flex: 1, aspectRatio: '16/9', position: 'relative', overflow: 'hidden', bgcolor: item.background, border: design?.id === item.id ? '2px solid #fff' : '1px solid #667085', cursor: 'pointer', p: 0 }}>
+            {item.shapes.map((shape, index) => <Box key={index} sx={{ position: 'absolute', left: `${shape.x / W * 100}%`, top: `${shape.y / H * 100}%`, width: `${shape.w / W * 100}%`, height: `${shape.h / H * 100}%`, bgcolor: shape.color, borderRadius: shape.type === 'ellipse' ? '50%' : 0 }} />)}
+          </Box>)}
+        </Box>
+      </Box>
       <Box sx={{ p: 1, display: 'flex', gap: .5, borderBottom: '1px solid var(--vm-border-subtle)' }}>
         <Button size="small" fullWidth startIcon={<Plus size={13} />} onClick={addSlide}>Slide</Button>
         <IconButton size="small" onClick={() => moveSlide(-1)} disabled={!selectedSlide || selectedSlide.order <= 0}><ArrowUp size={14} /></IconButton>
@@ -278,7 +307,7 @@ export function PitchDeckStudioV2() {
       </Box>
       <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
         {document.slides.map((slide, index) => (
-          <Card key={slide.id} onClick={() => { setSelectedSlideId(slide.id); setSelectedElementId(''); }} sx={{ cursor: 'pointer', overflow: 'hidden', border: slide.id === selectedSlide?.id ? '2px solid var(--vm-primary-500)' : '1px solid var(--vm-border-subtle)', bgcolor: slide.background.color || document.theme.background }}>
+          <Card key={slide.id} onClick={() => { setSelectedSlideId(slide.id); setSelectedElementId(''); }} sx={{ cursor: 'pointer', overflow: 'hidden', border: slide.id === selectedSlide?.id ? '2px solid var(--vm-primary-500)' : '1px solid var(--vm-border-subtle)', bgcolor: design?.background || slide.background.color || document.theme.background }}>
             <Box sx={{ aspectRatio: '16/9', p: .8, position: 'relative' }}><Typography sx={{ color: document.theme.text, fontSize: 9, fontWeight: 800 }}>{slide.title || `Slide ${index + 1}`}</Typography></Box>
             <Box sx={{ px: .75, py: .45, bgcolor: '#0b0f17' }}><Typography sx={{ fontSize: 8, color: 'var(--vm-text-muted)' }}>{index + 1}. {slide.type}</Typography></Box>
           </Card>
@@ -305,8 +334,9 @@ export function PitchDeckStudioV2() {
   ) : (
     <Box sx={{ height: '100%', display: 'grid', gridTemplateRows: 'minmax(0,1fr) auto' }}>
       <Box sx={{ minHeight: 0, overflow: 'auto', p: { xs: 1, md: 2 }, display: 'grid', placeItems: 'center', backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 0)', backgroundSize: '20px 20px' }}>
-        {selectedSlide && <Box ref={canvasRef} onPointerMove={moveDrag} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} sx={{ width: 'min(100%, 1100px)', aspectRatio: '16/9', position: 'relative', overflow: 'hidden', bgcolor: selectedSlide.background.color || document.theme.background, boxShadow: '0 22px 80px rgba(0,0,0,.55)', borderRadius: .5 }}>
-          {[...selectedSlide.elements].sort((a, b) => a.zIndex - b.zIndex).map(element => {
+        {selectedSlide && <Box ref={canvasRef} onPointerMove={moveDrag} onPointerUp={() => setDrag(null)} onPointerCancel={() => setDrag(null)} sx={{ width: 'min(100%, 1100px)', aspectRatio: '16/9', position: 'relative', overflow: 'hidden', bgcolor: design?.background || selectedSlide.background.color || document.theme.background, boxShadow: '0 22px 80px rgba(0,0,0,.55)', borderRadius: .5 }}>
+          {design?.shapes.map((shape, index) => <Box key={index} sx={{ position: 'absolute', left: `${shape.x / W * 100}%`, top: `${shape.y / H * 100}%`, width: `${shape.w / W * 100}%`, height: `${shape.h / H * 100}%`, bgcolor: shape.color, borderRadius: shape.type === 'ellipse' ? '50%' : 0, pointerEvents: 'none' }} />)}
+          {[...selectedSlide.elements].filter(element => element.visible !== false && !isCoveredBackground(element, design)).sort((a, b) => a.zIndex - b.zIndex).map(element => {
             const selected = element.id === selectedElementId;
             const common = { position: 'absolute', left: `${element.x / W * 100}%`, top: `${element.y / H * 100}%`, width: `${element.w / W * 100}%`, height: `${element.h / H * 100}%`, transform: `rotate(${element.rotation || 0}deg)`, zIndex: element.zIndex, border: selected ? '2px solid #8b5cf6' : '1px solid transparent', cursor: element.locked ? 'default' : 'move', userSelect: 'none', overflow: 'hidden' } as const;
             if (element.type === 'text') return <Box key={element.id} onPointerDown={event => beginDrag(event, element)} onDoubleClick={() => setSelectedElementId(element.id)} sx={{ ...common, color: String(element.style?.color || document.theme.text), fontSize: `clamp(8px, ${styleNumber(element, 'fontSize', 20) / 1100 * 100}vw, ${styleNumber(element, 'fontSize', 20)}px)`, fontWeight: styleNumber(element, 'fontWeight', 400), lineHeight: 1.15, textAlign: String(element.style?.textAlign || 'left') as 'left', display: 'block', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word', p: .25 }}>{element.text}</Box>;

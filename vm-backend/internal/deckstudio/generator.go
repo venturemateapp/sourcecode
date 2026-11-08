@@ -108,7 +108,28 @@ Return the complete deck with required top-level fields: schemaVersion, title, t
 			document, response = retryDocument, retryResponse
 		}
 	}
+	applyBackgroundDesign(&document, previousDocument, currentDocument == "")
 	return &document, response, nil
+}
+
+// A design is a presentation preference, so revisions retain it even if the
+// model omits metadata. Existing decks without a preference keep their artwork.
+func applyBackgroundDesign(document *Document, previous string, fresh bool) {
+	if document.Metadata == nil {
+		document.Metadata = map[string]any{}
+	}
+	if !fresh && strings.TrimSpace(previous) != "" && previous != "{}" {
+		var old Document
+		if json.Unmarshal([]byte(previous), &old) == nil {
+			if design, ok := old.Metadata["backgroundDesign"].(string); ok && design != "" {
+				document.Metadata["backgroundDesign"] = design
+			} else {
+				document.Metadata["backgroundDesign"] = "original"
+			}
+			return
+		}
+	}
+	document.Metadata["backgroundDesign"] = "midnight"
 }
 
 func freshDocumentRequested(prompt string) bool {
