@@ -143,7 +143,7 @@ func ValidateManifest(content string) error {
 	return nil
 }
 
-func Generate(ctx context.Context, provider ai.Provider, project *aistudio.Project, business *businesses.Business, prompt string, currentFiles []aistudio.ProjectFile) (*GenerationResult, []aistudio.FileChange, *ai.ProviderResponse, error) {
+func Generate(ctx context.Context, provider ai.Provider, project *aistudio.Project, business *businesses.Business, prompt, currentDocument string, currentFiles []aistudio.ProjectFile) (*GenerationResult, []aistudio.FileChange, *ai.ProviderResponse, error) {
 	if provider == nil {
 		return nil, nil, nil, errors.New("AI provider is unavailable")
 	}
@@ -180,9 +180,10 @@ Treat the linked business profile as the source of truth and the user's request 
 For a marketing website, build a distinctive homepage with a clear value proposition and business-specific copy, relevant services or products, audience/use cases, a credible how-it-works or process section, a strong contact/lead CTA, and useful footer/navigation. Add about, service, or contact routes when they improve the experience. For a functional app, build the requested workflows with a deliberate dashboard and useful empty/loading/error states. Add relevant sections and working interactions rather than a static text mockup.
 Meet a modern professional design bar: establish a visual concept that fits the industry and brand kit; use a considered palette, strong readable type scale, generous spacing, responsive layouts, clear hierarchy, polished navigation, purposeful imagery or CSS visuals, and refined hover/focus states. Avoid a generic template look, a page made only of repetitive cards, weak contrast, or default browser styling. Implement complete mobile, tablet, and desktop layouts.
 Treat mobile as a first-class layout: support 320px-wide phones without horizontal scrolling, clipped text, overlapping controls, or tiny tap targets; stack or reflow navigation, hero actions, grids, forms, tables, and dashboards appropriately; use an accessible working menu when navigation collapses; keep buttons and fields touch-friendly; and use readable type, spacing, and safe-area padding on small screens. Include real responsive breakpoint rules in src/styles.css and preserve the viewport meta tag in index.html. Check every page and interaction against narrow and wide layouts before returning the result.
+Treat each chat request as an iteration on the current revision, including a revision awaiting approval. Read the current AppSpec and files, preserve the existing business identity, completed content, visual style, and working integrations, and add or change only what the latest request asks for. Do not restart from the starter or discard earlier user-requested changes. Keep all prior sections and functionality unless the user explicitly asks to replace or remove them.
 Never show starter copy, TODOs, lorem ipsum, placeholder contact details, fake links, or VentureMate branding in the generated business website. Do not use phrases like "Make this experience specific to your business" or "Launch a polished business experience". Make calls to action and navigation work; implement form validation and clear success/error feedback for forms.
 If profile details are sparse, still create a high-quality site using the verified business name and known industry. Do not make up specific products, service guarantees, customer stories, testimonials, staff, awards, addresses, contact details, market statistics, revenue, traction, or historical financial results. Use clearly labeled editable copy or neutral descriptions where facts are missing. Use verified metrics only when they are supplied and relevant. Label future assumptions as projections.
-Never include API keys or secrets. Generated apps must use src/runtime/client.ts for managed data. Do not add arbitrary packages.
+Never include API keys or secrets. For VentureMate-managed data and integration flows, use the supplied vmRuntime client in src/runtime/client.ts and matching AppSpec entities; implement real list/create/update/delete behavior with loading, empty, validation, and error states instead of fake success. Preserve and extend existing runtime integrations on follow-up requests. Do not invent third-party API calls or credentials; when an external connection is not configured, build a clear connection-required state and explain the needed setup. Do not add arbitrary packages.
 Preserve every manual edit and every unrelated file. Use exact, reviewable file operations.
 For update_file and delete_file, baseHash must equal the supplied file hash. Prefer exact replacements for small edits; each search must match exactly once.
 Allowed operations: create_file, update_file, delete_file, move_file.
@@ -192,7 +193,11 @@ Required JSON shape: {"summary":"...","appSpec":{"schemaVersion":"1.0","name":".
 On the first generation from the VentureMate starter project, replace src/App.tsx with complete business-specific page content and update the styling so the result does not resemble the untouched starter. Use full file content for a substantial first build or redesign; use precise patches for small later edits.
 On the first generation, also update index.html with the business name and a specific page description; remove all VentureMate product branding from customer-facing content.
 Use create_file content for new files. A full content field may be used for an update when it produces a complete, coherent page or component.`
-	userMessage := fmt.Sprintf("PROJECT: %s (%s)\nBUSINESS CONTEXT:\n%s\n\nUSER REQUEST:\n%s\n\n%s", project.Name, project.ProjectType, businessContext, prompt, contextBuilder.String())
+	appSpecContext := "No prior application specification is available."
+	if strings.TrimSpace(currentDocument) != "" {
+		appSpecContext = currentDocument
+	}
+	userMessage := fmt.Sprintf("PROJECT: %s (%s)\nBUSINESS CONTEXT:\n%s\n\nCURRENT APPLICATION SPECIFICATION (continue this version):\n%s\n\nLATEST USER REQUEST:\n%s\n\n%s", project.Name, project.ProjectType, businessContext, appSpecContext, prompt, contextBuilder.String())
 	ctx = ai.WithResponseTokenLimit(ctx, ai.AppResponseTokens)
 	response, err := provider.Chat(ctx, system, []ai.Message{{Role: "user", Content: userMessage}}, nil)
 	if err != nil {

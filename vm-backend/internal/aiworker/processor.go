@@ -210,12 +210,26 @@ func (p *Processor) generate(ctx context.Context, job *aijobs.Job) (any, string,
 	var response *ai.ProviderResponse
 	switch project.ProjectType {
 	case aistudio.ProjectTypeWebApp:
-		files, err := p.Projects.ListFiles(ctx, job.UserID, project.ID)
+		baseRevisionID := project.CurrentRevisionID
+		var currentDocument string
+		if baseRevisionID != "" {
+			currentRevision, getErr := p.Projects.GetRevision(ctx, job.UserID, baseRevisionID)
+			if getErr != nil {
+				return nil, "", "", "", 0, 0, getErr
+			}
+			if currentRevision == nil || (currentRevision.Status != "ready" && currentRevision.Status != "approved") {
+				baseRevisionID = project.ApprovedRevisionID
+				currentDocument = ""
+			} else {
+				currentDocument = currentRevision.Document
+			}
+		}
+		files, err := p.Projects.ResolveFilesAtRevision(ctx, job.UserID, project.ID, baseRevisionID)
 		if err != nil {
 			return nil, "", "", "", 0, 0, err
 		}
 		_ = p.Jobs.UpdateProgress(ctx, job.ID, p.WorkerID, "generating", "Generating structured file changes", 30, "Calling AI provider")
-		result, changes, providerResponse, err := appbuilder.Generate(ctx, provider, project, business, request.Prompt, files)
+		result, changes, providerResponse, err := appbuilder.Generate(ctx, provider, project, business, request.Prompt, currentDocument, files)
 		if err != nil {
 			return nil, "", "", "", 0, 0, err
 		}

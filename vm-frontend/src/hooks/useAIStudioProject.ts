@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  approveAIRevision, createAIProject, createAIRevision, generateAIAsset, listAIAssets, listAIBuilds,
+  approveAIRevision, createAIProject, createAIRevision, generateAIAsset, getAIProject, listAIAssets, listAIBuilds,
   listAIJobs, listAIProjectFiles, listAIProjects, listAIRevisions, rollbackAIProject,
   startAIBuild, startAIGeneration, updateAIProjectFile,
 } from '../lib/ai-studio/api';
@@ -34,7 +34,7 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
     setRevisions(nextRevisions);
     setAssets(nextAssets);
     if (projectType === 'web_app') {
-      const [nextFiles, nextBuilds] = await Promise.all([listAIProjectFiles(target.id), listAIBuilds(target.id)]);
+      const [nextFiles, nextBuilds] = await Promise.all([listAIProjectFiles(target.id, target.currentRevisionId), listAIBuilds(target.id)]);
       setFiles(nextFiles);
       setBuilds(nextBuilds);
     }
@@ -42,7 +42,15 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
 
   const { job, watch, setJob: updateJob, clear: clearJob, connected } = useAIJob(async (settledJob) => {
     if (settledJob.status === 'awaiting_review' || settledJob.status === 'completed') {
-      if (project) await refreshProjectData(project);
+      if (!project || (settledJob.projectId && settledJob.projectId !== project.id)) return;
+      const latestProject = await getAIProject(project.id);
+      if (latestProject) {
+        setProject(latestProject);
+        setProjects(current => current.map(item => item.id === latestProject.id ? latestProject : item));
+        await refreshProjectData(latestProject);
+      } else {
+        await refreshProjectData(project);
+      }
     }
   });
 

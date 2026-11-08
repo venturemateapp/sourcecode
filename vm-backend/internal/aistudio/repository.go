@@ -288,6 +288,62 @@ func revisionContentHash(document, manifest string, changes []FileChange) string
 	return "sha256:" + hex.EncodeToString(h.Sum(nil))
 }
 
+func fileHashesAtRevisionTx(ctx context.Context, tx pgx.Tx, projectID, revisionID string) (map[string]string, error) {
+	files := make(map[string]string)
+	if revisionID == "" {
+		rows, err := tx.Query(ctx, `SELECT path,content_hash FROM ai_project_files WHERE project_id=$1`, projectID)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var filePath, contentHash string
+			if err := rows.Scan(&filePath, &contentHash); err != nil {
+				return nil, err
+			}
+			files[filePath] = contentHash
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return files, nil
+	}
+	rows, err := tx.Query(ctx, `WITH RECURSIVE chain AS (
+		SELECT id,parent_revision_id,0 AS depth FROM ai_project_revisions WHERE id=$1 AND project_id=$2
+		UNION ALL
+		SELECT r.id,r.parent_revision_id,c.depth+1 FROM ai_project_revisions r JOIN chain c ON c.parent_revision_id=r.id
+	)
+	SELECT v.path,v.operation,COALESCE(v.previous_path,''),v.content,v.content_hash,c.depth
+	FROM chain c JOIN ai_project_file_versions v ON v.revision_id=c.id
+	ORDER BY c.depth DESC,v.created_at,v.id`, revisionID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var filePath, operation, previousPath, content, contentHash string
+		var depth int
+		if err := rows.Scan(&filePath, &operation, &previousPath, &content, &contentHash, &depth); err != nil {
+			return nil, err
+		}
+		switch operation {
+		case "create", "update":
+			files[filePath] = contentHash
+		case "delete":
+			delete(files, filePath)
+		case "move":
+			if hash, exists := files[previousPath]; exists {
+				delete(files, previousPath)
+				if content != "" {
+					hash = contentHash
+				}
+				files[filePath] = hash
+			}
+		}
+	}
+	return files, rows.Err()
+}
+
 func (r *Repository) CreateRevision(ctx context.Context, input RevisionInput) (*Revision, error) {
 	if strings.TrimSpace(input.UserID) == "" || strings.TrimSpace(input.ProjectID) == "" {
 		return nil, errors.New("project and authenticated user are required")
@@ -349,6 +405,10 @@ func (r *Repository) CreateRevision(ctx context.Context, input RevisionInput) (*
 		}
 		return nil, err
 	}
+	parentFiles, err := fileHashesAtRevisionTx(ctx, tx, input.ProjectID, parentRevisionID)
+	if err != nil {
+		return nil, err
+	}
 
 	for i := range input.Files {
 		change := &input.Files[i]
@@ -356,12 +416,7 @@ func (r *Repository) CreateRevision(ctx context.Context, input RevisionInput) (*
 		if change.Operation == "move" {
 			lookupPath = change.PreviousPath
 		}
-		var currentHash string
-		err := tx.QueryRow(ctx, `SELECT content_hash FROM ai_project_files WHERE project_id=$1 AND path=$2`, input.ProjectID, lookupPath).Scan(&currentHash)
-		exists := err == nil
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return nil, err
-		}
+		currentHash, exists := parentFiles[lookupPath]
 		switch change.Operation {
 		case "create":
 			if exists {
@@ -379,13 +434,18 @@ func (r *Repository) CreateRevision(ctx context.Context, input RevisionInput) (*
 			}
 		}
 		if change.Operation == "move" {
-			var destinationExists bool
-			if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM ai_project_files WHERE project_id=$1 AND path=$2)`, input.ProjectID, change.Path).Scan(&destinationExists); err != nil {
-				return nil, err
-			}
-			if destinationExists {
+			if _, destinationExists := parentFiles[change.Path]; destinationExists {
 				return nil, fmt.Errorf("destination file %s already exists", change.Path)
 			}
+		}
+		switch change.Operation {
+		case "create", "update":
+			parentFiles[change.Path] = change.ContentHash
+		case "delete":
+			delete(parentFiles, change.Path)
+		case "move":
+			delete(parentFiles, lookupPath)
+			parentFiles[change.Path] = currentHash
 		}
 	}
 
@@ -435,11 +495,11 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	var projectID, projectType, businessID, status, document, manifest string
-	if err := tx.QueryRow(ctx, `SELECT p.id::text,p.project_type,COALESCE(p.business_id::text,''),r.status,r.document::text,r.manifest::text
+	var projectID, projectType, businessID, approvedRevisionID, status, document, manifest string
+	if err := tx.QueryRow(ctx, `SELECT p.id::text,p.project_type,COALESCE(p.business_id::text,''),COALESCE(p.approved_revision_id::text,''),r.status,r.document::text,r.manifest::text
 		FROM ai_project_revisions r JOIN ai_projects p ON p.id=r.project_id
 		WHERE r.id=$1 AND p.user_id=$2 AND p.archived_at IS NULL FOR UPDATE OF p,r`, revisionID, userID).
-		Scan(&projectID, &projectType, &businessID, &status, &document, &manifest); err != nil {
+		Scan(&projectID, &projectType, &businessID, &approvedRevisionID, &status, &document, &manifest); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, errors.New("revision not found or access denied")
 		}
@@ -449,16 +509,23 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 		return nil, fmt.Errorf("revision cannot be approved from status %s", status)
 	}
 
-	rows, err := tx.Query(ctx, `SELECT path,operation,COALESCE(previous_path,''),content,content_hash,base_hash
-		FROM ai_project_file_versions WHERE revision_id=$1 ORDER BY created_at,id`, revisionID)
+	rows, err := tx.Query(ctx, `WITH RECURSIVE chain AS (
+		SELECT id,parent_revision_id,0 AS depth FROM ai_project_revisions WHERE id=$1 AND project_id=$2
+		UNION ALL
+		SELECT r.id,r.parent_revision_id,c.depth+1 FROM ai_project_revisions r JOIN chain c ON c.parent_revision_id=r.id
+		WHERE ($3::text='' OR r.id::text<>$3::text) AND r.status<>'approved'
+	)
+	SELECT c.id::text,v.path,v.operation,COALESCE(v.previous_path,''),v.content,v.content_hash,v.base_hash
+	FROM chain c JOIN ai_project_file_versions v ON v.revision_id=c.id
+	ORDER BY c.depth DESC,v.created_at,v.id`, revisionID, projectID, approvedRevisionID)
 	if err != nil {
 		return nil, err
 	}
-	type version struct{ path, operation, previousPath, content, contentHash, baseHash string }
+	type version struct{ revisionID, path, operation, previousPath, content, contentHash, baseHash string }
 	var versions []version
 	for rows.Next() {
 		var v version
-		if err := rows.Scan(&v.path, &v.operation, &v.previousPath, &v.content, &v.contentHash, &v.baseHash); err != nil {
+		if err := rows.Scan(&v.revisionID, &v.path, &v.operation, &v.previousPath, &v.content, &v.contentHash, &v.baseHash); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -469,6 +536,9 @@ func (r *Repository) ApproveRevision(ctx context.Context, userID, revisionID str
 		document = securedDocuments[0]
 		changes := make([]FileChange, 0, len(versions))
 		for _, v := range versions {
+			if v.revisionID != revisionID {
+				continue
+			}
 			changes = append(changes, FileChange{Path: v.path, Operation: v.operation, PreviousPath: v.previousPath, Content: v.content, ContentHash: v.contentHash, BaseHash: v.baseHash})
 		}
 		contentHash := revisionContentHash(document, manifest, changes)
@@ -587,29 +657,38 @@ func (r *Repository) UpdateProjectFile(ctx context.Context, userID, projectID, f
 		return nil, err
 	}
 
-	// A source-file edit must keep the structured AppSpec/deck/plan document from
-	// the latest approved revision. Replacing it with {} would make a web app
-	// impossible to approve, rebuild, or restore after a normal code edit.
-	var currentDocument, currentSchemaVersion string
-	err = r.db.QueryRow(ctx, `SELECT r.document::text,r.schema_version
-		FROM ai_projects p JOIN ai_project_revisions r ON r.id=COALESCE(p.approved_revision_id,p.current_revision_id)
-		WHERE p.id=$1 AND p.user_id=$2 AND p.archived_at IS NULL`, projectID, userID).
-		Scan(&currentDocument, &currentSchemaVersion)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, errors.New("project has no editable revision or access was denied")
-	}
+	project, err := r.GetProject(ctx, userID, projectID)
 	if err != nil {
 		return nil, err
 	}
-
+	if project == nil {
+		return nil, errors.New("project not found or access denied")
+	}
+	currentRevisionID := project.CurrentRevisionID
+	if currentRevisionID == "" {
+		currentRevisionID = project.ApprovedRevisionID
+	}
+	currentRevision, err := r.GetRevision(ctx, userID, currentRevisionID)
+	if err != nil {
+		return nil, err
+	}
+	if currentRevision == nil {
+		return nil, errors.New("project has no editable revision")
+	}
+	currentDocument := currentRevision.Document
+	currentSchemaVersion := currentRevision.SchemaVersion
+	currentFiles, err := r.ResolveFilesAtRevision(ctx, userID, projectID, currentRevisionID)
+	if err != nil {
+		return nil, err
+	}
 	var exists bool
 	var currentHash string
-	err = r.db.QueryRow(ctx, `SELECT content_hash FROM ai_project_files f JOIN ai_projects p ON p.id=f.project_id
-		WHERE f.project_id=$1 AND f.path=$2 AND p.user_id=$3 AND p.archived_at IS NULL`, projectID, clean, userID).Scan(&currentHash)
-	if err == nil {
-		exists = true
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+	for _, file := range currentFiles {
+		if file.Path == clean {
+			exists = true
+			currentHash = file.ContentHash
+			break
+		}
 	}
 	op := "create"
 	if exists {
@@ -702,6 +781,10 @@ func (r *Repository) ResolveFilesAtRevision(ctx context.Context, userID, project
 }
 
 func (r *Repository) RollbackProject(ctx context.Context, userID, projectID, targetRevisionID string) (*Revision, error) {
+	project, err := r.GetProject(ctx, userID, projectID)
+	if err != nil || project == nil {
+		return nil, errors.New("project not found or access denied")
+	}
 	target, err := r.GetRevision(ctx, userID, targetRevisionID)
 	if err != nil || target == nil || target.ProjectID != projectID {
 		return nil, errors.New("target revision not found or access denied")
@@ -710,7 +793,7 @@ func (r *Repository) RollbackProject(ctx context.Context, userID, projectID, tar
 	if err != nil {
 		return nil, err
 	}
-	currentFiles, err := r.ListFiles(ctx, userID, projectID)
+	currentFiles, err := r.ResolveFilesAtRevision(ctx, userID, projectID, project.CurrentRevisionID)
 	if err != nil {
 		return nil, err
 	}

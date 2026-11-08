@@ -345,7 +345,7 @@ export function WebAppStudio() {
       onSelectProject={project => void studio.selectProject(project)} onCreateProject={studio.createProject}
       onRefresh={() => void studio.load()} onGenerate={startGeneration} onApprove={approveAndBuild} onRollback={studio.rollback}
       onDismissError={() => studio.setError(null)} onGenerateAsset={studio.generateAsset} onExport={() => void downloadSource()} onPublish={() => void publish()}
-      createLabel="Create AI web app" generationContext={generationContext} generatePlaceholder="Describe the complete website or app. Include pages, user flows, data entities, branding, forms and the outcome users should achieve."
+      createLabel="Create AI web app" generationContext={generationContext} generatePlaceholder="What should AI add, change, or connect next? Request new pages, sections, forms, dashboards, or data integrations. It continues from the latest revision and keeps your existing work."
       starterPrompts={[
         `Build a polished responsive website and client portal for ${selectedBusiness?.name || 'my business'} using the verified business profile.`,
         'Add authentication screens, a dashboard, searchable records and a responsive navigation without removing existing work.',

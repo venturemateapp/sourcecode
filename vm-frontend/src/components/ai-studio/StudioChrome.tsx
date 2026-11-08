@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Alert, Box, Button, Card, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, Divider, IconButton, LinearProgress, MenuItem, Select, Tab, Tabs, TextField, Tooltip, Typography,
@@ -65,8 +65,10 @@ export function StudioChrome(props: StudioChromeProps) {
   const [projectName, setProjectName] = useState('');
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [approving, setApproving] = useState(false);
   const [generatingAsset, setGeneratingAsset] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [assetSubject, setAssetSubject] = useState('');
   const [assetKind, setAssetKind] = useState('image');
   const [assetStyle, setAssetStyle] = useState('modern editorial');
@@ -80,6 +82,16 @@ export function StudioChrome(props: StudioChromeProps) {
   const revisionCount = props.revisions.length;
   const latestApproved = useMemo(() => props.revisions.find(item => item.status === 'approved'), [props.revisions]);
 
+  useEffect(() => {
+    if (!submittedJobId || props.job?.id !== submittedJobId) return;
+    if (props.job.status === 'awaiting_review' || props.job.status === 'completed') {
+      setPrompt('');
+      setSubmittedJobId(null);
+    } else if (props.job.status === 'failed' || props.job.status === 'cancelled') {
+      setSubmittedJobId(null);
+    }
+  }, [props.job?.id, props.job?.status, submittedJobId]);
+
   const create = async () => {
     if (!projectName.trim()) return;
     setCreating(true);
@@ -92,6 +104,7 @@ export function StudioChrome(props: StudioChromeProps) {
 
   const generate = async () => {
     if (!prompt.trim() || isJobActive) return;
+    setRequestError(null);
     if (!props.project) {
       setProjectName(props.createLabel.replace(/^Create\s+/i, '').trim() || 'AI Project');
       setCreateOpen(true);
@@ -100,20 +113,27 @@ export function StudioChrome(props: StudioChromeProps) {
     setGenerating(true);
     try {
       const scopedPrompt = props.generationContext ? `${props.generationContext}\n\nUSER REQUEST:\n${prompt.trim()}` : prompt.trim();
-      await props.onGenerate(scopedPrompt);
-      setPrompt('');
+      const acceptedJob = await props.onGenerate(scopedPrompt) as { id?: string } | null;
+      if (acceptedJob?.id) setSubmittedJobId(acceptedJob.id);
+      else setPrompt('');
+    } catch (cause) {
+      setRequestError(cause instanceof Error ? cause.message : 'Could not send the request to AI. Your message is still here; try again.');
     } finally { setGenerating(false); }
   };
 
   const runStarterPrompt = async (starter: string) => {
     setPrompt(starter);
+    setRequestError(null);
     if (!props.project) { setProjectName(props.createLabel.replace(/^Create\s+/i, '').trim() || 'AI Project'); setCreateOpen(true); return; }
     if (isJobActive || generating) return;
     setGenerating(true);
     try {
       const scopedPrompt = props.generationContext ? `${props.generationContext}\n\nUSER REQUEST:\n${starter}` : starter;
-      await props.onGenerate(scopedPrompt);
-      setPrompt('');
+      const acceptedJob = await props.onGenerate(scopedPrompt) as { id?: string } | null;
+      if (acceptedJob?.id) setSubmittedJobId(acceptedJob.id);
+      else setPrompt('');
+    } catch (cause) {
+      setRequestError(cause instanceof Error ? cause.message : 'Could not send the request to AI. Your message is still here; try again.');
     } finally { setGenerating(false); }
   };
 
@@ -135,6 +155,8 @@ export function StudioChrome(props: StudioChromeProps) {
         referenceImage: referenceImage || undefined,
       });
       setAssetSubject('');
+    } catch (cause) {
+      setRequestError(cause instanceof Error ? cause.message : 'Could not start asset generation. Please try again.');
     } finally { setGeneratingAsset(false); }
   };
 
@@ -181,6 +203,7 @@ export function StudioChrome(props: StudioChromeProps) {
       </Box>
 
       {props.error && <Alert severity="error" onClose={props.onDismissError} sx={{ borderRadius: 0 }}>{props.error}</Alert>}
+      {props.job?.status === 'failed' && props.job.errorMessage && <Alert severity="error" sx={{ borderRadius: 0 }}>{props.job.errorMessage}</Alert>}
       {props.job && isJobActive && <LinearProgress variant="determinate" value={Math.max(2, props.job.progress || 2)} />}
 
       <Box sx={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', lg: `${props.leftRail ? '230px ' : ''}minmax(0,1fr) 330px` } }}>
@@ -196,6 +219,7 @@ export function StudioChrome(props: StudioChromeProps) {
 
           {rightTab === 'ai' && (
             <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25, minHeight: 0, flex: 1 }}>
+              {requestError && <Alert severity="error" onClose={() => setRequestError(null)} sx={{ fontSize: 10 }}>{requestError}</Alert>}
               {props.job && showJob && (
                 <Card sx={{ p: 1.25, bgcolor: 'rgba(255,255,255,.025)' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: .75 }}>
@@ -213,13 +237,13 @@ export function StudioChrome(props: StudioChromeProps) {
                 </Card>
               )}
               <TextField
-                multiline minRows={5} maxRows={10} value={prompt} onChange={event => setPrompt(event.target.value)}
+                multiline minRows={5} maxRows={10} value={prompt} disabled={generating || isJobActive} onChange={event => setPrompt(event.target.value)}
                 placeholder={props.generatePlaceholder}
                 onKeyDown={event => { if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void generate(); } }}
                 sx={{ '& .MuiOutlinedInput-root': { alignItems: 'flex-start', bgcolor: 'rgba(0,0,0,.18)' } }}
               />
               <Button fullWidth variant="contained" startIcon={generating || isJobActive ? <CircularProgress size={14} /> : <Sparkles size={15} />} disabled={!prompt.trim() || generating || isJobActive} onClick={() => void generate()}>
-                {isJobActive ? 'AI is working…' : 'Generate reviewable revision'}
+                {isJobActive ? 'AI is working…' : props.pendingRevision ? 'Submit another update' : 'Generate reviewable revision'}
               </Button>
               <Typography sx={{ fontSize: 9, color: 'var(--vm-text-muted)', textAlign: 'center' }}>Ctrl/Cmd + Enter to generate</Typography>
               <Divider />

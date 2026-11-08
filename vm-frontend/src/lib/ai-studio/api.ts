@@ -35,9 +35,9 @@ export async function renameAIProject(projectId: string, name: string): Promise<
   return data.renameAiProject;
 }
 
-export async function listAIProjectFiles(projectId: string): Promise<AIProjectFile[]> {
-  const query = `query AIProjectFiles($projectId: ID!) { aiProjectFiles(projectId: $projectId) { id projectId path language isBinary assetId currentContent contentHash sizeBytes createdAt updatedAt } }`;
-  const data = await graphqlRequest<{ aiProjectFiles: AIProjectFile[] }>(query, { projectId });
+export async function listAIProjectFiles(projectId: string, revisionId?: string): Promise<AIProjectFile[]> {
+	const query = `query AIProjectFiles($projectId: ID!, $revisionId: ID) { aiProjectFiles(projectId: $projectId, revisionId: $revisionId) { id projectId path language isBinary assetId currentContent contentHash sizeBytes createdAt updatedAt } }`;
+	const data = await graphqlRequest<{ aiProjectFiles: AIProjectFile[] }>(query, { projectId, revisionId: revisionId || null });
   return data.aiProjectFiles;
 }
 
