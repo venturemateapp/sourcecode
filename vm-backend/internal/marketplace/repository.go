@@ -83,7 +83,7 @@ func (r *Repository) CreateBooking(ctx context.Context, b *Booking) error {
 func (r *Repository) ListBookings(ctx context.Context, userID string, admin bool) ([]Booking, error) {
 	var query string
 	if admin {
-		query = `SELECT b.id, b.provider_id, b.user_id, COALESCE(b.business_id,''), b.project_title, COALESCE(b.description,''),
+		query = `SELECT b.id, b.provider_id, b.user_id, b.project_title, COALESCE(b.description,''),
 			b.status, COALESCE(b.admin_notes,''), b.created_at, b.updated_at,
 			COALESCE(p.name,''), COALESCE(u.first_name || ' ' || u.surname,'')
 			FROM bookings b
@@ -91,7 +91,7 @@ func (r *Repository) ListBookings(ctx context.Context, userID string, admin bool
 			LEFT JOIN users u ON u.id = b.user_id
 			ORDER BY b.created_at DESC`
 	} else {
-		query = `SELECT b.id, b.provider_id, b.user_id, COALESCE(b.business_id,''), b.project_title, COALESCE(b.description,''),
+		query = `SELECT b.id, b.provider_id, b.user_id, b.project_title, COALESCE(b.description,''),
 			b.status, COALESCE(b.admin_notes,''), b.created_at, b.updated_at,
 			COALESCE(p.name,''), ''
 			FROM bookings b
@@ -113,7 +113,7 @@ func (r *Repository) ListBookings(ctx context.Context, userID string, admin bool
 	var out []Booking
 	for rows.Next() {
 		var b Booking
-		if err := rows.Scan(&b.ID, &b.ProviderID, &b.UserID, &b.BusinessID, &b.ProjectTitle, &b.Description,
+		if err := rows.Scan(&b.ID, &b.ProviderID, &b.UserID, &b.ProjectTitle, &b.Description,
 			&b.Status, &b.AdminNotes, &b.CreatedAt, &b.UpdatedAt, &b.ProviderName, &b.UserName); err != nil {
 			return nil, err
 		}
