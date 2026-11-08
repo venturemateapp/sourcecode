@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Box, Button, Card, Chip, CircularProgress, Divider, IconButton, MenuItem, Tab, Tabs, TextField, Tooltip, Typography,
+  Box, Button, Card, Chip, CircularProgress, Divider, IconButton, LinearProgress, MenuItem, Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
 import {
   Braces, Code2, Download, ExternalLink, FileCode2, Folder, Laptop, Monitor, Play,
@@ -38,6 +38,7 @@ export function WebAppStudio() {
   const selectedFile = useMemo(() => studio.files.find(file => file.path === selectedPath) || studio.files[0] || null, [selectedPath, studio.files]);
   const latestBuild = studio.builds.find(build => build.status === 'completed' && build.previewUrl) || null;
   const failedBuild = studio.builds.find(build => build.status === 'failed') || null;
+  const studioJobActive = Boolean(studio.job && ['queued', 'running'].includes(studio.job.status));
   const currentDocument = studio.pendingRevision?.document || studio.approvedRevision?.document || '{}';
   const studioPreviewUrl = useMemo(() => {
     if (!latestBuild?.previewUrl || typeof window === 'undefined') return latestBuild?.previewUrl || '';
@@ -63,6 +64,19 @@ export function WebAppStudio() {
     setSelectedPreviewNode(null);
     setPreviewErrors([]);
   }, [latestBuild?.id]);
+
+  useEffect(() => {
+    if (studio.job?.jobType === 'generate' && studio.job.status === 'awaiting_review' && studio.pendingRevision) {
+      setMode('build');
+    }
+  }, [studio.job?.jobType, studio.job?.status, studio.pendingRevision?.id]);
+
+  useEffect(() => {
+    if (studio.job?.jobType !== 'build' || studio.job.status !== 'completed') return;
+    if (studio.builds.some(build => build.jobId === studio.job?.id && build.status === 'completed')) {
+      setMode('preview');
+    }
+  }, [studio.builds, studio.job?.id, studio.job?.jobType, studio.job?.status]);
 
   useEffect(() => {
     if (!previewOrigin) return undefined;
@@ -112,9 +126,30 @@ export function WebAppStudio() {
     await studio.saveDocument(specDraft, 'Update application specification');
   };
 
-  const runBuild = async () => {
+  const startGeneration = async (prompt: string) => {
+    setMode('build');
+    return studio.generate(prompt);
+  };
+
+  const runBuild = async (revisionId?: string) => {
+    if (actionBusy || studioJobActive) return;
     setActionBusy(true);
-    try { await studio.build(); setMode('build'); } finally { setActionBusy(false); }
+    setMode('build');
+    try {
+      await studio.build(revisionId);
+    } catch (cause) {
+      studio.setError(cause instanceof Error ? cause.message : 'The build could not be started.');
+    } finally { setActionBusy(false); }
+  };
+
+  const approveAndBuild = async (revisionId: string) => {
+    setMode('build');
+    try {
+      const approved = await studio.approve(revisionId);
+      if (approved.approvedRevisionId === revisionId) await runBuild(revisionId);
+    } catch {
+      // The studio hook reports approval errors in its shared error banner.
+    }
   };
 
   const repairBuild = async (buildId: string) => {
@@ -188,7 +223,7 @@ export function WebAppStudio() {
         <MenuItem value="github">GitHub</MenuItem>
         <MenuItem value="netlify">Netlify</MenuItem>
       </TextField>
-      <Button size="small" variant="outlined" startIcon={actionBusy ? <CircularProgress size={13} /> : <Play size={14} />} disabled={!studio.project?.approvedRevisionId || actionBusy} onClick={() => void runBuild()}>Build</Button>
+      <Button size="small" variant="outlined" startIcon={actionBusy || studioJobActive ? <CircularProgress size={13} /> : <Play size={14} />} disabled={!studio.project?.approvedRevisionId || actionBusy || studioJobActive} onClick={() => void runBuild()}>Build</Button>
     </>
   );
 
@@ -250,7 +285,24 @@ export function WebAppStudio() {
     </Box>
   ) : (
     <Box sx={{ p: 2, overflow: 'auto' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><TerminalSquare size={18} /><Typography sx={{ fontWeight: 900 }}>Builds and diagnostics</Typography><Box sx={{ flex: 1 }} /><Button variant="contained" startIcon={<Play size={14} />} disabled={!studio.project.approvedRevisionId || actionBusy} onClick={() => void runBuild()}>New build</Button></Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}><TerminalSquare size={18} /><Typography sx={{ fontWeight: 900 }}>Builds and diagnostics</Typography><Box sx={{ flex: 1 }} /><Button variant="contained" startIcon={actionBusy || studioJobActive ? <CircularProgress size={13} /> : <Play size={14} />} disabled={!studio.project.approvedRevisionId || actionBusy || studioJobActive} onClick={() => void runBuild()}>New build</Button></Box>
+      {studio.pendingRevision && (
+        <Card sx={{ p: 1.5, mb: 1.25, bgcolor: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.24)' }}>
+          <Chip size="small" color="warning" label="Revision ready for review" />
+          <Typography sx={{ mt: .75, fontSize: 12, fontWeight: 800 }}>{studio.pendingRevision.summary || 'Review the generated changes'}</Typography>
+          <Typography sx={{ mt: .35, mb: 1, fontSize: 10, color: 'var(--vm-text-muted)' }}>Approve this revision to start its production build automatically. The preview opens when the build is ready.</Typography>
+          <Button size="small" variant="contained" color="success" disabled={studio.saving || actionBusy} onClick={() => void approveAndBuild(studio.pendingRevision!.id)}>Approve & build preview</Button>
+        </Card>
+      )}
+      {studio.job?.jobType === 'build' && studioJobActive && (
+        <Card sx={{ p: 1.5, mb: 1.25, bgcolor: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.2)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: .75 }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 800 }}>{studio.job.message || 'Building preview'}</Typography>
+            <Typography sx={{ fontSize: 10, color: 'var(--vm-text-muted)' }}>{studio.job.progress}%</Typography>
+          </Box>
+          <LinearProgress variant="determinate" value={Math.max(2, studio.job.progress || 2)} />
+        </Card>
+      )}
       {studio.builds.map(build => (
         <Card key={build.id} sx={{ p: 1.5, mb: 1, bgcolor: 'rgba(255,255,255,.025)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -263,7 +315,7 @@ export function WebAppStudio() {
           {(build.logs || build.diagnostics) && <Box component="pre" sx={{ mt: 1, p: 1.25, borderRadius: 1, bgcolor: '#05070b', fontSize: 9, whiteSpace: 'pre-wrap', maxHeight: 230, overflow: 'auto', color: build.status === 'failed' ? '#fca5a5' : '#a7f3d0' }}>{build.logs || build.diagnostics}</Box>}
         </Card>
       ))}
-      {!studio.builds.length && !failedBuild && <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 12 }}>No builds yet.</Typography>}
+      {!studio.builds.length && !failedBuild && !studio.pendingRevision && !(studio.job?.jobType === 'build' && studioJobActive) && <Typography sx={{ color: 'var(--vm-text-muted)', fontSize: 12 }}>No builds yet.</Typography>}
     </Box>
   );
 
@@ -274,7 +326,7 @@ export function WebAppStudio() {
       loading={studio.loading} saving={studio.saving} error={studio.error} pendingRevision={studio.pendingRevision}
       leftRail={leftRail} editor={editor} toolbar={toolbar}
       onSelectProject={project => void studio.selectProject(project)} onCreateProject={studio.createProject}
-      onRefresh={() => void studio.load()} onGenerate={studio.generate} onApprove={studio.approve} onRollback={studio.rollback}
+      onRefresh={() => void studio.load()} onGenerate={startGeneration} onApprove={approveAndBuild} onRollback={studio.rollback}
       onDismissError={() => studio.setError(null)} onGenerateAsset={studio.generateAsset} onExport={() => void downloadSource()} onPublish={() => void publish()}
       createLabel="Create AI web app" generationContext={generationContext} generatePlaceholder="Describe the complete website or app. Include pages, user flows, data entities, branding, forms and the outcome users should achieve."
       starterPrompts={[

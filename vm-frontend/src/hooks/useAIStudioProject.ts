@@ -213,9 +213,11 @@ export function useAIStudioProject(projectType: AIProjectType, businessId?: stri
     } finally { setSaving(false); }
   }, [project, refreshProjectData]);
 
-  const build = useCallback(async () => {
+  const build = useCallback(async (revisionId?: string) => {
     if (!project) throw new Error('No project selected.');
-    const next = await startAIBuild(project.id, project.approvedRevisionId);
+    const targetRevisionId = revisionId || project.approvedRevisionId;
+    if (!targetRevisionId) throw new Error('Approve a revision before building.');
+    const next = await startAIBuild(project.id, targetRevisionId);
     watch(next);
     return next;
   }, [project, watch]);
