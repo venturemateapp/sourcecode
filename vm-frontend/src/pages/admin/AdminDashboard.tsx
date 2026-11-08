@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { GradientButton } from '../../components/shared/buttons';
 import { CardSkeleton } from '../../components/shared/Skeleton';
 import { AnimatedBackground } from '../../components/AnimatedBackground';
-import { graphqlRequest } from '../../lib/api';
+import { graphqlRequest, uploadProviderPicture } from '../../lib/api';
 import { stripMarkdown } from '../../lib/stripMarkdown';
 import { AdminAiUsage } from './AdminAiUsage';
 
@@ -119,6 +119,7 @@ export function AdminDashboard() {
   const [providers, setProviders] = useState<Array<{ id: string; name: string; title: string; category: string; picture: string; rateHourly: number }>>([]);
   const [loadProv, setLoadProv] = useState(false);
   const [provForm, setProvForm] = useState({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
+  const [providerPictureUploading, setProviderPictureUploading] = useState(false);
   const provFileRef = useRef<HTMLInputElement>(null);
   const [bookings, setBookings] = useState<Array<{ id: string; providerName: string; userName: string; projectTitle: string; status: string; createdAt: string }>>([]);
   const [supportSessions, setSupportSessions] = useState<Array<{ id: string; userId: string; subject: string; status: string; createdByName: string; createdByEmail: string; summary: string; createdAt: string; updatedAt: string }>>([]);
@@ -735,13 +736,23 @@ export function AdminDashboard() {
             <TextField size="small" label="Rate $/hr" type="number" value={provForm.rateHourly} onChange={e => setProvForm({...provForm, rateHourly: +e.target.value})}
               sx={{ input: { color: '#fff' }, label: { color: 'rgba(255,255,255,.4)' }, '& fieldset': { borderColor: 'rgba(255,255,255,.12)' } }} />
             <Box>
-              <input ref={provFileRef} type="file" accept="image/*" hidden onChange={async e => {
-                const f = e.target.files?.[0]; if (!f) return;
-                try { const r = await (await import('../../lib/api')).uploadFile(f, 'admin', 'provider'); setProvForm({...provForm, picture: r.document.url}); } catch { alert('Upload failed'); }
+              <input ref={provFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={async e => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (!f) return;
+                setProviderPictureUploading(true);
+                try {
+                  const url = await uploadProviderPicture(f);
+                  setProvForm(current => ({...current, picture: url}));
+                } catch (error) {
+                  alert(error instanceof Error ? error.message : 'Image upload failed');
+                } finally {
+                  setProviderPictureUploading(false);
+                }
               }} />
-              <GradientButton fullWidth variant="outline" size="sm" onClick={() => provFileRef.current?.click()}
+              <GradientButton fullWidth variant="outline" size="sm" disabled={providerPictureUploading} onClick={() => provFileRef.current?.click()}
                 sx={{ fontSize: 11, color: provForm.picture ? '#22c55e' : 'rgba(255,255,255,.5)' }}>
-                {provForm.picture ? 'Uploaded ✓' : 'Upload Picture'}
+                {providerPictureUploading ? 'Uploading…' : provForm.picture ? 'Uploaded ✓' : 'Upload Picture'}
               </GradientButton>
               {provForm.picture && <Avatar src={provForm.picture} sx={{ width: 28, height: 28, mt: 0.5, mx: 'auto' }} />}
             </Box>
@@ -757,7 +768,7 @@ export function AdminDashboard() {
         </DialogContent>
         <DialogActions sx={{ p: 2.5, pt: 0 }}>
           <GradientButton variant="ghost" size="sm" onClick={() => setActiveModal(null)}>Cancel</GradientButton>
-          <GradientButton variant="primary" size="sm" disabled={busy || !provForm.name} onClick={async () => {
+          <GradientButton variant="primary" size="sm" disabled={busy || providerPictureUploading || !provForm.name} onClick={async () => {
             await exec(`mutation { adminUpsertProvider(name:"${provForm.name.replace(/"/g,'\\"')}",title:"${provForm.title.replace(/"/g,'\\"')}",category:"${provForm.category}",bio:"${provForm.bio.replace(/"/g,'\\"')}",picture:"${provForm.picture}",rateHourly:${provForm.rateHourly},skills:"${JSON.stringify(provForm.skills.split(',').map(s=>s.trim())).replace(/"/g,'\\"')}") { id } }`, {});
             setActiveModal(null); setProvForm({ id: '', name: '', title: '', category: 'engineering', bio: '', picture: '', rateHourly: 0, skills: '' });
           }}>Save</GradientButton>

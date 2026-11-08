@@ -9,10 +9,12 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
 	"github.com/venturemate/vmbackend/graph"
@@ -530,6 +532,103 @@ func uploadHandler(container *app.Container) http.HandlerFunc {
 	}
 }
 
+func adminProviderPictureUploadHandler(container *app.Container) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+		userID := r.Header.Get("X-User-ID")
+		user, err := container.UserRepo.FindByID(r.Context(), userID)
+		if err != nil || user == nil || !user.IsAdmin {
+			http.Error(w, `{"error":"admin access required"}`, http.StatusForbidden)
+			return
+		}
+
+		r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
+		if err := r.ParseMultipartForm(5 << 20); err != nil {
+			http.Error(w, `{"error":"image upload must be under 5 MB"}`, http.StatusBadRequest)
+			return
+		}
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, `{"error":"image file is required"}`, http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		data, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, `{"error":"could not read image"}`, http.StatusBadRequest)
+			return
+		}
+		contentType := http.DetectContentType(data)
+		extensions := map[string]string{
+			"image/jpeg": ".jpg",
+			"image/png":  ".png",
+			"image/gif":  ".gif",
+			"image/webp": ".webp",
+		}
+		extension, ok := extensions[contentType]
+		if !ok {
+			http.Error(w, `{"error":"choose a JPG, PNG, GIF, or WebP image"}`, http.StatusBadRequest)
+			return
+		}
+
+		id := uuid.NewString()
+		key := "provider-pictures/" + id + extension
+		if _, err := container.S3.Upload(r.Context(), key, data, contentType); err != nil {
+			log.Printf("provider picture upload failed for admin %s: %v", userID, err)
+			http.Error(w, `{"error":"image storage is unavailable; try again"}`, http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		_ = json.NewEncoder(w).Encode(map[string]string{"url": "/api/provider-pictures/" + id + extension})
+	}
+}
+
+func providerPictureHandler(container *app.Container) http.HandlerFunc {
+	allowedExtensions := map[string]string{".jpg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp"}
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Allow", "GET, HEAD")
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		filename := strings.TrimPrefix(r.URL.Path, "/api/provider-pictures/")
+		if filename == "" || strings.Contains(filename, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		extension := strings.ToLower(filepath.Ext(filename))
+		contentType, ok := allowedExtensions[extension]
+		id := strings.TrimSuffix(filename, extension)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		parsedID, err := uuid.Parse(id)
+		if err != nil || parsedID.String() != id {
+			http.NotFound(w, r)
+			return
+		}
+		data, _, err := container.S3.Download(r.Context(), "provider-pictures/"+filename)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if r.Method == http.MethodGet {
+			_, _ = w.Write(data)
+		}
+	}
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println(".env file not found — using environment variables")
@@ -636,6 +735,8 @@ func main() {
 	http.HandleFunc("/auth/google/calendar/login", googleCalOAuth.LoginHandler)
 	http.HandleFunc("/auth/oauth/", oauthHandler(container.OAuthManager))
 	http.Handle("/api/upload", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, uploadHandler(container)))))
+	http.Handle("/api/admin/provider-picture", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, adminProviderPictureUploadHandler(container)))))
+	http.HandleFunc("/api/provider-pictures/", providerPictureHandler(container))
 	http.Handle("/api/documents/delete", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, deleteDocumentHandler(container)))))
 	http.Handle("/api/documents/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, downloadHandler(container)))))
 	http.Handle("/api/pdf/download", corsMiddleware(http.HandlerFunc(authMiddleware(container.JWTSecret, pdfDownloadHandler(container)))))

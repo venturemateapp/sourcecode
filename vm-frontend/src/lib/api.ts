@@ -125,3 +125,22 @@ export async function uploadFile(
 
   return res.json() as Promise<UploadResult>;
 }
+
+export async function uploadProviderPicture(file: File): Promise<string> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(API_CONFIG.PROVIDER_PICTURE_UPLOAD_URL, {
+    method: 'POST',
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: formData,
+  });
+  const body = await res.text().catch(() => '');
+  let result: { error?: string; url?: string } = {};
+  try { result = JSON.parse(body); } catch { /* Keep the response text for the error below. */ }
+  if (!res.ok) {
+    throw new ApiError(result.error || body || `Upload failed (${res.status}): ${res.statusText}`, res.status);
+  }
+  if (!result.url) throw new ApiError('Upload finished but no image URL was returned', res.status);
+  return result.url;
+}
