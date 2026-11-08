@@ -37,29 +37,24 @@ jobs:
             set -euo pipefail
             cd /data/vm/sourcecode
 
-            env_value() {
-              sed -n "s/^$1=//p" vm-backend/.env | tail -n 1
-            }
-
-            DB_HOST="$(env_value DB_HOST)"
-            DB_PORT="$(env_value DB_PORT)"
-            DB_USER="$(env_value DB_USER)"
-            DB_PASSWORD="$(env_value DB_PASSWORD)"
-            DB_NAME="$(env_value DB_NAME)"
-            DB_SSLMODE="$(env_value DB_SSLMODE)"
-            DB_HOST="${DB_HOST:-127.0.0.1}"
-            DB_PORT="${DB_PORT:-5432}"
-            DB_USER="${DB_USER:-venturematedb}"
-            DB_NAME="${DB_NAME:-venturematedb}"
-            DB_SSLMODE="${DB_SSLMODE:-disable}"
+            BACKEND_CONTAINER="$(docker compose ps -q backend)"
+            if [ -z "$BACKEND_CONTAINER" ]; then
+              echo "Production backend container is not running; stopping without database access." >&2
+              exit 2
+            fi
+            DATABASE_URL="$(docker exec "$BACKEND_CONTAINER" printenv DATABASE_URL | tr -d '\r')"
+            APP_NETWORK="$(docker inspect -f '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$BACKEND_CONTAINER" | head -n 1 | tr -d '\r')"
+            if [ -z "$DATABASE_URL" ] || [ -z "$APP_NETWORK" ]; then
+              echo "Production backend database settings are unavailable; stopping without database access." >&2
+              exit 2
+            fi
 
             psql_remote() {
-              docker run --rm --network host -e PGPASSWORD="$DB_PASSWORD" postgres:16-alpine \
-                psql -X -v ON_ERROR_STOP=1 "host=$DB_HOST port=$DB_PORT user=$DB_USER dbname=$DB_NAME sslmode=$DB_SSLMODE" "$@"
+              docker run --rm --network "$APP_NETWORK" --add-host=host.docker.internal:host-gateway postgres:16-alpine \
+                psql -X -v ON_ERROR_STOP=1 "$DATABASE_URL" "$@"
             }
 
             echo "Remote psql client: postgres:16-alpine"
-            echo "Remote AWS CLI: $(command -v aws >/dev/null 2>&1 && echo available || echo unavailable)"
             echo "Website cleanup mode: $RESET_MODE"
 
             if [ "$RESET_MODE" = "inspect" ]; then
@@ -76,6 +71,24 @@ jobs:
             UNION ALL SELECT 'ai_web_app_deployments|' || COUNT(*) FROM ai_project_deployments WHERE project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
             UNION ALL SELECT 'ai_web_app_netlify_deployments|' || COUNT(*) FROM ai_project_deployments WHERE provider = 'netlify' AND project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app')
             UNION ALL SELECT 'ai_web_app_github_deployments|' || COUNT(*) FROM ai_project_deployments WHERE provider = 'github' AND project_id IN (SELECT id FROM ai_projects WHERE project_type = 'web_app');
+            SELECT 'legacy_site|' || jsonb_build_object(
+              'business', b.name,
+              'subdomain', w.subdomain,
+              'customDomain', w.custom_domain,
+              'status', w.status
+            )::text
+            FROM user_websites w JOIN businesses b ON b.id = w.business_id;
+            SELECT 'ai_web_app|' || jsonb_build_object(
+              'name', p.name,
+              'business', COALESCE(b.name, ''),
+              'slug', p.slug,
+              'status', p.status,
+              'latestPreview', COALESCE((SELECT pb.preview_url FROM ai_project_builds pb WHERE pb.project_id = p.id ORDER BY pb.created_at DESC LIMIT 1), ''),
+              'updatedAt', p.updated_at
+            )::text
+            FROM ai_projects p LEFT JOIN businesses b ON b.id = p.business_id
+            WHERE p.project_type = 'web_app'
+            ORDER BY p.updated_at DESC;
             SQL
               exit 0
             fi
