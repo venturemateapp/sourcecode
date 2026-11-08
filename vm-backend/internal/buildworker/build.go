@@ -240,6 +240,9 @@ func uploadStaticDirectory(ctx context.Context, storage *s3.Service, root, prefi
 		if err != nil {
 			return err
 		}
+		if err := storage.SetPublicRead(ctx, key); err != nil {
+			return fmt.Errorf("make preview object %s publicly readable: %w", relative, err)
+		}
 		if filepath.ToSlash(relative) == "index.html" {
 			indexURL = url
 		}
