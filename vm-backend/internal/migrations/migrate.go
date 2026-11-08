@@ -13,8 +13,24 @@ import (
 
 func Run(db *pgxpool.Pool, migrationsDir string) error {
 	ctx := context.Background()
+	conn, err := db.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire database connection for migrations: %w", err)
+	}
+	defer conn.Release()
 
-	_, err := db.Exec(ctx, `
+	// The API and AI worker start together and both invoke migrations.Run.
+	// Serialize the full migration pass so only one process can apply or record
+	// a migration at a time.
+	const migrationLockID int64 = 731947205113
+	if _, err := conn.Exec(ctx, `SELECT pg_advisory_lock($1)`, migrationLockID); err != nil {
+		return fmt.Errorf("lock database migrations: %w", err)
+	}
+	defer func() {
+		_, _ = conn.Exec(context.Background(), `SELECT pg_advisory_unlock($1)`, migrationLockID)
+	}()
+
+	_, err = conn.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version TEXT PRIMARY KEY,
 			applied_at TIMESTAMPTZ DEFAULT NOW()
@@ -41,7 +57,9 @@ func Run(db *pgxpool.Pool, migrationsDir string) error {
 		version := strings.TrimSuffix(f, ".up.sql")
 
 		var exists bool
-		db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1)`, version).Scan(&exists)
+		if err := conn.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version = $1)`, version).Scan(&exists); err != nil {
+			return fmt.Errorf("check migration %s: %w", f, err)
+		}
 		if exists {
 			continue
 		}
@@ -52,12 +70,12 @@ func Run(db *pgxpool.Pool, migrationsDir string) error {
 			return fmt.Errorf("read %s: %w", f, err)
 		}
 
-		_, err = db.Exec(ctx, string(sql))
+		_, err = conn.Exec(ctx, string(sql))
 		if err != nil {
 			return fmt.Errorf("apply %s: %w", f, err)
 		}
 
-		_, err = db.Exec(ctx, `INSERT INTO schema_migrations (version) VALUES ($1)`, version)
+		_, err = conn.Exec(ctx, `INSERT INTO schema_migrations (version) VALUES ($1)`, version)
 		if err != nil {
 			return fmt.Errorf("record %s: %w", f, err)
 		}
