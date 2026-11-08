@@ -20,6 +20,7 @@ type Investor struct {
 	Criteria        string    `json:"criteria"`
 	MatchScore      *int      `json:"matchScore"`
 	Status          string    `json:"status"`
+	IsActive        bool      `json:"isActive"`
 	ConnectedAt     *string   `json:"connectedAt"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`

@@ -1,0 +1,3 @@
+-- +goose Up
+ALTER TABLE investors
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;

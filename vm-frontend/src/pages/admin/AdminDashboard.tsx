@@ -72,6 +72,7 @@ interface AdminInvestor {
   phone: string;
   focusIndustries: string;
   thesis: string;
+  isActive: boolean;
 }
 
 function jsonStringList(value: string): string {
@@ -256,7 +257,7 @@ export function AdminDashboard() {
 
   const loadInvestors = useCallback(async () => {
     try {
-      const d = await graphqlRequest<{ investors: AdminInvestor[] }>('query { investors { id name type location logo email phone focusIndustries thesis } }');
+      const d = await graphqlRequest<{ investors: AdminInvestor[] }>('query { investors(activeOnly:false) { id name type location logo email phone focusIndustries thesis isActive } }');
       setInvestors(d.investors);
     } catch { /* ignore */ }
   }, []);
@@ -682,7 +683,7 @@ export function AdminDashboard() {
   );
 
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: '' });
+  const [invForm, setInvForm] = useState({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: '', isActive: true });
   const [investorPictureUploading, setInvestorPictureUploading] = useState(false);
   const investorFileRef = useRef<HTMLInputElement>(null);
 
@@ -692,7 +693,7 @@ export function AdminDashboard() {
         <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderBottom: '1px solid rgba(255,255,255,.06)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
           <Globe size={16} color="#f59e0b" />
           <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: 14, flex: 1 }}>Investors <Typography component="span" sx={{ color: 'rgba(255,255,255,.3)', fontWeight: 400 }}>({investors.length})</Typography></Typography>
-          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('investor'); setInvForm({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: 'Invests in...' }); }}>
+          <GradientButton variant="outline" size="sm" startIcon={<Plus size={12} />} onClick={() => { setActiveModal('investor'); setInvForm({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: 'Invests in...', isActive: true }); }}>
             Add Investor
           </GradientButton>
         </Box>
@@ -706,10 +707,11 @@ export function AdminDashboard() {
               <Typography sx={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>{inv.name}</Typography>
               <Typography sx={{ color: 'rgba(255,255,255,.35)', fontSize: 11 }}>{inv.type} · {inv.location}</Typography>
               {(inv.email || inv.phone) && <Typography sx={{ color: 'rgba(167,243,208,.7)', fontSize: 11 }}>{[inv.email, inv.phone].filter(Boolean).join(' · ')}</Typography>}
+              <Chip size="small" label={inv.isActive ? 'Active' : 'Inactive'} sx={{ mt: 0.5, height: 20, color: inv.isActive ? '#34d399' : '#fbbf24', bgcolor: inv.isActive ? 'rgba(52,211,153,.12)' : 'rgba(251,191,36,.12)', fontSize: 10 }} />
             </Box>
             <Tooltip title="Edit investor">
               <IconButton size="small" sx={{ color: '#a7f3d0' }} onClick={() => {
-                setInvForm({ id: inv.id, name: inv.name, type: inv.type, location: inv.location, logo: inv.logo || '', email: inv.email || '', phone: inv.phone || '', industries: jsonStringList(inv.focusIndustries || '[]'), thesis: inv.thesis || '' });
+                setInvForm({ id: inv.id, name: inv.name, type: inv.type, location: inv.location, logo: inv.logo || '', email: inv.email || '', phone: inv.phone || '', industries: jsonStringList(inv.focusIndustries || '[]'), thesis: inv.thesis || '', isActive: inv.isActive });
                 setActiveModal('investor');
               }}><Pencil size={14} /></IconButton>
             </Tooltip>
@@ -755,13 +757,18 @@ export function AdminDashboard() {
               <Typography sx={{ color: 'rgba(255,255,255,.4)', fontSize: 11 }}>JPG, PNG, GIF or WebP, up to 5 MB</Typography>
             </Box>
             {(['name','location','email','phone','industries','thesis'] as const).map(f => (
-              <TextField key={f} size="small" label={f} value={(invForm as Record<string, string>)[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
+              <TextField key={f} size="small" label={f} value={invForm[f]} onChange={e => setInvForm({...invForm, [f]: e.target.value })}
                 type={f === 'email' ? 'email' : f === 'phone' ? 'tel' : 'text'}
                 sx={{ input: { color: '#fff', fontSize: 13 }, label: { color: '#a7f3d0', fontSize: 13 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.25)' } }} />
             ))}
             <TextField select size="small" label="type" value={invForm.type} onChange={e => setInvForm({...invForm, type: e.target.value })}
               sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}>
               {['vc','angel','accelerator','pe'].map(t => <MenuItem key={t} value={t} sx={{ color: '#fff' }}>{t}</MenuItem>)}
+            </TextField>
+            <TextField select size="small" label="Visibility" value={invForm.isActive ? 'active' : 'inactive'} onChange={e => setInvForm({...invForm, isActive: e.target.value === 'active'})}
+              sx={{ input: { color: '#fff' }, label: { color: '#a7f3d0' }, '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.12)' } }}>
+              <MenuItem value="active" sx={{ color: '#fff' }}>Active — visible to users</MenuItem>
+              <MenuItem value="inactive" sx={{ color: '#fff' }}>Inactive — hidden from users</MenuItem>
             </TextField>
           </Box>
         </DialogContent>
@@ -770,12 +777,12 @@ export function AdminDashboard() {
           <GradientButton variant="primary" size="sm" disabled={busy || investorPictureUploading} onClick={async () => {
             setBusy(true);
             try {
-              await graphqlRequest('mutation SaveInvestor($id:ID!,$name:String!,$type:String!,$location:String!,$logo:String!,$email:String,$phone:String,$focusIndustries:String!,$thesis:String!){adminUpsertInvestor(id:$id,name:$name,type:$type,location:$location,logo:$logo,email:$email,phone:$phone,focusIndustries:$focusIndustries,thesis:$thesis)}', {
+              await graphqlRequest('mutation SaveInvestor($id:ID!,$name:String!,$type:String!,$location:String!,$logo:String!,$email:String,$phone:String,$isActive:Boolean!,$focusIndustries:String!,$thesis:String!){adminUpsertInvestor(id:$id,name:$name,type:$type,location:$location,logo:$logo,email:$email,phone:$phone,isActive:$isActive,focusIndustries:$focusIndustries,thesis:$thesis)}', {
                 id: invForm.id || crypto.randomUUID(), name: invForm.name.trim(), type: invForm.type, location: invForm.location,
-                logo: invForm.logo, email: invForm.email.trim(), phone: invForm.phone.trim(), focusIndustries: JSON.stringify(invForm.industries.split(',').map(s => s.trim()).filter(Boolean)), thesis: invForm.thesis,
+                logo: invForm.logo, email: invForm.email.trim(), phone: invForm.phone.trim(), isActive: invForm.isActive, focusIndustries: JSON.stringify(invForm.industries.split(',').map(s => s.trim()).filter(Boolean)), thesis: invForm.thesis,
               });
               await loadInvestors();
-              setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: '' });
+              setActiveModal(null); setInvForm({ id: '', name: '', type: 'vc', location: '', logo: '', email: '', phone: '', industries: '', thesis: '', isActive: true });
             } catch (error) {
               alert(error instanceof Error ? error.message : 'Could not save investor');
             } finally {

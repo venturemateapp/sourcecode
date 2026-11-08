@@ -237,6 +237,7 @@ func init() {
 			"logo":            &graphql.ArgumentConfig{Type: graphql.String},
 			"email":           &graphql.ArgumentConfig{Type: graphql.String},
 			"phone":           &graphql.ArgumentConfig{Type: graphql.String},
+			"isActive":        &graphql.ArgumentConfig{Type: graphql.Boolean},
 			"focusIndustries": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			"thesis":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 		},

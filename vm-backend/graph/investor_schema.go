@@ -59,6 +59,7 @@ var investorType = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"status":      &graphql.Field{Type: graphql.NewNonNull(graphql.String)},
+		"isActive":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean)},
 		"connectedAt": &graphql.Field{Type: graphql.String},
 	},
 })
@@ -87,11 +88,18 @@ func resolveInvestorContact(field string) graphql.FieldResolveFn {
 func init() {
 	rootQuery.AddFieldConfig("investors", &graphql.Field{
 		Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(investorType))),
+		Args: graphql.FieldConfigArgument{
+			"activeOnly": &graphql.ArgumentConfig{Type: graphql.Boolean, DefaultValue: true},
+		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			if AppContainer == nil {
 				return []interface{}{}, nil
 			}
-			return AppContainer.InvestorRepo.List(p.Context)
+			activeOnly := true
+			if isAdmin(p.Context) {
+				activeOnly, _ = p.Args["activeOnly"].(bool)
+			}
+			return AppContainer.InvestorRepo.ListFiltered(p.Context, activeOnly)
 		},
 	})
 }
