@@ -16,7 +16,7 @@ func TestGenerationResultAcceptsBrandMetadata(t *testing.T) {
 	if err := decoder.Decode(&result); err != nil {
 		t.Fatalf("expected additive app metadata to be accepted: %v", err)
 	}
-	normalizeGenerationResult(&result)
+	normalizeGenerationResult(&result, "Demo")
 	if result.Brand["logo"] != "/logo.svg" || result.AppSpec.Brand["primaryColor"] != "#123456" {
 		t.Fatalf("brand metadata was not preserved: root=%v appSpec=%v", result.Brand, result.AppSpec.Brand)
 	}
@@ -25,6 +25,37 @@ func TestGenerationResultAcceptsBrandMetadata(t *testing.T) {
 	}
 	if result.AppSpec.Public == nil || !*result.AppSpec.Public || result.AppSpec.Routes[0].Protected || !result.AppSpec.Routes[1].Protected || result.AppSpec.Entities[0].Permissions["publicRead"] != true || result.AppSpec.Entities[1].Permissions["publicRead"] != false {
 		t.Fatalf("public settings were not normalized: app=%v routes=%v entities=%v", result.AppSpec.Public, result.AppSpec.Routes, result.AppSpec.Entities)
+	}
+}
+
+func TestNormalizeGenerationResultRepairsIncompleteRoutesAndEntities(t *testing.T) {
+	t.Parallel()
+	result := GenerationResult{AppSpec: AppSpec{
+		Routes: []RouteSpec{
+			{Name: "Home"},
+			{ID: "reports"},
+			{},
+		},
+		Entities: []EntitySpec{
+			{Name: "Lead"},
+			{},
+		},
+	}}
+	normalizeGenerationResult(&result, "CRM Project")
+	if err := result.AppSpec.Validate(); err != nil {
+		t.Fatalf("expected normalized spec to validate: %v", err)
+	}
+	if result.AppSpec.Name != "CRM Project" || result.AppSpec.Mode != "functional_web_app" {
+		t.Fatalf("expected project defaults, got name=%q mode=%q", result.AppSpec.Name, result.AppSpec.Mode)
+	}
+	if result.AppSpec.Routes[0].Path != "/" || result.AppSpec.Routes[1].Path != "/reports" || result.AppSpec.Routes[2].Path == "" {
+		t.Fatalf("routes were not given paths: %+v", result.AppSpec.Routes)
+	}
+	if result.AppSpec.Routes[0].ID == "" || result.AppSpec.Routes[1].ID == "" || result.AppSpec.Routes[2].ID == "" {
+		t.Fatalf("routes were not given stable ids: %+v", result.AppSpec.Routes)
+	}
+	if result.AppSpec.Entities[0].Slug != "lead" || result.AppSpec.Entities[1].Slug == "" {
+		t.Fatalf("entities were not given slugs: %+v", result.AppSpec.Entities)
 	}
 }
 

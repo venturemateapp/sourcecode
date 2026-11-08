@@ -200,9 +200,9 @@ Use create_file content for new files. A full content field may be used for an u
 		}
 		return nil, nil, response, fmt.Errorf("AI returned invalid structured app changes: %w", err)
 	}
-	normalizeGenerationResult(&result)
+	normalizeGenerationResult(&result, project.Name)
 	if strings.TrimSpace(result.Summary) == "" {
-		return nil, nil, response, errors.New("AI result is missing a summary")
+		result.Summary = "Updated " + result.AppSpec.Name
 	}
 	if err := result.AppSpec.Validate(); err != nil {
 		return nil, nil, response, fmt.Errorf("invalid AppSpec: %w", err)
@@ -214,7 +214,7 @@ Use create_file content for new files. A full content field may be used for an u
 	return &result, changes, response, nil
 }
 
-func normalizeGenerationResult(result *GenerationResult) {
+func normalizeGenerationResult(result *GenerationResult, fallbackName string) {
 	if result == nil {
 		return
 	}
@@ -230,14 +230,68 @@ func normalizeGenerationResult(result *GenerationResult) {
 	if result.AppSpec.Public == nil {
 		result.AppSpec.Public = result.Public
 	}
+	if strings.TrimSpace(result.AppSpec.Name) == "" {
+		result.AppSpec.Name = strings.TrimSpace(fallbackName)
+		if result.AppSpec.Name == "" {
+			result.AppSpec.Name = "Generated App"
+		}
+	}
+	if result.AppSpec.Mode != "marketing_website" && result.AppSpec.Mode != "functional_web_app" && result.AppSpec.Mode != "website_plus_app" {
+		result.AppSpec.Mode = "functional_web_app"
+	}
+	if strings.TrimSpace(result.Summary) == "" {
+		result.Summary = "Updated " + result.AppSpec.Name
+	}
+	usedIDs := make(map[string]bool, len(result.AppSpec.Routes)+len(result.AppSpec.Entities))
+	usedSlugs := make(map[string]bool, len(result.AppSpec.Entities))
 	for index := range result.AppSpec.Routes {
 		route := &result.AppSpec.Routes[index]
+		pathSeed := route.Path
+		if strings.TrimSpace(pathSeed) == "" {
+			pathSeed = route.Name
+			if strings.TrimSpace(pathSeed) == "" {
+				pathSeed = route.ID
+			}
+			if strings.TrimSpace(pathSeed) == "" {
+				pathSeed = fmt.Sprintf("page-%d", index+1)
+			}
+		}
+		route.Path = normalizeRoutePath(route.Path, pathSeed)
+		idSeed := route.ID
+		if strings.TrimSpace(idSeed) == "" {
+			idSeed = strings.Trim(route.Path, "/")
+		}
+		if strings.TrimSpace(idSeed) == "" {
+			idSeed = route.Name
+		}
+		route.ID = uniqueStableID(idSeed, fmt.Sprintf("page-%d", index+1), usedIDs)
+		if strings.TrimSpace(route.Name) == "" {
+			name := strings.Trim(strings.TrimSpace(route.Path), "/")
+			if name == "" {
+				name = "Home"
+			} else {
+				name = strings.ReplaceAll(name[strings.LastIndex(name, "/")+1:], "-", " ")
+				name = strings.ToUpper(name[:1]) + name[1:]
+			}
+			route.Name = name
+		}
 		if route.Public != nil {
 			route.Protected = !*route.Public
 		}
 	}
 	for index := range result.AppSpec.Entities {
 		entity := &result.AppSpec.Entities[index]
+		entity.ID = uniqueStableID(entity.ID, firstNonEmpty(entity.Slug, entity.Name, fmt.Sprintf("entity-%d", index+1)), usedIDs)
+		entity.Slug = uniqueStableID(entity.Slug, firstNonEmpty(entity.Name, entity.ID), usedSlugs)
+		if entity.Name == "" {
+			entity.Name = strings.ReplaceAll(entity.Slug, "-", " ")
+			entity.Name = strings.ToUpper(entity.Name[:1]) + entity.Name[1:]
+		}
+		for permission := range entity.Permissions {
+			if permission != "publicRead" && permission != "publicCreate" && permission != "publicUpdate" && permission != "publicDelete" {
+				delete(entity.Permissions, permission)
+			}
+		}
 		if entity.Public != nil {
 			if entity.Permissions == nil {
 				entity.Permissions = make(map[string]bool)
@@ -245,6 +299,69 @@ func normalizeGenerationResult(result *GenerationResult) {
 			entity.Permissions["publicRead"] = *entity.Public
 		}
 	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func uniqueStableID(value, fallback string, used map[string]bool) string {
+	base := slugify(value)
+	if base == "" {
+		base = slugify(fallback)
+	}
+	if base == "" {
+		base = "item"
+	}
+	id := base
+	for suffix := 2; used[id]; suffix++ {
+		id = fmt.Sprintf("%s-%d", base, suffix)
+	}
+	used[id] = true
+	return id
+}
+
+func slugify(value string) string {
+	var result strings.Builder
+	separator := false
+	for _, char := range strings.ToLower(strings.TrimSpace(value)) {
+		if char >= 'a' && char <= 'z' || char >= '0' && char <= '9' {
+			if separator && result.Len() > 0 {
+				result.WriteByte('-')
+			}
+			result.WriteRune(char)
+			separator = false
+		} else {
+			separator = true
+		}
+	}
+	return strings.Trim(result.String(), "-")
+}
+
+func normalizeRoutePath(pathValue, fallback string) string {
+	pathValue = strings.TrimSpace(pathValue)
+	if pathValue == "" {
+		pathValue = fallback
+	}
+	if pathValue == "/" || strings.EqualFold(pathValue, "home") || strings.EqualFold(pathValue, "index") {
+		return "/"
+	}
+	segments := strings.Split(strings.Trim(pathValue, "/"), "/")
+	clean := make([]string, 0, len(segments))
+	for _, segment := range segments {
+		if normalized := slugify(segment); normalized != "" {
+			clean = append(clean, normalized)
+		}
+	}
+	if len(clean) == 0 {
+		return "/"
+	}
+	return "/" + strings.Join(clean, "/")
 }
 
 func ApplyOperations(current map[string]aistudio.ProjectFile, operations []FileOperation) ([]aistudio.FileChange, error) {
