@@ -209,7 +209,8 @@ jobs:
             docker compose build --no-cache
             docker compose up --build -d --force-recreate
 
-            cp Caddyfile /etc/caddy/Caddyfile 2>/dev/null || true
-            systemctl reload caddy 2>/dev/null || systemctl restart caddy 2>/dev/null || true
+            sudo install -m 0644 Caddyfile /etc/caddy/Caddyfile
+            sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+            sudo systemctl reload caddy
 
             docker image prune -af
