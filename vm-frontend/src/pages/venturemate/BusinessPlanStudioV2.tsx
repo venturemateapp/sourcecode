@@ -97,13 +97,20 @@ function normalizeExportText(value: string): string { return value.replace(/\s+/
 function textParagraphs(value: string): string[] { return value.split(/\r?\n/).map(paragraph => paragraph.trim()).filter(Boolean); }
 function markdownCell(value: string): string { return value.replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>'); }
 function filledAssumptions(document: PlanDocumentV2) {
-  const placeholder = /^(?:unspecified|verification required|not provided|n\/?a|tbd)$/i;
+  const placeholder = /^(?:unspecified|verification required|not provided|n\/?a|tbd|placeholder|none|not applicable)$/i;
   return (document.assumptions || []).filter(item => {
     const label = item.label?.trim();
-    if (!label || placeholder.test(label)) return false;
+    if (!label || placeholder.test(label) || /^(?:status|notes?)$/i.test(label)) return false;
+    const description = item.description?.trim() || '';
+    if (/^[\[{]/.test(description)) {
+      try {
+        const structured = JSON.parse(description) as unknown;
+        if (Array.isArray(structured) || (structured && typeof structured === 'object')) return false;
+      } catch { /* ordinary prose beginning with punctuation */ }
+    }
     const hasNumber = item.valueEntered === true || (Number.isFinite(item.value) && item.value !== 0);
     const hasMeaningfulUnit = Boolean(item.unit?.trim() && !placeholder.test(item.unit.trim()));
-    const hasMeaningfulDescription = Boolean(item.description?.trim() && !placeholder.test(item.description.trim()));
+    const hasMeaningfulDescription = Boolean(description && !placeholder.test(description));
     const hasMeaningfulSource = Boolean(item.source?.trim() && !placeholder.test(item.source.trim()));
     return hasNumber || hasMeaningfulUnit || hasMeaningfulDescription || hasMeaningfulSource;
   });
